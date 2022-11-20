@@ -21,8 +21,16 @@ set(YAML_CPP_INSTALL OFF CACHE BOOL "Enable generation of install target")
 FetchContent_MakeAvailable(yaml-cpp)
 
 #===============================================================================
-# Get PapillonNDL latest development version
-add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/vendor/papillon-ndl")
+# Get PapillonNDL version 0.3.0
+message(STATUS "Downloading PapillonNDL 0.3.0")
+FetchContent_Declare(PapillonNDL
+  GIT_REPOSITORY https://github.com/HunterBelanger/papillon-ndl.git
+  GIT_TAG        v0.3.0
+)
+set(PNDL_SHARED OFF CACHE BOOL "Build PapillonNDL as a shared library")
+set(PNDL_INSTALL OFF CACHE BOOL "Install the PapillonNDL library and header files")
+set(PNDL_PYTHON OFF CACHE BOOL "Enable Python interface to PapillonNDL")
+FetchContent_MakeAvailable(PapillonNDL)
 
 #===============================================================================
 # Get docopt
