@@ -80,9 +80,9 @@ void make_material(const YAML::Node& mat, bool plotting_mode) {
   // plotting purposes
   plotter::Pixel mat_color;
   if (mat["color"] && mat["color"].IsSequence() && mat["color"].size() == 3) {
-    uint8_t R = mat["color"][0].as<int>();
-    uint8_t G = mat["color"][1].as<int>();
-    uint8_t B = mat["color"][2].as<int>();
+    uint8_t R = mat["color"][0].as<uint8_t>();
+    uint8_t G = mat["color"][1].as<uint8_t>();
+    uint8_t B = mat["color"][2].as<uint8_t>();
     mat_color = plotter::Pixel(R, G, B);
     plotter::material_id_to_color[material->id()] = mat_color;
   }

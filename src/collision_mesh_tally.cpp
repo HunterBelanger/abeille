@@ -50,9 +50,9 @@ void CollisionMeshTally::score_collision(const Particle& p,
     std::cout << out.str();
   }*/
 
-  int i = std::floor((p.r().x() - r_low.x()) / dx);
-  int j = std::floor((p.r().y() - r_low.y()) / dy);
-  int k = std::floor((p.r().z() - r_low.z()) / dz);
+  int i = static_cast<int>(std::floor((p.r().x() - r_low.x()) / dx));
+  int j = static_cast<int>(std::floor((p.r().y() - r_low.y()) / dy));
+  int k = static_cast<int>(std::floor((p.r().z() - r_low.z()) / dz));
   int l = -1;
 
   // Get energy index with linear search

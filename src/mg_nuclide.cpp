@@ -475,7 +475,7 @@ FissionInfo MGNuclide::sample_prompt_fission(double /*Ein*/, const Direction& u,
 FissionInfo MGNuclide::sample_delayed_fission(double Ein, const Direction& u,
                                               std::size_t g, pcg32& rng) const {
   FissionInfo info = sample_prompt_fission(Ein, u, g, rng);
-  info.delayed_family = g;
+  info.delayed_family = static_cast<uint32_t>(g);
   info.precursor_decay_constant = this->delayed_group_decay_constants[g];
   return info;
 }

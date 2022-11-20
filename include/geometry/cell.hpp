@@ -34,15 +34,14 @@
 #ifndef CELL_H
 #define CELL_H
 
-#include <limits>
-#include <map>
-#include <memory>
-#include <vector>
+#include <yaml-cpp/yaml.h>
 
 #include <geometry/surfaces/surface.hpp>
+#include <limits>
+#include <map>
 #include <materials/material.hpp>
-
-#include <yaml-cpp/yaml.h>
+#include <memory>
+#include <vector>
 
 class Cell;
 

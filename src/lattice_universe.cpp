@@ -128,7 +128,7 @@ void make_lattice_universe(YAML::Node uni_node, YAML::Node input) {
   }
 
   // Get lattice index
-  uint32_t lat_indx = lattice_id_to_indx[lat_id];
+  uint32_t lat_indx = static_cast<uint32_t>(lattice_id_to_indx[lat_id]);
 
   // Make sure id isn't take
   if (universe_id_to_indx.find(id) != universe_id_to_indx.end()) {

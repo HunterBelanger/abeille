@@ -200,7 +200,8 @@ void NoiseMaker::sample_vibration_noise_fission(
 
   // Now we get the number of noise neutrons to produce.
   const double k_abs = microxs.nu_total * microxs.fission / microxs.total;
-  const int n_new = std::floor(k_abs / keff + RNG::rand(p.rng));
+  const int n_new =
+      static_cast<int>(std::floor(k_abs / keff + RNG::rand(p.rng)));
 
   // Calculate the probability of a delayed neutron
   const double P_delayed = microxs.nu_delayed / microxs.nu_total;
@@ -394,7 +395,8 @@ void NoiseMaker::sample_oscillation_noise_fission(
 
   // Now we get the number of noise neutrons to produce.
   const double k_abs = microxs.nu_total * microxs.fission / microxs.total;
-  const int n_new = std::floor(k_abs / keff + RNG::rand(p.rng));
+  const int n_new =
+      static_cast<int>(std::floor(k_abs / keff + RNG::rand(p.rng)));
 
   // Calculate the probability of a delayed neutron
   const double P_delayed = microxs.nu_delayed / microxs.nu_total;

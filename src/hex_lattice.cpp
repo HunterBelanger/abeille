@@ -51,7 +51,7 @@ HexLattice::HexLattice(uint32_t nrings, uint32_t nz, double p, double pz,
       mid_qr{0},
       top_{t} {
   Nhex = 0;
-  for (size_t r = 0; r < Nrings; r++) {
+  for (uint32_t r = 0; r < Nrings; r++) {
     if (r == 0)
       Nhex += 1;
     else
@@ -80,7 +80,7 @@ bool HexLattice::is_inside(Position r, Direction /*u*/) const {
 
   // Check z bin now
   double Z_low = Z_o - 0.5 * static_cast<double>(Nz) * pitch_z_;
-  int32_t nz = std::floor((r.z() - Z_low) / pitch_z_);
+  int32_t nz = static_cast<int32_t>(std::floor((r.z() - Z_low) / pitch_z_));
   if (nz < 0 || nz >= static_cast<int32_t>(Nz)) return false;
 
   return true;
@@ -209,11 +209,11 @@ void HexLattice::set_elements(std::vector<int32_t> univs) {
   lattice_universes.resize(width * width * Nz, -1);
 
   size_t indx = 0;
-  for (size_t az = 0; az < Nz; az++) {
-    for (size_t ar = 0; ar < width; ar++) {
-      for (size_t aq = 0; aq < width; aq++) {
-        int32_t q = aq - mid_qr;
-        int32_t r = ar - mid_qr;
+  for (uint32_t az = 0; az < Nz; az++) {
+    for (uint32_t ar = 0; ar < width; ar++) {
+      for (uint32_t aq = 0; aq < width; aq++) {
+        int32_t q = static_cast<int32_t>(aq - mid_qr);
+        int32_t r = static_cast<int32_t>(ar - mid_qr);
 
         uint32_t ring = get_ring({q, r});
 
@@ -288,7 +288,7 @@ std::array<int32_t, 2> HexLattice::get_nearest_hex(Position p) const {
 std::array<int32_t, 3> HexLattice::get_tile(Position p, Direction /*u*/) const {
   std::array<int32_t, 2> qr = get_nearest_hex(p);
   double Z_low = Z_o - 0.5 * static_cast<double>(Nz) * pitch_z_;
-  int32_t nz = std::floor((p.z() - Z_low) / pitch_z_);
+  int32_t nz = static_cast<int32_t>(std::floor((p.z() - Z_low) / pitch_z_));
   return {qr[0], qr[1], nz};
 }
 
@@ -502,9 +502,9 @@ void make_hex_lattice(YAML::Node latt_node, YAML::Node input) {
       } else if (universe_id_to_indx.find(u_id) == universe_id_to_indx.end()) {
         // Need to find universe
         find_universe(input, u_id);
-        uni_indicies.push_back(universe_id_to_indx[u_id]);
+        uni_indicies.push_back(static_cast<int32_t>(universe_id_to_indx[u_id]));
       } else {
-        uni_indicies.push_back(universe_id_to_indx[u_id]);
+        uni_indicies.push_back(static_cast<int32_t>(universe_id_to_indx[u_id]));
       }
     }
   } else {
@@ -553,7 +553,8 @@ void make_hex_lattice(YAML::Node latt_node, YAML::Node input) {
         // Need to find universe
         find_universe(input, out_id);
       }
-      lat->set_outisde_universe(universe_id_to_indx[out_id]);
+      lat->set_outisde_universe(
+          static_cast<int32_t>(universe_id_to_indx[out_id]));
     }
   }
 

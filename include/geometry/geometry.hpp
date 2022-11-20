@@ -34,6 +34,7 @@
 #ifndef GEOMETRY_H
 #define GEOMETRY_H
 
+#include <cstddef>
 #include <geometry/cell.hpp>
 #include <geometry/cell_search_mesh.hpp>
 #include <geometry/geo_lily_pad.hpp>
@@ -50,7 +51,7 @@ namespace geometry {
 // All surfaces in problem
 extern std::vector<std::shared_ptr<Surface>> surfaces;
 // Indicies to all surfaces which are vacuum or reflective
-extern std::vector<uint32_t> boundaries;
+extern std::vector<std::size_t> boundaries;
 
 // All cells in problem
 extern std::vector<std::shared_ptr<Cell>> cells;

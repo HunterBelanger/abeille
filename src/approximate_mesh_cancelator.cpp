@@ -110,9 +110,9 @@ ApproximateMeshCancelator::ApproximateMeshCancelator(
 
 bool ApproximateMeshCancelator::add_particle(BankedParticle& p) {
   // Get bin indicies for spacial coordinates
-  int i = std::floor((p.r.x() - r_low.x()) / dx);
-  int j = std::floor((p.r.y() - r_low.y()) / dy);
-  int k = std::floor((p.r.z() - r_low.z()) / dz);
+  int i = static_cast<int>(std::floor((p.r.x() - r_low.x()) / dx));
+  int j = static_cast<int>(std::floor((p.r.y() - r_low.y()) / dy));
+  int k = static_cast<int>(std::floor((p.r.z() - r_low.z()) / dz));
 
   // Get energy index with linear search
   int l = -1;

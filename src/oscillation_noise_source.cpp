@@ -86,8 +86,8 @@ OscillationNoiseSource::OscillationNoiseSource(Position low, Position hi,
   }
 }
 
-bool OscillationNoiseSource::is_inside(const Position &r,
-                                       const Direction & /*u*/) const {
+bool OscillationNoiseSource::is_inside(const Position& r,
+                                       const Direction& /*u*/) const {
   if (r.x() > low_.x() && r.y() > low_.y() && r.z() > low_.z() &&
       r.x() < hi_.x() && r.y() < hi_.y() && r.z() < hi_.z())
     return true;
@@ -95,8 +95,8 @@ bool OscillationNoiseSource::is_inside(const Position &r,
   return false;
 }
 
-std::complex<double> OscillationNoiseSource::dEt(const Position &r,
-                                                 const Direction &u, double E,
+std::complex<double> OscillationNoiseSource::dEt(const Position& r,
+                                                 const Direction& u, double E,
                                                  double w) const {
   // Get the material
   Tracker trkr(r, u);
@@ -124,8 +124,8 @@ std::complex<double> OscillationNoiseSource::dEt(const Position &r,
   }
 }
 
-std::complex<double> OscillationNoiseSource::dEt_Et(const Position & /*r*/,
-                                                    const Direction & /*u*/,
+std::complex<double> OscillationNoiseSource::dEt_Et(const Position& /*r*/,
+                                                    const Direction& /*u*/,
                                                     double /*E*/,
                                                     double w) const {
   // Get the frequency multiple n
@@ -140,8 +140,8 @@ std::complex<double> OscillationNoiseSource::dEt_Et(const Position & /*r*/,
   }
 }
 
-std::complex<double> OscillationNoiseSource::dEf(const Position &r,
-                                                 const Direction &u, double E,
+std::complex<double> OscillationNoiseSource::dEf(const Position& r,
+                                                 const Direction& u, double E,
                                                  double w) const {
   // Get the material
   Tracker trkr(r, u);
@@ -169,8 +169,8 @@ std::complex<double> OscillationNoiseSource::dEf(const Position &r,
   }
 }
 
-std::complex<double> OscillationNoiseSource::dEf_Ef(const Position & /*r*/,
-                                                    const Direction & /*u*/,
+std::complex<double> OscillationNoiseSource::dEf_Ef(const Position& /*r*/,
+                                                    const Direction& /*u*/,
                                                     double /*E*/,
                                                     double w) const {
   // Get the frequency multiple n
@@ -185,8 +185,8 @@ std::complex<double> OscillationNoiseSource::dEf_Ef(const Position & /*r*/,
   }
 }
 
-std::complex<double> OscillationNoiseSource::dEelastic(const Position &r,
-                                                       const Direction &u,
+std::complex<double> OscillationNoiseSource::dEelastic(const Position& r,
+                                                       const Direction& u,
                                                        double E,
                                                        double w) const {
   // Get the material
@@ -216,7 +216,7 @@ std::complex<double> OscillationNoiseSource::dEelastic(const Position &r,
 }
 
 std::complex<double> OscillationNoiseSource::dEelastic_Eelastic(
-    const Position & /*r*/, const Direction & /*u*/, double /*E*/,
+    const Position& /*r*/, const Direction& /*u*/, double /*E*/,
     double w) const {
   // Get the frequency multiple n
   int32_t n = static_cast<int32_t>(std::round(w / w0_));
@@ -231,8 +231,8 @@ std::complex<double> OscillationNoiseSource::dEelastic_Eelastic(
 }
 
 std::complex<double> OscillationNoiseSource::dEmt(uint32_t mt,
-                                                  const Position &r,
-                                                  const Direction &u, double E,
+                                                  const Position& r,
+                                                  const Direction& u, double E,
                                                   double w) const {
   // Get the material
   Tracker trkr(r, u);
@@ -261,8 +261,8 @@ std::complex<double> OscillationNoiseSource::dEmt(uint32_t mt,
 }
 
 std::complex<double> OscillationNoiseSource::dEmt_Emt(uint32_t /*mt*/,
-                                                      const Position & /*r*/,
-                                                      const Direction & /*u*/,
+                                                      const Position& /*r*/,
+                                                      const Direction& /*u*/,
                                                       double /*E*/,
                                                       double w) const {
   // Get the frequency multiple n
@@ -278,7 +278,7 @@ std::complex<double> OscillationNoiseSource::dEmt_Emt(uint32_t /*mt*/,
 }
 
 std::shared_ptr<OscillationNoiseSource> make_oscillation_noise_source(
-    const YAML::Node &snode) {
+    const YAML::Node& snode) {
   // Get low
   if (!snode["low"] || !snode["low"].IsSequence() ||
       !(snode["low"].size() == 3)) {

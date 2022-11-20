@@ -37,9 +37,9 @@
 
 #include <algorithm>
 #include <iomanip>
-#include <memory>
 #include <materials/material.hpp>
 #include <materials/material_helper.hpp>
+#include <memory>
 #include <simulation/implicit_leakage_delta_tracker.hpp>
 #include <simulation/tracker.hpp>
 #include <utils/constants.hpp>

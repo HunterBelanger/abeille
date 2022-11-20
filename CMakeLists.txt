@@ -81,7 +81,7 @@ execute_process(COMMAND git describe --dirty --always
 add_executable(abeille src/main.cpp ${ABEILLE_SOURCE_FILES})
 target_include_directories(abeille PRIVATE include)
 target_compile_features(abeille PRIVATE cxx_std_17)
-target_compile_options(abeille PRIVATE -W -Wall -Wextra -Wpedantic)
+target_compile_options(abeille PRIVATE -W -Wall -Wextra -Wconversion -Wpedantic -Werror)
 target_link_libraries(abeille PUBLIC docopt_s yaml-cpp PapillonNDL::PapillonNDL NDArray::NDArray PCG::PCG_CXX sobol)
 target_compile_definitions(abeille PUBLIC ABEILLE_GIT_HASH=\"${ABEILLE_GIT_HASH_RAW}\")
 

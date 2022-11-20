@@ -56,7 +56,7 @@ class Simulation {
   virtual void premature_kill() = 0;
 
   // Method to sample sources
-  std::vector<Particle> sample_sources(int N);
+  std::vector<Particle> sample_sources(std::size_t N);
 
   // Methods to set entropies
   void set_p_pre_entropy(std::shared_ptr<Entropy> entrpy) {

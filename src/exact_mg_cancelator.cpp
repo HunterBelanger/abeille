@@ -142,9 +142,12 @@ std::optional<ExactMGCancelator::Key> ExactMGCancelator::get_key(
   }
 
   // Get the spatial indices.
-  std::size_t i = std::floor((r.x() - Key::r_low.x()) / Key::pitch[0]);
-  std::size_t j = std::floor((r.y() - Key::r_low.y()) / Key::pitch[1]);
-  std::size_t k = std::floor((r.z() - Key::r_low.z()) / Key::pitch[2]);
+  std::size_t i = static_cast<std::size_t>(
+      std::floor((r.x() - Key::r_low.x()) / Key::pitch[0]));
+  std::size_t j = static_cast<std::size_t>(
+      std::floor((r.y() - Key::r_low.y()) / Key::pitch[1]));
+  std::size_t k = static_cast<std::size_t>(
+      std::floor((r.z() - Key::r_low.z()) / Key::pitch[2]));
 
   // Now we need the energy index.
   bool e_determined = false;
@@ -266,9 +269,9 @@ double ExactMGCancelator::get_beta(const CancelBin& bin, std::size_t i,
 std::optional<std::pair<Position, std::size_t>> ExactMGCancelator::sample_point(
     const Key& key, Material* mat, unsigned long long& i) const {
   // Get lower limits of bin
-  double Xl = Key::r_low.x() + key.i * Key::pitch[0];
-  double Yl = Key::r_low.y() + key.j * Key::pitch[1];
-  double Zl = Key::r_low.z() + key.k * Key::pitch[2];
+  double Xl = Key::r_low.x() + static_cast<double>(key.i) * Key::pitch[0];
+  double Yl = Key::r_low.y() + static_cast<double>(key.j) * Key::pitch[1];
+  double Zl = Key::r_low.z() + static_cast<double>(key.k) * Key::pitch[2];
 
   uint32_t N_TRIES = 0;
   bool position_sampled = false;
@@ -302,7 +305,8 @@ std::optional<std::pair<Position, std::size_t>> ExactMGCancelator::sample_point(
     // Get the 4th sobol coordinate for i-1, as we used i-1
     // to sample the position (loop above does i++ at end).
     const double xi = sobol::sample(i - 1, 3);
-    const std::size_t g_index = std::floor(xi * Key::group_bins[key.e].size());
+    const std::size_t g_index = static_cast<std::size_t>(
+        std::floor(xi * static_cast<double>(Key::group_bins[key.e].size())));
     g = Key::group_bins[key.e][g_index];
   }
 
@@ -495,9 +499,9 @@ std::optional<Position> ExactMGCancelator::sample_position(const Key& key,
                                                            Material* mat,
                                                            pcg32& rng) const {
   // Get bin positions
-  double Xl = Key::r_low.x() + key.i * Key::pitch[0];
-  double Yl = Key::r_low.y() + key.j * Key::pitch[1];
-  double Zl = Key::r_low.z() + key.k * Key::pitch[2];
+  double Xl = Key::r_low.x() + static_cast<double>(key.i) * Key::pitch[0];
+  double Yl = Key::r_low.y() + static_cast<double>(key.j) * Key::pitch[1];
+  double Zl = Key::r_low.z() + static_cast<double>(key.k) * Key::pitch[2];
 
   uint32_t N_TRIES = 0;
   bool position_sampled = false;
@@ -536,8 +540,8 @@ std::vector<BankedParticle> ExactMGCancelator::get_new_particles(pcg32& rng) {
       CancelBin& bin = mat_bin_pair.second;
 
       // Determine number of new particles to add
-      uint32_t N = std::ceil(
-          std::max(std::abs(bin.uniform_wgt), std::abs(bin.uniform_wgt2)));
+      uint32_t N = static_cast<uint32_t>(std::ceil(
+          std::max(std::abs(bin.uniform_wgt), std::abs(bin.uniform_wgt2))));
 
       if (N > 0) {
         double w = bin.uniform_wgt / N;
@@ -570,7 +574,8 @@ std::vector<BankedParticle> ExactMGCancelator::get_new_particles(pcg32& rng) {
           if (CHI_MATRIX) {
             // We need to select a random energy group from our bin.
             const double xi_E = RNG::rand(rng);
-            int g_index = std::floor(xi_E * Key::group_bins[key.e].size());
+            int g_index = static_cast<int>(std::floor(
+                xi_E * static_cast<double>(Key::group_bins[key.e].size())));
             e_index = Key::group_bins[key.e][g_index];
           } else {
             // Fission spectrum is independent of incident energy.
@@ -662,7 +667,7 @@ std::shared_ptr<ExactMGCancelator> make_exact_mg_cancelator(
     mssg << "Cancellation cannot be exact.";
     warning(mssg.str(), __FILE__, __LINE__);
   }
-  Ne = group_bins.size();
+  Ne = static_cast<uint32_t>(group_bins.size());
 
   std::array<std::size_t, 4> shape{Nx, Ny, Nz, Ne};
 

@@ -41,7 +41,7 @@ namespace geometry {
 //==========================================================================
 // Global Variable Declrations
 std::vector<std::shared_ptr<Surface>> surfaces;
-std::vector<uint32_t> boundaries;
+std::vector<std::size_t> boundaries;
 std::vector<std::shared_ptr<Cell>> cells;
 std::shared_ptr<Universe> root_universe;
 std::vector<std::shared_ptr<Universe>> universes;
@@ -77,7 +77,7 @@ Boundary get_boundary(const Position& r, const Direction& u, int32_t on_surf) {
   // Go through all boundaries
   for (size_t i = 0; i < boundaries.size(); i++) {
     if (std::abs(on_surf) - 1 != static_cast<int>(boundaries[i])) {
-      int32_t indx = boundaries[i];
+      int32_t indx = static_cast<int32_t>(boundaries[i]);
       double dist = surfaces[indx]->distance(r, u, false);
       if (dist < d_min) {
         closest_surface_indx = indx;
@@ -98,7 +98,7 @@ int32_t id_to_token(int32_t id) {
   if (surface_id_to_indx.find(std::abs(id)) == surface_id_to_indx.end())
     return 0;
 
-  int32_t token = surface_id_to_indx[std::abs(id)];
+  int32_t token = static_cast<int32_t>(surface_id_to_indx[std::abs(id)]);
   token += 1;
 
   return token;

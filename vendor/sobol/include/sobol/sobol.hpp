@@ -52,7 +52,7 @@ inline double sample(
             result ^= Matrices::matrices[i];
     }
 
-    return result * (1.0 / (1ULL << Matrices::size));
+    return static_cast<double>(result) * (1.0 / (1ULL << Matrices::size));
 }
 
 } // namespace sobol

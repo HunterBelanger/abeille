@@ -345,9 +345,11 @@ void make_rect_lattice(YAML::Node latt_node, YAML::Node input) {
                    universe_id_to_indx.end()) {
           // Need to find universe
           find_universe(input, u_id);
-          uni_indicies.push_back(universe_id_to_indx[u_id]);
+          uni_indicies.push_back(
+              static_cast<int32_t>(universe_id_to_indx[u_id]));
         } else {
-          uni_indicies.push_back(universe_id_to_indx[u_id]);
+          uni_indicies.push_back(
+              static_cast<int32_t>(universe_id_to_indx[u_id]));
         }
       }
     } else {
@@ -386,7 +388,8 @@ void make_rect_lattice(YAML::Node latt_node, YAML::Node input) {
         // Need to find universe
         find_universe(input, out_id);
       }
-      lat->set_outisde_universe(universe_id_to_indx[out_id]);
+      lat->set_outisde_universe(
+          static_cast<int32_t>(universe_id_to_indx[out_id]));
     }
   }
 

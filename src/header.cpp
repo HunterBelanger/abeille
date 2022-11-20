@@ -37,20 +37,23 @@
 const std::string logo =
     "\n"
     "                    ______   __                  __  __  __           \n"
-    "                   /      \\ |  \\                |  \\|  \\|  \\          \n"
+    "                   /      \\ |  \\                |  \\|  \\|  \\         "
+    " \n"
     "                  |  $$$$$$\\| $$____    ______   \\$$| $$| $$  ______  \n"
-    "                  | $$__| $$| $$    \\  /      \\ |  \\| $$| $$ /      \\ \n"
+    "                  | $$__| $$| $$    \\  /      \\ |  \\| $$| $$ /      \\ "
+    "\n"
     "                  | $$    $$| $$$$$$$\\|  $$$$$$\\| $$| $$| $$|  $$$$$$\n"
     "                  | $$$$$$$$| $$  | $$| $$    $$| $$| $$| $$| $$    $$\n"
     "                  | $$  | $$| $$__/ $$| $$$$$$$$| $$| $$| $$| $$$$$$$$\n"
     "                  | $$  | $$| $$    $$ \\$$     \\| $$| $$| $$ \\$$     \n"
-    "                   \\$$   \\$$ \\$$$$$$$   \\$$$$$$$ \\$$ \\$$ \\$$  \\$$$$$$$\n"
+    "                   \\$$   \\$$ \\$$$$$$$   \\$$$$$$$ \\$$ \\$$ \\$$  "
+    "\\$$$$$$$\n"
     "\n\n";
 
-    const std::string header =
+const std::string header =
     "                              A Monte Carlo Transport Code\n\n";
 
-    const std::string info =
+const std::string info =
     " Copyright (C) 2019-2021, 2022, Hunter Belanger\n"
     " Copyright (C) 2021-2022, Commissariat à l'énergie atomique et aux "
     "énergies alternatives (CEA)\n"

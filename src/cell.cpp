@@ -233,7 +233,8 @@ void make_cell(YAML::Node cell_node) {
       // Make sure temp not empty
       if (temp.size() > 0) {
         int32_t signed_id = std::stoi(temp);
-        int32_t indx = surface_id_to_indx[std::abs(signed_id)];
+        int32_t indx =
+            static_cast<int32_t>(surface_id_to_indx[std::abs(signed_id)]);
         indx += 1;  // This is due to 1 off indexing of surfaces for use of the
                     // sign of tokens
         if (signed_id < 0) indx *= -1;
@@ -265,7 +266,8 @@ void make_cell(YAML::Node cell_node) {
   }
   if (temp.size() > 0) {
     int32_t signed_id = std::stoi(temp);
-    int32_t indx = surface_id_to_indx[std::abs(signed_id)];
+    int32_t indx =
+        static_cast<int32_t>(surface_id_to_indx[std::abs(signed_id)]);
     indx += 1;
     if (signed_id < 0) indx *= -1;
     region.push_back(indx);

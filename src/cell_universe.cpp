@@ -122,7 +122,7 @@ void make_cell_universe(YAML::Node uni_node) {
                            " could not be found.";
         fatal_error(mssg, __FILE__, __LINE__);
       } else {
-        cell_indx = cell_id_to_indx[cell_id];
+        cell_indx = static_cast<uint32_t>(cell_id_to_indx[cell_id]);
       }
       cells.push_back(cell_indx);
     }

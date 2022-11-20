@@ -75,9 +75,9 @@ BasicExactMGCancelator::BasicExactMGCancelator(Position low, Position hi,
 
 bool BasicExactMGCancelator::add_particle(BankedParticle& p) {
   // Get bin indicies for spacial coordinates
-  int i = std::floor((p.r.x() - r_low.x()) / dx);
-  int j = std::floor((p.r.y() - r_low.y()) / dy);
-  int k = std::floor((p.r.z() - r_low.z()) / dz);
+  int i = static_cast<int>(std::floor((p.r.x() - r_low.x()) / dx));
+  int j = static_cast<int>(std::floor((p.r.y() - r_low.y()) / dy));
+  int k = static_cast<int>(std::floor((p.r.z() - r_low.z()) / dz));
 
   // If one of the indices is less than zero, don't keep the particle
   if (i < 0 || j < 0 || k < 0) {
@@ -578,8 +578,8 @@ std::vector<BankedParticle> BasicExactMGCancelator::get_new_particles(
       auto mat_ptr = mat->shared_from_this();
 
       // Determine number of new particles to add
-      uint32_t N = std::ceil(
-          std::max(std::abs(bin.uniform_wgt), std::abs(bin.uniform_wgt2)));
+      uint32_t N = static_cast<uint32_t>(std::ceil(
+          std::max(std::abs(bin.uniform_wgt), std::abs(bin.uniform_wgt2))));
 
       if (N > 0) {
         double w = bin.uniform_wgt / N;

@@ -79,7 +79,7 @@ class LegendreDistribution {
 
   double pdf(double mu) const {
     double p = 0;
-    for (std::size_t l = 0; l < a_.size(); l++) {
+    for (unsigned int l = 0; l < a_.size(); l++) {
       p += a_[l] * std::legendre(l, mu);
     }
     return p;

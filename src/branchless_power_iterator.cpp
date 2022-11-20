@@ -110,7 +110,7 @@ void BranchlessPowerIterator::load_source_from_file() {
 
   out->write(" Total Weight of System: " + std::to_string(std::round(tot_wgt)) +
              "\n");
-  settings::nparticles = std::round(tot_wgt);
+  settings::nparticles = static_cast<int>(std::round(tot_wgt));
   tallies->set_total_weight(std::round(tot_wgt));
 }
 
@@ -457,10 +457,10 @@ void BranchlessPowerIterator::normalize_weights(
   }
 
   double Wtt = W_pos + W_neg;
-  Wnet = std::round(W);
-  Wtot = std::round(Wtt);
-  Wpos = std::round(W_pos);
-  Wneg = std::round(W_neg);
+  Wnet = static_cast<int>(std::round(W));
+  Wtot = static_cast<int>(std::round(Wtt));
+  Wpos = static_cast<int>(std::round(W_pos));
+  Wneg = static_cast<int>(std::round(W_neg));
 }
 
 void BranchlessPowerIterator::comb_particles(
@@ -485,8 +485,8 @@ void BranchlessPowerIterator::comb_particles(
   next_gen.clear();
 
   // Determine how many positive and negative
-  std::size_t Npos = std::ceil(Wpos);
-  std::size_t Nneg = std::ceil(std::abs(Wneg));
+  std::size_t Npos = static_cast<std::size_t>(std::ceil(Wpos));
+  std::size_t Nneg = static_cast<std::size_t>(std::ceil(std::abs(Wneg)));
   next_gen.reserve(Npos + Nneg);
 
   // Comb Positive particles

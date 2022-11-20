@@ -110,7 +110,7 @@ void PowerIterator::load_source_from_file() {
 
   out->write(" Total Weight of System: " + std::to_string(std::round(tot_wgt)) +
              "\n");
-  settings::nparticles = std::round(tot_wgt);
+  settings::nparticles = static_cast<int>(std::round(tot_wgt));
   tallies->set_total_weight(std::round(tot_wgt));
 }
 
@@ -457,10 +457,10 @@ void PowerIterator::normalize_weights(std::vector<BankedParticle>& next_gen) {
   }
 
   double Wtt = W_pos + W_neg;
-  Wnet = std::round(W);
-  Wtot = std::round(Wtt);
-  Wpos = std::round(W_pos);
-  Wneg = std::round(W_neg);
+  Wnet = static_cast<int>(std::round(W));
+  Wtot = static_cast<int>(std::round(Wtt));
+  Wpos = static_cast<int>(std::round(W_pos));
+  Wneg = static_cast<int>(std::round(W_neg));
 }
 
 void PowerIterator::compute_pre_cancellation_entropy(

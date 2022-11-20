@@ -197,7 +197,7 @@ void SlicePlot::generate_plot() {
 
       // Get the number of pixels till the boundary
       const double pixels_to_bound = bound.distance / dist_per_pixel;
-      uint64_t npixels = std::round(pixels_to_bound);
+      uint64_t npixels = static_cast<uint64_t>(std::round(pixels_to_bound));
       if (npixels > (plot_width_ - j) || bound.distance == INF) {
         npixels = plot_width_ - j;
       }

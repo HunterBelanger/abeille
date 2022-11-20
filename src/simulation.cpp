@@ -52,14 +52,14 @@ Simulation::Simulation(std::shared_ptr<Tallies> i_t,
   settings::initialize_global_rng();
 }
 
-std::vector<Particle> Simulation::sample_sources(int N) {
+std::vector<Particle> Simulation::sample_sources(std::size_t N) {
   // Vector of source weights
   std::vector<double> wgts;
   for (size_t i = 0; i < sources.size(); i++) wgts.push_back(sources[i]->wgt());
 
   // Generate source particles
   std::vector<Particle> source_particles;
-  for (int i = 0; i < N; i++) {
+  for (std::size_t i = 0; i < N; i++) {
     uint64_t history_id = histories_counter++;
     pcg32 rng(settings::rng_seed);
     uint64_t n_advance = settings::rng_stride * history_id;

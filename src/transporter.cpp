@@ -335,7 +335,7 @@ void Transporter::do_scatter(Particle& p, const Nuclide& nuclide,
   // secondary bank, to keep weights from being too high and causing
   // variance issues.
   if (std::floor(sinfo.yield) == sinfo.yield && sinfo.yield != 1.) {
-    int n = sinfo.yield - 1;
+    int n = static_cast<int>(sinfo.yield) - 1;
     for (int i = 0; i < n; i++) {
       // Sample outgoing info
       ScatterInfo ninfo = nuclide.sample_scatter_mt(
@@ -376,34 +376,37 @@ void Transporter::make_fission_neutrons(Particle& p, const MicroXSs& microxs,
     case settings::SimulationMode::K_EIGENVALUE:
       // In k-eivenvalue simulations, we normalize particle production
       // by keff so that it stays more or less constant.
-      n_new =
-          std::floor(std::abs(k_abs_scr) / tallies->kcol() + RNG::rand(p.rng));
+      n_new = static_cast<int>(
+          std::floor(std::abs(k_abs_scr) / tallies->kcol() + RNG::rand(p.rng)));
       break;
 
     case settings::SimulationMode::FIXED_SOURCE:
       // In fixed-source problems, we don't normalize the number of
       // particles. Problem MUST BE SUB CRITICAL !
-      n_new = std::floor(std::abs(k_abs_scr) + RNG::rand(p.rng));
+      n_new =
+          static_cast<int>(std::floor(std::abs(k_abs_scr) + RNG::rand(p.rng)));
       break;
 
     case settings::SimulationMode::MODIFIED_FIXED_SOURCE:
       // In fixed-source problems, we don't normalize the number of
       // particles. Problem MUST BE SUB CRITICAL !
-      n_new = std::floor(std::abs(k_abs_scr) + RNG::rand(p.rng));
+      n_new =
+          static_cast<int>(std::floor(std::abs(k_abs_scr) + RNG::rand(p.rng)));
       break;
 
     case settings::SimulationMode::NOISE:
       if (!noise) {
         // This is a power iteration generation. Run as with K_EIGENVALUE
-        n_new = std::floor(std::abs(k_abs_scr) / tallies->kcol() +
-                           RNG::rand(p.rng));
+        n_new = static_cast<int>(std::floor(
+            std::abs(k_abs_scr) / tallies->kcol() + RNG::rand(p.rng)));
       } else {
         // When transporting noise particles, we don't normalize the number of
         // generated particles by the weight ! We also scale by kcol from the
         // previous power-iteration generation, to make the problem "critical".
-        n_new = std::floor((microxs.nu_total * microxs.fission /
-                            (microxs.total * tallies->keff())) +
-                           RNG::rand(p.rng));
+        n_new =
+            static_cast<int>(std::floor((microxs.nu_total * microxs.fission /
+                                         (microxs.total * tallies->keff())) +
+                                        RNG::rand(p.rng)));
       }
       break;
 

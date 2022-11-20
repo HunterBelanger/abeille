@@ -62,7 +62,7 @@ MeshTally::MeshTally(Position low, Position hi, uint64_t nx, uint64_t ny,
   dy = (r_hi.y() - r_low.y()) / static_cast<double>(Ny);
   dz = (r_hi.z() - r_low.z()) / static_cast<double>(Nz);
 
-  uint32_t Ne = energy_bounds.size() - 1;
+  uint32_t Ne = static_cast<uint32_t>(energy_bounds.size() - 1);
 
   // Allocate and fill arrays to zero
   tally_gen.reallocate({Ne, Nx, Ny, Nz});

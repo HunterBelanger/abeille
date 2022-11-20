@@ -264,9 +264,9 @@ void TrackLengthMeshTally::initialize_indices(const Position& r,
                                               const Direction& u, int& i,
                                               int& j, int& k,
                                               std::array<int, 3>& on) {
-  i = std::floor((r.x() - r_low.x()) / dx);
-  j = std::floor((r.y() - r_low.y()) / dy);
-  k = std::floor((r.z() - r_low.z()) / dz);
+  i = static_cast<int>(std::floor((r.x() - r_low.x()) / dx));
+  j = static_cast<int>(std::floor((r.y() - r_low.y()) / dy));
+  k = static_cast<int>(std::floor((r.z() - r_low.z()) / dz));
   on.fill(0);
 
   // Must handle case of being on a tile boundary
