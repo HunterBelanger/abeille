@@ -205,7 +205,7 @@ int main(int argc, char** argv) {
     std::cout << " ERROR: Input file not found.\n";
   }
 
-#ifdef MGMC_USE_MPI
+#ifdef ABEILLE_USE_MPI
   if (mpi::size > 1) {
     Output::instance()->write(
         " Total MPI time: " + std::to_string(mpi::timer.elapsed_time()) +

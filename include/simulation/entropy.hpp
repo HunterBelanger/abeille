@@ -100,7 +100,7 @@ class Entropy {
   }
 
   void synchronize_entropy_across_nodes() {
-#ifdef MGMC_USE_MPI
+#ifdef ABEILLE_USE_MPI
     // All worker threads must send their generation score to the master.
     // Master must recieve all generations scores from workers and add
     // them to it's own generation score. We do this with MPI_Reduce.

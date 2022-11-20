@@ -381,7 +381,7 @@ settings:
 # resolution is the number of pixels in each direction, the origin defines
 # the physical location in the geometry which will be at the center of the
 # rendered image. The images may be colored by material or cell (using the
-# color attribute). All plots will be generated when MGMC is run with the
+# color attribute). All plots will be generated when Abeille is run with the
 # -p argument, and no transport will be conducted.
 plots:
   - type: slice

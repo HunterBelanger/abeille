@@ -31,7 +31,7 @@
  * pris connaissance de la licence CeCILL, et que vous en avez accepté les
  * termes.
  *============================================================================*/
-#ifdef MGMC_USE_MPI
+#ifdef ABEILLE_USE_MPI
 #include <mpi.h>
 #endif
 
@@ -44,7 +44,7 @@ namespace mpi {
 
 Timer timer;
 
-#ifdef MGMC_USE_MPI
+#ifdef ABEILLE_USE_MPI
 const Com com = MPI_COMM_WORLD;
 const DType Bool = MPI_C_BOOL;
 const DType Int = MPI_INT;
@@ -64,7 +64,7 @@ int size = 1;
 int rank = 0;
 
 void register_banked_particle_type() {
-#ifdef MGMC_USE_MPI
+#ifdef ABEILLE_USE_MPI
   // Ensure that BankedParticle is standard layout ! This is
   // required by MPI.
   static_assert(std::is_standard_layout<BankedParticle>::value);
@@ -111,7 +111,7 @@ void register_banked_particle_type() {
 void initialize_mpi(int* argc, char*** argv) {
   timer.reset();
 
-#ifdef MGMC_USE_MPI
+#ifdef ABEILLE_USE_MPI
   int err = 0;
 
   // Initialize MPI
@@ -134,19 +134,19 @@ void initialize_mpi(int* argc, char*** argv) {
 }
 
 void finalize_mpi() {
-#ifdef MGMC_USE_MPI
+#ifdef ABEILLE_USE_MPI
   MPI_Finalize();
 #endif
 }
 
 void abort_mpi() {
-#ifdef MGMC_USE_MPI
+#ifdef ABEILLE_USE_MPI
   MPI_Abort(com, 1);
 #endif
 }
 
 void synchronize() {
-#ifdef MGMC_USE_MPI
+#ifdef ABEILLE_USE_MPI
   if (size > 1) {
     timer.start();
     MPI_Barrier(com);
@@ -156,7 +156,7 @@ void synchronize() {
 }
 
 void check_error(int err, const char* file, int line) {
-#ifdef MGMC_USE_MPI
+#ifdef ABEILLE_USE_MPI
   if (err != MPI_SUCCESS) {
     // First, we should get the error string
     char err_str[MPI_MAX_ERROR_STRING];

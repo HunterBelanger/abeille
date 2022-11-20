@@ -45,7 +45,7 @@ constexpr int VERSION_PATCH{0};
 constexpr bool DEVELOPMENT_VERSION{false};
 //#define DEV_VERSION  // TO BE REMOVED FOR NON-DEV VERSIONS
 constexpr int COPYRIGHT_YEAR{2022};
-#define MGMC_VERSION_STRING "0.3.0"
+#define ABEILLE_VERSION_STRING "0.3.0"
 
 //============================================================================
 // Mathematical and Physical Constants

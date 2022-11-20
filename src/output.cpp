@@ -116,7 +116,7 @@ void print_header() {
 
   // Version info
   std::string info = "";
-  info += " Version             : " + std::string(MGMC_VERSION_STRING);
+  info += " Version             : " + std::string(ABEILLE_VERSION_STRING);
   if (DEVELOPMENT_VERSION) {
     info += " (Development)\n";
   } else
@@ -134,11 +134,11 @@ void print_header() {
       " OpenMP Threads      : " + std::to_string(omp_get_max_threads()) + "\n";
 #endif
 
-#ifdef MGMC_USE_MPI
+#ifdef ABEILLE_USE_MPI
   info += " MPI Ranks           : " + std::to_string(mpi::size) + "\n";
 #endif
 
-  info += " MGMC Git Hash   : " MGMC_GIT_HASH "\n";
+  info += " Abeille Git Hash   : " ABEILLE_GIT_HASH "\n";
 
   output->write(info);
 }

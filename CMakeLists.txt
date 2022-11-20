@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.11)
-project(mgmc CXX)
+project(abeille CXX)
 
-option(MGMC_USE_OMP "Compile MGMC with OpenMP for shared memory parallelism" ON)
-option(MGMC_USE_MPI "Compile MGMC with MPI for distributed memory parallelism" OFF)
+option(ABEILLE_USE_OMP "Compile Abeille with OpenMP for shared memory parallelism" ON)
+option(ABEILLE_USE_MPI "Compile Abeille with MPI for distributed memory parallelism" OFF)
 
 # Get FetchContent for downloading dependencies
 include(FetchContent)
@@ -61,36 +61,36 @@ FetchContent_MakeAvailable(PCG_CXX)
 add_subdirectory("${CMAKE_SOURCE_DIR}/vendor/sobol")
 
 #===============================================================================
-include(sourcelist.cmake) # For MGMC_SOURCE_FILES list
+include(sourcelist.cmake) # For ABEILLE_SOURCE_FILES list
 
 # Get the Git hash for define
 execute_process(COMMAND git describe --dirty --always
                 WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
-                OUTPUT_VARIABLE MGMC_GIT_HASH_RAW
+                OUTPUT_VARIABLE ABEILLE_GIT_HASH_RAW
                 OUTPUT_STRIP_TRAILING_WHITESPACE
                )
 
-add_executable(mgmc src/main.cpp ${MGMC_SOURCE_FILES})
-target_include_directories(mgmc PRIVATE include)
-target_compile_features(mgmc PRIVATE cxx_std_17)
-target_compile_options(mgmc PRIVATE -W -Wall -Wextra -Wpedantic)
-target_link_libraries(mgmc PUBLIC docopt_s yaml-cpp PapillonNDL::PapillonNDL NDArray::NDArray PCG::PCG_CXX sobol)
-target_compile_definitions(mgmc PUBLIC MGMC_GIT_HASH=\"${MGMC_GIT_HASH_RAW}\")
+add_executable(abeille src/main.cpp ${ABEILLE_SOURCE_FILES})
+target_include_directories(abeille PRIVATE include)
+target_compile_features(abeille PRIVATE cxx_std_17)
+target_compile_options(abeille PRIVATE -W -Wall -Wextra -Wpedantic)
+target_link_libraries(abeille PUBLIC docopt_s yaml-cpp PapillonNDL::PapillonNDL NDArray::NDArray PCG::PCG_CXX sobol)
+target_compile_definitions(abeille PUBLIC ABEILLE_GIT_HASH=\"${ABEILLE_GIT_HASH_RAW}\")
 
 # Find OpenMP if desired
-if(MGMC_USE_OMP)
+if(ABEILLE_USE_OMP)
   find_package(OpenMP REQUIRED)
   if(OpenMP_CXX_FOUND)
-    target_link_libraries(mgmc PUBLIC OpenMP::OpenMP_CXX)
+    target_link_libraries(abeille PUBLIC OpenMP::OpenMP_CXX)
   endif()
 endif()
 
 # Find MPI if desired
-if(MGMC_USE_MPI)
+if(ABEILLE_USE_MPI)
   find_package(MPI REQUIRED)
   if(MPI_CXX_FOUND)
-    target_link_libraries(mgmc PUBLIC MPI::MPI_CXX)
-    target_compile_definitions(mgmc PUBLIC MGMC_USE_MPI)
+    target_link_libraries(abeille PUBLIC MPI::MPI_CXX)
+    target_compile_definitions(abeille PUBLIC ABEILLE_USE_MPI)
   endif()
 endif()
 
@@ -104,6 +104,6 @@ configure_file("${CMAKE_CURRENT_SOURCE_DIR}/input_files/ref_sqr_c5g7.yaml"
                "${CMAKE_CURRENT_BINARY_DIR}/ref_sqr_c5g7.yaml")
 
 # Allow for install of executable
-install(TARGETS mgmc
+install(TARGETS abeille
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )

@@ -37,7 +37,7 @@
 #include <cstdint>
 #include <vector>
 
-#ifdef MGMC_USE_MPI
+#ifdef ABEILLE_USE_MPI
 #include <mpi.h>
 
 #include <simulation/particle.hpp>
@@ -50,7 +50,7 @@ namespace mpi {
 // Timer for all MPI operations
 extern Timer timer;
 
-#ifdef MGMC_USE_MPI
+#ifdef ABEILLE_USE_MPI
 using Com = MPI_Comm;
 using DType = MPI_Datatype;
 using OpType = MPI_Op;
@@ -113,7 +113,7 @@ void check_error(int err, const char* file, int line);
 // MPI Operations
 template <typename T>
 void Bcast(T& val, int root, const char* file = __FILE__, int line = __LINE__) {
-#ifdef MGMC_USE_MPI
+#ifdef ABEILLE_USE_MPI
   if (size > 1) {
     timer.start();
     int err = MPI_Bcast(&val, 1, dtype<T>(), root, com);
@@ -130,7 +130,7 @@ void Bcast(T& val, int root, const char* file = __FILE__, int line = __LINE__) {
 
 template <typename T>
 void Allreduce_sum(T& val, const char* file = __FILE__, int line = __LINE__) {
-#ifdef MGMC_USE_MPI
+#ifdef ABEILLE_USE_MPI
   if (size > 1) {
     timer.start();
     T tmp_send = val;
@@ -147,7 +147,7 @@ void Allreduce_sum(T& val, const char* file = __FILE__, int line = __LINE__) {
 
 template <typename T>
 void Allreduce_or(T& val, const char* file = __FILE__, int line = __LINE__) {
-#ifdef MGMC_USE_MPI
+#ifdef ABEILLE_USE_MPI
   if (size > 1) {
     timer.start();
     T tmp_send = val;
@@ -165,7 +165,7 @@ void Allreduce_or(T& val, const char* file = __FILE__, int line = __LINE__) {
 template <typename T>
 void Reduce_sum(T& val, int root, const char* file = __FILE__,
                 int line = __LINE__) {
-#ifdef MGMC_USE_MPI
+#ifdef ABEILLE_USE_MPI
   if (size > 1) {
     timer.start();
     T tmp_send = val;
@@ -184,7 +184,7 @@ void Reduce_sum(T& val, int root, const char* file = __FILE__,
 template <typename T>
 void Reduce_sum(std::vector<T>& vals, int root, const char* file = __FILE__,
                 int line = __LINE__) {
-#ifdef MGMC_USE_MPI
+#ifdef ABEILLE_USE_MPI
   if (size > 1) {
     timer.start();
     std::vector<T> tmp_rcv;
@@ -216,7 +216,7 @@ void Reduce_sum(std::vector<T>& vals, int root, const char* file = __FILE__,
 template <typename T>
 void Reduce_sum(T* vals, int count, int root, const char* file = __FILE__,
                 int line = __LINE__) {
-#ifdef MGMC_USE_MPI
+#ifdef ABEILLE_USE_MPI
   if (size > 1) {
     timer.start();
     std::vector<T> tmp_rcv;
@@ -248,7 +248,7 @@ void Reduce_sum(T* vals, int count, int root, const char* file = __FILE__,
 template <typename T>
 void Gatherv(std::vector<T>& vals, int root, const char* file = __FILE__,
              int line = __LINE__) {
-#ifdef MGMC_USE_MPI
+#ifdef ABEILLE_USE_MPI
   if (size > 1) {
     timer.start();
     // First, we need to know how many things each rank has
@@ -301,7 +301,7 @@ void Gatherv(std::vector<T>& vals, int root, const char* file = __FILE__,
 template <typename T>
 void Scatterv(std::vector<T>& vals, int root, const char* file = __FILE__,
               int line = __LINE__) {
-#ifdef MGMC_USE_MPI
+#ifdef ABEILLE_USE_MPI
   if (size > 1) {
     timer.start();
     // First, we need to know how many values there are on root to send,

@@ -1,4 +1,4 @@
-set(MGMC_SOURCE_FILES ${MGMC_SOURCE_FILES}
+set(ABEILLE_SOURCE_FILES ${ABEILLE_SOURCE_FILES}
   src/material.cpp
   src/mg_nuclide.cpp
   src/mg_angle_distribution.cpp

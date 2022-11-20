@@ -221,7 +221,7 @@ void make_geometry(YAML::Node input) {
     fatal_error(mssg, __FILE__, __LINE__);
   }
 
-  // If there is only one universe, MGMC allows for the user to
+  // If there is only one universe, Abeille allows for the user to
   // provide a neighbors list, which is a dictionary of entries, one for
   // each cell, and each entry is a sequence of the IDs of all it's
   // neighboring cells. This speeds up transport in certain cases.

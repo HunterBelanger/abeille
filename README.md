@@ -1,20 +1,6 @@
-# MGMC - A Multi-Group Monte Carlo Transport Code
-[![arXiv](https://img.shields.io/badge/arXiv-2103.13891-b31b1b.svg?style=flat)](https://arxiv.org/abs/2103.13891)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.4585368.svg)](https://doi.org/10.5281/zenodo.4585368)
-[![License](https://img.shields.io/badge/License-CeCILL%20v2.1-brightgreen)](http://www.cecill.info)
+# Abeille - A Monte Carlo Transport Code
 
-```
- ███╗   ███╗ ██████╗ ███╗   ███╗ ██████╗
- ████╗ ████║██╔════╝ ████╗ ████║██╔════╝
- ██╔████╔██║██║  ███╗██╔████╔██║██║
- ██║╚██╔╝██║██║   ██║██║╚██╔╝██║██║
- ██║ ╚═╝ ██║╚██████╔╝██║ ╚═╝ ██║╚██████╗
- ╚═╝     ╚═╝ ╚═════╝ ╚═╝     ╚═╝ ╚═════╝
-
- Multi-Group Monte Carlo Transport Code
-```
-
-MGMC is a 3D multi-group Monte Carlo transport code which solves the Boltzmann
+Abeille is a 3D multi-group Monte Carlo transport code which solves the Boltzmann
 neutron transport equation for fixed-source, k-eigenvalue, and neutron noise
 problems. 
 
@@ -41,10 +27,10 @@ are saved in `.npy` files, for easy plotting in Python. Plots of the geometry
 may also be specified in the input file, and are generated when the program is
 run with the `--plot` flag. Shared memory parallelism is implemented with
 OpenMP, and is turned on by default. Distributed memory parallelism with MPI
-can be turned on at compiled time with the `-DMGMC_USE_MPI=ON` opiton
+can be turned on at compiled time with the `-DABEILLE_USE_MPI=ON` opiton
 when running cmake.
 
-In addition to solving standard k-eigenvalue and fixed-source problems, MGMC
+In addition to solving standard k-eigenvalue and fixed-source problems, Abeille
 is also able to solve neutron noise problems for macroscopic cross section
 oscillations and for vibrations of flat surfaces. The basic methods to perform
 noise transport were developed by Dr Amélie Rouchon durring her PhD [3,4].
@@ -67,45 +53,30 @@ réacteurs thermiques et rapides,” 2016.
 noise calculations in the frequency domain,” Ann Nucl Energy, vol. 102,
 pp. 465–475, 2017, doi: 10.1016/j.anucene.2016.11.035. 
 
-## Papers Using MGMC
-
-H. Belanger, D. Mancusi, and A. Zoia, “Variance Reduction Techniques for Monte
-Carlo Neutron Noise Simulations,” May 2022, PHYSOR 2022.
-
-H. Belanger, C. Larmier, D. Mancusi, and A. Zoia, “Optimization of Particle
-Tracking Methods for Stochastic Media,” May 2022, PHYSOR 2022.
-
-H. Belanger, D. Mancusi, and A. Zoia, “Exact weight cancellation in Monte Carlo
-eigenvalue transport problems,” Phys. Rev. E, vol. 104, no. 1, p. 015306, 2021,
-doi: 10.1103/physreve.104.015306. 
-
-H. Belanger, D. Mancusi, and A. Zoia, “Solving Eigenvalue Transport Problems
-with Negative Weights and Regional Cancellation,” Oct. 2021, M&C 2021,
-doi: 10.13182/m&c21-33615. 
-
 ## Install
-To build MGMC, a linux system with a C++17 compliant compiler is required
+To build Abeille, a linux system with a C++17 compliant compiler is required
 (gcc >= 7 or clang >= 6 works), along with cmake >= 3.11. A few third-party
 compile-time dependencies ([yaml-cpp](https://github.com/jbeder/yaml-cpp),
 [docopt](http://docopt.org/), [pcg](https://www.pcg-random.org),
 [ndarray](https://github.com/HunterBelanger/ndarray)) are downloaded
 and compiled automatically by CMake during the build.
 
-To build the mgmc executable, the following commands can be used:
+To build the Abeille executable, the following commands can be used:
 ```
-$ git clone https://github.com/HunterBelanger/mgmc.git
-$ cd mgmc 
+$ git clone https://github.com/HunterBelanger/abeille.git
+$ cd abeille
 $ cmake -E make_directory build
 $ cd build
 $ cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo ..
 $ cmake --build .
 ```
-This will produce an executable called `mgmc`. You can run the provided example
+This will produce an executable called `abeille`. You can run the provided example
 with the following command:
 ```
-$ ./mgmc -i ref_sqr_c5g7.yaml
+$ ./abeille -i c5g7.yaml
 ```
 
 ## Contributors
-MGMC was developed by Hunter Belanger in the framework of his Ph.D. thesis
-at the French Alternative Energies and Atomic Energy Commission (CEA).
+Abeille is based on MGMC, which was developed by Hunter Belanger in the
+framework of his Ph.D. thesis at the French Alternative Energies and
+Atomic Energy Commission (CEA).

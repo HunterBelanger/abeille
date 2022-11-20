@@ -55,7 +55,7 @@ Cell* LatticeUniverse::get_cell(std::vector<GeoLilyPad>& stack, Position r,
 
 void make_lattice_universe(YAML::Node uni_node, YAML::Node input) {
   // Get id
-  uint32_t id;
+  uint32_t id = 0;
   if (uni_node["id"] && uni_node["id"].IsScalar()) {
     id = uni_node["id"].as<uint32_t>();
   } else {
@@ -70,7 +70,7 @@ void make_lattice_universe(YAML::Node uni_node, YAML::Node input) {
   }
 
   // Get lattice
-  uint32_t lat_id;
+  uint32_t lat_id = 0;
   if (uni_node["lattice"] && uni_node["lattice"].IsScalar()) {
     lat_id = uni_node["lattice"].as<uint32_t>();
   } else {
