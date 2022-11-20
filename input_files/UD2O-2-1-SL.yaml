@@ -1,0 +1,65 @@
+materials:
+  - name: U-D2O
+    id: 1
+    total: [0.33588, 0.54628]
+    absorption: [0.011525, 0.12218]
+    fission: [0.0028172, 0.097]
+    nu: [2.5, 2.5]
+    chi: [[1., 0.],
+          [1., 0.]]
+    scatter: [[0.31980, 0.004555],
+              [0.00000, 0.42410]]
+    P1: [[0.209318324, -0.0872008782],
+         [0.000000000,  0.128248055]]
+
+surfaces:
+  - {type: xplane, x0: -929.45, boundary: vacuum,     id: 1}
+  - {type: xplane, x0:  929.45, boundary: vacuum,     id: 2}
+  - {type: yplane, y0: -50.,    boundary: reflective, id: 3}
+  - {type: yplane, y0:  50.,    boundary: reflective, id: 4}
+  - {type: zplane, z0: -50.,    boundary: reflective, id: 5}
+  - {type: zplane, z0:  50.,    boundary: reflective, id: 6}
+
+cells:
+  - {region: "+1 & -2 & +3 & -4 & +5 & -6", material: 1, id: 1}
+
+universes:
+  - {cells: [1], id: 1}
+
+root-universe: 1
+
+tallies:
+  - shape: [500, 1, 1]
+    low: [-929.45, -50., -50.]
+    hi:  [ 929.45,  50.,  50.]
+    energy-bounds: [0., 1., 2.]
+    quantity: flux
+    name: flux_UD2O-2-1-SL
+    estimator: track-length
+
+entropy:
+  shape: [200, 1, 1]
+  low: [-929.45, -50., -50.]
+  hi:  [ 929.45,  50.,  50.]
+
+sources:
+  - spatial:
+      type: box
+      low: [-929., -49., -49.]
+      hi:  [ 929.,  49.,  49.]
+    direction:
+      type: isotropic
+    energy:
+      type: mono-energetic
+      energy: 0.5
+    weight: 1.
+
+settings:
+  nparticles: 1000000
+  ngenerations: 6000
+  nignored: 1000
+  ngroups: 2
+  transport: surface-tracking
+  simulation: k-eigenvalue
+  energy-mode: multi-group
+  energy-bounds: [0, 1, 2]

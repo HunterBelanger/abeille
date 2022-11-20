@@ -1,0 +1,50 @@
+# 1 Group Pu239a Infinite medium
+# k_inf = 2.612903
+
+materials:
+  - name: Pu-239-a
+    id: 1
+    total: [0.32640]
+    absorption: [0.101184]
+    fission: [0.081600]
+    nu: [3.24]
+    chi: [[1.]]
+    scatter: [[0.225216]]
+
+surfaces:
+  - {type: xplane, x0: -5., boundary: reflective, id: 1}
+  - {type: xplane, x0:  5., boundary: reflective, id: 2}
+  - {type: yplane, y0: -5., boundary: reflective, id: 3}
+  - {type: yplane, y0:  5., boundary: reflective, id: 4}
+  - {type: zplane, z0: -5., boundary: reflective, id: 5}
+  - {type: zplane, z0:  5., boundary: reflective, id: 6}
+
+cells:
+  - {region: "+1 & -2 & +3 & -4 & +5 & -6", material: 1, name: Pu239a-box, id: 1}
+
+universes:
+  - {cells: [1], id: 1}
+
+root-universe: 1
+
+sources:
+  - spatial:
+      type: point
+      position: [0., 0., 0.]
+    direction:
+      type: isotropic
+    energy:
+      type: mono-energetic
+      energy: 0.5
+    weight: 1.
+
+settings:
+  nparticles: 1000000
+  ngenerations: 2100
+  nignored: 100
+  transport: surface-tracking
+  simulation: k-eigenvalue
+  energy-mode: multi-group
+  ngroups: 1
+  energy-bounds: [0, 1]
+

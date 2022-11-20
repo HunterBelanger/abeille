@@ -1,0 +1,46 @@
+# 1 Group Pu239a Critical Slab
+# k_inf = 1.000000
+
+materials:
+  - name: Pu-239-a
+    id: 1
+    total: [0.32640]
+    absorption: [0.101184]
+    fission: [0.081600]
+    nu: [3.24]
+    chi: [[1.]]
+    scatter: [[0.225216]]
+
+surfaces:
+  - {type: xplane, x0: -1.853722, boundary: vacuum, id: 1}
+  - {type: xplane, x0:  1.853722, boundary: vacuum, id: 2}
+
+cells:
+  - {region: "+1 & -2", material: 1, name: Pu239a-slab, id: 1}
+
+universes:
+  - {cells: [1], id: 1}
+
+root-universe: 1
+
+sources:
+  - spatial:
+      type: point
+      position: [0., 0., 0.]
+    direction:
+      type: isotropic
+    energy:
+      type: mono-energetic
+      energy: 0.5
+    weight: 1.
+
+settings:
+  nparticles: 1000000
+  ngenerations: 2100
+  nignored: 100
+  transport: surface-tracking
+  simulation: k-eigenvalue
+  energy-mode: multi-group
+  ngroups: 1
+  energy-bounds: [0, 1]
+

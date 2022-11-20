@@ -1,0 +1,43 @@
+materials:
+  - name: U-235-a
+    id: 1
+    total: [0.32640]
+    absorption: [0.078336]
+    fission: [0.065280]
+    nu: [2.7]
+    chi: [[1.]]
+    scatter: [[0.248064]]
+    P1: [[0.171052632]]
+
+surfaces:
+  - {type: zcylinder, x0: 0., y0: 0., r: 5.514296811, boundary: vacuum, id: 1}
+
+cells:
+  - {region: "-1", material: 1, id: 1}
+
+universes:
+  - {cells: [1], id: 1}
+
+root-universe: 1
+
+sources:
+  - spatial:
+      type: point
+      position: [0., 0., 0.]
+    direction:
+      type: isotropic
+    energy:
+      type: mono-energetic
+      energy: 0.5
+    weight: 1.
+
+settings:
+  nparticles: 1000000
+  ngenerations: 1050
+  nignored: 50
+  ngroups: 1
+  transport: surface-tracking
+  simulation: k-eigenvalue
+  energy-mode: multi-group
+  energy-bounds: [0, 1]
+

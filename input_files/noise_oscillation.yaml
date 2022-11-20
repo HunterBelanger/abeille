@@ -1,0 +1,181 @@
+materials:
+  - id: 1
+    name: UO2
+    color: [255,127,14]
+    total:      [0.3779, 0.55064]
+    scatter:   [[0.35128029, 0.00086471],
+                [0., 0.39276]]
+    absorption: [0.025755, 0.15788]
+    fission:    [0.0057671, 0.10622]
+    nu_prompt:  [2.576819862, 2.576819862]
+    nu_delayed: [0.013860138, 0.013860138]
+    chi:        [[1., 0.]]
+    delayed_groups:
+      probabilities: [1.]
+      constants: [0.0851]
+    group-speeds: [1.82304E7, 4.13067E5] # [cm / s]
+    
+  - id: 2
+    name: Water
+    color: [31,119,180]
+    total:      [0.25411, 1.2182]
+    absorption: [0.00079457, 0.029316]
+    fission:    [0., 0.]
+    nu:         [0., 0.]
+    chi:       [[1., 0.]]
+    scatter:   [[0.22519143, 0.028124],
+                [0., 1.188884]]
+    group-speeds: [1.82304E7, 4.13067E5] # [cm / s]
+
+
+surfaces:
+  # Surfaces for fuel pin
+  - {id: 1, type: xplane, x0: -0.3657}
+  - {id: 2, type: xplane, x0:  0.3657}
+  - {id: 3, type: yplane, y0: -0.3657}
+  - {id: 4, type: yplane, y0:  0.3657}
+
+  # Surfaces for water hole
+  - {id: 5, type: xplane, x0: -0.7}
+  - {id: 6, type: xplane, x0:  0.7}
+  - {id: 7, type: yplane, y0: -0.7}
+  - {id: 8, type: yplane, y0:  0.7}
+
+  # Surfaces for outer lattice
+  - {id: 11, type: xplane, x0: -10.79, boundary: reflective}
+  - {id: 12, type: xplane, x0:  10.79, boundary: reflective}
+  - {id: 13, type: yplane, y0: -10.79, boundary: reflective}
+  - {id: 14, type: yplane, y0:  10.79, boundary: reflective}
+  - {id: 15, type: zplane, z0: -2.00, boundary: reflective}
+  - {id: 16, type: zplane, z0:  2.00, boundary: reflective}
+
+cells:
+  - {id: 1, region: "+1 & -2 & +3 & -4", material: 1, name: fuel pin}
+  - {id: 2, region: "~(+1 & -2 & +3 & -4)", material: 2, name: cell water}
+  - {id: 3, region: "+5 & -6 & +7 & -8", material: 2, name: water hole}
+  - {id: 4, region: "+11 & -12 & +13 & -14 & +15 & -16", material: 2, name: water-blade}
+
+universes:
+  - {id: 1, cells: [1, 2]} # Pin Cell
+  - {id: 2, cells: [3]} # Wate hole
+  - {id: 3, cells: [4]} # Outer water
+  - {id: 4, lattice: 1} # Assembly
+
+lattices:
+  - id: 1
+    type: rectlinear
+    shape: [17, 17, 1]
+    pitch: [1.26, 1.26, 4.]
+    origin: [0., 0., 0.]
+    outer: 3
+    universes: [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+                1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+                1,1,1,1,1,2,1,1,2,1,1,2,1,1,1,1,1,
+                1,1,1,2,1,1,1,1,1,1,1,1,1,2,1,1,1,
+                1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+                1,1,2,1,1,2,1,1,2,1,1,2,1,1,2,1,1,
+                1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+                1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+                1,1,2,1,1,2,1,1,2,1,1,2,1,1,2,1,1,
+                1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+                1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+                1,1,2,1,1,2,1,1,2,1,1,2,1,1,2,1,1,
+                1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+                1,1,1,2,1,1,1,1,1,1,1,1,1,2,1,1,1,
+                1,1,1,1,1,2,1,1,2,1,1,2,1,1,1,1,1,
+                1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+                1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+
+root-universe: 4
+
+sources:
+  - spatial:
+      type: box
+      low: [-10.71, -10.71, -2.00]
+      hi: [10.71, 10.71, 2.00]
+    direction:
+      type: isotropic
+    energy:
+      type: mono-energetic
+      energy: 0.5
+    weight: 1.
+
+cancelator:
+  type: approximate
+  shape: [170, 170, 170]
+  low: [-10.71, -10.71, -2.00]
+  hi: [10.71, 10.71, 2.00]
+
+noise-sources:
+  - type: square-oscillation
+    low: [2.1543, -2.8857, -2.00]
+    hi: [2.8857, -2.1543, 2.00]
+    angular-frequency: 6.28318531 # 2 pi
+    epsilon-total: 0.041
+    epsilon-fission: 0.021
+    epsilon-scatter: 0.034
+
+entropy:
+  low: [-10.71, -10.71, -2.00]
+  hi: [10.71, 10.71, 2.00]
+  shape: [17, 17, 1]
+
+tallies:
+  - low: [1.5, -3.5, -2.]
+    hi: [3.5, -1.5, 2.]
+    shape: [75, 75, 1]
+    energy-bounds: [0., 1., 2.]
+    estimator: source
+    quantity: real-source
+    name: real-noise-source
+
+  - low: [1.5, -3.5, -2.]
+    hi: [3.5, -1.5, 2.]
+    shape: [75, 75, 1]
+    energy-bounds: [0., 1., 2.]
+    estimator: source
+    quantity: img-source
+    name: imag-noise-source
+
+  - low: [-10.79, -10.79, -2.00]
+    hi: [10.79, 10.79, 2.00]
+    shape: [138, 138, 1]
+    energy-bounds: [0., 1., 2.]
+    quantity: real-flux
+    estimator: track-length
+    name: real-flux
+
+  - low: [-10.79, -10.79, -2.00]
+    hi: [10.79, 10.79, 2.00]
+    shape: [138, 138, 1]
+    energy-bounds: [0., 1., 2.]
+    quantity: img-flux
+    estimator: track-length
+    name: imag-flux
+
+settings:
+  nparticles: 100000
+  ngenerations: 2000
+  nignored: 10
+  nskip: 3
+  ngroups: 2
+  transport: surface-tracking
+  #simulation: k-eigenvalue
+  simulation: noise 
+  noise-cancellation: true
+  inner-generations: true
+  normalize-noise-source: true
+  #max-run-time: 5. # Minutes
+  noise-angular-frequency: 6.28318531
+  keff: 0.99916
+  energy-mode: multi-group
+  energy-bounds: [0., 1., 2.]
+  
+plots:
+  - type: slice
+    basis: xy
+    resolution: [1000, 1000]
+    origin: [0., 0., 0.]
+    dimensions: [21.58, 21.58] 
+    color: material
+    name: noise_assembly_plot
