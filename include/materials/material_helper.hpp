@@ -79,14 +79,14 @@ class MaterialHelper {
   double Ew(double E, bool noise = false) {
     if (E_ != E) get_energy_index(E);
 
-    double xs = 0.;
+    double Ew_ = 0.;
 
     if (noise) {
       double p_speed = speed(E, index[0]);
-      xs += settings::eta * settings::w_noise / p_speed;
+      Ew_ += settings::eta * settings::w_noise / p_speed;
     }
 
-    return xs;
+    return Ew_;
   }
 
   double Ea(double E) {
@@ -162,8 +162,8 @@ class MaterialHelper {
     return Emt_;
   }
 
-  std::pair<const std::shared_ptr<Nuclide>&, MicroXSs> sample_nuclide(
-      double E, pcg32& rng, bool noise = false) {
+  std::pair<const Nuclide*, MicroXSs> sample_nuclide(double E, pcg32& rng,
+                                                     bool noise = false) {
     if (E_ != E) {
       get_energy_index(E);
     }
@@ -176,7 +176,7 @@ class MaterialHelper {
 
     int comp_ind = RNG::discrete(rng, xs);
     size_t nuclide_index = index[comp_ind];
-    const std::shared_ptr<Nuclide>& nuclide = composition(comp_ind).nuclide;
+    const Nuclide* nuclide = composition(comp_ind).nuclide.get();
 
     // Get MicroXSs for use latter on
     MicroXSs xss;
@@ -200,8 +200,8 @@ class MaterialHelper {
     return {nuclide, xss};
   }
 
-  std::pair<const std::shared_ptr<Nuclide>&, MicroXSs>
-  sample_branchless_nuclide(double E, pcg32& rng, BranchlessReaction reaction) {
+  std::pair<const Nuclide*, MicroXSs> sample_branchless_nuclide(
+      double E, pcg32& rng, BranchlessReaction reaction) {
     if (E_ != E) {
       get_energy_index(E);
     }
@@ -226,7 +226,7 @@ class MaterialHelper {
 
     int comp_ind = RNG::discrete(rng, xs);
     size_t nuclide_index = index[comp_ind];
-    const std::shared_ptr<Nuclide>& nuclide = composition(comp_ind).nuclide;
+    const Nuclide* nuclide = composition(comp_ind).nuclide.get();
 
     // Get MicroXSs for use latter on
     MicroXSs xss;

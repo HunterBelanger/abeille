@@ -112,7 +112,7 @@ void Transporter::branchless_collision(Particle& p, MaterialHelper& mat,
 void Transporter::branchless_collision_iso(Particle& p, MaterialHelper& mat,
                                            ThreadLocalScores& thread_scores) {
   // Sample a nuclide for the collision
-  std::pair<const std::shared_ptr<Nuclide>&, MicroXSs> nuclide_info =
+  std::pair<const Nuclide*, MicroXSs> nuclide_info =
       mat.sample_nuclide(p.E(), p.rng, false);
   const Nuclide& nuclide = *nuclide_info.first;
   const MicroXSs& microxs = nuclide_info.second;
@@ -204,9 +204,9 @@ void Transporter::branchless_collision_mat(Particle& p, MaterialHelper& mat,
     reaction = MaterialHelper::BranchlessReaction::SCATTER;
 
   // Sample nuclide based on reaction type
-  std::pair<const std::shared_ptr<Nuclide>&, MicroXSs> nuclide_info =
+  std::pair<const Nuclide*, MicroXSs> nuclide_info =
       mat.sample_branchless_nuclide(p.E(), p.rng, reaction);
-  const std::shared_ptr<Nuclide>& nuclide = nuclide_info.first;
+  const Nuclide* nuclide = nuclide_info.first;
   MicroXSs microxs = nuclide_info.second;
 
   // Score kabs
@@ -278,9 +278,9 @@ void Transporter::branching_collision(Particle& p, MaterialHelper& mat,
                                       ThreadLocalScores& thread_scores,
                                       bool noise) {
   // Sample a nuclide for the collision
-  std::pair<const std::shared_ptr<Nuclide>&, MicroXSs> nuclide_info =
+  std::pair<const Nuclide*, MicroXSs> nuclide_info =
       mat.sample_nuclide(p.E(), p.rng, noise);
-  const std::shared_ptr<Nuclide>& nuclide = nuclide_info.first;
+  const Nuclide* nuclide = nuclide_info.first;
   MicroXSs microxs = nuclide_info.second;
 
   // Score kabs

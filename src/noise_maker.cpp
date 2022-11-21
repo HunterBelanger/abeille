@@ -191,12 +191,12 @@ void NoiseMaker::sample_noise_copy(Particle& p, MaterialHelper& mat,
 }
 
 void NoiseMaker::sample_vibration_noise_fission(
-    Particle& p, const std::shared_ptr<Nuclide>& nuclide,
-    const MicroXSs& microxs, const std::complex<double>& dN_N,
-    const double Etfake_Et, const double keff, const double w) const {
+    Particle& p, const Nuclide& nuclide, const MicroXSs& microxs,
+    const std::complex<double>& dN_N, const double Etfake_Et, const double keff,
+    const double w) const {
   // First, check if the nuclide is fissile. If it isn't, we
   // just return.
-  if (nuclide->fissile() == false) return;
+  if (nuclide.fissile() == false) return;
 
   // Now we get the number of noise neutrons to produce.
   const double k_abs = microxs.nu_total * microxs.fission / microxs.total;
@@ -207,8 +207,8 @@ void NoiseMaker::sample_vibration_noise_fission(
   const double P_delayed = microxs.nu_delayed / microxs.nu_total;
 
   for (int n = 0; n < n_new; n++) {
-    auto finfo = nuclide->sample_fission(p.E(), p.u(), microxs.energy_index,
-                                         P_delayed, p.rng);
+    auto finfo = nuclide.sample_fission(p.E(), p.u(), microxs.energy_index,
+                                        P_delayed, p.rng);
 
     // Sample a banked noise particle from fission.
     BankedParticle bnp{p.r(),
@@ -248,12 +248,12 @@ void NoiseMaker::sample_vibration_noise_fission(
 }
 
 void NoiseMaker::sample_vibration_noise_scatter(
-    Particle& p, const std::shared_ptr<Nuclide>& nuclide,
-    const MicroXSs& microxs, const std::complex<double>& dN_N,
-    const double Etfake_Et, const double P_scatter) const {
+    Particle& p, const Nuclide& nuclide, const MicroXSs& microxs,
+    const std::complex<double>& dN_N, const double Etfake_Et,
+    const double P_scatter) const {
   // First, sample the scatter info from the nuclide
   ScatterInfo sinfo =
-      nuclide->sample_scatter(p.E(), p.u(), microxs.energy_index, p.rng);
+      nuclide.sample_scatter(p.E(), p.u(), microxs.energy_index, p.rng);
 
   // Make the noise particle without weights
   BankedParticle p_noise{p.r(),
@@ -318,25 +318,27 @@ void NoiseMaker::sample_oscillation_noise_source(Particle& p,
 
   // We now sample a nuclide for sampling the source particles.
   auto nuclide_data = mat.sample_nuclide(p.E(), p.rng);
+  const Nuclide* nuclide = nuclide_data.first;
   const MicroXSs& microxs = nuclide_data.second;
-  const std::shared_ptr<Nuclide>& nuclide = nuclide_data.first;
 
-  this->sample_oscillation_noise_fission(p, nuclide, microxs, keff, w);
+  this->sample_oscillation_noise_fission(p, *nuclide, microxs, keff, w);
 
   // Now we calculate the scatter probability to modify the weight
   // of the scatter noise source. This is the "implicit capture" correciton,
   // needed because we forced the sampling of the fission noise source.
   const double P_scatter = 1. - (microxs.absorption / microxs.total);
 
-  this->sample_oscillation_noise_scatter(p, nuclide, microxs, P_scatter, w);
+  this->sample_oscillation_noise_scatter(p, *nuclide, microxs, P_scatter, w);
 }
 
-void NoiseMaker::sample_oscillation_noise_scatter(
-    Particle& p, const std::shared_ptr<Nuclide>& nuclide,
-    const MicroXSs& microxs, const double P_scatter, const double w) const {
+void NoiseMaker::sample_oscillation_noise_scatter(Particle& p,
+                                                  const Nuclide& nuclide,
+                                                  const MicroXSs& microxs,
+                                                  const double P_scatter,
+                                                  const double w) const {
   // First, sample the scatter info from the nuclide
   ScatterInfo sinfo =
-      nuclide->sample_scatter(p.E(), p.u(), microxs.energy_index, p.rng);
+      nuclide.sample_scatter(p.E(), p.u(), microxs.energy_index, p.rng);
 
   // Make the noise particle without weights
   BankedParticle p_noise{p.r(),
@@ -386,12 +388,14 @@ void NoiseMaker::sample_oscillation_noise_scatter(
   p.add_noise_particle(p_noise);
 }
 
-void NoiseMaker::sample_oscillation_noise_fission(
-    Particle& p, const std::shared_ptr<Nuclide> nuclide,
-    const MicroXSs& microxs, const double keff, const double w) const {
+void NoiseMaker::sample_oscillation_noise_fission(Particle& p,
+                                                  const Nuclide& nuclide,
+                                                  const MicroXSs& microxs,
+                                                  const double keff,
+                                                  const double w) const {
   // First, check if the nuclide is fissile. If it isn't, we
   // just return.
-  if (nuclide->fissile() == false) return;
+  if (nuclide.fissile() == false) return;
 
   // Now we get the number of noise neutrons to produce.
   const double k_abs = microxs.nu_total * microxs.fission / microxs.total;
@@ -410,8 +414,8 @@ void NoiseMaker::sample_oscillation_noise_fission(
   }
 
   for (int i = 0; i < n_new; i++) {
-    auto finfo = nuclide->sample_fission(p.E(), p.u(), microxs.energy_index,
-                                         P_delayed, p.rng);
+    auto finfo = nuclide.sample_fission(p.E(), p.u(), microxs.energy_index,
+                                        P_delayed, p.rng);
 
     BankedParticle bnp{p.r(),
                        finfo.direction,
@@ -472,8 +476,8 @@ void NoiseMaker::sample_vibration_noise_source(Particle& p, MaterialHelper& mat,
 
   // We now sample a nuclide from this fake material.
   auto nuclide_data = fake_mat.sample_nuclide(p.E(), p.rng);
+  const Nuclide* nuclide = nuclide_data.first;
   const MicroXSs& microxs = nuclide_data.second;
-  const std::shared_ptr<Nuclide>& nuclide = nuclide_data.first;
   // Id of sampled nuclide
   const uint32_t nuclide_id = nuclide->id();
   // Concentration of sampled nuclide in fake material
@@ -487,7 +491,7 @@ void NoiseMaker::sample_vibration_noise_source(Particle& p, MaterialHelper& mat,
   const double Etfake_Et = fake_mat.Et(p.E()) / mat.Et(p.E());
 
   // Sample the fission noise source particles
-  this->sample_vibration_noise_fission(p, nuclide, microxs, dN_N, Etfake_Et,
+  this->sample_vibration_noise_fission(p, *nuclide, microxs, dN_N, Etfake_Et,
                                        keff, w);
 
   // Now we calculate the scatter probability to modify the weight
@@ -496,6 +500,6 @@ void NoiseMaker::sample_vibration_noise_source(Particle& p, MaterialHelper& mat,
   const double P_scatter = 1. - (microxs.absorption / microxs.total);
 
   // Sample the scatter noise source particles
-  this->sample_vibration_noise_scatter(p, nuclide, microxs, dN_N, Etfake_Et,
+  this->sample_vibration_noise_scatter(p, *nuclide, microxs, dN_N, Etfake_Et,
                                        P_scatter);
 }

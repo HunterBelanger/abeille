@@ -80,14 +80,12 @@ class NoiseMaker {
 
   void sample_vibration_noise_source(Particle& p, MaterialHelper& mat,
                                      const double keff, const double w) const;
-  void sample_vibration_noise_fission(Particle& p,
-                                      const std::shared_ptr<Nuclide>& nuclide,
+  void sample_vibration_noise_fission(Particle& p, const Nuclide& nuclide,
                                       const MicroXSs& microxs,
                                       const std::complex<double>& dN_N,
                                       const double Etfake_Et, const double keff,
                                       const double w) const;
-  void sample_vibration_noise_scatter(Particle& p,
-                                      const std::shared_ptr<Nuclide>& nuclide,
+  void sample_vibration_noise_scatter(Particle& p, const Nuclide& nuclide,
                                       const MicroXSs& microxs,
                                       const std::complex<double>& dN_N,
                                       const double Etfake_Et,
@@ -95,13 +93,11 @@ class NoiseMaker {
 
   void sample_oscillation_noise_source(Particle& p, MaterialHelper& mat,
                                        const double keff, const double w) const;
-  void sample_oscillation_noise_fission(Particle& p,
-                                        const std::shared_ptr<Nuclide> nuclide,
+  void sample_oscillation_noise_fission(Particle& p, const Nuclide& nuclide,
                                         const MicroXSs& microxs,
                                         const double keff,
                                         const double w) const;
-  void sample_oscillation_noise_scatter(Particle& p,
-                                        const std::shared_ptr<Nuclide>& nuclide,
+  void sample_oscillation_noise_scatter(Particle& p, const Nuclide& nuclide,
                                         const MicroXSs& microxs,
                                         const double P_scatter,
                                         const double w) const;
