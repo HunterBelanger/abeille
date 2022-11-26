@@ -41,7 +41,6 @@ set(ABEILLE_SOURCE_FILES ${ABEILLE_SOURCE_FILES}
   src/parser.cpp
   src/simulation.cpp
   src/slice_plot.cpp
-  src/pixel.cpp
   src/plotter.cpp
   src/hex_lattice.cpp
   src/rect_lattice.cpp
