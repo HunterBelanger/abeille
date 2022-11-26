@@ -48,6 +48,11 @@ extern std::map<uint32_t, Pixel> material_id_to_color;
 // Function to begin plotting system
 void plotter(std::string input_fname);
 
+#ifdef ABEILLE_GUI_PLOT
+// Function to start the GUI plotter
+void gui();
+#endif
+
 // Function to begin system to generate a slice plot
 // of a selected geometry file
 void slice_plotter(YAML::Node plot_node);

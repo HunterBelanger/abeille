@@ -185,4 +185,12 @@ void slice_plotter(YAML::Node plot_node) {
   plot.write();
 }
 
+#ifdef ABEILLE_GUI_PLOT
+void gui() {
+  Output::instance()->write(" Staring GUI plotter...\n");
+
+  // TODO
+}
+#endif
+
 }  // namespace plotter

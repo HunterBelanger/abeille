@@ -3,6 +3,7 @@ project(abeille CXX)
 
 option(ABEILLE_USE_OMP "Compile Abeille with OpenMP for shared memory parallelism" ON)
 option(ABEILLE_USE_MPI "Compile Abeille with MPI for distributed memory parallelism" OFF)
+option(ABEILLE_GUI_PLOT "Compile Abeille with support for the GUI plotter" ON)
 
 # Get FetchContent for downloading dependencies
 include(FetchContent)
@@ -55,6 +56,17 @@ set(NDARRAY_INSTALL OFF CACHE BOOL "Install NDArray")
 FetchContent_MakeAvailable(NDArray)
 
 #===============================================================================
+# Get ImApp
+if(ABEILLE_GUI_PLOT)
+  message(STATUS "Downloading ImApp")
+  FetchContent_Declare(ImApp
+    GIT_REPOSITORY https://github.com/HunterBelanger/ImApp.git
+    GIT_TAG        master
+  )
+  FetchContent_MakeAvailable(ImApp)
+endif()
+
+#===============================================================================
 # Get PCG-C++
 message(STATUS "Downloading PCG-C++")
 FetchContent_Declare(PCG_CXX
@@ -100,6 +112,11 @@ if(ABEILLE_USE_MPI)
     target_link_libraries(abeille PUBLIC MPI::MPI_CXX)
     target_compile_definitions(abeille PUBLIC ABEILLE_USE_MPI)
   endif()
+endif()
+
+if(ABEILLE_GUI_PLOT)
+  target_link_libraries(abeille PUBLIC ImApp::ImApp)
+  target_compile_definitions(abeille PUBLIC ABEILLE_GUI_PLOT)
 endif()
 
 #===============================================================================
