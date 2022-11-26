@@ -36,6 +36,11 @@
 #include <utils/output.hpp>
 #include <utils/parser.hpp>
 
+#ifdef ABEILLE_GUI_PLOT
+#include <ImApp/imapp.hpp>
+#include <plotting/gui_plotter.hpp>
+#endif
+
 namespace plotter {
 // Maps for plotting colors
 std::map<uint32_t, Pixel> cell_id_to_color;
@@ -189,7 +194,19 @@ void slice_plotter(YAML::Node plot_node) {
 void gui() {
   Output::instance()->write(" Staring GUI plotter...\n");
 
-  // TODO
+  try {
+    ImApp::App guiplotter(1920, 1080, "Abeille Geometry Plotter");
+    // Viewports don't always work on Linux, and cant lead to a segfault.
+    // Do to this, I don't have it enabled here.
+    //guiplotter.enable_viewports();
+    guiplotter.enable_docking();
+    guiplotter.push_layer(std::make_unique<GuiPlotter>());
+    // TODO Add Icon
+    guiplotter.run();
+  } catch (std::exception& error) {
+    Output::instance()->write_error(error.what());
+    std::exit(1); 
+  }
 }
 #endif
 
