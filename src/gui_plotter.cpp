@@ -101,9 +101,9 @@ void GuiPlotter::render_controls() {
   // Origin
   ImGui::Separator();
   ImGui::Text("Plot Origin");
-  if(ImGui::InputDouble("X [cm] :", &ox, 0., 0., "%E")) must_rerender = true;
-  if(ImGui::InputDouble("Y [cm] :", &oy, 0., 0., "%E")) must_rerender = true;
-  if(ImGui::InputDouble("Z [cm] :", &oz, 0., 0., "%E")) must_rerender = true;
+  if(ImGui::InputDouble("X [cm]", &ox, 0., 0.)) must_rerender = true;
+  if(ImGui::InputDouble("Y [cm]", &oy, 0., 0.)) must_rerender = true;
+  if(ImGui::InputDouble("Z [cm]", &oz, 0., 0.)) must_rerender = true;
 
   // Physical Dimensions of plot
   ImGui::Separator();
@@ -111,7 +111,7 @@ void GuiPlotter::render_controls() {
   ImGui::RadioButton("Width", &adjust_w_or_h, 0); ImGui::SameLine();
   ImGui::RadioButton("Height", &adjust_w_or_h, 1);
   if (adjust_w_or_h == 0) {
-    if (ImGui::InputDouble("Width [cm] :", &width, 0., 0., "%E")) {
+    if (ImGui::InputDouble("Width [cm]", &width, 0., 0.)) {
       must_rerender = true;
 
       if (width < 1.E-6) width = 1.E-6;
@@ -121,7 +121,7 @@ void GuiPlotter::render_controls() {
       height = static_cast<double>(image.height()) * dist_per_pixel;
     }
   } else if(adjust_w_or_h == 1) {
-    if(ImGui::InputDouble("Height [cm] :", &height, 0., 0., "%E")) {
+    if(ImGui::InputDouble("Height [cm]", &height, 0., 0.)) {
       must_rerender = true; 
       
       if (height < 1.E-6) height = 1.E-6;
@@ -131,7 +131,7 @@ void GuiPlotter::render_controls() {
       width = static_cast<double>(image.width()) * dist_per_pixel;
     }
   }
-  ImGui::Text("Width [cm]: %E, Height [cm]: %E", width, height);
+  ImGui::Text("Width [cm]: %f, Height [cm]: %f", width, height);
 
   // Slice Basis
   ImGui::Separator();
