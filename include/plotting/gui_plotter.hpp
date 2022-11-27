@@ -4,17 +4,53 @@
 
 #include <ImApp/imapp.hpp>
 
+#include <geometry/cell.hpp>
+#include <utils/rng.hpp>
+#include <utils/position.hpp>
+#include <utils/direction.hpp>
+
+#include <map>
+#include <mutex>
+
 namespace plotter {
   
   class GuiPlotter : public ImApp::Layer {
     public:
-      GuiPlotter() = default;
+      GuiPlotter();
 
       void render() override final;
 
     private:
       void render_viewport();
       void render_controls();
+
+      ImApp::Pixel get_color(::Cell* cell);
+      ImApp::Pixel get_random_color();
+
+      Direction get_tracking_direction() const;
+      Position get_start_position(uint64_t i) const;
+      Position get_pixel_position(uint64_t i, uint64_t j) const;
+
+      void render_image();
+
+      enum Basis : int { XY=0, XZ=1, YZ=2 };
+      enum ColorBy : int { Cell=0, Material=1 };
+
+      // Maps for colors from plotter.hpp
+      std::map<uint32_t, ImApp::Pixel> cell_id_to_color;
+      std::map<uint32_t, ImApp::Pixel> material_id_to_color;
+      ImApp::Image image;
+      std::mutex create_color_mutex;
+      int adjust_w_or_h;
+      double height, width; // Width of image in physical space ([cm]).
+      double ox, oy, oz;
+      double dist_per_pixel;
+      ImApp::Pixel background;
+      pcg32 rng;
+      ColorBy colorby;
+      Basis basis;
+      bool must_rerender;
+      bool outline_boundaries;
   };
 
 }

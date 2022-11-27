@@ -144,7 +144,7 @@ int main(int argc, char** argv) {
         // Begin plotting system
 #ifdef ABEILLE_GUI_PLOT
         if (args["--gui-plot"].asBool()) {
-          plotter::gui();
+          plotter::gui(input_fname);
         } else {
           plotter::plotter(input_fname);
         }
