@@ -29,6 +29,8 @@ namespace plotter {
 
       Direction get_tracking_direction() const;
       Position get_start_position(uint64_t i) const;
+      Direction get_comp_tracking_direction() const;
+      Position get_comp_start_position(uint64_t j) const;
       Position get_pixel_position(uint64_t i, uint64_t j) const;
 
       void render_image();

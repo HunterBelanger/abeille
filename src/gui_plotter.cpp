@@ -63,8 +63,9 @@ void GuiPlotter::render_viewport() {
   
   // First, get the window size. If the size doesn't match the current
   // image size, we must set must_rerender to true. 
-  std::uint32_t wwidth = static_cast<std::uint32_t>(ImGui::GetWindowWidth());
-  std::uint32_t wheight = static_cast<std::uint32_t>(ImGui::GetWindowHeight());
+  ImVec2 size = ImGui::GetContentRegionAvail();
+  std::uint32_t wwidth = static_cast<std::uint32_t>(size[0]);
+  std::uint32_t wheight = static_cast<std::uint32_t>(size[1]);
   if ((wwidth != image.width()) ||
       (wheight != image.height())) {
     image.resize(wheight, wwidth);
@@ -110,17 +111,21 @@ void GuiPlotter::render_controls() {
   ImGui::RadioButton("Width", &adjust_w_or_h, 0); ImGui::SameLine();
   ImGui::RadioButton("Height", &adjust_w_or_h, 1);
   if (adjust_w_or_h == 0) {
-    if (ImGui::InputDouble("Width [cm] :", &width, 1.E-6, 1.E32, "%E")) {
+    if (ImGui::InputDouble("Width [cm] :", &width, 0., 0., "%E")) {
       must_rerender = true;
+
+      if (width < 1.E-6) width = 1.E-6;
 
       // Must recalculate height
       dist_per_pixel = width / static_cast<double>(image.width());
       height = static_cast<double>(image.height()) * dist_per_pixel;
     }
   } else if(adjust_w_or_h == 1) {
-    if(ImGui::InputDouble("Height [cm] :", &height, 1.E-6, 1.E32, "%E")) {
+    if(ImGui::InputDouble("Height [cm] :", &height, 0., 0., "%E")) {
       must_rerender = true; 
       
+      if (height < 1.E-6) height = 1.E-6;
+
       // Must recalculate width
       dist_per_pixel = height / static_cast<double>(image.height());
       width = static_cast<double>(image.width()) * dist_per_pixel;
@@ -150,6 +155,7 @@ void GuiPlotter::render_controls() {
 }
 
 void GuiPlotter::render_image() {
+  {
   // Get the tracking direction
   const Direction u = this->get_tracking_direction();
 
@@ -207,6 +213,60 @@ void GuiPlotter::render_image() {
       }
     }  // while j < plot_width_
   }    // For i which is parallel
+  }
+  
+  if (outline_boundaries) {
+    // Get the tracking direction
+    const Direction u = this->get_comp_tracking_direction();
+
+    // Go through each pixel
+#ifdef _OPENMP
+#pragma omp parallel for schedule(dynamic)
+#endif
+    for (uint32_t j = 0; j < image.width(); j++) {
+      Position strt = get_comp_start_position(j);
+
+      // Initalize the tracker
+      Tracker trkr(strt, u);
+
+      uint32_t i = 0;
+      while (i < image.height()) {
+        // Get the boundary
+        auto bound = trkr.get_nearest_boundary();
+
+        // Get the number of pixels till the boundary
+        const double pixels_to_bound = bound.distance / dist_per_pixel;
+        uint32_t npixels = static_cast<uint32_t>(std::round(pixels_to_bound));
+        if (npixels > (image.height() - i) || bound.distance == INF) {
+          npixels = image.height() - i;
+        }
+        const double npixels_dist = static_cast<double>(npixels) * dist_per_pixel;
+
+        // Set all pixels
+        for (uint32_t p = 0; p < npixels; p++) {
+          if (i >= image.height()) break;
+          if (npixels > 0 &&
+              (p == npixels-1 || i == image.height()-1)) {
+            image.at(i, j) = ImApp::Pixel(0, 0, 0);
+          } 
+          i++;
+        }
+        if (i >= image.height()) break;
+
+        // Cross boundary, update cell, and get new pixel
+        if (pixels_to_bound - static_cast<double>(npixels) < 0.5) {
+          trkr.move(npixels_dist + dist_per_pixel);
+        } else {
+          trkr.move(npixels_dist);
+        }
+        trkr.restart_get_current();
+        if (pixels_to_bound - static_cast<double>(npixels) < 0.5) {
+          if (i >= image.height()) break;
+          i++;
+        }
+      }  // while i < image.height
+    }    // For j which is parallel
+  }
 }
 
 ImApp::Pixel GuiPlotter::get_random_color() {
@@ -271,6 +331,23 @@ Direction GuiPlotter::get_tracking_direction() const {
   return Direction(1., 0., 0.);
 }
 
+Direction GuiPlotter::get_comp_tracking_direction() const {
+  switch (basis) {
+    case Basis::XY:
+      return Direction(1., 0., 0.);
+      break;
+    case Basis::YZ:
+      return Direction(0., 1., 0.);
+      break;
+    case Basis::XZ:
+      return Direction(1., 0., 0.);
+      break;
+  }
+
+  // NEVER GETS HERE
+  return Direction(1., 0., 0.);
+}
+
 Position GuiPlotter::get_start_position(uint64_t i) const {
   // Make sure indicies are valid. i goes down so is height, j goes
   // across so is width
@@ -321,6 +398,62 @@ Position GuiPlotter::get_start_position(uint64_t i) const {
     // Get coordinate of pixel
     const double x = (static_cast<double>(i) + 0.5) * dx + x_low;
     const double z = z_low;
+
+    // Return coordinate
+    return {x, oy, z};
+  }
+}
+
+Position GuiPlotter::get_comp_start_position(uint64_t j) const {
+  // Make sure indicies are valid. i goes down so is height, j goes
+  // across so is width
+  if (j >= image.width()) {
+    std::string mssg = "Trying to deffine invalid pixel for plot.";
+    fatal_error(mssg, __FILE__, __LINE__);
+  }
+
+  if (basis == Basis::XY) {
+    // x is i going down, j is y going across
+    // First get height and width of a pixel
+    const double dy = width / static_cast<double>(image.width());
+
+    // Get upper corner off plot
+    const double x_low = ox - (0.5 * height);
+    const double y_low = oy - (0.5 * width);
+
+    // Get coordinate of pixel
+    const double x = x_low;
+    const double y = (static_cast<double>(j) + 0.5) * dy + y_low;
+
+    // Return coordinate
+    return {x, y, oz};
+  } else if (basis == Basis::YZ) {
+    // y is i going down, j is z going across
+    // First get height and width of a pixel
+    const double dz = width / static_cast<double>(image.width());
+
+    // Get upper corner off plot
+    const double y_low = oy - (0.5 * height);
+    const double z_low = oz - (0.5 * width);
+
+    // Get coordinate of pixel
+    const double y = y_low;
+    const double z = (static_cast<double>(j) + 0.5) * dz + z_low;
+
+    // Return coordinate
+    return {ox, y, z};
+  } else {
+    // x is i going down, j is z going across
+    // First get height and width of a pixel
+    const double dz = width / static_cast<double>(image.width());
+
+    // Get upper corner off plot
+    const double x_low = ox - (0.5 * height);
+    const double z_low = oz - (0.5 * width);
+
+    // Get coordinate of pixel
+    const double x = x_low;
+    const double z = (static_cast<double>(j) + 0.5) * dz + z_low;
 
     // Return coordinate
     return {x, oy, z};
