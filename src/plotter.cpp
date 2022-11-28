@@ -207,9 +207,9 @@ void gui(const std::string& input_fname) {
 
   try {
     ImApp::App guiplotter(1920, 1080, "Abeille Geometry Plotter");
-    // Viewports don't always work on Linux, and cant lead to a segfault.
-    // Do to this, I don't have it enabled here.
-    //guiplotter.enable_viewports();
+    // Viewports don't always work well on Linux.
+    // Might want to disable this at some point.
+    guiplotter.enable_viewports();
     guiplotter.enable_docking();
     guiplotter.push_layer(std::make_unique<GuiPlotter>());
     // TODO Add Icon
