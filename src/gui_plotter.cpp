@@ -141,7 +141,7 @@ void GuiPlotter::render_viewport() {
 
   // Now we get the mouse position, so the user can identify cells
   // and materials
-  if (/*ImGui::IsWindowHovered() &&*/ !ImGui::IsMouseDragging(0)) {
+  if (ImGui::IsWindowHovered() && !ImGui::IsMouseDragging(0)) {
     // Get the new mouse coordinates in screen space (pixels)
     const ImVec2 mouse_pos = ImGui::GetMousePos();
 
@@ -194,6 +194,39 @@ void GuiPlotter::render_viewport() {
       mcell = mtrkr.cell();
       mmaterial = mtrkr.material();
     }
+  }
+
+  // Capture a right-click to bring up color changer
+  if (ImGui::IsWindowHovered() && ImGui::IsMouseClicked(1) && mcell)
+    ImGui::OpenPopup("Select Color");
+  if (ImGui::BeginPopup("Select Color")) {
+    ImApp::Pixel color = get_color(mcell);
+    ImVec4 fcolor(static_cast<float>(color.r()) / 255.f,
+                  static_cast<float>(color.g()) / 255.f,
+                  static_cast<float>(color.b()) / 255.f,
+                  static_cast<float>(color.a()) / 255.f);
+
+    if (colorby == ColorBy::Material) {
+      ImGui::Text("Cell ID: %i", mcell->id());
+      ImGui::Text("Cell Name: %s", mcell->name().data());
+    } else {
+      ImGui::Text("Material ID: %i", mmaterial->id());
+      ImGui::Text("Material Name: %s", mmaterial->name().data()); 
+    }
+
+    if (ImGui::ColorEdit3("", reinterpret_cast<float*>(&fcolor))) {
+      color.r() = static_cast<uint8_t>(fcolor.x * 255.f); 
+      color.g() = static_cast<uint8_t>(fcolor.y * 255.f);
+      color.b() = static_cast<uint8_t>(fcolor.z * 255.f);
+      
+      if (colorby == ColorBy::Material)
+        material_id_to_color[mmaterial->id()] = color;
+      else
+        cell_id_to_color[mcell->id()] = color;
+
+      must_rerender = true;
+    }
+    ImGui::EndPopup();
   }
 
   ImGui::End();
@@ -259,19 +292,44 @@ void GuiPlotter::render_controls() {
   // Mouse Position
   ImGui::Separator();
   ImGui::Text("Mouse Position: (%f, %f, %f)", mx, my, mz);
+  ImApp::Pixel color = get_color(mcell);
+  ImVec4 fcolor(static_cast<float>(color.r()) / 255.f,
+                static_cast<float>(color.g()) / 255.f,
+                static_cast<float>(color.b()) / 255.f,
+                static_cast<float>(color.a()) / 255.f);
+
   if (colorby == ColorBy::Cell) {
     if (!mcell) {
       ImGui::Text("Cell for given position is not defined."); 
     } else {
-      ImGui::Text("Cell Name: %s", mcell->name().data());
       ImGui::Text("Cell ID: %i", mcell->id());
+      ImGui::Text("Cell Name: %s", mcell->name().data());
+      if (ImGui::ColorEdit3("", reinterpret_cast<float*>(&fcolor))) {
+        color.r() = static_cast<uint8_t>(fcolor.x * 255.f); 
+        color.g() = static_cast<uint8_t>(fcolor.y * 255.f);
+        color.b() = static_cast<uint8_t>(fcolor.z * 255.f);
+
+        cell_id_to_color[mcell->id()] = color;
+
+        must_rerender = true;
+      }
     }
   } else {
    if (!mmaterial) {
       ImGui::Text("Material for given position is not defined."); 
     } else {
-      ImGui::Text("Material Name: %s", mmaterial->name().data());
       ImGui::Text("Material ID: %i", mmaterial->id());
+      ImGui::Text("Material Name: %s", mmaterial->name().data());
+
+      if (ImGui::ColorEdit3("", reinterpret_cast<float*>(&fcolor))) {
+        color.r() = static_cast<uint8_t>(fcolor.x * 255.f); 
+        color.g() = static_cast<uint8_t>(fcolor.y * 255.f);
+        color.b() = static_cast<uint8_t>(fcolor.z * 255.f);
+
+        material_id_to_color[mmaterial->id()] = color;
+
+        must_rerender = true;
+      }
     }
   }
 
