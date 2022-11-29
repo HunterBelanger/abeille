@@ -156,7 +156,7 @@ bool Cell::is_inside_complex(const Position& r, const Direction& u,
 
 uint32_t Cell::id() const { return id_; }
 
-std::string Cell::name() const { return name_; }
+const std::string& Cell::name() const { return name_; }
 
 //============================================================================
 // Non-Member functions

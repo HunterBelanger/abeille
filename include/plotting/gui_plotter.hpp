@@ -45,7 +45,10 @@ namespace plotter {
       std::mutex create_color_mutex;
       int adjust_w_or_h;
       double height, width; // Width of image in physical space ([cm]).
-      double ox, oy, oz;
+      double ox, oy, oz; // Plot origin
+      double mx, my, mz; // Mouse position
+      ::Cell* mcell; // Mouse cell
+      ::Material* mmaterial; // Mouse material
       double dist_per_pixel;
       ImApp::Pixel background;
       pcg32 rng;

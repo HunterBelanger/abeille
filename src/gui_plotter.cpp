@@ -19,6 +19,8 @@ GuiPlotter::GuiPlotter():
  height(10.),
  width(10.),
  ox(0.), oy(0.), oz(0.),
+ mx(0.), my(0.), mz(0.),
+ mcell(nullptr), mmaterial(nullptr),
  background(),
  rng(),
  colorby(ColorBy::Material),
@@ -58,6 +60,10 @@ void GuiPlotter::render() {
 }
 
 void GuiPlotter::render_viewport() {
+  // Get IO instance, as we will need it for certain things
+  const auto& io = ImGui::GetIO();
+
+  // Make window
   ImGui::SetNextWindowSize({500, 500}, ImGuiCond_Once);
   ImGui::Begin("Viewport");
   
@@ -76,6 +82,45 @@ void GuiPlotter::render_viewport() {
     must_rerender = true;
   }
 
+  // Now we check to see if the user is dragging their mouse, to
+  // change the origin of the plot
+  if (ImGui::IsWindowHovered() && ImGui::IsMouseDragging(0)) {
+    ImVec2 mouse_drag = io.MouseDelta;
+    if (mouse_drag[0] != 0. || mouse_drag[1] != 0.) {
+      switch (basis) {
+        case Basis::XY:
+          ox -= dist_per_pixel * mouse_drag[1];
+          oy -= dist_per_pixel * mouse_drag[0];
+          break; 
+
+        case Basis::XZ:
+          ox -= dist_per_pixel * mouse_drag[1];
+          oz -= dist_per_pixel * mouse_drag[0];
+          break;
+
+        case Basis::YZ:
+          oy -= dist_per_pixel * mouse_drag[1];
+          oz -= dist_per_pixel * mouse_drag[0];
+          break;
+      }
+      must_rerender = true;
+    }
+  }
+
+  // Now we check to see if the user is scrolling, which can
+  // resize the image zoom, by chaning the width and height.
+  if (ImGui::IsWindowHovered() && std::abs(io.MouseWheel) > 0.1) {
+    // Change width
+    width += 0.05 * io.MouseWheel * width;
+    if (width < 1.E-6) width = 1.E-6;
+    
+    // Must recalculate height
+    dist_per_pixel = width / static_cast<double>(image.width());
+    height = static_cast<double>(image.height()) * dist_per_pixel;
+
+    must_rerender = true; 
+  } 
+
   // If we window must be rerendered, we do that now
   if (must_rerender) {
     this->render_image(); 
@@ -84,12 +129,72 @@ void GuiPlotter::render_viewport() {
     // Now we need to send the image to the GPU.
     image.send_to_gpu();
   }
+  
+  // Get upper-left corner of image, in Window frame (pixels)
+  const ImVec2 img_pos = ImGui::GetCursorPos();
 
   // Now we need to add the image to the window
   void* texture_id = reinterpret_cast<void*>(
       static_cast<intptr_t>(image.ogl_texture_id().value()));
   ImGui::Image(texture_id, ImVec2(static_cast<float>(image.width()),
         static_cast<float>(image.height())));
+
+  // Now we get the mouse position, so the user can identify cells
+  // and materials
+  if (/*ImGui::IsWindowHovered() &&*/ !ImGui::IsMouseDragging(0)) {
+    // Get the new mouse coordinates in screen space (pixels)
+    const ImVec2 mouse_pos = ImGui::GetMousePos();
+
+    // Get window position in screen space (pixels)
+    const ImVec2 window_pos = ImGui::GetWindowPos();
+    
+    // Get image in screen space (pixel)
+    ImVec2 img_pos_on_screen;
+    img_pos_on_screen[0] = img_pos[0] + window_pos[0];
+    img_pos_on_screen[1] = img_pos[1] + window_pos[1];
+
+    // Get the position of mouse relative to image (pixel)
+    ImVec2 mouse_img_pos;
+    mouse_img_pos[0] = mouse_pos[0] - img_pos_on_screen[0];
+    mouse_img_pos[1] = mouse_pos[1] - img_pos_on_screen[1];
+
+    mouse_img_pos[0] -= 0.5f * static_cast<float>(image.width());
+    mouse_img_pos[1] -= 0.5f * static_cast<float>(image.height());
+    
+    // Convert the image position to physical position
+    switch (basis) {
+      case Basis::XY:
+        mx = ox + dist_per_pixel * mouse_img_pos[1];
+        my = oy + dist_per_pixel * mouse_img_pos[0];
+        mz = oz;
+        break; 
+
+      case Basis::XZ:
+        mx = ox + dist_per_pixel * mouse_img_pos[1];
+        mz = oz + dist_per_pixel * mouse_img_pos[0];
+        my = oy;
+        break;
+
+      case Basis::YZ:
+        my = oy + dist_per_pixel * mouse_img_pos[1];
+        mz = oz + dist_per_pixel * mouse_img_pos[0];
+        mx = ox;
+        break;
+    }
+
+    // Initialize a tracker with mouse position
+    Position mp(mx, my, mz);
+    Direction mu(1., 0., 0.);
+    Tracker mtrkr(mp, mu);
+
+    if (mtrkr.is_lost()) {
+      mcell = nullptr;  
+      mmaterial = nullptr;
+    } else {
+      mcell = mtrkr.cell();
+      mmaterial = mtrkr.material();
+    }
+  }
 
   ImGui::End();
 }
@@ -150,6 +255,25 @@ void GuiPlotter::render_controls() {
   if(ImGui::RadioButton("Material", reinterpret_cast<int*>(&colorby), ColorBy::Material)) must_rerender = true;
 
   if (ImGui::Checkbox("Mark Boundaries", &outline_boundaries)) must_rerender = true;
+
+  // Mouse Position
+  ImGui::Separator();
+  ImGui::Text("Mouse Position: (%f, %f, %f)", mx, my, mz);
+  if (colorby == ColorBy::Cell) {
+    if (!mcell) {
+      ImGui::Text("Cell for given position is not defined."); 
+    } else {
+      ImGui::Text("Cell Name: %s", mcell->name().data());
+      ImGui::Text("Cell ID: %i", mcell->id());
+    }
+  } else {
+   if (!mmaterial) {
+      ImGui::Text("Material for given position is not defined."); 
+    } else {
+      ImGui::Text("Material Name: %s", mmaterial->name().data());
+      ImGui::Text("Material ID: %i", mmaterial->id());
+    }
+  }
 
   ImGui::End();
 }

@@ -81,7 +81,7 @@ class Material : public std::enable_shared_from_this<Material> {
   }
 
   const std::vector<Component>& composition() const { return composition_; }
-  const std::string& get_name() const { return name_; }
+  const std::string& name() const { return name_; }
   uint32_t id() const { return id_; }
   bool fissile() const {
     for (const auto& comp : composition_) {

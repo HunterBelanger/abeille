@@ -44,7 +44,7 @@ std::map<uint32_t, std::shared_ptr<Material>> materials;
 
 void fill_mg_material(const YAML::Node& mat,
                       std::shared_ptr<Material> material) {
-  std::string read_mssg = " Reading material " + material->get_name() + ".\n";
+  std::string read_mssg = " Reading material " + material->name() + ".\n";
   Output::instance()->write(read_mssg);
 
   // Can add nuclide to material
