@@ -5,6 +5,8 @@
 #include <utils/error.hpp>
 #include <simulation/tracker.hpp>
 
+#include <filesystem>
+
 namespace plotter {
 
 // Maps for colors from plotter.hpp
@@ -42,16 +44,6 @@ GuiPlotter::GuiPlotter():
 }
 
 void GuiPlotter::render() {
-  if (ImGui::BeginMainMenuBar()) {
-    if (ImGui::BeginMenu("Options")) {
-      if (ImGui::BeginMenu("Save")) {
-        ImGui::EndMenu();
-      }
-      ImGui::EndMenu();
-    }
-    ImGui::EndMainMenuBar();
-  }
-
   // We put a Dockspace over the entire viewport.
   ImGui::DockSpaceOverViewport(ImGui::GetMainViewport());
 
@@ -207,11 +199,11 @@ void GuiPlotter::render_viewport() {
                   static_cast<float>(color.a()) / 255.f);
 
     if (colorby == ColorBy::Material) {
-      ImGui::Text("Cell ID: %i", mcell->id());
-      ImGui::Text("Cell Name: %s", mcell->name().data());
-    } else {
       ImGui::Text("Material ID: %i", mmaterial->id());
       ImGui::Text("Material Name: %s", mmaterial->name().data()); 
+    } else {
+      ImGui::Text("Cell ID: %i", mcell->id());
+      ImGui::Text("Cell Name: %s", mcell->name().data());
     }
 
     if (ImGui::ColorEdit3("", reinterpret_cast<float*>(&fcolor))) {
@@ -331,6 +323,30 @@ void GuiPlotter::render_controls() {
         must_rerender = true;
       }
     }
+  }
+
+  // Save Image
+  ImGui::Separator();
+  if (ImGui::Button("Save Plot")) ImGui::OpenPopup("Save Plot");
+  if (ImGui::BeginPopup("Save Plot")) {
+    static char fn_str[500] = "";  
+
+    ImGui::InputTextWithHint("", "Enter File Name (i.e. reactor)", fn_str, IM_ARRAYSIZE(fn_str));
+
+    if (ImGui::Button("Save JPG")) {
+      std::filesystem::path fname(fn_str);
+      fname += ".jpg";
+      image.save_jpg(fname);
+      ImGui::CloseCurrentPopup();
+    } ImGui::SameLine();
+    if (ImGui::Button("Save PNG")) {
+      std::filesystem::path fname(fn_str);
+      fname += ".png";
+      image.save_png(fname);
+      ImGui::CloseCurrentPopup();
+    }
+
+    ImGui::EndPopup();
   }
 
   ImGui::End();
