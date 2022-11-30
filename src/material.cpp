@@ -33,12 +33,12 @@
  *============================================================================*/
 #include <materials/material.hpp>
 #include <materials/mg_nuclide.hpp>
+#include <memory>
 #include <plotting/slice_plot.hpp>
 #include <utils/error.hpp>
 #include <utils/output.hpp>
-#include <utils/settings.hpp>
 #include <utils/rng.hpp>
-#include <memory>
+#include <utils/settings.hpp>
 #include <vector>
 
 std::map<uint32_t, std::shared_ptr<Material>> materials;

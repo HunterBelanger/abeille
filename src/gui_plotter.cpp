@@ -1,13 +1,12 @@
 #ifdef ABEILLE_GUI_PLOT
 
+#include <filesystem>
 #include <plotting/gui_plotter.hpp>
 #include <plotting/pixel.hpp>
-#include <utils/error.hpp>
-#include <utils/settings.hpp>
-#include <utils/rng.hpp>
 #include <simulation/tracker.hpp>
-
-#include <filesystem>
+#include <utils/error.hpp>
+#include <utils/rng.hpp>
+#include <utils/settings.hpp>
 
 namespace plotter {
 
@@ -15,32 +14,37 @@ namespace plotter {
 extern std::map<uint32_t, Pixel> cell_id_to_color;
 extern std::map<uint32_t, Pixel> material_id_to_color;
 
-GuiPlotter::GuiPlotter():
- cell_id_to_color(),
- material_id_to_color(),
- image(500, 500),
- create_color_mutex(),
- height(10.),
- width(10.),
- ox(0.), oy(0.), oz(0.),
- mx(0.), my(0.), mz(0.),
- mcell(nullptr), mmaterial(nullptr),
- background(),
- colorby(ColorBy::Material),
- basis(Basis::XY),
- must_rerender(true),
- outline_boundaries(true) {
+GuiPlotter::GuiPlotter()
+    : cell_id_to_color(),
+      material_id_to_color(),
+      image(500, 500),
+      create_color_mutex(),
+      height(10.),
+      width(10.),
+      ox(0.),
+      oy(0.),
+      oz(0.),
+      mx(0.),
+      my(0.),
+      mz(0.),
+      mcell(nullptr),
+      mmaterial(nullptr),
+      background(),
+      colorby(ColorBy::Material),
+      basis(Basis::XY),
+      must_rerender(true),
+      outline_boundaries(true) {
   // First, fill locatl color maps with the outer color maps
   for (const auto& color : plotter::cell_id_to_color) {
     const uint32_t& id = color.first;
     const Pixel& p = color.second;
-    this->cell_id_to_color[id] = ImApp::Pixel(p.R(), p.G(), p.B()); 
+    this->cell_id_to_color[id] = ImApp::Pixel(p.R(), p.G(), p.B());
   }
 
   for (const auto& color : plotter::material_id_to_color) {
     const uint32_t& id = color.first;
     const Pixel& p = color.second;
-    this->material_id_to_color[id] = ImApp::Pixel(p.R(), p.G(), p.B()); 
+    this->material_id_to_color[id] = ImApp::Pixel(p.R(), p.G(), p.B());
   }
 }
 
@@ -59,14 +63,13 @@ void GuiPlotter::render_viewport() {
   // Make window
   ImGui::SetNextWindowSize({500, 500}, ImGuiCond_Once);
   ImGui::Begin("Viewport");
-  
+
   // First, get the window size. If the size doesn't match the current
-  // image size, we must set must_rerender to true. 
+  // image size, we must set must_rerender to true.
   ImVec2 size = ImGui::GetContentRegionAvail();
   std::uint32_t wwidth = static_cast<std::uint32_t>(size[0]);
   std::uint32_t wheight = static_cast<std::uint32_t>(size[1]);
-  if ((wwidth != image.width()) ||
-      (wheight != image.height())) {
+  if ((wwidth != image.width()) || (wheight != image.height())) {
     image.resize(wheight, wwidth);
 
     dist_per_pixel = width / static_cast<double>(image.width());
@@ -84,7 +87,7 @@ void GuiPlotter::render_viewport() {
         case Basis::XY:
           ox -= dist_per_pixel * mouse_drag[1];
           oy -= dist_per_pixel * mouse_drag[0];
-          break; 
+          break;
 
         case Basis::XZ:
           ox -= dist_per_pixel * mouse_drag[1];
@@ -106,23 +109,23 @@ void GuiPlotter::render_viewport() {
     // Change width
     width += 0.05 * io.MouseWheel * width;
     if (width < 1.E-6) width = 1.E-6;
-    
+
     // Must recalculate height
     dist_per_pixel = width / static_cast<double>(image.width());
     height = static_cast<double>(image.height()) * dist_per_pixel;
 
-    must_rerender = true; 
-  } 
+    must_rerender = true;
+  }
 
   // If we window must be rerendered, we do that now
   if (must_rerender) {
-    this->render_image(); 
+    this->render_image();
     must_rerender = false;
 
     // Now we need to send the image to the GPU.
     image.send_to_gpu();
   }
-  
+
   // Get upper-left corner of image, in Window frame (pixels)
   const ImVec2 img_pos = ImGui::GetCursorPos();
 
@@ -130,7 +133,7 @@ void GuiPlotter::render_viewport() {
   void* texture_id = reinterpret_cast<void*>(
       static_cast<intptr_t>(image.ogl_texture_id().value()));
   ImGui::Image(texture_id, ImVec2(static_cast<float>(image.width()),
-        static_cast<float>(image.height())));
+                                  static_cast<float>(image.height())));
 
   // Now we get the mouse position, so the user can identify cells
   // and materials
@@ -140,7 +143,7 @@ void GuiPlotter::render_viewport() {
 
     // Get window position in screen space (pixels)
     const ImVec2 window_pos = ImGui::GetWindowPos();
-    
+
     // Get image in screen space (pixel)
     ImVec2 img_pos_on_screen;
     img_pos_on_screen[0] = img_pos[0] + window_pos[0];
@@ -153,14 +156,14 @@ void GuiPlotter::render_viewport() {
 
     mouse_img_pos[0] -= 0.5f * static_cast<float>(image.width());
     mouse_img_pos[1] -= 0.5f * static_cast<float>(image.height());
-    
+
     // Convert the image position to physical position
     switch (basis) {
       case Basis::XY:
         mx = ox + dist_per_pixel * mouse_img_pos[1];
         my = oy + dist_per_pixel * mouse_img_pos[0];
         mz = oz;
-        break; 
+        break;
 
       case Basis::XZ:
         mx = ox + dist_per_pixel * mouse_img_pos[1];
@@ -181,7 +184,7 @@ void GuiPlotter::render_viewport() {
     Tracker mtrkr(mp, mu);
 
     if (mtrkr.is_lost()) {
-      mcell = nullptr;  
+      mcell = nullptr;
       mmaterial = nullptr;
     } else {
       mcell = mtrkr.cell();
@@ -201,17 +204,17 @@ void GuiPlotter::render_viewport() {
 
     if (colorby == ColorBy::Material) {
       ImGui::Text("Material ID: %i", mmaterial->id());
-      ImGui::Text("Material Name: %s", mmaterial->name().data()); 
+      ImGui::Text("Material Name: %s", mmaterial->name().data());
     } else {
       ImGui::Text("Cell ID: %i", mcell->id());
       ImGui::Text("Cell Name: %s", mcell->name().data());
     }
 
     if (ImGui::ColorEdit3("", reinterpret_cast<float*>(&fcolor))) {
-      color.r() = static_cast<uint8_t>(fcolor.x * 255.f); 
+      color.r() = static_cast<uint8_t>(fcolor.x * 255.f);
       color.g() = static_cast<uint8_t>(fcolor.y * 255.f);
       color.b() = static_cast<uint8_t>(fcolor.z * 255.f);
-      
+
       if (colorby == ColorBy::Material)
         material_id_to_color[mmaterial->id()] = color;
       else
@@ -232,14 +235,15 @@ void GuiPlotter::render_controls() {
   // Origin
   ImGui::Separator();
   ImGui::Text("Plot Origin");
-  if(ImGui::InputDouble("X [cm]", &ox, 0., 0.)) must_rerender = true;
-  if(ImGui::InputDouble("Y [cm]", &oy, 0., 0.)) must_rerender = true;
-  if(ImGui::InputDouble("Z [cm]", &oz, 0., 0.)) must_rerender = true;
+  if (ImGui::InputDouble("X [cm]", &ox, 0., 0.)) must_rerender = true;
+  if (ImGui::InputDouble("Y [cm]", &oy, 0., 0.)) must_rerender = true;
+  if (ImGui::InputDouble("Z [cm]", &oz, 0., 0.)) must_rerender = true;
 
   // Physical Dimensions of plot
   ImGui::Separator();
   ImGui::Text("Width/Height");
-  ImGui::RadioButton("Width", &adjust_w_or_h, 0); ImGui::SameLine();
+  ImGui::RadioButton("Width", &adjust_w_or_h, 0);
+  ImGui::SameLine();
   ImGui::RadioButton("Height", &adjust_w_or_h, 1);
   if (adjust_w_or_h == 0) {
     if (ImGui::InputDouble("Width [cm]", &width, 0., 0.)) {
@@ -251,10 +255,10 @@ void GuiPlotter::render_controls() {
       dist_per_pixel = width / static_cast<double>(image.width());
       height = static_cast<double>(image.height()) * dist_per_pixel;
     }
-  } else if(adjust_w_or_h == 1) {
-    if(ImGui::InputDouble("Height [cm]", &height, 0., 0.)) {
-      must_rerender = true; 
-      
+  } else if (adjust_w_or_h == 1) {
+    if (ImGui::InputDouble("Height [cm]", &height, 0., 0.)) {
+      must_rerender = true;
+
       if (height < 1.E-6) height = 1.E-6;
 
       // Must recalculate width
@@ -267,20 +271,28 @@ void GuiPlotter::render_controls() {
   // Slice Basis
   ImGui::Separator();
   ImGui::Text("Slice Basis");
-  if(ImGui::RadioButton("XY", reinterpret_cast<int*>(&basis), Basis::XY)) must_rerender = true;
+  if (ImGui::RadioButton("XY", reinterpret_cast<int*>(&basis), Basis::XY))
+    must_rerender = true;
   ImGui::SameLine();
-  if(ImGui::RadioButton("XZ", reinterpret_cast<int*>(&basis), Basis::XZ)) must_rerender = true;
+  if (ImGui::RadioButton("XZ", reinterpret_cast<int*>(&basis), Basis::XZ))
+    must_rerender = true;
   ImGui::SameLine();
-  if(ImGui::RadioButton("YZ", reinterpret_cast<int*>(&basis), Basis::YZ)) must_rerender = true;
+  if (ImGui::RadioButton("YZ", reinterpret_cast<int*>(&basis), Basis::YZ))
+    must_rerender = true;
 
   // Color Method
   ImGui::Separator();
   ImGui::Text("Coloring");
-  if(ImGui::RadioButton("Cell", reinterpret_cast<int*>(&colorby), ColorBy::Cell)) must_rerender = true;
+  if (ImGui::RadioButton("Cell", reinterpret_cast<int*>(&colorby),
+                         ColorBy::Cell))
+    must_rerender = true;
   ImGui::SameLine();
-  if(ImGui::RadioButton("Material", reinterpret_cast<int*>(&colorby), ColorBy::Material)) must_rerender = true;
+  if (ImGui::RadioButton("Material", reinterpret_cast<int*>(&colorby),
+                         ColorBy::Material))
+    must_rerender = true;
 
-  if (ImGui::Checkbox("Mark Boundaries", &outline_boundaries)) must_rerender = true;
+  if (ImGui::Checkbox("Mark Boundaries", &outline_boundaries))
+    must_rerender = true;
 
   // Mouse Position
   ImGui::Separator();
@@ -293,12 +305,12 @@ void GuiPlotter::render_controls() {
 
   if (colorby == ColorBy::Cell) {
     if (!mcell) {
-      ImGui::Text("Cell for given position is not defined."); 
+      ImGui::Text("Cell for given position is not defined.");
     } else {
       ImGui::Text("Cell ID: %i", mcell->id());
       ImGui::Text("Cell Name: %s", mcell->name().data());
       if (ImGui::ColorEdit3("", reinterpret_cast<float*>(&fcolor))) {
-        color.r() = static_cast<uint8_t>(fcolor.x * 255.f); 
+        color.r() = static_cast<uint8_t>(fcolor.x * 255.f);
         color.g() = static_cast<uint8_t>(fcolor.y * 255.f);
         color.b() = static_cast<uint8_t>(fcolor.z * 255.f);
 
@@ -308,14 +320,14 @@ void GuiPlotter::render_controls() {
       }
     }
   } else {
-   if (!mmaterial) {
-      ImGui::Text("Material for given position is not defined."); 
+    if (!mmaterial) {
+      ImGui::Text("Material for given position is not defined.");
     } else {
       ImGui::Text("Material ID: %i", mmaterial->id());
       ImGui::Text("Material Name: %s", mmaterial->name().data());
 
       if (ImGui::ColorEdit3("", reinterpret_cast<float*>(&fcolor))) {
-        color.r() = static_cast<uint8_t>(fcolor.x * 255.f); 
+        color.r() = static_cast<uint8_t>(fcolor.x * 255.f);
         color.g() = static_cast<uint8_t>(fcolor.y * 255.f);
         color.b() = static_cast<uint8_t>(fcolor.z * 255.f);
 
@@ -330,16 +342,18 @@ void GuiPlotter::render_controls() {
   ImGui::Separator();
   if (ImGui::Button("Save Plot")) ImGui::OpenPopup("Save Plot");
   if (ImGui::BeginPopup("Save Plot")) {
-    static char fn_str[500] = "";  
+    static char fn_str[500] = "";
 
-    ImGui::InputTextWithHint("", "Enter File Name (i.e. reactor)", fn_str, IM_ARRAYSIZE(fn_str));
+    ImGui::InputTextWithHint("", "Enter File Name (i.e. reactor)", fn_str,
+                             IM_ARRAYSIZE(fn_str));
 
     if (ImGui::Button("Save JPG")) {
       std::filesystem::path fname(fn_str);
       fname += ".jpg";
       image.save_jpg(fname);
       ImGui::CloseCurrentPopup();
-    } ImGui::SameLine();
+    }
+    ImGui::SameLine();
     if (ImGui::Button("Save PNG")) {
       std::filesystem::path fname(fn_str);
       fname += ".png";
@@ -355,65 +369,66 @@ void GuiPlotter::render_controls() {
 
 void GuiPlotter::render_image() {
   {
-  // Get the tracking direction
-  const Direction u = this->get_tracking_direction();
+    // Get the tracking direction
+    const Direction u = this->get_tracking_direction();
 
 // Go through each pixel
 #ifdef _OPENMP
 #pragma omp parallel for schedule(dynamic)
 #endif
-  for (uint32_t i = 0; i < image.height(); i++) {
-    Position strt = get_start_position(i);
+    for (uint32_t i = 0; i < image.height(); i++) {
+      Position strt = get_start_position(i);
 
-    // Initalize the tracker
-    Tracker trkr(strt, u);
-    ::Cell* cell = trkr.cell();
-    ImApp::Pixel pixel_color = this->get_color(cell);
+      // Initalize the tracker
+      Tracker trkr(strt, u);
+      ::Cell* cell = trkr.cell();
+      ImApp::Pixel pixel_color = this->get_color(cell);
 
-    uint32_t j = 0;
-    while (j < image.width()) {
-      // Get the boundary
-      auto bound = trkr.get_nearest_boundary();
+      uint32_t j = 0;
+      while (j < image.width()) {
+        // Get the boundary
+        auto bound = trkr.get_nearest_boundary();
 
-      // Get the number of pixels till the boundary
-      const double pixels_to_bound = bound.distance / dist_per_pixel;
-      uint32_t npixels = static_cast<uint32_t>(std::round(pixels_to_bound));
-      if (npixels > (image.width() - j) || bound.distance == INF) {
-        npixels = image.width() - j;
-      }
-      const double npixels_dist = static_cast<double>(npixels) * dist_per_pixel;
-
-      // Set all pixels
-      for (uint32_t p = 0; p < npixels; p++) {
-        if (j >= image.width()) break;
-        if (outline_boundaries && npixels > 0 &&
-            (p == npixels-1 || j == image.width()-1)) {
-          image.at(i, j) = ImApp::Pixel(0, 0, 0);
-        } else {
-          image.at(i, j) = pixel_color;
+        // Get the number of pixels till the boundary
+        const double pixels_to_bound = bound.distance / dist_per_pixel;
+        uint32_t npixels = static_cast<uint32_t>(std::round(pixels_to_bound));
+        if (npixels > (image.width() - j) || bound.distance == INF) {
+          npixels = image.width() - j;
         }
-        j++;
-      }
-      if (j >= image.width()) break;
+        const double npixels_dist =
+            static_cast<double>(npixels) * dist_per_pixel;
 
-      // Cross boundary, update cell, and get new pixel
-      if (pixels_to_bound - static_cast<double>(npixels) < 0.5) {
-        trkr.move(npixels_dist + dist_per_pixel);
-      } else {
-        trkr.move(npixels_dist);
-      }
-      trkr.restart_get_current();
-      cell = trkr.cell();
-      pixel_color = this->get_color(cell);
-      if (pixels_to_bound - static_cast<double>(npixels) < 0.5) {
+        // Set all pixels
+        for (uint32_t p = 0; p < npixels; p++) {
+          if (j >= image.width()) break;
+          if (outline_boundaries && npixels > 0 &&
+              (p == npixels - 1 || j == image.width() - 1)) {
+            image.at(i, j) = ImApp::Pixel(0, 0, 0);
+          } else {
+            image.at(i, j) = pixel_color;
+          }
+          j++;
+        }
         if (j >= image.width()) break;
-        image.at(i, j) = pixel_color;
-        j++;
-      }
-    }  // while j < plot_width_
-  }    // For i which is parallel
+
+        // Cross boundary, update cell, and get new pixel
+        if (pixels_to_bound - static_cast<double>(npixels) < 0.5) {
+          trkr.move(npixels_dist + dist_per_pixel);
+        } else {
+          trkr.move(npixels_dist);
+        }
+        trkr.restart_get_current();
+        cell = trkr.cell();
+        pixel_color = this->get_color(cell);
+        if (pixels_to_bound - static_cast<double>(npixels) < 0.5) {
+          if (j >= image.width()) break;
+          image.at(i, j) = pixel_color;
+          j++;
+        }
+      }  // while j < plot_width_
+    }    // For i which is parallel
   }
-  
+
   if (outline_boundaries) {
     // Get the tracking direction
     const Direction u = this->get_comp_tracking_direction();
@@ -439,15 +454,15 @@ void GuiPlotter::render_image() {
         if (npixels > (image.height() - i) || bound.distance == INF) {
           npixels = image.height() - i;
         }
-        const double npixels_dist = static_cast<double>(npixels) * dist_per_pixel;
+        const double npixels_dist =
+            static_cast<double>(npixels) * dist_per_pixel;
 
         // Set all pixels
         for (uint32_t p = 0; p < npixels; p++) {
           if (i >= image.height()) break;
-          if (npixels > 0 &&
-              (p == npixels-1 || i == image.height()-1)) {
+          if (npixels > 0 && (p == npixels - 1 || i == image.height() - 1)) {
             image.at(i, j) = ImApp::Pixel(0, 0, 0);
-          } 
+          }
           i++;
         }
         if (i >= image.height()) break;
@@ -717,7 +732,7 @@ Position GuiPlotter::get_pixel_position(uint64_t i, uint64_t j) const {
     return {x, oy, z};
   }
 }
-  
-}
 
-#endif // ABEILLE_GUI_PLOT
+}  // namespace plotter
+
+#endif  // ABEILLE_GUI_PLOT

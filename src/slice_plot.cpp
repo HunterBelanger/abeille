@@ -31,15 +31,15 @@
  * pris connaissance de la licence CeCILL, et que vous en avez accepté les
  * termes.
  *============================================================================*/
+#include <fstream>
 #include <geometry/cell.hpp>
 #include <geometry/geometry.hpp>
+#include <memory>
 #include <plotting/slice_plot.hpp>
 #include <simulation/tracker.hpp>
 #include <utils/error.hpp>
 #include <utils/rng.hpp>
 #include <utils/settings.hpp>
-#include <fstream>
-#include <memory>
 
 namespace plotter {
 

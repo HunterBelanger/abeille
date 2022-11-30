@@ -216,7 +216,7 @@ void gui(const std::string& input_fname) {
     guiplotter.run();
   } catch (std::exception& error) {
     Output::instance()->write_error(error.what());
-    std::exit(1); 
+    std::exit(1);
   }
 }
 #endif

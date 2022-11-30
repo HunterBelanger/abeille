@@ -43,12 +43,13 @@ namespace plotter {
 // Pixel class to contain info for a pixel or color definition
 class Pixel {
  public:
-  Pixel(uint8_t i_r = 0xff, uint8_t i_g = 0xff, uint8_t i_b = 0xff): r(i_r), g(i_g), b(i_b) {}
+  Pixel(uint8_t i_r = 0xff, uint8_t i_g = 0xff, uint8_t i_b = 0xff)
+      : r(i_r), g(i_g), b(i_b) {}
   ~Pixel() = default;
 
   uint8_t R() const { return r; }
   uint8_t G() const { return g; }
-  uint8_t B() const { return b;}
+  uint8_t B() const { return b; }
 
   void set_R(uint8_t i_r) { r = i_r; }
   void set_G(uint8_t i_g) { g = i_g; }

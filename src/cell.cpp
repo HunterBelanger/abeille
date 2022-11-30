@@ -32,11 +32,11 @@
  * termes.
  *============================================================================*/
 #include <geometry/cell.hpp>
+#include <plotting/plotter.hpp>
 #include <utils/constants.hpp>
 #include <utils/error.hpp>
-#include <utils/settings.hpp>
 #include <utils/rng.hpp>
-#include <plotting/plotter.hpp>
+#include <utils/settings.hpp>
 
 Cell::Cell(std::vector<int32_t> i_rpn, std::shared_ptr<Material> material,
            uint32_t i_id, std::string i_name)

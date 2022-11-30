@@ -215,21 +215,21 @@ double RectLattice::distance_to_tile_boundary(
       tile[1] >= static_cast<int32_t>(Ny) ||
       tile[2] > static_cast<int32_t>(Nz)) {
     double dmin = (Xl - r_local.x()) / u.x();
-    double dmax = (Xl+(Nx*Px) - r_local.x()) / u.x();
+    double dmax = (Xl + (Nx * Px) - r_local.x()) / u.x();
     if (dmin > dmax) std::swap(dmin, dmax);
 
     double dymin = (Yl - r_local.y()) / u.y();
-    double dymax = (Yl+(Ny*Py) - r_local.y()) / u.y();
+    double dymax = (Yl + (Ny * Py) - r_local.y()) / u.y();
     if (dymin > dymax) std::swap(dymin, dymax);
 
     if ((dmin > dymax) || (dymin > dmax)) return INF;
 
     if (dymin > dmin) dmin = dymin;
 
-    if (dymax < dmax) dmax = dymax; 
+    if (dymax < dmax) dmax = dymax;
 
     double dzmin = (Zl - r_local.z()) / u.z();
-    double dzmax = (Zl+(Nz*Pz) - r_local.z()) / u.z();
+    double dzmax = (Zl + (Nz * Pz) - r_local.z()) / u.z();
     if (dzmin > dzmax) std::swap(dzmin, dzmax);
 
     if ((dmin > dzmax) || (dzmin > dmax)) return INF;
@@ -270,7 +270,7 @@ double RectLattice::distance_to_tile_boundary(
   double d_yh = diff_yh / u.y();
   double d_zl = diff_zl / u.z();
   double d_zh = diff_zh / u.z();
-  
+
   if (d_xl > 0. && d_xl < dist && std::abs(diff_xl) > 100 * SURFACE_COINCIDENT)
     dist = d_xl;
   if (d_xh > 0. && d_xh < dist && std::abs(diff_xh) > 100 * SURFACE_COINCIDENT)
