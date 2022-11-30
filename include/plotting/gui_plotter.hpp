@@ -5,7 +5,6 @@
 #include <ImApp/imapp.hpp>
 
 #include <geometry/cell.hpp>
-#include <utils/rng.hpp>
 #include <utils/position.hpp>
 #include <utils/direction.hpp>
 
@@ -51,7 +50,6 @@ namespace plotter {
       ::Material* mmaterial; // Mouse material
       double dist_per_pixel;
       ImApp::Pixel background;
-      pcg32 rng;
       ColorBy colorby;
       Basis basis;
       bool must_rerender;

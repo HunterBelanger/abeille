@@ -31,13 +31,15 @@
  * pris connaissance de la licence CeCILL, et que vous en avez accepté les
  * termes.
  *============================================================================*/
-#include <fstream>
 #include <geometry/cell.hpp>
 #include <geometry/geometry.hpp>
-#include <memory>
 #include <plotting/slice_plot.hpp>
 #include <simulation/tracker.hpp>
 #include <utils/error.hpp>
+#include <utils/rng.hpp>
+#include <utils/settings.hpp>
+#include <fstream>
+#include <memory>
 
 namespace plotter {
 
@@ -54,7 +56,6 @@ SlicePlot::SlicePlot(std::string fname, uint64_t pwidth, uint64_t pheight,
       image_matrix(),
       width_{width},
       height_{height},
-      rng(2617257382),
       create_color_mutex{} {}
 
 Pixel SlicePlot::get_color(::Cell* cell) {
@@ -313,9 +314,9 @@ Position SlicePlot::get_pixel_position(uint64_t i, uint64_t j) const {
 }
 
 Pixel SlicePlot::get_random_color() {
-  uint8_t r = static_cast<uint8_t>(255.0 * RNG::rand(rng));
-  uint8_t g = static_cast<uint8_t>(255.0 * RNG::rand(rng));
-  uint8_t b = static_cast<uint8_t>(255.0 * RNG::rand(rng));
+  uint8_t r = static_cast<uint8_t>(255.0 * RNG::rand(settings::rng));
+  uint8_t g = static_cast<uint8_t>(255.0 * RNG::rand(settings::rng));
+  uint8_t b = static_cast<uint8_t>(255.0 * RNG::rand(settings::rng));
 
   return {r, g, b};
 }

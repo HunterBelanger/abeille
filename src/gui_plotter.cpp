@@ -3,6 +3,8 @@
 #include <plotting/gui_plotter.hpp>
 #include <plotting/pixel.hpp>
 #include <utils/error.hpp>
+#include <utils/settings.hpp>
+#include <utils/rng.hpp>
 #include <simulation/tracker.hpp>
 
 #include <filesystem>
@@ -24,7 +26,6 @@ GuiPlotter::GuiPlotter():
  mx(0.), my(0.), mz(0.),
  mcell(nullptr), mmaterial(nullptr),
  background(),
- rng(),
  colorby(ColorBy::Material),
  basis(Basis::XY),
  must_rerender(true),
@@ -468,9 +469,9 @@ void GuiPlotter::render_image() {
 }
 
 ImApp::Pixel GuiPlotter::get_random_color() {
-  uint8_t r = static_cast<uint8_t>(255.0 * RNG::rand(rng));
-  uint8_t g = static_cast<uint8_t>(255.0 * RNG::rand(rng));
-  uint8_t b = static_cast<uint8_t>(255.0 * RNG::rand(rng));
+  uint8_t r = static_cast<uint8_t>(255.0 * RNG::rand(settings::rng));
+  uint8_t g = static_cast<uint8_t>(255.0 * RNG::rand(settings::rng));
+  uint8_t b = static_cast<uint8_t>(255.0 * RNG::rand(settings::rng));
 
   return ImApp::Pixel(r, g, b);
 }
