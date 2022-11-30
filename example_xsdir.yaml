@@ -1,0 +1,63 @@
+library-info:
+  name: "ENDF/B-VIII.0"
+  date: "10/5/2022"
+  code: "NJOY2016 v1"
+  notes: "Add specific info here..."
+
+nuclides:
+  H1:
+    neutron: H1
+    temperatures: [293.6, 600., 900.]
+
+  H1_H2O:
+    neutron: H1
+    tsl: HinH2O
+    temperatures: [293.6, 600.]
+
+  U235:
+    neutron: U235
+    dbrc: True
+    temperatures: [0., 293.6, 600., 900.]
+
+basename: "/home/hunter/Documents/nuclear_data/lib80x/ace"
+
+neutron-dir:
+  H1:
+    - file: Lib80x/H/1001.800nc
+      temperature: 293.6
+      binary: False
+
+    - file: Lib80x/H/1001.801nc
+      temperature: 600.
+      binary: False
+
+    - file: Lib80x/H/1001.802nc
+      temperature: 900.
+      binary: False
+
+  U235:
+    - file: Lib80x/U/92235.805nc
+      temperature: 0.1
+      binary: False
+      
+    - file: Lib80x/U/92235.800nc
+      temperature: 293.6
+      binary: False
+
+    - file: Lib80x/U/92235.801nc
+      temperature: 600.
+      binary: False
+
+    - file: Lib80x/U/92235.802nc
+      temperature: 900.
+      binary: False
+
+tsl-dir:
+  HinH2O:
+    - file: ENDF80SaB2/h-h2o.40t
+      temperature: 293.6
+      binary: False
+
+    - file: ENDF80SaB2/h-h2o.54t
+      temperature: 600.
+      binary: False

@@ -1,0 +1,657 @@
+#include <yaml-cpp/node/detail/iterator_fwd.h>
+
+#include <PapillonNDL/elastic_dbrc.hpp>
+#include <algorithm>
+#include <memory>
+#include <sstream>
+#include <utils/error.hpp>
+#include <utils/nd_directory.hpp>
+#include <utils/output.hpp>
+
+const std::shared_ptr<pndl::STNeutron>& NDDirectory::NeutronACEList::get_temp(
+    const std::string& key, double T) {
+  std::size_t closest_tmp_indx = neutron_ace_files.size();
+  double closest_diff = 1000000.;
+
+  for (std::size_t i = 0; i < neutron_ace_files.size(); i++) {
+    if (std::abs(T - neutron_ace_files[i].temperature()) < closest_diff) {
+      closest_tmp_indx = i;
+      closest_diff = std::abs(T - neutron_ace_files[i].temperature());
+    }
+  }
+
+  if (closest_diff > 0.1) {
+    // We couldn't find the desired temeprature... This is bad. Shouldn't
+    // happen.
+    std::stringstream mssg;
+    mssg << "Could not find required temperature " << T << " for " << key
+         << '.';
+    fatal_error(mssg.str(), __FILE__, __LINE__);
+  }
+
+  if (!neutron_ace_files[closest_tmp_indx].loaded()) {
+    std::stringstream mssg;
+    mssg << " Reading Free-Gas Neutron data for " << key << " at "
+         << neutron_ace_files[closest_tmp_indx].temperature() << " K.\n";
+    Output::instance()->write(mssg.str());
+
+    const std::string ace_fname =
+        neutron_ace_files[closest_tmp_indx].ace_entry.fname.string();
+    const pndl::ACE::Type ace_type =
+        neutron_ace_files[closest_tmp_indx].ace_entry.type;
+    pndl::ACE ace(ace_fname, ace_type);
+
+    if (first_loaded) {
+      neutron_ace_files[closest_tmp_indx].neutron_data =
+          std::make_unique<pndl::STNeutron>(ace, *first_loaded);
+    } else {
+      neutron_ace_files[closest_tmp_indx].neutron_data =
+          std::make_unique<pndl::STNeutron>(ace);
+      first_loaded = neutron_ace_files[closest_tmp_indx].neutron_data;
+    }
+  }
+
+  return neutron_ace_files[closest_tmp_indx].neutron_data;
+}
+
+const std::shared_ptr<pndl::STThermalScatteringLaw>&
+NDDirectory::TSLACEList::get_temp(const std::string& key, double T) {
+  std::size_t closest_tmp_indx = tsl_ace_files.size();
+  double closest_diff = 1000000.;
+
+  for (std::size_t i = 0; i < tsl_ace_files.size(); i++) {
+    if (std::abs(T - tsl_ace_files[i].temperature()) < closest_diff) {
+      closest_tmp_indx = i;
+      closest_diff = std::abs(T - tsl_ace_files[i].temperature());
+    }
+  }
+
+  if (closest_diff > 0.1) {
+    // We couldn't find the desired temeprature... This is bad. Shouldn't
+    // happen.
+    std::stringstream mssg;
+    mssg << "Could not find required temperature " << T << " for " << key
+         << '.';
+    fatal_error(mssg.str(), __FILE__, __LINE__);
+  }
+
+  if (!tsl_ace_files[closest_tmp_indx].loaded()) {
+    std::stringstream mssg;
+    mssg << " Reading Thermal Scattering Law data for " << key << " at "
+         << tsl_ace_files[closest_tmp_indx].temperature() << " K.\n";
+    Output::instance()->write(mssg.str());
+
+    const std::string ace_fname =
+        tsl_ace_files[closest_tmp_indx].ace_entry.fname.string();
+    const pndl::ACE::Type ace_type =
+        tsl_ace_files[closest_tmp_indx].ace_entry.type;
+    pndl::ACE ace(ace_fname, ace_type);
+
+    tsl_ace_files[closest_tmp_indx].tsl_data =
+        std::make_unique<pndl::STThermalScatteringLaw>(ace);
+  }
+
+  return tsl_ace_files[closest_tmp_indx].tsl_data;
+}
+
+bool NDDirectory::has_nuclide_entry(const std::string& key) const {
+  if (nuclides.find(key) == nuclides.end()) return false;
+  return true;
+}
+
+bool NDDirectory::has_neutron_list(const std::string& key) const {
+  if (neutron_dir.find(key) == neutron_dir.end()) return false;
+  return true;
+}
+
+bool NDDirectory::has_tsl_list(const std::string& key) const {
+  if (tsl_dir.find(key) == tsl_dir.end()) return false;
+  return true;
+}
+
+NDDirectory::NuclideEntry& NDDirectory::get_nuclide_entry(
+    const std::string& key) {
+  if (!has_nuclide_entry(key)) {
+    std::stringstream mssg;
+    mssg << "No Nuclide entry for " << key << '\n';
+    fatal_error(mssg.str(), __FILE__, __LINE__);
+  }
+
+  return nuclides.at(key);
+}
+
+NDDirectory::NeutronACEList& NDDirectory::get_neutron_list(
+    const std::string& key) {
+  if (!has_neutron_list(key)) {
+    std::stringstream mssg;
+    mssg << "No NeutronACEList for " << key << '\n';
+    fatal_error(mssg.str(), __FILE__, __LINE__);
+  }
+
+  return neutron_dir.at(key);
+}
+
+NDDirectory::TSLACEList& NDDirectory::get_tsl_list(const std::string& key) {
+  if (!has_tsl_list(key)) {
+    std::stringstream mssg;
+    mssg << "No TSLACEList for " << key << '\n';
+    fatal_error(mssg.str(), __FILE__, __LINE__);
+  }
+
+  return tsl_dir.at(key);
+}
+
+NDDirectory::NuclideEntry::NuclideEntry(const YAML::Node& node)
+    : neutron(), dbrc(false), tsl(std::nullopt), temps(), loaded() {
+  // Make sure node is a map
+  if (node.IsMap() == false) {
+    std::stringstream mssg;
+    mssg << "Nuclide entry of nuclear data directory must be a map.";
+    fatal_error(mssg.str(), __FILE__, __LINE__);
+  }
+
+  // Get the mandatory neutron entry
+  if (!node["neutron"] || !node["neutron"].IsScalar()) {
+    std::stringstream mssg;
+    mssg << "A Nuclide entry is missing a valid \"neutron\" entry.";
+    fatal_error(mssg.str(), __FILE__, __LINE__);
+  }
+  neutron = node["neutron"].as<std::string>();
+
+  // Now we get the dbrc, if present
+  if (node["dbrc"] && node["dbrc"].IsScalar()) {
+    dbrc = node["dbrc"].as<bool>();
+  } else if (node["dbrc"]) {
+    std::stringstream mssg;
+    mssg << "The dbrc entry of a Nuclide entry must be a boolean.";
+    fatal_error(mssg.str(), __FILE__, __LINE__);
+  }
+
+  // Now we get the TSL if present
+  if (node["tsl"] && node["tsl"].IsScalar()) {
+    tsl = node["tsl"].as<std::string>();
+  } else if (node["tsl"]) {
+    std::stringstream mssg;
+    mssg << "The tsl entry of a Nuclide entry must be a string.";
+    fatal_error(mssg.str(), __FILE__, __LINE__);
+  }
+
+  // Now we get the temperature list
+  if (!node["temperatures"] || !node["temperatures"].IsSequence()) {
+    std::stringstream mssg;
+    mssg << "The temperatures entry of a Nuclide entry must be a sequence of "
+            "positive floats.";
+    fatal_error(mssg.str(), __FILE__, __LINE__);
+  }
+  temps = node["temperatures"].as<std::vector<double>>();
+
+  // Sort the temps
+  std::sort(temps.begin(), temps.end());
+
+  // Make sure all temps are positive
+  if (temps.front() < 0.) {
+    std::stringstream mssg;
+    mssg << "All temperatures in a Nuclide entry must be >= 0.";
+    fatal_error(mssg.str(), __FILE__, __LINE__);
+  }
+
+  // Fill loaded vector will nullptr
+  loaded.resize(temps.size(), nullptr);
+
+  if (dbrc) {
+    if (temps.front() > 0.1) {
+      std::stringstream mssg;
+      mssg << "Nuclide entry indicated use of DBRC, but has no temperature "
+              "near 0 Kelvin.";
+      fatal_error(mssg.str(), __FILE__, __LINE__);
+    }
+  }
+}
+
+int NDDirectory::NuclideEntry::closest_temp(double T) const {
+  int closest_tmp_indx = -1;
+  double closest_temp = -10.;
+  double closest_diff = 1000000.;
+
+  for (std::size_t i = 0; i < temps.size(); i++) {
+    if (std::abs(T - temps[i]) < closest_diff) {
+      closest_tmp_indx = static_cast<int>(i);
+      closest_temp = temps[i];
+      closest_diff = std::abs(T - closest_temp);
+    }
+  }
+
+  return closest_tmp_indx;
+}
+
+std::pair<int, int> NDDirectory::NuclideEntry::bounding_temps(double T) const {
+  if (T < temps.front()) return {-1, 0};
+
+  if (T > temps.back()) return {static_cast<int>(temps.size()) - 1, -1};
+
+  for (int i = 0; i < static_cast<int>(temps.size()) - 1; i++) {
+    if (temps[static_cast<std::size_t>(i)] <= T &&
+        T <= temps[static_cast<std::size_t>(i + 1)]) {
+      return {i, i + 1};
+    }
+  }
+
+  // SHOULD NEVER GET HERE
+  return {-1, -1};
+}
+
+NDDirectory::ACEEntry::ACEEntry(const std::filesystem::path& basename,
+                                const YAML::Node& node)
+    : fname(), type(pndl::ACE::Type::ASCII), temperature() {
+  // Make sure node is a map
+  if (node.IsMap() == false) {
+    std::stringstream mssg;
+    mssg << "ACE entry of nuclear data directory must be a map.";
+    fatal_error(mssg.str(), __FILE__, __LINE__);
+  }
+
+  // Get the file path
+  if (!node["file"] || !node["file"].IsScalar()) {
+    std::stringstream mssg;
+    mssg << "ACE entry of nuclear data directory must have a file entry with a "
+            "single file name.";
+    fatal_error(mssg.str(), __FILE__, __LINE__);
+  }
+  fname = basename / node["file"].as<std::string>();
+
+  // Get the ACE type (binary or ascii)
+  if (node["binary"] && node["binary"].IsScalar()) {
+    if (node["binary"].as<bool>()) type = pndl::ACE::Type::BINARY;
+  } else if (node["binary"]) {
+    std::stringstream mssg;
+    mssg << "ACE entry of nuclear data directory can only have a \"binary\" "
+            "entry that is boolean.";
+    fatal_error(mssg.str(), __FILE__, __LINE__);
+  }
+
+  // Get temperature
+  if (!node["temperature"] || !node["temperature"].IsScalar()) {
+    std::stringstream mssg;
+    mssg << "ACE entry of nuclear data directory must have a \"temperature\" "
+            "entry that is positive float.";
+    fatal_error(mssg.str(), __FILE__, __LINE__);
+  }
+  temperature = node["temperature"].as<double>();
+
+  if (temperature < 0.) {
+    std::stringstream mssg;
+    mssg << "ACE entry of nuclear data directory must have a \"temperature\" "
+            "entry that is positive float.";
+    fatal_error(mssg.str(), __FILE__, __LINE__);
+  }
+}
+
+NDDirectory::NeutronACE::NeutronACE(const std::filesystem::path& basename,
+                                    const YAML::Node& node)
+    : ace_entry(basename, node), neutron_data(nullptr) {}
+
+NDDirectory::TSLACE::TSLACE(const std::filesystem::path& basename,
+                            const YAML::Node& node)
+    : ace_entry(basename, node), tsl_data(nullptr) {}
+
+NDDirectory::NeutronACEList::NeutronACEList(
+    const std::filesystem::path& basename, const YAML::Node& node)
+    : neutron_ace_files(), first_loaded(nullptr) {
+  // Make sure the node is a sequence
+  if (!node.IsSequence()) {
+    std::stringstream mssg;
+    mssg << "Neutron entry list must be a sequence of ACEEntry items.";
+    fatal_error(mssg.str(), __FILE__, __LINE__);
+  }
+
+  if (node.size() == 0) {
+    std::stringstream mssg;
+    mssg
+        << "Neutron entry list must be a non-empty sequence of ACEEntry items.";
+    fatal_error(mssg.str(), __FILE__, __LINE__);
+  }
+
+  // Iterate through all elements in the node
+  for (std::size_t i = 0; i < node.size(); i++) {
+    neutron_ace_files.emplace_back(basename, node[i]);
+  }
+}
+
+NDDirectory::TSLACEList::TSLACEList(const std::filesystem::path& basename,
+                                    const YAML::Node& node)
+    : tsl_ace_files() {
+  // Make sure the node is a sequence
+  if (!node.IsSequence()) {
+    std::stringstream mssg;
+    mssg << "TSL entry list must be a sequence of ACEEntry items.";
+    fatal_error(mssg.str(), __FILE__, __LINE__);
+  }
+
+  if (node.size() == 0) {
+    std::stringstream mssg;
+    mssg << "TSL entry list must be a non-empty sequence of ACEEntry items.";
+    fatal_error(mssg.str(), __FILE__, __LINE__);
+  }
+
+  // Iterate through all elements in the node
+  for (std::size_t i = 0; i < node.size(); i++) {
+    tsl_ace_files.emplace_back(basename, node[i]);
+  }
+}
+
+NDDirectory::NDDirectory(const std::filesystem::path& fname,
+                         TemperatureInterpolation interp)
+    : basename_(),
+      neutron_dir(),
+      tsl_dir(),
+      nuclides(),
+      name_(),
+      date_(),
+      code_(),
+      notes_(),
+      interp_(interp) {
+  // First, open the YAML file
+  if (std::filesystem::exists(fname) == false) {
+    std::stringstream mssg;
+    mssg << "The file " << fname << " does not exist.";
+    fatal_error(mssg.str(), __FILE__, __LINE__);
+  }
+  YAML::Node xsdir = YAML::LoadFile(fname);
+
+  // Read the basename
+  if (xsdir["basename"] && xsdir["basename"].IsScalar()) {
+    basename_ = xsdir["basename"].as<std::string>();
+  } else if (xsdir["basename"]) {
+    std::stringstream mssg;
+    mssg << "The basename entry of the nuclear data directory must be a valid "
+            "system path.";
+    fatal_error(mssg.str(), __FILE__, __LINE__);
+  }
+
+  // Make sure the basename exists (if given)
+  if (basename_.empty() == false) {
+    if (std::filesystem::exists(basename_) == false) {
+      std::stringstream mssg;
+      mssg << "The basename \"" << basename_
+           << "\" for the nuclear data directory does not exist.";
+      fatal_error(mssg.str(), __FILE__, __LINE__);
+    }
+  }
+
+  // We now have the basename. We now iterate through the neutron-dir node
+  if (!xsdir["neutron-dir"] || !xsdir["neutron-dir"].IsMap()) {
+    std::stringstream mssg;
+    mssg << "No valid \"neutron-dir\" entry in the nuclear data directory.";
+    fatal_error(mssg.str(), __FILE__, __LINE__);
+  }
+  for (YAML::const_iterator it = xsdir["neutron-dir"].begin();
+       it != xsdir["neutron-dir"].end(); it++) {
+    std::string key = it->first.as<std::string>();
+
+    if (has_neutron_list(key)) {
+      std::stringstream mssg;
+      mssg << "The key \"" << key
+           << "\" appears multiple times in neutron-dir.";
+      fatal_error(mssg.str(), __FILE__, __LINE__);
+    }
+
+    if (it->second.IsSequence() == false) {
+      std::stringstream mssg;
+      mssg << "The key \"" << key << "\" of neutron-dir is not a sequence.";
+      fatal_error(mssg.str(), __FILE__, __LINE__);
+    }
+
+    neutron_dir[key] = NeutronACEList(basename_, it->second);
+  }
+
+  // We now iterate through the tsl-dir node, which is actually optional
+  if (xsdir["tsl-dir"] && !xsdir["tsl-dir"].IsMap()) {
+    std::stringstream mssg;
+    mssg << "Invalid \"tsl-dir\" entry in the nuclear data directory.";
+    fatal_error(mssg.str(), __FILE__, __LINE__);
+  } else if (xsdir["tsl-dir"]) {
+    for (YAML::const_iterator it = xsdir["tsl-dir"].begin();
+         it != xsdir["tsl-dir"].end(); it++) {
+      std::string key = it->first.as<std::string>();
+
+      if (has_tsl_list(key)) {
+        std::stringstream mssg;
+        mssg << "The key \"" << key << "\" appears multiple times in tsl-dir.";
+        fatal_error(mssg.str(), __FILE__, __LINE__);
+      }
+
+      if (it->second.IsSequence() == false) {
+        std::stringstream mssg;
+        mssg << "The key \"" << key << "\" of tsl-dir is not a sequence.";
+        fatal_error(mssg.str(), __FILE__, __LINE__);
+      }
+
+      tsl_dir[key] = TSLACEList(basename_, it->second);
+    }
+  }
+
+  // Finally, we get all the nuclide entries
+  if (!xsdir["nuclides"] || !xsdir["nuclides"].IsMap()) {
+    std::stringstream mssg;
+    mssg << "Invalid \"nuclides\" entry in the nuclear data directory.";
+    fatal_error(mssg.str(), __FILE__, __LINE__);
+  }
+  for (YAML::const_iterator it = xsdir["nuclides"].begin();
+       it != xsdir["nuclides"].end(); it++) {
+    std::string key = it->first.as<std::string>();
+
+    if (has_nuclide_entry(key)) {
+      std::stringstream mssg;
+      mssg << "The key \"" << key << "\" appears multiple times in nuclides.";
+      fatal_error(mssg.str(), __FILE__, __LINE__);
+    }
+
+    if (it->second.IsMap() == false) {
+      std::stringstream mssg;
+      mssg << "The key \"" << key << "\" of nuclides is not a map.";
+      fatal_error(mssg.str(), __FILE__, __LINE__);
+    }
+
+    nuclides[key] = NuclideEntry(it->second);
+  }
+
+  // Get the library info
+  if (xsdir["library-info"] && xsdir["library-info"].IsMap()) {
+    std::string key = "name";
+    if (xsdir["library-info"][key] && xsdir["library-info"][key].IsScalar()) {
+      name_ = xsdir["library-info"][key].as<std::string>();
+    } else if (xsdir["library-info"][key]) {
+      std::stringstream mssg;
+      mssg << "No valid \"" << key << "\" in library-info.";
+      fatal_error(mssg.str(), __FILE__, __LINE__);
+    }
+
+    key = "date";
+    if (xsdir["library-info"][key] && xsdir["library-info"][key].IsScalar()) {
+      date_ = xsdir["library-info"][key].as<std::string>();
+    } else if (xsdir["library-info"][key]) {
+      std::stringstream mssg;
+      mssg << "No valid \"" << key << "\" in library-info.";
+      fatal_error(mssg.str(), __FILE__, __LINE__);
+    }
+
+    key = "code";
+    if (xsdir["library-info"][key] && xsdir["library-info"][key].IsScalar()) {
+      code_ = xsdir["library-info"][key].as<std::string>();
+    } else if (xsdir["library-info"][key]) {
+      std::stringstream mssg;
+      mssg << "No valid \"" << key << "\" in library-info.";
+      fatal_error(mssg.str(), __FILE__, __LINE__);
+    }
+
+    key = "notes";
+    if (xsdir["library-info"][key] && xsdir["library-info"][key].IsScalar()) {
+      notes_ = xsdir["library-info"][key].as<std::string>();
+    } else if (xsdir["library-info"][key]) {
+      std::stringstream mssg;
+      mssg << "No valid \"" << key << "\" in library-info.";
+      fatal_error(mssg.str(), __FILE__, __LINE__);
+    }
+  } else if (xsdir["library-info"]) {
+    std::stringstream mssg;
+    mssg << "No valid \"library-info\" entry in nuclear data directory.";
+    fatal_error(mssg.str(), __FILE__, __LINE__);
+  }
+}
+
+std::shared_ptr<CENuclide> NDDirectory::get_cenuclide(const std::string& key,
+                                                      NuclideEntry& nuclide,
+                                                      double T) {
+  std::size_t closest_T_indx =
+      static_cast<std::size_t>(nuclide.closest_temp(T));
+  double closest_T = nuclide.temps[closest_T_indx];
+
+  if (std::abs(T - closest_T) > 0.1) {
+    std::stringstream mssg;
+    mssg << "The nuclide \"" << key << "\" has no temperature " << T << ".";
+    fatal_error(mssg.str(), __FILE__, __LINE__);
+  }
+
+  if (!nuclide.loaded[closest_T_indx]) {
+    std::shared_ptr<pndl::STNeutron> cedata = nullptr;
+    std::shared_ptr<pndl::STThermalScatteringLaw> tsl = nullptr;
+
+    auto& neutron_list = get_neutron_list(nuclide.neutron);
+    cedata = neutron_list.get_temp(nuclide.neutron, closest_T);
+
+    if (nuclide.dbrc) {
+      auto& cedata_0k = neutron_list.get_temp(nuclide.neutron, 0.);
+      cedata->elastic().set_elastic_doppler_broadener(
+          std::make_shared<pndl::ElasticDBRC>(cedata_0k->elastic_xs()));
+    }
+
+    if (nuclide.tsl) {
+      auto& tsl_list = get_tsl_list(nuclide.tsl.value());
+      tsl = tsl_list.get_temp(nuclide.tsl.value(), closest_T);
+    }
+
+    nuclide.loaded[closest_T_indx] = std::make_shared<CENuclide>(cedata, tsl);
+  }
+
+  return nuclide.loaded[closest_T_indx];
+}
+
+NDDirectory::CENuclidePacket NDDirectory::load_nuclide(const std::string& key,
+                                                       double T) {
+  // First check if we have the nuclide
+  if (!has_nuclide_entry(key)) {
+    std::stringstream mssg;
+    mssg << "No entry in nuclear data directory for " << key << ".";
+    fatal_error(mssg.str(), __FILE__, __LINE__);
+  }
+
+  NuclideEntry& nuclide = get_nuclide_entry(key);
+
+  CENuclidePacket out;
+  out.nuclide_1 = std::nullopt;
+  out.nuclide_2 = std::nullopt;
+
+  double fraction1 = 0.;
+  double fraction2 = 0.;
+
+  std::shared_ptr<CENuclide> nuclide1 = nullptr;
+  std::shared_ptr<CENuclide> nuclide2 = nullptr;
+
+  // Solution strategy depends on the interpolation method
+  if (interp_ == TemperatureInterpolation::Exact ||
+      interp_ == TemperatureInterpolation::Nearest) {
+    std::size_t closest_T_indx =
+        static_cast<std::size_t>(nuclide.closest_temp(T));
+    double closest_T = nuclide.temps[closest_T_indx];
+
+    if (interp_ == TemperatureInterpolation::Exact &&
+        std::abs(T - closest_T) > 0.1) {
+      std::stringstream mssg;
+      mssg << "The nuclide \"" << key << "\" has no temperature " << T << ".";
+      fatal_error(mssg.str(), __FILE__, __LINE__);
+    }
+
+    fraction1 = 1.;
+    nuclide1 = get_cenuclide(key, nuclide, closest_T);
+
+    out.nuclide_1 = CENuclideFraction(fraction1, nuclide1);
+    out.nuclide_2 = std::nullopt;
+  } else {
+    int Tli, Thi;
+    std::tie(Tli, Thi) = nuclide.bounding_temps(T);
+
+    if (Tli < 0 && Thi < 0) {
+      // This should never happen
+      std::stringstream mssg;
+      mssg << "Could not find any temperatures for nuclide " << key << ", at "
+           << T << " Kelvin.";
+      fatal_error(mssg.str(), __FILE__, __LINE__);
+    } else if (Tli < 0) {
+      // Check if the upper temp is within 0.1 K of desired temp
+      if (std::abs(nuclide.temps[static_cast<std::size_t>(Thi)] - T) < 0.1) {
+        fraction1 = 1.;
+        nuclide1 = get_cenuclide(key, nuclide,
+                                 nuclide.temps[static_cast<std::size_t>(Thi)]);
+        out.nuclide_1 = CENuclideFraction(fraction1, nuclide1);
+      } else {
+        std::stringstream mssg;
+        mssg << "Could not find bouding temperatures for " << key << ", at "
+             << T << " Kelvin.";
+        fatal_error(mssg.str(), __FILE__, __LINE__);
+      }
+    } else if (Thi < 0) {
+      // Check if the lower temp is within 0.1 K of desired temp
+      if (std::abs(nuclide.temps[static_cast<std::size_t>(Tli)] - T) < 0.1) {
+        fraction1 = 1.;
+        nuclide1 = get_cenuclide(key, nuclide,
+                                 nuclide.temps[static_cast<std::size_t>(Tli)]);
+        out.nuclide_1 = CENuclideFraction(fraction1, nuclide1);
+      } else {
+        std::stringstream mssg;
+        mssg << "Could not find bouding temperatures for " << key << ", at "
+             << T << " Kelvin.";
+        fatal_error(mssg.str(), __FILE__, __LINE__);
+      }
+    } else {
+      const double Tl = nuclide.temps[static_cast<std::size_t>(Tli)];
+      const double Th = nuclide.temps[static_cast<std::size_t>(Thi)];
+
+      fraction1 = (Th - T) / (Th - Tl);
+      fraction2 = 1. - fraction1;
+
+      if (fraction1 < 0.) {
+        std::stringstream mssg;
+        mssg << "fraction1 = " << fraction1 << ", for " << key << " at " << T
+             << " Kelvin.";
+        fatal_error(mssg.str(), __FILE__, __LINE__);
+      }
+
+      if (fraction2 < 0.) {
+        std::stringstream mssg;
+        mssg << "fraction2 = " << fraction2 << ", for " << key << " at " << T
+             << " Kelvin.";
+        fatal_error(mssg.str(), __FILE__, __LINE__);
+      }
+
+      nuclide1 = get_cenuclide(key, nuclide, Tl);
+      nuclide2 = get_cenuclide(key, nuclide, Th);
+
+      if (std::abs(Tl - T) < 0.1 || std::abs(Th - T) < 0.1) {
+        // Only return 1 of the temps
+        if (std::abs(Tl - T) < std::abs(Th - T)) {
+          // Return low temp
+          out.nuclide_1 = CENuclideFraction(1., nuclide1);
+        } else {
+          // Return high temp
+          out.nuclide_1 = CENuclideFraction(1., nuclide2);
+        }
+        return out;
+      }
+
+      out.nuclide_1 = CENuclideFraction(fraction1, nuclide1);
+      out.nuclide_2 = CENuclideFraction(fraction2, nuclide2);
+    }
+  }
+
+  return out;
+}

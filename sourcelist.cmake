@@ -4,6 +4,7 @@ set(ABEILLE_SOURCE_FILES ${ABEILLE_SOURCE_FILES}
   src/mg_angle_distribution.cpp
   src/legendre_distribution.cpp
   src/nuclide.cpp
+  src/nd_directory.cpp
   src/surface_tracker.cpp
   src/delta_tracker.cpp
   src/carter_tracker.cpp
