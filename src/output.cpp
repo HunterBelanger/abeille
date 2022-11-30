@@ -138,7 +138,7 @@ void print_header() {
   info += " MPI Ranks           : " + std::to_string(mpi::size) + "\n";
 #endif
 
-  info += " Abeille Git Hash   : " ABEILLE_GIT_HASH "\n";
+  info += " Abeille Git Hash    : " ABEILLE_GIT_HASH "\n";
 
   output->write(info);
 }

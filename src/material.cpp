@@ -37,6 +37,7 @@
 #include <plotting/slice_plot.hpp>
 #include <utils/error.hpp>
 #include <utils/output.hpp>
+#include <utils/rng.hpp>
 #include <utils/settings.hpp>
 #include <vector>
 
@@ -44,7 +45,7 @@ std::map<uint32_t, std::shared_ptr<Material>> materials;
 
 void fill_mg_material(const YAML::Node& mat,
                       std::shared_ptr<Material> material) {
-  std::string read_mssg = " Reading material " + material->get_name() + ".\n";
+  std::string read_mssg = " Reading material " + material->name() + ".\n";
   Output::instance()->write(read_mssg);
 
   // Can add nuclide to material
@@ -84,8 +85,14 @@ void make_material(const YAML::Node& mat, bool plotting_mode) {
     uint8_t G = mat["color"][1].as<uint8_t>();
     uint8_t B = mat["color"][2].as<uint8_t>();
     mat_color = plotter::Pixel(R, G, B);
-    plotter::material_id_to_color[material->id()] = mat_color;
+  } else {
+    // Generate a random color for the material
+    uint8_t r = static_cast<uint8_t>(255.0 * RNG::rand(settings::rng));
+    uint8_t g = static_cast<uint8_t>(255.0 * RNG::rand(settings::rng));
+    uint8_t b = static_cast<uint8_t>(255.0 * RNG::rand(settings::rng));
+    mat_color = plotter::Pixel(r, g, b);
   }
+  plotter::material_id_to_color[material->id()] = mat_color;
 
   if (!plotting_mode) {
     if (settings::energy_mode == settings::EnergyMode::MG) {

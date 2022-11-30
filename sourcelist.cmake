@@ -42,6 +42,7 @@ set(ABEILLE_SOURCE_FILES ${ABEILLE_SOURCE_FILES}
   src/simulation.cpp
   src/slice_plot.cpp
   src/plotter.cpp
+  src/gui_plotter.cpp
   src/hex_lattice.cpp
   src/rect_lattice.cpp
   src/lattice.cpp

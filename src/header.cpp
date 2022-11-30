@@ -8,8 +8,7 @@
  * respectant les principes de diffusion des logiciels libres. Vous pouvez
  * utiliser, modifier et/ou redistribuer ce programme sous les conditions
  * de la licence CeCILL telle que diffusée par le CEA, le CNRS et l'INRIA
- * sur le site "http://www.cecill.info".
- *
+ * sur le site "http://www.cecill.info".  *
  * En contrepartie de l'accessibilité au code source et des droits de copie,
  * de modification et de redistribution accordés par cette licence, il n'est
  * offert aux utilisateurs qu'une garantie limitée.  Pour les mêmes raisons,
@@ -81,7 +80,7 @@ const std::string help =
 #else
     "   abeille (--input FILE) [--output FILE]\n"
 #endif
-    "   abeille (--input FILE --plot) [--threads NUM]\n"
+    "   abeille (--input FILE) (--gui-plot | --plot) [--threads NUM]\n"
     "   abeille (-h | --help)\n"
     "   abeille (-v | --version)\n\n"
 
@@ -93,6 +92,9 @@ const std::string help =
     "   -t --threads NUM  Set number of OpenMP threads\n"
 #endif
     "   -o --output FILE  Set output file\n"
+#ifdef ABEILLE_GUI_PLOT
+    "   -g --gui-plot     Interactive GUI plotter\n"
+#endif
     "   -p --plot         Generate plots from input file\n";
 
 const std::string version_string = " Abeille " ABEILLE_VERSION_STRING

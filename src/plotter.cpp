@@ -36,12 +36,17 @@
 #include <utils/output.hpp>
 #include <utils/parser.hpp>
 
+#ifdef ABEILLE_GUI_PLOT
+#include <ImApp/imapp.hpp>
+#include <plotting/gui_plotter.hpp>
+#endif
+
 namespace plotter {
 // Maps for plotting colors
 std::map<uint32_t, Pixel> cell_id_to_color;
 std::map<uint32_t, Pixel> material_id_to_color;
 
-void plotter(std::string input_fname) {
+void plotter(const std::string& input_fname) {
   // Get output pointer
   std::shared_ptr<Output> out = Output::instance();
   out->write(" Starting plotting engine...\n");
@@ -184,5 +189,36 @@ void slice_plotter(YAML::Node plot_node) {
 
   plot.write();
 }
+
+#ifdef ABEILLE_GUI_PLOT
+void gui(const std::string& input_fname) {
+  // Get output pointer
+  std::shared_ptr<Output> out = Output::instance();
+  out->write(" Starting GUI plotter...\n");
+
+  // Open the YAML node for input file
+  YAML::Node input = YAML::LoadFile(input_fname);
+
+  // Load materials in plotting_mode = true
+  make_materials(input, true);
+
+  // Load geometry portions of input
+  make_geometry(input);
+
+  try {
+    ImApp::App guiplotter(1920, 1080, "Abeille Geometry Plotter");
+    // Viewports don't always work well on Linux.
+    // Might want to disable this at some point.
+    guiplotter.enable_viewports();
+    guiplotter.enable_docking();
+    guiplotter.push_layer(std::make_unique<GuiPlotter>());
+    // TODO Add Icon
+    guiplotter.run();
+  } catch (std::exception& error) {
+    Output::instance()->write_error(error.what());
+    std::exit(1);
+  }
+}
+#endif
 
 }  // namespace plotter

@@ -32,8 +32,11 @@
  * termes.
  *============================================================================*/
 #include <geometry/cell.hpp>
+#include <plotting/plotter.hpp>
 #include <utils/constants.hpp>
 #include <utils/error.hpp>
+#include <utils/rng.hpp>
+#include <utils/settings.hpp>
 
 Cell::Cell(std::vector<int32_t> i_rpn, std::shared_ptr<Material> material,
            uint32_t i_id, std::string i_name)
@@ -156,7 +159,7 @@ bool Cell::is_inside_complex(const Position& r, const Direction& u,
 
 uint32_t Cell::id() const { return id_; }
 
-std::string Cell::name() const { return name_; }
+const std::string& Cell::name() const { return name_; }
 
 //============================================================================
 // Non-Member functions
@@ -321,5 +324,12 @@ void make_cell(YAML::Node cell_node) {
   } else {
     cell_id_to_indx[cell_pntr->id()] = geometry::cells.size();
     geometry::cells.push_back(cell_pntr);
+
+    // Generate a random color for the cell
+    uint8_t r = static_cast<uint8_t>(255.0 * RNG::rand(settings::rng));
+    uint8_t g = static_cast<uint8_t>(255.0 * RNG::rand(settings::rng));
+    uint8_t b = static_cast<uint8_t>(255.0 * RNG::rand(settings::rng));
+    plotter::Pixel cell_color(r, g, b);
+    plotter::cell_id_to_color[cell_pntr->id()] = cell_color;
   }
 }

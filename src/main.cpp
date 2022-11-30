@@ -109,7 +109,11 @@ int main(int argc, char** argv) {
   Output::set_output_filename(output_filename);
   mpi::synchronize();
 
+#ifdef ABEILLE_GUI_PLOT
+  if (args["--gui-plot"].asBool() || args["--plot"].asBool()) {
+#else
   if (args["--plot"].asBool()) {
+#endif
     // If using OpenMP, get number of threads requested
 #ifdef _OPENMP
     int num_omp_threads;
@@ -138,7 +142,15 @@ int main(int argc, char** argv) {
 
       try {
         // Begin plotting system
+#ifdef ABEILLE_GUI_PLOT
+        if (args["--gui-plot"].asBool()) {
+          plotter::gui(input_fname);
+        } else {
+          plotter::plotter(input_fname);
+        }
+#else
         plotter::plotter(input_fname);
+#endif
       } catch (const std::runtime_error& err) {
         std::string mssg = err.what();
         Output::instance()->write(" FATAL ERROR: " + mssg + ".\n");

@@ -85,7 +85,7 @@ class Cell {
 
   uint32_t id() const;
 
-  std::string name() const;
+  const std::string& name() const;
 
   const std::vector<std::shared_ptr<Cell>> neighbors() const {
     return neighbors_;
