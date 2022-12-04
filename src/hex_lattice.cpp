@@ -102,7 +102,8 @@ Cell* HexLattice::get_cell(Position r, Direction u, int32_t on_surf) const {
     if (outer_universe_index == -1) {
       return nullptr;
     } else {
-      return geometry::universes[outer_universe_index]->get_cell(r, u, on_surf);
+      return geometry::universes[static_cast<uint32_t>(outer_universe_index)]
+          ->get_cell(r, u, on_surf);
     }
   }
 
@@ -111,7 +112,8 @@ Cell* HexLattice::get_cell(Position r, Direction u, int32_t on_surf) const {
     if (outer_universe_index == -1) {
       return nullptr;
     } else {
-      return geometry::universes[outer_universe_index]->get_cell(r, u, on_surf);
+      return geometry::universes[static_cast<uint32_t>(outer_universe_index)]
+          ->get_cell(r, u, on_surf);
     }
   }
 
@@ -123,15 +125,16 @@ Cell* HexLattice::get_cell(Position r, Direction u, int32_t on_surf) const {
     if (outer_universe_index == -1) {
       return nullptr;
     } else {
-      return geometry::universes[outer_universe_index]->get_cell(r, u, on_surf);
+      return geometry::universes[static_cast<uint32_t>(outer_universe_index)]
+          ->get_cell(r, u, on_surf);
     }
   }
 
   // Move coordinates to tile center
   Position center = tile_center(qrz[0], qrz[1], qrz[2]);
   Position r_tile = r_o - center;
-  return geometry::universes[lattice_universes[indx]]->get_cell(r_tile, u,
-                                                                on_surf);
+  return geometry::universes[static_cast<uint32_t>(lattice_universes[indx])]
+      ->get_cell(r_tile, u, on_surf);
 }
 
 Cell* HexLattice::get_cell(std::vector<GeoLilyPad>& stack, Position r,
@@ -155,8 +158,8 @@ Cell* HexLattice::get_cell(std::vector<GeoLilyPad>& stack, Position r,
     } else {
       // Save info to stack
       stack.push_back({GeoLilyPad::PadType::Lattice, id_, r, qrz, true});
-      return geometry::universes[outer_universe_index]->get_cell(stack, r, u,
-                                                                 on_surf);
+      return geometry::universes[static_cast<uint32_t>(outer_universe_index)]
+          ->get_cell(stack, r, u, on_surf);
     }
   }
 
@@ -169,8 +172,8 @@ Cell* HexLattice::get_cell(std::vector<GeoLilyPad>& stack, Position r,
     } else {
       // Save info to stack
       stack.push_back({GeoLilyPad::PadType::Lattice, id_, r, qrz, true});
-      return geometry::universes[outer_universe_index]->get_cell(stack, r, u,
-                                                                 on_surf);
+      return geometry::universes[static_cast<uint32_t>(outer_universe_index)]
+          ->get_cell(stack, r, u, on_surf);
     }
   }
 
@@ -186,8 +189,8 @@ Cell* HexLattice::get_cell(std::vector<GeoLilyPad>& stack, Position r,
     } else {
       // Save info to stack
       stack.push_back({GeoLilyPad::PadType::Lattice, id_, r, qrz, true});
-      return geometry::universes[outer_universe_index]->get_cell(stack, r, u,
-                                                                 on_surf);
+      return geometry::universes[static_cast<uint32_t>(outer_universe_index)]
+          ->get_cell(stack, r, u, on_surf);
     }
   }
 
@@ -196,8 +199,8 @@ Cell* HexLattice::get_cell(std::vector<GeoLilyPad>& stack, Position r,
   Position r_tile = r_o - center;
   // Save info to stack
   stack.push_back({GeoLilyPad::PadType::Lattice, id_, r, qrz, false});
-  return geometry::universes[lattice_universes[indx]]->get_cell(stack, r_tile,
-                                                                u, on_surf);
+  return geometry::universes[static_cast<uint32_t>(lattice_universes[indx])]
+      ->get_cell(stack, r_tile, u, on_surf);
 }
 
 void HexLattice::set_elements(std::vector<int32_t> univs) {
@@ -218,7 +221,8 @@ void HexLattice::set_elements(std::vector<int32_t> univs) {
         uint32_t ring = get_ring({q, r});
 
         if (ring < Nrings) {
-          lattice_universes[linear_index({q, r}, az)] = univs[indx];
+          lattice_universes[linear_index({q, r}, static_cast<int32_t>(az))] =
+              univs[indx];
           indx += 1;
         }
       }
@@ -226,13 +230,13 @@ void HexLattice::set_elements(std::vector<int32_t> univs) {
   }
 }
 
-size_t HexLattice::linear_index(std::array<int32_t, 2> qr, uint32_t z) const {
+size_t HexLattice::linear_index(std::array<int32_t, 2> qr, int32_t z) const {
   // In qr coordinates shifted by mid_qr, both q and r can range from 0 to
   // width - 1. This then forms a width*width square array.
   size_t indx = 0;
-  uint32_t q = qr[0] + mid_qr;
-  uint32_t r = qr[1] + mid_qr;
-  indx = z * (width * width) + r * (width) + q;
+  uint32_t q = static_cast<uint32_t>(qr[0]) + mid_qr;
+  uint32_t r = static_cast<uint32_t>(qr[1]) + mid_qr;
+  indx = static_cast<uint32_t>(z) * (width * width) + r * (width) + q;
 
   if (indx >= lattice_universes.size()) {
     std::string mssg = "Invalid index for HexLattice.";
@@ -499,12 +503,15 @@ void make_hex_lattice(YAML::Node latt_node, YAML::Node input) {
       int32_t u_id = latt_node["universes"][u].as<int32_t>();
       if (u_id == -1) {
         uni_indicies.push_back(u_id);
-      } else if (universe_id_to_indx.find(u_id) == universe_id_to_indx.end()) {
+      } else if (universe_id_to_indx.find(static_cast<uint32_t>(u_id)) ==
+                 universe_id_to_indx.end()) {
         // Need to find universe
-        find_universe(input, u_id);
-        uni_indicies.push_back(static_cast<int32_t>(universe_id_to_indx[u_id]));
+        find_universe(input, static_cast<uint32_t>(u_id));
+        uni_indicies.push_back(static_cast<int32_t>(
+            universe_id_to_indx[static_cast<uint32_t>(u_id)]));
       } else {
-        uni_indicies.push_back(static_cast<int32_t>(universe_id_to_indx[u_id]));
+        uni_indicies.push_back(static_cast<int32_t>(
+            universe_id_to_indx[static_cast<uint32_t>(u_id)]));
       }
     }
   } else {
@@ -549,12 +556,13 @@ void make_hex_lattice(YAML::Node latt_node, YAML::Node input) {
     out_id = latt_node["outer"].as<int32_t>();
     if (out_id != -1) {
       // Find outside universe
-      if (universe_id_to_indx.find(out_id) == universe_id_to_indx.end()) {
+      if (universe_id_to_indx.find(static_cast<uint32_t>(out_id)) ==
+          universe_id_to_indx.end()) {
         // Need to find universe
-        find_universe(input, out_id);
+        find_universe(input, static_cast<uint32_t>(out_id));
       }
-      lat->set_outisde_universe(
-          static_cast<int32_t>(universe_id_to_indx[out_id]));
+      lat->set_outisde_universe(static_cast<int32_t>(
+          universe_id_to_indx[static_cast<uint32_t>(out_id)]));
     }
   }
 

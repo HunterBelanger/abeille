@@ -63,7 +63,8 @@ void FixedSource::mpi_setup() {
   uint64_t remainder = static_cast<uint64_t>(settings::nparticles % mpi::size);
 
   // Set the base number of particles per node in the node_nparticles vector
-  mpi::node_nparticles.resize(mpi::size, base_particles_per_node);
+  mpi::node_nparticles.resize(static_cast<std::size_t>(mpi::size),
+                              base_particles_per_node);
 
   // Distribute the remainder particles amonst the nodes. There are at most
   // mpi::size-1 remainder particles, so we will distribute them untill we
@@ -75,13 +76,15 @@ void FixedSource::mpi_setup() {
   // Now we need to make sure that the history_counter for each node is at
   // the right starting location.
   for (int lower_rank = 0; lower_rank < mpi::rank; lower_rank++) {
-    histories_counter += mpi::node_nparticles.at(lower_rank);
+    histories_counter +=
+        mpi::node_nparticles.at(static_cast<std::size_t>(lower_rank));
   }
 }
 
 void FixedSource::mpi_advance() {
-  histories_counter += static_cast<uint64_t>(settings::nparticles) -
-                       mpi::node_nparticles[mpi::rank];
+  histories_counter +=
+      static_cast<uint64_t>(settings::nparticles) -
+      mpi::node_nparticles[static_cast<std::size_t>(mpi::rank)];
 }
 
 void FixedSource::run() {
@@ -106,7 +109,8 @@ void FixedSource::run() {
   simulation_timer.start();
 
   // Get the number of particles that this node should run
-  uint64_t node_nparticles = mpi::node_nparticles[mpi::rank];
+  uint64_t node_nparticles =
+      mpi::node_nparticles[static_cast<std::size_t>(mpi::rank)];
 
   for (int g = 1; g <= settings::ngenerations; g++) {
     gen = g;

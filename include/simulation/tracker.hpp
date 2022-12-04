@@ -133,12 +133,15 @@ class Tracker {
             }
 
             if (surface_index >= 0)
-              btype = geometry::surfaces[surface_index]->boundary();
+              btype =
+                  geometry::surfaces[static_cast<std::size_t>(surface_index)]
+                      ->boundary();
             else
               btype = BoundaryType::Normal;
 
             if (surface_index >= 0 &&
-                geometry::surfaces[surface_index]->sign(pad.r_local, u_) < 0)
+                geometry::surfaces[static_cast<std::size_t>(surface_index)]
+                        ->sign(pad.r_local, u_) < 0)
               token *= -1;
           }
         }
@@ -185,20 +188,6 @@ class Tracker {
         auto cell_indx = cell_id_to_indx[it->id];
         const auto& cell = geometry::cells[cell_indx];
         if (!cell->is_inside(it->r_local, u_, surface_token_)) {
-          if (cell->neighbors().size() > 0) {
-            // We have a neighbors list ! Lets try to use that
-            for (const auto& neighbor : cell->neighbors()) {
-              // Check if we are inside this neighbor
-              if (neighbor->is_inside(it->r_local, u_, surface_token_)) {
-                // Update the GeoLilyPad to be this cell
-                it->id = neighbor->id();
-                current_cell = neighbor.get();
-                current_mat = current_cell->material();
-                return;
-              }
-            }
-          }
-
           first_bad = it;
           break;
         }
@@ -220,7 +209,8 @@ class Tracker {
     if (first_bad != tree.end()) {
       // Get rid of bad tree elements. Get index of last bad, which is
       // the size of the number of good elements.
-      auto size = std::distance(tree.begin(), first_bad);
+      auto size =
+          static_cast<std::size_t>(std::distance(tree.begin(), first_bad));
       tree.resize(size);
 
       // Now start at the last element, and get the new position
@@ -247,9 +237,9 @@ class Tracker {
                   __LINE__);
     }
     const std::shared_ptr<Surface>& surface =
-        geometry::surfaces[boundary.surface_index];
+        geometry::surfaces[static_cast<std::size_t>(boundary.surface_index)];
 
-    int32_t token = geometry::id_to_token(surface->id());
+    int32_t token = geometry::id_to_token(static_cast<int32_t>(surface->id()));
     if (surface->sign(p.r(), p.u()) < 0) token *= -1;
     this->set_surface_token(token);
 

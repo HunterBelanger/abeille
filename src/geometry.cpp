@@ -46,7 +46,6 @@ std::vector<std::shared_ptr<Cell>> cells;
 std::shared_ptr<Universe> root_universe;
 std::vector<std::shared_ptr<Universe>> universes;
 std::vector<std::shared_ptr<Lattice>> lattices;
-std::shared_ptr<CellSearchMesh> cell_search_mesh = nullptr;
 
 //==========================================================================
 // Boundary struct constructor
@@ -78,7 +77,8 @@ Boundary get_boundary(const Position& r, const Direction& u, int32_t on_surf) {
   for (size_t i = 0; i < boundaries.size(); i++) {
     if (std::abs(on_surf) - 1 != static_cast<int>(boundaries[i])) {
       int32_t indx = static_cast<int32_t>(boundaries[i]);
-      double dist = surfaces[indx]->distance(r, u, false);
+      double dist =
+          surfaces[static_cast<std::size_t>(indx)]->distance(r, u, false);
       if (dist < d_min) {
         closest_surface_indx = indx;
         d_min = dist;
@@ -87,18 +87,21 @@ Boundary get_boundary(const Position& r, const Direction& u, int32_t on_surf) {
   }
 
   if (closest_surface_indx >= 0) {
-    return {d_min, closest_surface_indx,
-            surfaces[closest_surface_indx]->boundary()};
+    return {
+        d_min, closest_surface_indx,
+        surfaces[static_cast<std::size_t>(closest_surface_indx)]->boundary()};
   }
 
   return {d_min, closest_surface_indx, btype};
 }
 
 int32_t id_to_token(int32_t id) {
-  if (surface_id_to_indx.find(std::abs(id)) == surface_id_to_indx.end())
+  if (surface_id_to_indx.find(static_cast<uint32_t>(std::abs(id))) ==
+      surface_id_to_indx.end())
     return 0;
 
-  int32_t token = static_cast<int32_t>(surface_id_to_indx[std::abs(id)]);
+  int32_t token = static_cast<int32_t>(
+      surface_id_to_indx[static_cast<uint32_t>(std::abs(id))]);
   token += 1;
 
   return token;
@@ -110,7 +113,8 @@ void do_reflection(Particle& p, Boundary boundary) {
     fatal_error("Surface index is less than zero in reflection.", __FILE__,
                 __LINE__);
   }
-  const std::shared_ptr<Surface>& surface = surfaces[boundary.surface_index];
+  const std::shared_ptr<Surface>& surface =
+      surfaces[static_cast<std::size_t>(boundary.surface_index)];
 
   // Get new Position object to temporarily contain the current position
   Position r_pre_refs = p.r();

@@ -87,12 +87,6 @@ class Cell {
 
   const std::string& name() const;
 
-  const std::vector<std::shared_ptr<Cell>> neighbors() const {
-    return neighbors_;
-  }
-
-  void add_neighbor(std::shared_ptr<Cell> cell) { neighbors_.push_back(cell); }
-
  private:
   bool simple = true;
   std::vector<int32_t> rpn;  // Surface definition of cell
@@ -106,9 +100,6 @@ class Cell {
 
   std::shared_ptr<Material> material_;
   Material* material_raw_;
-
-  std::vector<std::shared_ptr<Cell>> neighbors_{};
-
 };  // Cell
 
 //===========================================================================

@@ -223,7 +223,7 @@ void Reduce_sum(T* vals, int count, int root, const char* file = __FILE__,
 
     if (rank == root) {
       // Only allocate the receving array if we are the reciever
-      tmp_rcv.resize(count);
+      tmp_rcv.resize(static_cast<std::size_t>(count));
     }
 
     int err = MPI_Reduce(vals, &tmp_rcv[0], count, dtype<T>(), Sum, root, com);
@@ -252,17 +252,17 @@ void Gatherv(std::vector<T>& vals, int root, const char* file = __FILE__,
   if (size > 1) {
     timer.start();
     // First, we need to know how many things each rank has
-    std::vector<int> sizes(size, 0);
-    sizes[rank] = static_cast<int>(vals.size());
-    for (int n = 0; n < size; n++) {
-      Bcast<int>(sizes[n], n);
+    std::vector<int> sizes(static_cast<std::size_t>(size), 0);
+    sizes[static_cast<std::size_t>(rank)] = static_cast<int>(vals.size());
+    for (std::size_t n = 0; n < static_cast<std::size_t>(size); n++) {
+      Bcast<int>(sizes[n], static_cast<int>(n));
     }
 
     // Now that we know how many items each node has, we can determine the
     // displacements
-    std::vector<int> disps(size, 0);
+    std::vector<int> disps(static_cast<std::size_t>(size), 0);
     int disps_counter = 0;
-    for (int n = 0; n < size; n++) {
+    for (std::size_t n = 0; n < static_cast<std::size_t>(size); n++) {
       disps[n] = disps_counter;
       disps_counter += sizes[n];
     }
@@ -271,7 +271,7 @@ void Gatherv(std::vector<T>& vals, int root, const char* file = __FILE__,
     std::vector<T> tmp_rcv;
     if (rank == root) {
       std::size_t Ntot = 0;
-      for (int n = 0; n < size; n++) {
+      for (std::size_t n = 0; n < static_cast<std::size_t>(size); n++) {
         Ntot += static_cast<std::size_t>(sizes[n]);
       }
       tmp_rcv.resize(Ntot);
@@ -312,19 +312,19 @@ void Scatterv(std::vector<T>& vals, int root, const char* file = __FILE__,
     const int base = static_cast<int>(Ntot) / size;
     const int remainder = static_cast<int>(Ntot) - (size * base);
 
-    std::vector<int> sizes(size, 0);
-    for (int n = 0; n < size; n++) {
+    std::vector<int> sizes(static_cast<std::size_t>(size), 0);
+    for (std::size_t n = 0; n < static_cast<std::size_t>(size); n++) {
       sizes[n] = base;
-      if (n < remainder) sizes[n]++;
+      if (static_cast<int>(n) < remainder) sizes[n]++;
     }
 
     // Now we calculate the displacements if we are root
     std::vector<int> disps;
     if (rank == root) {
-      disps.resize(size, 0);
+      disps.resize(static_cast<std::size_t>(size), 0);
 
       int disps_counter = 0;
-      for (int n = 0; n < size; n++) {
+      for (std::size_t n = 0; n < static_cast<std::size_t>(size); n++) {
         disps[n] = disps_counter;
         disps_counter += sizes[n];
       }
@@ -332,11 +332,13 @@ void Scatterv(std::vector<T>& vals, int root, const char* file = __FILE__,
 
     // Make a receiving buffer
     std::vector<T> tmp_rcv;
-    tmp_rcv.resize(sizes[rank]);
+    tmp_rcv.resize(
+        static_cast<std::size_t>(sizes[static_cast<std::size_t>(rank)]));
 
     // Do the Scatterv
     int err = MPI_Scatterv(&vals[0], &sizes[0], &disps[0], dtype<T>(),
-                           &tmp_rcv[0], sizes[rank], dtype<T>(), root, com);
+                           &tmp_rcv[0], sizes[static_cast<std::size_t>(rank)],
+                           dtype<T>(), root, com);
     check_error(err, file, line);
 
     vals = tmp_rcv;

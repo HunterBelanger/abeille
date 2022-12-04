@@ -141,7 +141,9 @@ bool ApproximateMeshCancelator::add_particle(BankedParticle& p) {
   // The particle fits into the mesh somewhere
   auto key = [shape = shape](const int& i, const int& j, const int& k,
                              const int& l) {
-    return l + shape[3] * (k + shape[2] * (j + shape[1] * i));
+    return l + static_cast<int>(shape[3]) *
+                   (k + static_cast<int>(shape[2]) *
+                            (j + static_cast<int>(shape[1]) * i));
   };
 
   int bin_key = key(i, j, k, l);

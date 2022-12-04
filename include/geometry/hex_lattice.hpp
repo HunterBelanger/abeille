@@ -86,7 +86,7 @@ class HexLattice : public Lattice {
   double distance_to_line(Position r, Direction u, double x1, double y1,
                           double x2, double y2) const;
 
-  size_t linear_index(std::array<int32_t, 2> qr, uint32_t z) const;
+  size_t linear_index(std::array<int32_t, 2> qr, int32_t z) const;
 
 };  // HexLattice
 

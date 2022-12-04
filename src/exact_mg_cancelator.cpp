@@ -574,14 +574,15 @@ std::vector<BankedParticle> ExactMGCancelator::get_new_particles(pcg32& rng) {
           if (CHI_MATRIX) {
             // We need to select a random energy group from our bin.
             const double xi_E = RNG::rand(rng);
-            int g_index = static_cast<int>(std::floor(
+            std::size_t g_index = static_cast<std::size_t>(std::floor(
                 xi_E * static_cast<double>(Key::group_bins[key.e].size())));
             e_index = Key::group_bins[key.e][g_index];
           } else {
             // Fission spectrum is independent of incident energy.
             // We can just sample an energy from the first row
             // of the chi matrix.
-            e_index = RNG::discrete(rng, nuclide->chi()[0]);
+            e_index =
+                static_cast<std::size_t>(RNG::discrete(rng, nuclide->chi()[0]));
           }
           double E_smp = 0.5 * (settings::energy_bounds[e_index] +
                                 settings::energy_bounds[e_index + 1]);

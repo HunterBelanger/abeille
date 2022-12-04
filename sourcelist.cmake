@@ -13,7 +13,6 @@ set(ABEILLE_SOURCE_FILES ${ABEILLE_SOURCE_FILES}
   src/approximate_mesh_cancelator.cpp
   src/basic_exact_mg_cancelator.cpp
   src/exact_mg_cancelator.cpp
-  src/cell_search_mesh.cpp
   src/cancelator.cpp
   src/noise.cpp
   src/branchless_power_iterator.cpp

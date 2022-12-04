@@ -245,7 +245,8 @@ void SlicePlot::write() const {
     // Write all pixels from matrix. First get pointer
     const char* img_data = reinterpret_cast<const char*>(image_matrix.data());
     // Then get number of bytes. Use sizeof to be sure works on all systems
-    size_t nbytes = image_matrix.size() * sizeof(Pixel);
+    std::streamsize nbytes =
+        static_cast<std::streamsize>(image_matrix.size() * sizeof(Pixel));
     // Write instead of streaming seems to be much faster
     file.write(img_data, nbytes);
 

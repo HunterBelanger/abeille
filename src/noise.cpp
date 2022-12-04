@@ -51,7 +51,7 @@ void Noise::initialize() {
     load_source_from_file();
   }
 
-  mpi::node_nparticles_noise.resize(mpi::size, 0);
+  mpi::node_nparticles_noise.resize(static_cast<std::size_t>(mpi::size), 0);
 }
 
 void Noise::load_source_from_file() {
@@ -63,11 +63,14 @@ void Noise::load_source_from_file() {
   std::size_t Nprt = source.shape()[0];
 
   // Calculate the base number of particles per node to run
-  uint64_t base_particles_per_node = static_cast<uint64_t>(Nprt / mpi::size);
-  uint64_t remainder = static_cast<uint64_t>(Nprt % mpi::size);
+  uint64_t base_particles_per_node =
+      static_cast<uint64_t>(Nprt / static_cast<std::size_t>(mpi::size));
+  uint64_t remainder =
+      static_cast<uint64_t>(Nprt % static_cast<std::size_t>(mpi::size));
 
   // Set the base number of particles per node in the node_nparticles vector
-  mpi::node_nparticles.resize(mpi::size, base_particles_per_node);
+  mpi::node_nparticles.resize(static_cast<std::size_t>(mpi::size),
+                              base_particles_per_node);
 
   // Distribute the remainder particles amonst the nodes. There are at most
   // mpi::size-1 remainder particles, so we will distribute them untill we
@@ -79,14 +82,16 @@ void Noise::load_source_from_file() {
   // Now we need to make sure that the history_counter for each node is at
   // the right starting location.
   for (int lower_rank = 0; lower_rank < mpi::rank; lower_rank++) {
-    histories_counter += mpi::node_nparticles.at(lower_rank);
+    histories_counter +=
+        mpi::node_nparticles.at(static_cast<std::size_t>(lower_rank));
   }
 
   // Each node starts reading the input source data at their histories_counter
   // index. It then reads its assigned number of particles.
   uint64_t file_start_loc = histories_counter;
   double tot_wgt = 0.;
-  for (std::size_t i = 0; i < mpi::node_nparticles[mpi::rank]; i++) {
+  for (std::size_t i = 0;
+       i < mpi::node_nparticles[static_cast<std::size_t>(mpi::rank)]; i++) {
     double x = source[(file_start_loc + i) * 8 + 0];
     double y = source[(file_start_loc + i) * 8 + 1];
     double z = source[(file_start_loc + i) * 8 + 2];
@@ -119,7 +124,8 @@ void Noise::sample_source_from_sources() {
   uint64_t remainder = static_cast<uint64_t>(settings::nparticles % mpi::size);
 
   // Set the base number of particles per node in the node_nparticles vector
-  mpi::node_nparticles.resize(mpi::size, base_particles_per_node);
+  mpi::node_nparticles.resize(static_cast<std::size_t>(mpi::size),
+                              base_particles_per_node);
 
   // Distribute the remainder particles amonst the nodes. There are at most
   // mpi::size-1 remainder particles, so we will distribute them untill we
@@ -131,14 +137,16 @@ void Noise::sample_source_from_sources() {
   // Now we need to make sure that the history_counter for each node is at
   // the right starting location.
   for (int lower_rank = 0; lower_rank < mpi::rank; lower_rank++) {
-    histories_counter += mpi::node_nparticles.at(lower_rank);
+    histories_counter +=
+        mpi::node_nparticles.at(static_cast<std::size_t>(lower_rank));
   }
 
   // Go sample the particles for this node
-  bank = sample_sources(mpi::node_nparticles[mpi::rank]);
+  bank =
+      sample_sources(mpi::node_nparticles[static_cast<std::size_t>(mpi::rank)]);
 
-  global_histories_counter += std::accumulate(mpi::node_nparticles.begin(),
-                                              mpi::node_nparticles.end(), 0);
+  global_histories_counter += static_cast<uint64_t>(std::accumulate(
+      mpi::node_nparticles.begin(), mpi::node_nparticles.end(), 0));
 }
 
 void Noise::print_header() const {
@@ -340,7 +348,7 @@ void Noise::power_iteration(bool sample_noise) {
   // Make sure we have the proper history_counter values at each node
   histories_counter = global_histories_counter;
   for (int lower = 0; lower < mpi::rank; lower++) {
-    histories_counter += mpi::node_nparticles[lower];
+    histories_counter += mpi::node_nparticles[static_cast<std::size_t>(lower)];
   }
 
   bank.reserve(next_gen.size());
@@ -349,8 +357,8 @@ void Noise::power_iteration(bool sample_noise) {
     bank.back().initialize_rng(settings::rng_seed, settings::rng_stride);
   }
 
-  global_histories_counter += std::accumulate(mpi::node_nparticles.begin(),
-                                              mpi::node_nparticles.end(), 0);
+  global_histories_counter += static_cast<uint64_t>(std::accumulate(
+      mpi::node_nparticles.begin(), mpi::node_nparticles.end(), 0));
 
   next_gen.clear();
   next_gen.shrink_to_fit();
@@ -415,8 +423,8 @@ void Noise::noise_simulation() {
   // First, we need to synchronize the initial noise souce bank
   sync_banks(mpi::node_nparticles_noise, noise_bank);
 
-  uint64_t N_noise_tot = std::accumulate(mpi::node_nparticles_noise.begin(),
-                                         mpi::node_nparticles_noise.end(), 0);
+  uint64_t N_noise_tot = static_cast<uint64_t>(std::accumulate(
+      mpi::node_nparticles_noise.begin(), mpi::node_nparticles_noise.end(), 0));
 
   // Start ticking noise timer
   noise_timer.start();
@@ -457,7 +465,8 @@ void Noise::noise_simulation() {
   // Make sure we have the proper history_counter values at each node
   histories_counter = global_histories_counter;
   for (int lower = 0; lower < mpi::rank; lower++) {
-    histories_counter += mpi::node_nparticles_noise[lower];
+    histories_counter +=
+        mpi::node_nparticles_noise[static_cast<std::size_t>(lower)];
   }
 
   // Bank for noise particles.
@@ -466,8 +475,8 @@ void Noise::noise_simulation() {
     nbank.emplace_back(p.r, p.u, p.E, p.wgt, p.wgt2, histories_counter++);
     nbank.back().initialize_rng(settings::rng_seed, settings::rng_stride);
   }
-  global_histories_counter += std::accumulate(
-      mpi::node_nparticles_noise.begin(), mpi::node_nparticles_noise.end(), 0);
+  global_histories_counter += static_cast<uint64_t>(std::accumulate(
+      mpi::node_nparticles_noise.begin(), mpi::node_nparticles_noise.end(), 0));
   noise_bank.clear();
 
   int noise_gen = 0;
@@ -502,7 +511,8 @@ void Noise::noise_simulation() {
     // Make sure we have the proper history_counter values at each node
     histories_counter = global_histories_counter;
     for (int lower = 0; lower < mpi::rank; lower++) {
-      histories_counter += mpi::node_nparticles_noise[lower];
+      histories_counter +=
+          mpi::node_nparticles_noise[static_cast<std::size_t>(lower)];
     }
 
     nbank.reserve(fission_bank.size());
@@ -510,15 +520,16 @@ void Noise::noise_simulation() {
       nbank.emplace_back(p.r, p.u, p.E, p.wgt, p.wgt2, histories_counter++);
       nbank.back().initialize_rng(settings::rng_seed, settings::rng_stride);
     }
-    global_histories_counter +=
+    global_histories_counter += static_cast<uint64_t>(
         std::accumulate(mpi::node_nparticles_noise.begin(),
-                        mpi::node_nparticles_noise.end(), 0);
+                        mpi::node_nparticles_noise.end(), 0));
 
     out->write(output.str());
 
     // Get the new N_noise_tot
-    N_noise_tot = std::accumulate(mpi::node_nparticles_noise.begin(),
-                                  mpi::node_nparticles_noise.end(), 0);
+    N_noise_tot = static_cast<std::uint64_t>(
+        std::accumulate(mpi::node_nparticles_noise.begin(),
+                        mpi::node_nparticles_noise.end(), 0));
   }
 
   // Get new values

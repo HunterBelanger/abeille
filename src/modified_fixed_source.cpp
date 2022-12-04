@@ -86,7 +86,7 @@ void ModifiedFixedSource::run() {
     gen = g;
 
     // First, sample the sources and place into bank
-    bank = this->sample_sources(settings::nparticles);
+    bank = this->sample_sources(static_cast<std::size_t>(settings::nparticles));
 
     while (!bank.empty()) {
       auto fission_bank = transporter->transport(bank);

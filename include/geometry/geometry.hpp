@@ -36,7 +36,6 @@
 
 #include <cstddef>
 #include <geometry/cell.hpp>
-#include <geometry/cell_search_mesh.hpp>
 #include <geometry/geo_lily_pad.hpp>
 #include <geometry/lattice.hpp>
 #include <geometry/surfaces/surface.hpp>
@@ -65,9 +64,6 @@ extern std::vector<std::shared_ptr<Universe>> universes;
 
 // All lattices in problem
 extern std::vector<std::shared_ptr<Lattice>> lattices;
-
-// Mesh for cell searches
-extern std::shared_ptr<CellSearchMesh> cell_search_mesh;
 
 //==========================================================================
 // Boundary struct to contain information about boundary crossings

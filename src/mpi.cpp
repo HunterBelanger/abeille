@@ -162,7 +162,7 @@ void check_error(int err, const char* file, int line) {
     char err_str[MPI_MAX_ERROR_STRING];
     int str_len = 0;
     MPI_Error_string(err, err_str, &str_len);
-    std::string mssg(err_str, str_len);
+    std::string mssg(err_str, static_cast<std::size_t>(str_len));
     fatal_error(mssg, file, line);
   }
 #else

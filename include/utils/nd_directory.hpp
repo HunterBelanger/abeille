@@ -18,6 +18,10 @@
 struct CENuclide {
   std::shared_ptr<pndl::STNeutron> cedata;
   std::shared_ptr<pndl::STThermalScatteringLaw> tsl;
+
+  CENuclide(std::shared_ptr<pndl::STNeutron> i_cedata,
+            std::shared_ptr<pndl::STThermalScatteringLaw> i_tsl)
+      : cedata(i_cedata), tsl(i_tsl) {}
 };
 
 class NDDirectory {

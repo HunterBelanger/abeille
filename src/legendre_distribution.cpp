@@ -130,8 +130,10 @@ MGAngleDistribution LegendreDistribution::linearize() const {
     double rel_diff = std::abs(p_interp - p_real) / p_real;
     if (rel_diff > TOLERANCE) {
       // We need to add a new point
-      auto ip = mu.begin() + i + 1;
-      auto pp = p.begin() + i + 1;
+      auto ip =
+          mu.begin() + static_cast<std::vector<double>::difference_type>(i) + 1;
+      auto pp =
+          p.begin() + static_cast<std::vector<double>::difference_type>(i) + 1;
       mu.insert(ip, mu_mid);
       p.insert(pp, p_real);
     } else {

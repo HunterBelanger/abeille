@@ -54,7 +54,8 @@ class MGAngleDistribution {
     const double xi = RNG::rand(rng);
 
     auto cdf_it = std::lower_bound(cdf_.begin(), cdf_.end(), xi);
-    std::size_t l = std::distance(cdf_.begin(), cdf_it);
+    std::size_t l =
+        static_cast<std::size_t>(std::distance(cdf_.begin(), cdf_it));
     if (xi == *cdf_it) return mu_[l];
 
     l--;
@@ -71,7 +72,8 @@ class MGAngleDistribution {
     if (mu > max_value()) return pdf_.back();
 
     auto val_it = std::lower_bound(mu_.begin(), mu_.end(), mu);
-    std::size_t l = std::distance(mu_.begin(), val_it);
+    std::size_t l =
+        static_cast<std::size_t>(std::distance(mu_.begin(), val_it));
     if (mu == *val_it) return pdf_[l];
 
     l--;

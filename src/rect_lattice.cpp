@@ -67,7 +67,9 @@ bool RectLattice::is_inside(Position r, Direction u) const {
     // Index is outside of lattice
     return false;
   } else {
-    if (lattice_universes[linear_index(nx, ny, nz)] >= 0) {
+    if (lattice_universes[linear_index(static_cast<uint32_t>(nx),
+                                       static_cast<uint32_t>(ny),
+                                       static_cast<uint32_t>(nz))] >= 0) {
       return true;
     } else {
       return false;
@@ -87,24 +89,31 @@ Cell* RectLattice::get_cell(Position r, Direction u, int32_t on_surf) const {
       (nz < 0 || nz >= static_cast<int>(Nz))) {
     // Index is outside of lattice, if outside_universe, try outer_universe
     if (outer_universe_index >= 0) {
-      return geometry::universes[outer_universe_index]->get_cell(r, u, on_surf);
+      return geometry::universes[static_cast<std::size_t>(outer_universe_index)]
+          ->get_cell(r, u, on_surf);
     } else {
       // Location can not be found, return nullptr
       return nullptr;
     }
   } else {
-    if (lattice_universes[linear_index(nx, ny, nz)] >= 0) {
+    if (lattice_universes[linear_index(static_cast<uint32_t>(nx),
+                                       static_cast<uint32_t>(ny),
+                                       static_cast<uint32_t>(nz))] >= 0) {
       // Element is a valid fill, get cell from that universe
       // Transform coordinates to lattice elements locale frame
       Position r_local = r - tile_center(nx, ny, nz);
-      int32_t univ_indx = lattice_universes[linear_index(nx, ny, nz)];
-      return geometry::universes[univ_indx]->get_cell(r_local, u, on_surf);
+      int32_t univ_indx = lattice_universes[linear_index(
+          static_cast<uint32_t>(nx), static_cast<uint32_t>(ny),
+          static_cast<uint32_t>(nz))];
+      return geometry::universes[static_cast<std::size_t>(univ_indx)]->get_cell(
+          r_local, u, on_surf);
     } else {
       // Element is a dummy, try outer_universe
       if (outer_universe_index >= 0) {
         // outer_universe is give, get cell from that
-        return geometry::universes[outer_universe_index]->get_cell(r, u,
-                                                                   on_surf);
+        return geometry::universes[static_cast<std::size_t>(
+                                       outer_universe_index)]
+            ->get_cell(r, u, on_surf);
       } else {
         // No outer_universe provided, return nullptr
         return nullptr;
@@ -131,8 +140,8 @@ Cell* RectLattice::get_cell(std::vector<GeoLilyPad>& stack, Position r,
           {GeoLilyPad::PadType::Lattice, id_, r, {nx, ny, nz}, true});
 
       // Go to outside universe
-      return geometry::universes[outer_universe_index]->get_cell(stack, r, u,
-                                                                 on_surf);
+      return geometry::universes[static_cast<std::size_t>(outer_universe_index)]
+          ->get_cell(stack, r, u, on_surf);
     } else {
       // Save lattice info to stack
       stack.push_back(
@@ -142,18 +151,22 @@ Cell* RectLattice::get_cell(std::vector<GeoLilyPad>& stack, Position r,
       return nullptr;
     }
   } else {
-    if (lattice_universes[linear_index(nx, ny, nz)] >= 0) {
+    if (lattice_universes[linear_index(static_cast<uint32_t>(nx),
+                                       static_cast<uint32_t>(ny),
+                                       static_cast<uint32_t>(nz))] >= 0) {
       // Element is a valid fill, get cell from that universe
       // Transform coordinates to lattice elements locale frame
       Position r_local = r - tile_center(nx, ny, nz);
-      int32_t univ_indx = lattice_universes[linear_index(nx, ny, nz)];
+      int32_t univ_indx = lattice_universes[linear_index(
+          static_cast<uint32_t>(nx), static_cast<uint32_t>(ny),
+          static_cast<uint32_t>(nz))];
 
       // Save lattice info to stack
       stack.push_back(
           {GeoLilyPad::PadType::Lattice, id_, r, {nx, ny, nz}, false});
 
-      return geometry::universes[univ_indx]->get_cell(stack, r_local, u,
-                                                      on_surf);
+      return geometry::universes[static_cast<std::size_t>(univ_indx)]->get_cell(
+          stack, r_local, u, on_surf);
     } else {
       // Element is a dummy, try outer_universe
       if (outer_universe_index >= 0) {
@@ -162,8 +175,9 @@ Cell* RectLattice::get_cell(std::vector<GeoLilyPad>& stack, Position r,
             {GeoLilyPad::PadType::Lattice, id_, r, {nx, ny, nz}, true});
 
         // outer_universe is give, get cell from that
-        return geometry::universes[outer_universe_index]->get_cell(stack, r, u,
-                                                                   on_surf);
+        return geometry::universes[static_cast<std::size_t>(
+                                       outer_universe_index)]
+            ->get_cell(stack, r, u, on_surf);
       } else {
         // Save lattice info to stack
         stack.push_back(
@@ -381,15 +395,15 @@ void make_rect_lattice(YAML::Node latt_node, YAML::Node input) {
         int32_t u_id = latt_node["universes"][u].as<int32_t>();
         if (u_id == -1) {
           uni_indicies.push_back(u_id);
-        } else if (universe_id_to_indx.find(u_id) ==
+        } else if (universe_id_to_indx.find(static_cast<uint32_t>(u_id)) ==
                    universe_id_to_indx.end()) {
           // Need to find universe
-          find_universe(input, u_id);
-          uni_indicies.push_back(
-              static_cast<int32_t>(universe_id_to_indx[u_id]));
+          find_universe(input, static_cast<uint32_t>(u_id));
+          uni_indicies.push_back(static_cast<int32_t>(
+              universe_id_to_indx[static_cast<uint32_t>(u_id)]));
         } else {
-          uni_indicies.push_back(
-              static_cast<int32_t>(universe_id_to_indx[u_id]));
+          uni_indicies.push_back(static_cast<int32_t>(
+              universe_id_to_indx[static_cast<uint32_t>(u_id)]));
         }
       }
     } else {
@@ -424,12 +438,13 @@ void make_rect_lattice(YAML::Node latt_node, YAML::Node input) {
     out_id = latt_node["outer"].as<int32_t>();
     if (out_id != -1) {
       // Find outside universe
-      if (universe_id_to_indx.find(out_id) == universe_id_to_indx.end()) {
+      if (universe_id_to_indx.find(static_cast<uint32_t>(out_id)) ==
+          universe_id_to_indx.end()) {
         // Need to find universe
-        find_universe(input, out_id);
+        find_universe(input, static_cast<uint32_t>(out_id));
       }
-      lat->set_outisde_universe(
-          static_cast<int32_t>(universe_id_to_indx[out_id]));
+      lat->set_outisde_universe(static_cast<int32_t>(
+          universe_id_to_indx[static_cast<uint32_t>(out_id)]));
     }
   }
 

@@ -67,11 +67,14 @@ void BranchlessPowerIterator::load_source_from_file() {
   std::size_t Nprt = source.shape()[0];
 
   // Calculate the base number of particles per node to run
-  uint64_t base_particles_per_node = static_cast<uint64_t>(Nprt / mpi::size);
-  uint64_t remainder = static_cast<uint64_t>(Nprt % mpi::size);
+  uint64_t base_particles_per_node =
+      static_cast<uint64_t>(Nprt / static_cast<uint64_t>(mpi::size));
+  uint64_t remainder =
+      static_cast<uint64_t>(Nprt % static_cast<uint64_t>(mpi::size));
 
   // Set the base number of particles per node in the node_nparticles vector
-  mpi::node_nparticles.resize(mpi::size, base_particles_per_node);
+  mpi::node_nparticles.resize(static_cast<std::size_t>(mpi::size),
+                              base_particles_per_node);
 
   // Distribute the remainder particles amonst the nodes. There are at most
   // mpi::size-1 remainder particles, so we will distribute them untill we
@@ -83,14 +86,16 @@ void BranchlessPowerIterator::load_source_from_file() {
   // Now we need to make sure that the history_counter for each node is at
   // the right starting location.
   for (int lower_rank = 0; lower_rank < mpi::rank; lower_rank++) {
-    histories_counter += mpi::node_nparticles.at(lower_rank);
+    histories_counter +=
+        mpi::node_nparticles.at(static_cast<std::size_t>(lower_rank));
   }
 
   // Each node starts reading the input source data at their histories_counter
   // index. It then reads its assigned number of particles.
   uint64_t file_start_loc = histories_counter;
   double tot_wgt = 0.;
-  for (std::size_t i = 0; i < mpi::node_nparticles[mpi::rank]; i++) {
+  for (std::size_t i = 0;
+       i < mpi::node_nparticles[static_cast<std::size_t>(mpi::rank)]; i++) {
     double x = source[(file_start_loc + i) * 8 + 0];
     double y = source[(file_start_loc + i) * 8 + 1];
     double z = source[(file_start_loc + i) * 8 + 2];
@@ -123,7 +128,8 @@ void BranchlessPowerIterator::sample_source_from_sources() {
   uint64_t remainder = static_cast<uint64_t>(settings::nparticles % mpi::size);
 
   // Set the base number of particles per node in the node_nparticles vector
-  mpi::node_nparticles.resize(mpi::size, base_particles_per_node);
+  mpi::node_nparticles.resize(static_cast<uint64_t>(mpi::size),
+                              base_particles_per_node);
 
   // Distribute the remainder particles amonst the nodes. There are at most
   // mpi::size-1 remainder particles, so we will distribute them untill we
@@ -135,14 +141,16 @@ void BranchlessPowerIterator::sample_source_from_sources() {
   // Now we need to make sure that the history_counter for each node is at
   // the right starting location.
   for (int lower_rank = 0; lower_rank < mpi::rank; lower_rank++) {
-    histories_counter += mpi::node_nparticles.at(lower_rank);
+    histories_counter +=
+        mpi::node_nparticles.at(static_cast<std::size_t>(lower_rank));
   }
 
   // Go sample the particles for this node
-  bank = sample_sources(mpi::node_nparticles[mpi::rank]);
+  bank =
+      sample_sources(mpi::node_nparticles[static_cast<std::size_t>(mpi::rank)]);
 
-  global_histories_counter += std::accumulate(mpi::node_nparticles.begin(),
-                                              mpi::node_nparticles.end(), 0);
+  global_histories_counter += static_cast<uint64_t>(std::accumulate(
+      mpi::node_nparticles.begin(), mpi::node_nparticles.end(), 0));
 }
 
 void BranchlessPowerIterator::print_header() {
@@ -155,13 +163,15 @@ void BranchlessPowerIterator::print_header() {
       static_cast<int>(std::to_string(settings::ngenerations).size());
 
   if (settings::regional_cancellation && t_pre_entropy) {
-    out->write(std::string(std::max(n_col_gen, 3) + 1, ' ') +
-               "                                         Pre-Cancelation "
-               "Entropies             Post-Cancelation Entropies\n");
-    out->write(std::string(std::max(n_col_gen, 3) + 1, ' ') +
-               "                                   "
-               "------------------------------------   "
-               "------------------------------------\n");
+    out->write(
+        std::string(static_cast<std::size_t>(std::max(n_col_gen, 3) + 1), ' ') +
+        "                                         Pre-Cancelation Entropies    "
+        "         Post-Cancelation Entropies\n");
+    out->write(
+        std::string(static_cast<std::size_t>(std::max(n_col_gen, 3) + 1), ' ') +
+        "                                   "
+        "------------------------------------   "
+        "------------------------------------\n");
   }
 
   output << " " << std::setw(std::max(n_col_gen, 3)) << std::setfill(' ');
@@ -341,7 +351,8 @@ void BranchlessPowerIterator::run() {
     // Make sure we have the proper history_counter values at each node
     histories_counter = global_histories_counter;
     for (int lower = 0; lower < mpi::rank; lower++) {
-      histories_counter += mpi::node_nparticles[lower];
+      histories_counter +=
+          mpi::node_nparticles[static_cast<std::size_t>(lower)];
     }
 
     bank.reserve(next_gen.size());
@@ -350,9 +361,8 @@ void BranchlessPowerIterator::run() {
       bank.back().initialize_rng(settings::rng_seed, settings::rng_stride);
     }
 
-    global_histories_counter += std::accumulate(mpi::node_nparticles.begin(),
-                                                mpi::node_nparticles.end(), 0);
-
+    global_histories_counter += static_cast<uint64_t>(std::accumulate(
+        mpi::node_nparticles.begin(), mpi::node_nparticles.end(), 0));
     next_gen.clear();
     next_gen.shrink_to_fit();
 

@@ -220,54 +220,6 @@ void make_geometry(YAML::Node input) {
     std::string mssg = "No root-universe is provided in input file.";
     fatal_error(mssg, __FILE__, __LINE__);
   }
-
-  // If there is only one universe, Abeille allows for the user to
-  // provide a neighbors list, which is a dictionary of entries, one for
-  // each cell, and each entry is a sequence of the IDs of all it's
-  // neighboring cells. This speeds up transport in certain cases.
-  if (geometry::universes.size() == 1 && input["neighbors"] &&
-      input["neighbors"].IsSequence()) {
-    out->write(" Reading neighbors lists.\n");
-
-    auto neighbors_array =
-        input["neighbors"].as<std::vector<std::vector<uint32_t>>>();
-
-    // Go through all cells in the geometry
-    for (const auto& cell : geometry::cells) {
-      // Get reference to vector of all neighbor IDs
-      const std::vector<uint32_t>& neighbors = neighbors_array[cell->id() - 1];
-
-      for (const auto& neighbor : neighbors) {
-        // Check if the neighbor doesn't exist
-        if (cell_id_to_indx.find(neighbor) == cell_id_to_indx.end()) {
-          // We couldn't find a cell with that ID, so we skip trying to
-          // add this neighbor.
-          continue;
-        }
-
-        // Get the cell index for the cell ID
-        auto nbr_indx = cell_id_to_indx[neighbor];
-
-        // Add neighbor to cell
-        cell->add_neighbor(geometry::cells[nbr_indx]);
-      }
-    }
-  } else if (geometry::universes.size() == 1 && input["neighbors"]) {
-    std::string mssg = "Invalid neighbors format.";
-    fatal_error(mssg, __FILE__, __LINE__);
-  }
-
-  // If there is a cell search mesh for the stochastic geometry, we now
-  // read that too.
-  if (geometry::universes.size() == 1 && input["cell-search-mesh"] &&
-      input["cell-search-mesh"].IsMap()) {
-    out->write(" Reading cell search mesh.\n");
-    geometry::cell_search_mesh =
-        make_cell_search_mesh(input["cell-search-mesh"]);
-  } else if (geometry::universes.size() == 1 && input["cell-search-mesh"]) {
-    std::string mssg = "Invalid cell-search-mesh format.";
-    fatal_error(mssg, __FILE__, __LINE__);
-  }
 }
 
 void make_surface(YAML::Node surface_node) {

@@ -23,10 +23,10 @@ FetchContent_MakeAvailable(yaml-cpp)
 
 #===============================================================================
 # Get PapillonNDL version 0.3.0
-message(STATUS "Downloading PapillonNDL 0.3.0")
+message(STATUS "Downloading PapillonNDL develop")
 FetchContent_Declare(PapillonNDL
   GIT_REPOSITORY https://github.com/HunterBelanger/papillon-ndl.git
-  GIT_TAG        v0.3.0
+  GIT_TAG        develop
 )
 set(PNDL_SHARED OFF CACHE BOOL "Build PapillonNDL as a shared library")
 set(PNDL_INSTALL OFF CACHE BOOL "Install the PapillonNDL library and header files")
@@ -93,7 +93,7 @@ execute_process(COMMAND git describe --dirty --always
 add_executable(abeille src/main.cpp ${ABEILLE_SOURCE_FILES})
 target_include_directories(abeille PRIVATE include)
 target_compile_features(abeille PRIVATE cxx_std_17)
-target_compile_options(abeille PRIVATE -W -Wall -Wextra -Wconversion -Wpedantic -Werror)
+target_compile_options(abeille PRIVATE -W -Wall -Wextra -Wconversion -Wpedantic)
 target_link_libraries(abeille PUBLIC docopt_s yaml-cpp PapillonNDL::PapillonNDL NDArray::NDArray PCG::PCG_CXX sobol)
 target_compile_definitions(abeille PUBLIC ABEILLE_GIT_HASH=\"${ABEILLE_GIT_HASH_RAW}\")
 

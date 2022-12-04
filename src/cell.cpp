@@ -93,7 +93,9 @@ std::pair<double, int32_t> Cell::distance_to_boundary(const Position& r,
     // Calculate the distance to this surface.
     // Note the off-by-one indexing
     bool coincident = std::abs(token) == std::abs(on_surf);
-    double d = geometry::surfaces[abs(token) - 1]->distance(r, u, coincident);
+    double d =
+        geometry::surfaces[static_cast<std::size_t>(abs(token) - 1)]->distance(
+            r, u, coincident);
 
     // Check if this distance is the new minimum.
     if (d < min_dist) {
@@ -114,7 +116,9 @@ bool Cell::is_inside_simple(const Position& r, const Direction& u,
     } else if (-token == on_surf)
       return false;
     else {
-      int sign = geometry::surfaces[std::abs(token) - 1]->sign(r, u);
+      int sign =
+          geometry::surfaces[static_cast<std::size_t>(std::abs(token) - 1)]
+              ->sign(r, u);
       if ((sign > 0 && token < 0) || (sign < 0 && token > 0)) return false;
     }
   }
@@ -128,31 +132,38 @@ bool Cell::is_inside_complex(const Position& r, const Direction& u,
 
   for (int32_t token : rpn) {
     if (token == OP::UNIN) {
-      stck[i_stck - 1] = stck[i_stck - 1] || stck[i_stck];
+      stck[static_cast<std::size_t>(i_stck - 1)] =
+          stck[static_cast<std::size_t>(i_stck - 1)] ||
+          stck[static_cast<std::size_t>(i_stck)];
       i_stck--;
     } else if (token == OP::INTR) {
-      stck[i_stck - 1] = stck[i_stck - 1] && stck[i_stck];
+      stck[static_cast<std::size_t>(i_stck - 1)] =
+          stck[static_cast<std::size_t>(i_stck - 1)] &&
+          stck[static_cast<std::size_t>(i_stck)];
       i_stck--;
     } else if (token == OP::COMP) {
-      stck[i_stck] = !stck[i_stck];
+      stck[static_cast<std::size_t>(i_stck)] =
+          !stck[static_cast<std::size_t>(i_stck)];
     } else {
       i_stck++;
       if (token == on_surf) {
-        stck[i_stck] = true;
+        stck[static_cast<std::size_t>(i_stck)] = true;
       } else if (-token == on_surf) {
-        stck[i_stck] = false;
+        stck[static_cast<std::size_t>(i_stck)] = false;
       } else {
-        int sign = geometry::surfaces[std::abs(token) - 1]->sign(r, u);
+        int sign =
+            geometry::surfaces[static_cast<std::size_t>(std::abs(token) - 1)]
+                ->sign(r, u);
         if ((sign > 0 && token > 0) || (sign < 0 && token < 0)) {
-          stck[i_stck] = true;
+          stck[static_cast<std::size_t>(i_stck)] = true;
         } else
-          stck[i_stck] = false;
+          stck[static_cast<std::size_t>(i_stck)] = false;
       }
     }
   }
 
   if (i_stck == 0)
-    return stck[i_stck];
+    return stck[static_cast<std::size_t>(i_stck)];
   else
     return true;
 }
@@ -236,8 +247,8 @@ void make_cell(YAML::Node cell_node) {
       // Make sure temp not empty
       if (temp.size() > 0) {
         int32_t signed_id = std::stoi(temp);
-        int32_t indx =
-            static_cast<int32_t>(surface_id_to_indx[std::abs(signed_id)]);
+        int32_t indx = static_cast<int32_t>(
+            surface_id_to_indx[static_cast<uint32_t>(std::abs(signed_id))]);
         indx += 1;  // This is due to 1 off indexing of surfaces for use of the
                     // sign of tokens
         if (signed_id < 0) indx *= -1;
@@ -269,8 +280,8 @@ void make_cell(YAML::Node cell_node) {
   }
   if (temp.size() > 0) {
     int32_t signed_id = std::stoi(temp);
-    int32_t indx =
-        static_cast<int32_t>(surface_id_to_indx[std::abs(signed_id)]);
+    int32_t indx = static_cast<int32_t>(
+        surface_id_to_indx[static_cast<uint32_t>(std::abs(signed_id))]);
     indx += 1;
     if (signed_id < 0) indx *= -1;
     region.push_back(indx);

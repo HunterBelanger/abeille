@@ -66,7 +66,7 @@ std::vector<Particle> Simulation::sample_sources(std::size_t N) {
     rng.advance(n_advance);
     pcg32 initial_rng = rng;
 
-    int indx = RNG::discrete(rng, wgts);
+    std::size_t indx = static_cast<std::size_t>(RNG::discrete(rng, wgts));
     source_particles.push_back(sources[indx]->generate_particle(rng));
     source_particles.back().set_history_id(history_id);
     source_particles.back().rng = rng;
@@ -104,9 +104,9 @@ void Simulation::sync_banks(std::vector<uint64_t>& nums,
     Output::instance()->write("\n post_Ntot != pre_Ntot\n");
 
   // Make sure each node know how many particles the other has
-  nums[mpi::rank] = bank.size();
+  nums[static_cast<std::size_t>(mpi::rank)] = bank.size();
   for (int n = 0; n < mpi::size; n++) {
-    mpi::Bcast<uint64_t>(nums[n], n);
+    mpi::Bcast<uint64_t>(nums[static_cast<std::size_t>(n)], n);
   }
 }
 
@@ -128,8 +128,8 @@ void Simulation::distribute_particles(std::vector<uint64_t>& nums,
   mpi::Scatterv(bank, 0);
 
   // Make sure each node know how many particles the other has
-  nums[mpi::rank] = bank.size();
+  nums[static_cast<std::size_t>(mpi::rank)] = bank.size();
   for (int n = 0; n < mpi::size; n++) {
-    mpi::Bcast<uint64_t>(nums[n], n);
+    mpi::Bcast<uint64_t>(nums[static_cast<std::size_t>(n)], n);
   }
 }

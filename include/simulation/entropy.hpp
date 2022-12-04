@@ -92,7 +92,10 @@ class Entropy {
 
       // Add weight to bin if sign agrees
       if (p_sign == sign) {
-        this->bins[(shape[1] * shape[2]) * nx + (shape[2]) * ny + nz] += w;
+        this->bins[static_cast<std::size_t>(
+            (shape[1] * shape[2]) * static_cast<uint32_t>(nx) +
+            (shape[2]) * static_cast<uint32_t>(ny) +
+            static_cast<uint32_t>(nz))] += w;
       }
 
     } else

@@ -174,7 +174,7 @@ class MaterialHelper {
       xs[i] = comp_xs;
     }
 
-    int comp_ind = RNG::discrete(rng, xs);
+    std::size_t comp_ind = static_cast<std::size_t>(RNG::discrete(rng, xs));
     size_t nuclide_index = index[comp_ind];
     const Nuclide* nuclide = composition(comp_ind).nuclide.get();
 
@@ -224,7 +224,7 @@ class MaterialHelper {
       xs[i] = comp_xs;
     }
 
-    int comp_ind = RNG::discrete(rng, xs);
+    std::size_t comp_ind = static_cast<std::size_t>(RNG::discrete(rng, xs));
     size_t nuclide_index = index[comp_ind];
     const Nuclide* nuclide = composition(comp_ind).nuclide.get();
 

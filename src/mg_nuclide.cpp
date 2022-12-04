@@ -425,7 +425,7 @@ double MGNuclide::speed(double /*E*/, std::size_t i) const {
 ScatterInfo MGNuclide::sample_scatter(double /*Ein*/, const Direction& u,
                                       std::size_t i, pcg32& rng) const {
   // Change particle energy
-  int ei = RNG::discrete(rng, Ps_[i]);
+  std::size_t ei = static_cast<std::size_t>(RNG::discrete(rng, Ps_[i]));
   double E_out =
       0.5 * (settings::energy_bounds[ei] + settings::energy_bounds[ei + 1]);
 
@@ -452,7 +452,7 @@ FissionInfo MGNuclide::sample_prompt_fission(double /*Ein*/, const Direction& u,
   std::function<double()> rngfunc = std::bind(RNG::rand, std::ref(rng));
 
   // First we sample the the energy index
-  int ei = RNG::discrete(rng, chi_[i]);
+  std::size_t ei = static_cast<std::size_t>(RNG::discrete(rng, chi_[i]));
 
   // Put fission energy in middle of sampled bin
   double E_out =
@@ -488,7 +488,8 @@ FissionInfo MGNuclide::sample_fission(double /*Ein*/, const Direction& u,
   FissionInfo info;
 
   // First we sample the the energy index
-  int ei = RNG::discrete(rng, chi_[energy_index]);
+  std::size_t ei =
+      static_cast<std::size_t>(RNG::discrete(rng, chi_[energy_index]));
 
   // Put fission energy in middle of sampled bin
   double E_out =
@@ -509,11 +510,12 @@ FissionInfo MGNuclide::sample_fission(double /*Ein*/, const Direction& u,
   if (rngfunc() < Pdelayed) {
     // We have a delayed neutron. We now need to select a delayed group
     // and get the group decay constant.
-    int dgrp = RNG::discrete(rng, P_delayed_group);
+    std::size_t dgrp =
+        static_cast<std::size_t>(RNG::discrete(rng, P_delayed_group));
     double lambda = delayed_group_decay_constants[dgrp];
 
     info.delayed = true;
-    info.delayed_family = dgrp;
+    info.delayed_family = static_cast<uint32_t>(dgrp);
     info.precursor_decay_constant = lambda;
   }
 

@@ -170,7 +170,9 @@ std::vector<BankedParticle> CarterTracker::transport(
               mssg << "Previous valid coordinates: r = " << p.previous_r();
               mssg << ", u = " << p.previous_u() << ".\n";
               mssg << "Attempted reflection with surface "
-                   << geometry::surfaces[bound.surface_index]->id();
+                   << geometry::surfaces[static_cast<std::size_t>(
+                                             bound.surface_index)]
+                          ->id();
               mssg << " at a distance of " << bound.distance << " cm.\n";
               mssg << "Currently lost at r = " << trkr.r()
                    << ", u = " << trkr.u() << ".";

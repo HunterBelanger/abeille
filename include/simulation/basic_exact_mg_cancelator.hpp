@@ -85,7 +85,9 @@ class BasicExactMGCancelator : public Cancelator {
    public:
     static std::array<uint32_t, 3> shape;
     std::size_t operator()(const Key& key) const {
-      int int_key = key.k + this->shape[2] * (key.j + this->shape[1] * key.i);
+      int int_key =
+          key.k + static_cast<int>(this->shape[2]) *
+                      (key.j + static_cast<int>(this->shape[1]) * key.i);
       return std::hash<int>()(int_key);
     }
   };

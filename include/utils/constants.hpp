@@ -43,7 +43,7 @@ constexpr int VERSION_MAJOR{0};
 constexpr int VERSION_MINOR{3};
 constexpr int VERSION_PATCH{0};
 constexpr bool DEVELOPMENT_VERSION{false};
-//#define DEV_VERSION  // TO BE REMOVED FOR NON-DEV VERSIONS
+// #define DEV_VERSION  // TO BE REMOVED FOR NON-DEV VERSIONS
 constexpr int COPYRIGHT_YEAR{2022};
 #define ABEILLE_VERSION_STRING "0.3.0"
 
