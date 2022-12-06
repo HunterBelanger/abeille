@@ -439,9 +439,9 @@ void ExactMGCancelator::perform_cancellation(pcg32&) {
 #ifdef _OPENMP
 #pragma omp parallel for
 #endif
-  for (const auto& key_mat_pair : key_mat_pairs) {
-    Key key = key_mat_pair.first;
-    Material* mat = key_mat_pair.second;
+  for (std::size_t i = 0; i < key_mat_pairs.size(); i++) {
+    Key key = key_mat_pairs[i].first;
+    Material* mat = key_mat_pairs[i].second;
     CancelBin& bin = bins[key][mat];
 
     // For cancellation to be eact in the most general MG case,
