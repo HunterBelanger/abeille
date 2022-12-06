@@ -36,6 +36,9 @@
 #include <utils/constants.hpp>
 #include <utils/error.hpp>
 
+#include "geometry/surfaces/surface.hpp"
+#include "geometry/surfaces/xplane.hpp"
+
 RectLattice::RectLattice(uint32_t nx, uint32_t ny, uint32_t nz, double px,
                          double py, double pz, double xl, double yl, double zl,
                          uint32_t i_id, std::string i_name)
@@ -222,46 +225,6 @@ std::array<int32_t, 3> RectLattice::get_tile(Position r, Direction u) const {
 
 double RectLattice::distance_to_tile_boundary(
     Position r_local, Direction u, std::array<int32_t, 3> tile) const {
-  // Check if we are inside the lattice, or outside. If we are outside,
-  // we need to do something different.
-  if (tile[0] < 0 || tile[1] < 0 || tile[2] < 0 ||
-      tile[0] >= static_cast<int32_t>(Nx) ||
-      tile[1] >= static_cast<int32_t>(Ny) ||
-      tile[2] > static_cast<int32_t>(Nz)) {
-    double dmin = (Xl - r_local.x()) / u.x();
-    double dmax = (Xl + (Nx * Px) - r_local.x()) / u.x();
-    if (dmin > dmax) std::swap(dmin, dmax);
-
-    double dymin = (Yl - r_local.y()) / u.y();
-    double dymax = (Yl + (Ny * Py) - r_local.y()) / u.y();
-    if (dymin > dymax) std::swap(dymin, dymax);
-
-    if ((dmin > dymax) || (dymin > dmax)) return INF;
-
-    if (dymin > dmin) dmin = dymin;
-
-    if (dymax < dmax) dmax = dymax;
-
-    double dzmin = (Zl - r_local.z()) / u.z();
-    double dzmax = (Zl + (Nz * Pz) - r_local.z()) / u.z();
-    if (dzmin > dzmax) std::swap(dzmin, dzmax);
-
-    if ((dmin > dzmax) || (dzmin > dmax)) return INF;
-
-    if (dzmin > dmin) dmin = dzmin;
-
-    if (dzmax < dmax) dmax = dzmax;
-
-    if (dmin < 0. && dmax < 0.) return INF;
-
-    if (dmin < 0.) return dmax;
-
-    return dmin;
-  }
-
-  // If we are here, we are actually inside a lattice tile,
-  // so we just find the distance to the next tile.
-
   // Get the position of the center of the tile
   Position center = tile_center(tile[0], tile[1], tile[2]);
 
