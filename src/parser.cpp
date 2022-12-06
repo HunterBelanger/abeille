@@ -43,6 +43,7 @@
 #include <iomanip>
 #include <ios>
 #include <materials/nuclide.hpp>
+#include <memory>
 #include <simulation/branchless_power_iterator.hpp>
 #include <simulation/carter_tracker.hpp>
 #include <simulation/delta_tracker.hpp>
@@ -61,6 +62,8 @@
 #include <utils/parser.hpp>
 #include <utils/settings.hpp>
 #include <utils/timer.hpp>
+
+#include "utils/nd_directory.hpp"
 
 //===========================================================================
 // Initialize Maps from id to index
@@ -445,17 +448,103 @@ void make_settings(YAML::Node input) {
         Output::instance()->write(" Running in Multi-Group mode.\n");
       } else if (settnode["energy-mode"].as<std::string>() ==
                  "continuous-energy") {
-        std::string mssg = "Continuous-Energy Mode is not supported.";
-        fatal_error(mssg, __FILE__, __LINE__);
+        settings::energy_mode = settings::EnergyMode::CE;
+        Output::instance()->write(" Running in Continuous-Energy mode.\n");
       } else {
         std::string mssg = "Invalid energy mode ";
         mssg += settnode["energy-mode"].as<std::string>() + ".";
         fatal_error(mssg, __FILE__, __LINE__);
       }
     } else {
-      // MG by default
-      settings::energy_mode = settings::EnergyMode::MG;
+      // CE by default
+      settings::energy_mode = settings::EnergyMode::CE;
       Output::instance()->write(" Running in Continuous-Energy mode.\n");
+    }
+
+    // If we are in CE mode, we need to get the path to the nuclear data
+    // directory file, which is either in the settings, or in the
+    // environment variable. The settings file takes precidence. We also
+    // need to read the temperature interpolation method too.
+    if (settings::energy_mode == settings::EnergyMode::CE) {
+      // Get temperature interpolation method
+      if (settnode["temperature-interpolation"] &&
+          settnode["temperature-interpolation"].IsScalar()) {
+        std::string temp_interp =
+            settnode["temperature-interpolation"].as<std::string>();
+
+        if (temp_interp == "exact") {
+          settings::temp_interpolation = TempInterpolation::Exact;
+        } else if (temp_interp == "nearest") {
+          settings::temp_interpolation = TempInterpolation::Nearest;
+        } else if (temp_interp == "linear") {
+          settings::temp_interpolation = TempInterpolation::Linear;
+        } else {
+          std::stringstream mssg;
+          mssg << "Unknown \"temperature-interpolation\" entry in settings: "
+               << temp_interp << ".";
+          fatal_error(mssg.str(), __FILE__, __LINE__);
+        }
+      } else if (settnode["temperature-interpolation"]) {
+        std::stringstream mssg;
+        mssg << "Invalid \"temperature-interpolation\" entry in settings.";
+        fatal_error(mssg.str(), __FILE__, __LINE__);
+      }
+
+      // Write temperature interpolation method
+      switch (settings::temp_interpolation) {
+        case TempInterpolation::Exact:
+          Output::instance()->write(" Temperature interpolation: Exact\n");
+          break;
+
+        case TempInterpolation::Nearest:
+          Output::instance()->write(" Temperature interpolation: Nearest\n");
+          break;
+
+        case TempInterpolation::Linear:
+          Output::instance()->write(" Temperature interpolation: Linear\n");
+          break;
+      }
+
+      // Get file name for nd_directory
+      if (settnode["nuclear-data"] && settnode["nuclear-data"].IsScalar()) {
+        // File provided in settings file
+        settings::nd_directory_fname =
+            settnode["nuclear-data"].as<std::string>();
+      } else if (settnode["nuclear-data"]) {
+        // A file entry is present, but is of invalid type.
+        std::stringstream mssg;
+        mssg << "Invalid \"nulcear-data\" entry in settings.";
+        fatal_error(mssg.str(), __FILE__, __LINE__);
+      } else {
+        // Get the file name from the environment variable
+        if (!std::getenv("ABEILLE_ND_DIRECTORY")) {
+          std::stringstream mssg;
+          mssg << "No \"nuclear-data\" entry in settings, and the environment "
+                  "variable ABEILLE_ND_DIRECTORY is undefined.";
+          fatal_error(mssg.str(), __FILE__, __LINE__);
+        }
+        settings::nd_directory_fname = std::getenv("ABEILLE_ND_DIRECTORY");
+      }
+
+      Output::instance()->write(
+          " Nuclear Data Directory: " + settings::nd_directory_fname + "\n");
+
+      // Now we construct the global NDDirectory which lives in the settings
+      settings::nd_directory = std::make_unique<NDDirectory>(
+          settings::nd_directory_fname, settings::temp_interpolation);
+
+      // Check if use-dbrc is specified
+      if (settnode["use-dbrc"] && settnode["use-dbrc"].IsScalar()) {
+        settings::use_dbrc = settnode["use-dbrc"].as<bool>();
+      } else if (settnode["use-dbrc"]) {
+        std::stringstream mssg;
+        mssg << "Invalid \"use-dbrc\" entry in settings.";
+        fatal_error(mssg.str(), __FILE__, __LINE__);
+      }
+      settings::nd_directory->set_use_dbrc(settings::use_dbrc);
+      if (settings::use_dbrc == false) {
+        Output::instance()->write(" DBRC disabled in settings.\n");
+      }
     }
 
     // If we are multi-group, get number of groups

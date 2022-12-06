@@ -31,6 +31,7 @@
  * pris connaissance de la licence CeCILL, et que vous en avez accepté les
  * termes.
  *============================================================================*/
+#include <memory>
 #include <utils/constants.hpp>
 #include <utils/settings.hpp>
 
@@ -105,6 +106,11 @@ std::vector<double> sample_xs_ratio{};
 std::string output_file_name = "output.txt";
 std::string source_file_name = "source.txt";
 std::string in_source_file_name = "";
+
+std::unique_ptr<NDDirectory> nd_directory = nullptr;
+std::string nd_directory_fname;
+bool use_dbrc = true;
+TempInterpolation temp_interpolation = TempInterpolation::Linear;
 
 void initialize_global_rng() {
   rng.seed(rng_seed);

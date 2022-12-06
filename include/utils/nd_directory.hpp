@@ -6,23 +6,15 @@
 
 #include <PapillonNDL/st_neutron.hpp>
 #include <PapillonNDL/st_thermal_scattering_law.hpp>
+#include <algorithm>
 #include <filesystem>
 #include <map>
+#include <materials/ce_nuclide.hpp>
 #include <memory>
 #include <optional>
 #include <string>
 #include <variant>
 #include <vector>
-
-// Temporary struct to hold the place of future CENuclide class.
-struct CENuclide {
-  std::shared_ptr<pndl::STNeutron> cedata;
-  std::shared_ptr<pndl::STThermalScatteringLaw> tsl;
-
-  CENuclide(std::shared_ptr<pndl::STNeutron> i_cedata,
-            std::shared_ptr<pndl::STThermalScatteringLaw> i_tsl)
-      : cedata(i_cedata), tsl(i_tsl) {}
-};
 
 class NDDirectory {
  public:
@@ -42,7 +34,7 @@ class NDDirectory {
   };
 
   NDDirectory(const std::filesystem::path& fname,
-              TemperatureInterpolation interp);
+              TemperatureInterpolation interp, bool dbrc = true);
 
   CENuclidePacket load_nuclide(const std::string& key, double T);
 
@@ -55,6 +47,10 @@ class NDDirectory {
   const std::string& code() const { return code_; }
 
   const std::string& notes() const { return notes_; }
+
+  bool use_dbrc() const { return use_dbrc_; }
+
+  void set_use_dbrc(bool dbrc) { use_dbrc_ = dbrc; }
 
  private:
   struct ACEEntry {
@@ -126,6 +122,7 @@ class NDDirectory {
   std::string code_;
   std::string notes_;
   TemperatureInterpolation interp_;
+  bool use_dbrc_;
 
   bool has_nuclide_entry(const std::string& key) const;
   NuclideEntry& get_nuclide_entry(const std::string& key);

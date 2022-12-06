@@ -34,10 +34,15 @@
 #ifndef SETTINGS_H
 #define SETTINGS_H
 
+#include <algorithm>
+#include <memory>
 #include <pcg_random.hpp>
 #include <string>
+#include <utils/nd_directory.hpp>
 #include <utils/timer.hpp>
 #include <vector>
+
+using TempInterpolation = NDDirectory::TemperatureInterpolation;
 
 namespace settings {
 enum class SimulationMode {
@@ -112,6 +117,12 @@ extern bool use_virtual_collisions;
 extern std::string output_file_name;
 extern std::string source_file_name;
 extern std::string in_source_file_name;
+
+extern std::unique_ptr<NDDirectory> nd_directory;
+extern std::string nd_directory_fname;
+extern TempInterpolation temp_interpolation;
+extern bool use_dbrc;
+void initialize_nd_directory();
 
 void initialize_global_rng();
 }  // namespace settings

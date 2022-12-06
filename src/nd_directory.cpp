@@ -1,5 +1,3 @@
-#include <yaml-cpp/node/detail/iterator_fwd.h>
-
 #include <PapillonNDL/elastic_dbrc.hpp>
 #include <algorithm>
 #include <memory>
@@ -48,6 +46,12 @@ const std::shared_ptr<pndl::STNeutron>& NDDirectory::NeutronACEList::get_temp(
       neutron_ace_files[closest_tmp_indx].neutron_data =
           std::make_unique<pndl::STNeutron>(ace);
       first_loaded = neutron_ace_files[closest_tmp_indx].neutron_data;
+    }
+
+    // Turn off Target-At-Rest approximation for H1
+    if (neutron_ace_files[closest_tmp_indx].neutron_data->awr() < 1.) {
+      neutron_ace_files[closest_tmp_indx].neutron_data->elastic().set_use_tar(
+          false);
     }
   }
 
@@ -197,15 +201,6 @@ NDDirectory::NuclideEntry::NuclideEntry(const YAML::Node& node)
 
   // Fill loaded vector will nullptr
   loaded.resize(temps.size(), nullptr);
-
-  if (dbrc) {
-    if (temps.front() > 0.1) {
-      std::stringstream mssg;
-      mssg << "Nuclide entry indicated use of DBRC, but has no temperature "
-              "near 0 Kelvin.";
-      fatal_error(mssg.str(), __FILE__, __LINE__);
-    }
-  }
 }
 
 int NDDirectory::NuclideEntry::closest_temp(double T) const {
@@ -340,7 +335,7 @@ NDDirectory::TSLACEList::TSLACEList(const std::filesystem::path& basename,
 }
 
 NDDirectory::NDDirectory(const std::filesystem::path& fname,
-                         TemperatureInterpolation interp)
+                         TemperatureInterpolation interp, bool dbrc)
     : basename_(),
       neutron_dir(),
       tsl_dir(),
@@ -349,14 +344,15 @@ NDDirectory::NDDirectory(const std::filesystem::path& fname,
       date_(),
       code_(),
       notes_(),
-      interp_(interp) {
+      interp_(interp),
+      use_dbrc_(dbrc) {
   // First, open the YAML file
   if (std::filesystem::exists(fname) == false) {
     std::stringstream mssg;
     mssg << "The file " << fname << " does not exist.";
     fatal_error(mssg.str(), __FILE__, __LINE__);
   }
-  YAML::Node xsdir = YAML::LoadFile(fname);
+  YAML::Node xsdir = YAML::LoadFile(fname.string());
 
   // Read the basename
   if (xsdir["basename"] && xsdir["basename"].IsScalar()) {
@@ -519,7 +515,7 @@ std::shared_ptr<CENuclide> NDDirectory::get_cenuclide(const std::string& key,
     auto& neutron_list = get_neutron_list(nuclide.neutron);
     cedata = neutron_list.get_temp(nuclide.neutron, closest_T);
 
-    if (nuclide.dbrc) {
+    if (nuclide.dbrc && this->use_dbrc_) {
       auto& cedata_0k = neutron_list.get_temp(nuclide.neutron, 0.);
       cedata->elastic().set_elastic_doppler_broadener(
           std::make_shared<pndl::ElasticDBRC>(cedata_0k->elastic_xs()));
@@ -633,20 +629,22 @@ NDDirectory::CENuclidePacket NDDirectory::load_nuclide(const std::string& key,
         fatal_error(mssg.str(), __FILE__, __LINE__);
       }
 
-      nuclide1 = get_cenuclide(key, nuclide, Tl);
-      nuclide2 = get_cenuclide(key, nuclide, Th);
-
       if (std::abs(Tl - T) < 0.1 || std::abs(Th - T) < 0.1) {
         // Only return 1 of the temps
         if (std::abs(Tl - T) < std::abs(Th - T)) {
           // Return low temp
+          nuclide1 = get_cenuclide(key, nuclide, Tl);
           out.nuclide_1 = CENuclideFraction(1., nuclide1);
         } else {
           // Return high temp
-          out.nuclide_1 = CENuclideFraction(1., nuclide2);
+          nuclide1 = get_cenuclide(key, nuclide, Th);
+          out.nuclide_1 = CENuclideFraction(1., nuclide1);
         }
         return out;
       }
+
+      nuclide1 = get_cenuclide(key, nuclide, Tl);
+      nuclide2 = get_cenuclide(key, nuclide, Th);
 
       out.nuclide_1 = CENuclideFraction(fraction1, nuclide1);
       out.nuclide_2 = CENuclideFraction(fraction2, nuclide2);

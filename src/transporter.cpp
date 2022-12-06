@@ -34,6 +34,7 @@
 #include <complex>
 #include <simulation/transporter.hpp>
 #include <sstream>
+#include <stdexcept>
 #include <utils/constants.hpp>
 #include <utils/error.hpp>
 #include <utils/output.hpp>

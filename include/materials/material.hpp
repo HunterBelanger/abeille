@@ -96,6 +96,8 @@ class Material : public std::enable_shared_from_this<Material> {
   std::string name_;
 
   friend void make_material(const YAML::Node& mat, bool plotting_mode);
+  friend void fill_ce_material(const YAML::Node& mat,
+                               std::shared_ptr<Material> material);
 };
 
 void make_material(const YAML::Node& mat, bool plotting_mode);

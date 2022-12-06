@@ -35,6 +35,9 @@
 #include <omp.h>
 #endif
 
+#include <PapillonNDL/st_coherent_elastic.hpp>
+#include <PapillonNDL/st_incoherent_inelastic.hpp>
+#include <PapillonNDL/st_tsl_reaction.hpp>
 #include <materials/material.hpp>
 #include <materials/material_helper.hpp>
 #include <simulation/carter_tracker.hpp>
@@ -54,8 +57,78 @@ CarterTracker::CarterTracker(std::shared_ptr<Tallies> i_t)
   // Must first create a unionized energy grid. How this is done depends on
   // whether or not we are in continuous energy or multi-group mode.
   if (settings::energy_mode == settings::EnergyMode::CE) {
-    std::string mssg = "Continuous-Energy mode not supported.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    // First, we must construct a unionized energy grid, for all nuclides in the
+    // problem. We do this by iterating through all nuclides. In CE mode, we
+    // should be able to safely case a Nuclide pointer to a CENuclide pointer.
+    std::vector<double> union_energy_grid;
+
+    // Iterate through all nuclides
+    for (const auto& id_nucld_pair : nuclides) {
+      Nuclide* nuc = id_nucld_pair.second.get();
+      CENuclide* cenuc = static_cast<CENuclide*>(nuc);
+
+      // Get the nuclide's energy grid
+      std::vector<double> cenuc_grid = cenuc->cedata()->energy_grid().grid();
+      if (cenuc->tsl()) {
+        // If we have a TSL, we need to change cenuc_grid to add those points.
+        // First, get ref to IncoherentInelastic
+        const pndl::STTSLReaction& origII =
+            cenuc->tsl()->incoherent_inelastic();
+        const pndl::STIncoherentInelastic& II =
+            reinterpret_cast<const pndl::STIncoherentInelastic&>(origII);
+        const pndl::STTSLReaction& origCE = cenuc->tsl()->coherent_elastic();
+        const pndl::STCoherentElastic& CE =
+            reinterpret_cast<const pndl::STCoherentElastic&>(origCE);
+        std::size_t NEtsl = II.xs().x().size() + (2 * CE.bragg_edges().size());
+        cenuc_grid.reserve(cenuc_grid.size() + NEtsl);
+
+        // First, add all II points
+        for (std::size_t i = 0; i < II.xs().x().size(); i++) {
+          cenuc_grid.push_back(II.xs().x()[i]);
+        }
+
+        // Now add all CE bragg edges
+        for (std::size_t i = 0; i < CE.bragg_edges().size(); i++) {
+          cenuc_grid.push_back(std::nextafter(CE.bragg_edges()[i], 0.));
+          cenuc_grid.push_back(CE.bragg_edges()[i]);
+        }
+
+        // Now sort the grid
+        std::sort(cenuc_grid.begin(), cenuc_grid.end());
+      }
+
+      // Now we perform the union operation
+      std::vector<double> tmp;
+      std::set_union(union_energy_grid.begin(), union_energy_grid.end(),
+                     cenuc_grid.begin(), cenuc_grid.end(),
+                     std::back_inserter(tmp));
+      union_energy_grid = tmp;
+
+      // We now throw the grid into a set temporarily, to remove the duplicates
+      std::set<double> tmp_union_energy_grid(union_energy_grid.begin(),
+                                             union_energy_grid.end());
+      union_energy_grid.assign(tmp_union_energy_grid.begin(),
+                               tmp_union_energy_grid.end());
+    }
+
+    // With the energy grid unionized, we can go about finding majorants !
+    std::vector<double> maj_xs(union_energy_grid.size(), 0.);
+    for (const auto& material : materials) {
+      // Make a MaterialHelper, to evaluate the material XS for us
+      MaterialHelper mat(material.second.get(), union_energy_grid.front());
+
+      // Now iterate through all energy points. If xs is larger, update value
+      for (std::size_t i = 0; i < union_energy_grid.size(); i++) {
+        const double Ei = union_energy_grid[i];
+        const double xsi = mat.Et(Ei);
+
+        if (xsi > maj_xs[i]) maj_xs[i] = xsi;
+      }
+    }
+
+    // With the majorant obtained, we can now construct the majorant xs
+    EGrid = std::make_shared<pndl::EnergyGrid>(union_energy_grid);
+    Esmp = std::make_shared<pndl::CrossSection>(maj_xs, EGrid, 0);
   } else {
     // We are in multi-group mode. Here, the energy-bounds are kept in the
     // settings, so we can construct something with that

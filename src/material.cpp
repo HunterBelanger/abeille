@@ -35,6 +35,7 @@
 #include <materials/mg_nuclide.hpp>
 #include <memory>
 #include <plotting/slice_plot.hpp>
+#include <sstream>
 #include <utils/error.hpp>
 #include <utils/output.hpp>
 #include <utils/rng.hpp>
@@ -52,6 +53,92 @@ void fill_mg_material(const YAML::Node& mat,
   std::shared_ptr<Nuclide> nuclide = make_mg_nuclide(mat, material->id());
 
   material->add_component(1., nuclide);
+}
+
+void fill_ce_material(const YAML::Node& mat,
+                      std::shared_ptr<Material> material) {
+  std::string read_mssg = " Reading material " + material->name() + ".\n";
+  Output::instance()->write(read_mssg);
+
+  // First, get the temperature of the material
+  double temp = 293.6;
+  if (!mat["temperature"] || !mat["temperature"].IsScalar()) {
+    std::stringstream mssg;
+    mssg << "Material " << material->name()
+         << " has no valid temperature entry.";
+    fatal_error(mssg.str(), __FILE__, __LINE__);
+  }
+  temp = mat["temperature"].as<double>();
+  if (temp < 0.) {
+    std::stringstream mssg;
+    mssg << "Material " << material->name() << " has a negative temperature.";
+    fatal_error(mssg.str(), __FILE__, __LINE__);
+  }
+
+  // Get YAML list of all components
+  if (!mat["composition"] || !mat["composition"].IsSequence()) {
+    std::stringstream mssg;
+    mssg << "Material " << material->name() << " has invalid composition list.";
+    fatal_error(mssg.str(), __FILE__, __LINE__);
+  }
+  auto comps = mat["composition"];
+
+  for (std::size_t i = 0; i < comps.size(); i++) {
+    // Make sure is a map !
+    if (!comps[i].IsMap() || !comps[i]["nuclide"] ||
+        !comps[i]["nuclide"].IsScalar() || !comps[i]["concentration"] ||
+        !comps[i]["concentration"].IsScalar()) {
+      std::stringstream mssg;
+      mssg << "Entry index " << i << " in material ";
+      mssg << material->name() << " is invalid.";
+      fatal_error(mssg.str(), __FILE__, __LINE__);
+    }
+
+    const std::string nuclide_key = comps[i]["nuclide"].as<std::string>();
+    const double concentration = comps[i]["concentration"].as<double>();
+
+    // Make sure concentration is positive
+    if (concentration <= 0.) {
+      std::stringstream mssg;
+      mssg << "Entry index " << i << " in material ";
+      mssg << material->name() << " has a negative concentration.";
+      fatal_error(mssg.str(), __FILE__, __LINE__);
+    }
+
+    // Get CENuclidePacket from NDDirectory
+    auto packet = settings::nd_directory->load_nuclide(nuclide_key, temp);
+
+    // Add components
+    if (!packet.nuclide_1 && !packet.nuclide_2) {
+      // If we have no nuclides, this is bad
+      std::stringstream mssg;
+      mssg << "Entry index " << i << " in material ";
+      mssg << material->name() << " returned an empty CENuclidePacket.";
+      fatal_error(mssg.str(), __FILE__, __LINE__);
+    }
+
+    if (packet.nuclide_1) {
+      const auto& nuc_frac = packet.nuclide_1.value();
+
+      if (nuclides.find(nuc_frac.nuclide->id()) == nuclides.end()) {
+        nuclides[nuc_frac.nuclide->id()] = nuc_frac.nuclide;
+      }
+
+      material->add_component(nuc_frac.fraction * concentration,
+                              nuc_frac.nuclide);
+    }
+
+    if (packet.nuclide_2) {
+      const auto& nuc_frac = packet.nuclide_2.value();
+
+      if (nuclides.find(nuc_frac.nuclide->id()) == nuclides.end()) {
+        nuclides[nuc_frac.nuclide->id()] = nuc_frac.nuclide;
+      }
+
+      material->add_component(nuc_frac.fraction * concentration,
+                              nuc_frac.nuclide);
+    }
+  }
 }
 
 void make_material(const YAML::Node& mat, bool plotting_mode) {
@@ -95,14 +182,14 @@ void make_material(const YAML::Node& mat, bool plotting_mode) {
   plotter::material_id_to_color[material->id()] = mat_color;
 
   if (!plotting_mode) {
-    if (settings::energy_mode == settings::EnergyMode::MG) {
-      fill_mg_material(mat, material);
-    } else if (settings::energy_mode == settings::EnergyMode::CE) {
-      std::string mssg = "Continuous Energy Mode not supported.";
-      fatal_error(mssg, __FILE__, __LINE__);
-    } else {
-      std::string mssg = "Unknown energy mode.";
-      fatal_error(mssg, __FILE__, __LINE__);
+    switch (settings::energy_mode) {
+      case settings::EnergyMode::MG:
+        fill_mg_material(mat, material);
+        break;
+
+      case settings::EnergyMode::CE:
+        fill_ce_material(mat, material);
+        break;
     }
   }
 
