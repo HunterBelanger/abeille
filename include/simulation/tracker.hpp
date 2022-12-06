@@ -39,6 +39,8 @@
 #include <geometry/geometry.hpp>
 #include <materials/material.hpp>
 #include <simulation/particle.hpp>
+#include <sstream>
+#include <stdexcept>
 #include <utils/error.hpp>
 #include <utils/parser.hpp>
 
@@ -177,9 +179,15 @@ class Tracker {
     auto first_bad = tree.end();
 
     if (!check_tree()) {
-      std::cout << " BAD POSITIONS!\n";
-      std::cout << " r_ = " << r_ << "\n";
-      std::cout << " rl = " << tree.front().r_local << "\n";
+      // Start from scratch
+      restart_get_current();
+
+      if (!check_tree()) {
+        std::stringstream mssg;
+        mssg << " BAD POSITIONS!\n r_ = " << r_
+             << "\n rl = " << tree.front().r_local << "\n";
+        fatal_error(mssg.str(), __FILE__, __LINE__);
+      }
     }
 
     // Go back through tree, and see where we are no-longer inside
