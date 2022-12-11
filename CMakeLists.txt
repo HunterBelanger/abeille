@@ -93,9 +93,18 @@ execute_process(COMMAND git describe --dirty --always
 add_executable(abeille src/main.cpp ${ABEILLE_SOURCE_FILES})
 target_include_directories(abeille PRIVATE include)
 target_compile_features(abeille PRIVATE cxx_std_17)
-target_compile_options(abeille PRIVATE -W -Wall -Wextra -Wconversion -Wpedantic)
 target_link_libraries(abeille PUBLIC docopt_s yaml-cpp PapillonNDL::PapillonNDL NDArray::NDArray PCG::PCG_CXX sobol)
 target_compile_definitions(abeille PUBLIC ABEILLE_GIT_HASH=\"${ABEILLE_GIT_HASH_RAW}\")
+
+if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC") # Comile options for Windows
+  target_compile_options(abeille PRIVATE /W4)
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU") # Compile options for GCC
+  target_compile_options(abeille PRIVATE -W -Wall -Wextra -Wconversion -Wpedantic)
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang") # Compile options for Clang
+  target_compile_options(abeille PRIVATE -W -Wall -Wextra -Wconversion -Wpedantic)
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Intel") # Compile options for Intel
+  target_compile_options(abeille PRIVATE -W -Wall -Wextra -Wconversion -Wpedantic)
+endif()
 
 # Find OpenMP if desired
 if(ABEILLE_USE_OMP)
