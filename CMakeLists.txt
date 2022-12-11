@@ -97,7 +97,7 @@ target_link_libraries(abeille PUBLIC docopt_s yaml-cpp PapillonNDL::PapillonNDL 
 target_compile_definitions(abeille PUBLIC ABEILLE_GIT_HASH=\"${ABEILLE_GIT_HASH_RAW}\")
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC") # Comile options for Windows
-  target_compile_options(abeille PRIVATE /W4)
+  target_compile_options(abeille PRIVATE /W3)
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU") # Compile options for GCC
   target_compile_options(abeille PRIVATE -W -Wall -Wextra -Wconversion -Wpedantic)
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang") # Compile options for Clang
@@ -111,6 +111,9 @@ if(ABEILLE_USE_OMP)
   find_package(OpenMP REQUIRED)
   if(OpenMP_CXX_FOUND)
     target_link_libraries(abeille PUBLIC OpenMP::OpenMP_CXX)
+    if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC") # Comile options for Windows
+      target_compile_options(abeille PRIVATE /openmp:llvm) 
+    endif()
   endif()
 endif()
 
