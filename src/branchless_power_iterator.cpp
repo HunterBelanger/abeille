@@ -228,7 +228,7 @@ void BranchlessPowerIterator::generation_output() {
 
   if (!settings::regional_cancellation && t_pre_entropy) {
     output << std::setw(10) << std::scientific << std::setprecision(4);
-    output << t_pre_entropy->calculate_entropy();
+    output << t_post_entropy->calculate_entropy();
   }
 
   if (settings::regional_cancellation && t_pre_entropy) {
@@ -562,6 +562,11 @@ void BranchlessPowerIterator::compute_post_cancellation_entropy(
     }
     p_post_entropy->synchronize_entropy_across_nodes();
     n_post_entropy->synchronize_entropy_across_nodes();
+    t_post_entropy->synchronize_entropy_across_nodes();
+  } else if (t_pre_entropy) {
+    for (size_t i = 0; i < next_gen.size(); i++) {
+      t_post_entropy->add_point(next_gen[i].r, next_gen[i].wgt);
+    }
     t_post_entropy->synchronize_entropy_across_nodes();
   }
 }
