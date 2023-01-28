@@ -71,10 +71,12 @@ void register_banked_particle_type() {
 
   BankedParticle p;
   int err = 0;
-  int sizes[13]{3, 3, 1, 1, 1, 1, 1, 1, 3, 3, 1, 1, 1};
-  DType dtypes[13]{Double, Double, Double, Double, Double, UInt64, UInt64,
-                   Bool,   Double, Double, Double, Double, Double};
-  MPI_Aint disps[13];
+  constexpr std::size_t BP_NUM_MEMBERS = 14;
+  int sizes[BP_NUM_MEMBERS]{3, 3, 1, 1, 1, 1, 1, 1, 1, 3, 3, 1, 1, 1};
+  DType dtypes[BP_NUM_MEMBERS]{Double, Double, Double, Double, Double,
+                               UInt64, UInt64, UInt64, Bool,   Double,
+                               Double, Double, Double, Double};
+  MPI_Aint disps[BP_NUM_MEMBERS];
   MPI_Get_address(&p.r, &disps[0]);
   MPI_Get_address(&p.u, &disps[1]);
   MPI_Get_address(&p.E, &disps[2]);
@@ -82,13 +84,14 @@ void register_banked_particle_type() {
   MPI_Get_address(&p.wgt2, &disps[4]);
   MPI_Get_address(&p.parent_history_id, &disps[5]);
   MPI_Get_address(&p.parent_daughter_id, &disps[6]);
-  MPI_Get_address(&p.parents_previous_was_virtual, &disps[7]);
-  MPI_Get_address(&p.parents_previous_position, &disps[8]);
-  MPI_Get_address(&p.parents_previous_direction, &disps[9]);
-  MPI_Get_address(&p.parents_previous_previous_energy, &disps[10]);
-  MPI_Get_address(&p.parents_previous_energy, &disps[11]);
-  MPI_Get_address(&p.Esmp_parent, &disps[12]);
-  for (int i = 12; i >= 0; --i) {
+  MPI_Get_address(&p.family_id, &disps[7]);
+  MPI_Get_address(&p.parents_previous_was_virtual, &disps[8]);
+  MPI_Get_address(&p.parents_previous_position, &disps[9]);
+  MPI_Get_address(&p.parents_previous_direction, &disps[10]);
+  MPI_Get_address(&p.parents_previous_previous_energy, &disps[11]);
+  MPI_Get_address(&p.parents_previous_energy, &disps[12]);
+  MPI_Get_address(&p.Esmp_parent, &disps[13]);
+  for (int i = BP_NUM_MEMBERS - 1; i >= 0; --i) {
     disps[i] -= disps[0];
   }
 

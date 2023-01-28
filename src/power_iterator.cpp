@@ -56,6 +56,10 @@ void PowerIterator::initialize() {
     // Load source file
     load_source_from_file();
   }
+
+  // Assign History ID as family ID. At beginning, history IDs should start at
+  // 1, so this SHOULD yield the desired results.
+  for (auto& p : bank) p.set_family_id(p.history_id());
 }
 
 void PowerIterator::load_source_from_file() {
@@ -196,6 +200,10 @@ void PowerIterator::print_header() {
     output << "      <r^2>  ";
   }
 
+  if (settings::families) {
+    output << "   N_Families  ";
+  }
+
   // Add line underneath
   output << "\n " << std::string(output.str().size() - 3, '-') << "\n";
 
@@ -266,6 +274,10 @@ void PowerIterator::generation_output() {
            << r_sqrd;
   }
 
+  if (settings::families) {
+    output << "   " << std::fixed << families.size();
+  }
+
   // Add line underneath
   output << "\n";
 
@@ -289,6 +301,13 @@ void PowerIterator::run() {
 
   for (int g = 1; g <= settings::ngenerations; g++) {
     gen = g;
+
+    if (settings::families) {
+      // Before transport, we get the set of all families, so that we can know
+      // how many particle families entered the generation.
+      families.clear();
+      for (auto& p : bank) families.insert(p.family_id());
+    }
 
     std::vector<BankedParticle> next_gen = transporter->transport(bank);
 
@@ -360,6 +379,7 @@ void PowerIterator::run() {
     for (auto& p : next_gen) {
       bank.push_back(Particle(p.r, p.u, p.E, p.wgt, histories_counter++));
       bank.back().initialize_rng(settings::rng_seed, settings::rng_stride);
+      bank.back().set_family_id(p.family_id);
     }
 
     global_histories_counter += static_cast<uint64_t>(std::accumulate(

@@ -93,6 +93,7 @@ extern double keff;
 extern bool converged;
 
 extern bool pair_distance_sqrd;
+extern bool families;
 
 extern bool regional_cancellation;
 extern bool regional_cancellation_noise;

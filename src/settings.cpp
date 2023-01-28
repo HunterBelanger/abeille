@@ -72,6 +72,7 @@ double keff = 1.;  // Used in noise transport
 bool converged = false;
 
 bool pair_distance_sqrd = false;
+bool families = false;
 
 bool regional_cancellation = false;
 bool regional_cancellation_noise = false;

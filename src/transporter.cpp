@@ -160,7 +160,7 @@ void Transporter::branchless_collision_iso(Particle& p, MaterialHelper& mat,
       // Split particle if weight magnitude is too large
       if (settings::branchless_splitting && p.is_alive() &&
           std::abs(p.wgt()) >= settings::wgt_split) {
-        int n_new = static_cast<int>(std::ceil(std::abs(p.wgt())));
+        int n_new = static_cast<int>(std::floor(std::abs(p.wgt())));
         p.split(n_new);
       }
     } else {
@@ -177,6 +177,7 @@ void Transporter::branchless_collision_iso(Particle& p, MaterialHelper& mat,
                                    p.wgt2() * m,
                                    p.history_id(),
                                    p.daughter_counter(),
+                                   p.family_id(),
                                    p.previous_collision_virtual(),
                                    p.previous_r(),
                                    p.previous_u(),
@@ -264,6 +265,7 @@ void Transporter::branchless_collision_mat(Particle& p, MaterialHelper& mat,
                                  p.wgt2() * m,
                                  p.history_id(),
                                  p.daughter_counter(),
+                                 p.family_id(),
                                  p.previous_collision_virtual(),
                                  p.previous_r(),
                                  p.previous_u(),
@@ -456,6 +458,7 @@ void Transporter::make_fission_neutrons(Particle& p, const MicroXSs& microxs,
                                  wgt2,
                                  p.history_id(),
                                  p.daughter_counter(),
+                                 p.family_id(),
                                  p.previous_collision_virtual(),
                                  p.previous_r(),
                                  p.previous_u(),

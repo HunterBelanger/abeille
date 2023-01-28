@@ -36,6 +36,7 @@
 
 #include <simulation/cancelator.hpp>
 #include <simulation/simulation.hpp>
+#include <unordered_set>
 #include <vector>
 
 class BranchlessPowerIterator : public Simulation {
@@ -60,6 +61,7 @@ class BranchlessPowerIterator : public Simulation {
  private:
   std::vector<Particle> bank;
   std::shared_ptr<Cancelator> cancelator = nullptr;
+  std::unordered_set<uint64_t> families = {};
   int Nnet = 0, Npos = 0, Nneg = 0, Ntot = 0;
   int Wnet = 0, Wpos = 0, Wneg = 0, Wtot = 0;
   int gen = 0;

@@ -796,6 +796,16 @@ void make_settings(YAML::Node input) {
       fatal_error(mssg, __FILE__, __LINE__);
     }
 
+    // Get option for showing the number of particle families
+    if (settnode["families"] && settnode["families"].IsScalar()) {
+      settings::families = settnode["families"].as<bool>();
+    } else if (settnode["families"]) {
+      std::string mssg =
+          "The settings option \"families\" must be a single boolean "
+          "value.";
+      fatal_error(mssg, __FILE__, __LINE__);
+    }
+
   } else {
     std::string mssg = "Not settings specified in input file.";
     fatal_error(mssg, __FILE__, __LINE__);

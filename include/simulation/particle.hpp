@@ -50,6 +50,7 @@ struct BankedParticle {
   // Info about how it was made
   uint64_t parent_history_id;
   uint64_t parent_daughter_id;
+  uint64_t family_id;
 
   // For use in performing cancellation
   bool parents_previous_was_virtual = false;
@@ -96,6 +97,7 @@ class Particle {
   Direction previous_u() const { return previous_direction; }
   double previous_E() const { return previous_energy; }
   uint64_t history_id() const { return history_id_; }
+  uint64_t family_id() const { return family_id_; }
   uint64_t secondary_id() const { return secondary_id_; }
   uint64_t daughter_counter() { return daughter_counter_++; }
   double Esmp() const { return Esmp_; }
@@ -120,6 +122,7 @@ class Particle {
   void set_previous_r(Position r) { previous_position = r; }
   void set_reflected(bool ref) { reflected = ref; }
   void set_history_id(uint64_t i) { history_id_ = i; }
+  void set_family_id(uint64_t i) { family_id_ = i; }
   void set_secondary_id(uint64_t i) { secondary_id_ = i; }
   void set_Esmp(double new_Esmp) { Esmp_ = new_Esmp; }
 
@@ -221,6 +224,8 @@ class Particle {
   std::vector<ParticleState> secondaries;
   std::vector<BankedParticle> history_fission_bank;
   std::vector<BankedParticle> history_noise_bank;
+
+  uint64_t family_id_ = 0;
 
   uint64_t secondary_id_ = 0;
   uint64_t daughter_counter_ = 0;
