@@ -23,10 +23,10 @@ FetchContent_MakeAvailable(yaml-cpp)
 
 #===============================================================================
 # Get PapillonNDL version 0.3.0
-message(STATUS "Downloading PapillonNDL develop")
+message(STATUS "Downloading PapillonNDL v0.3.1")
 FetchContent_Declare(PapillonNDL
   GIT_REPOSITORY https://github.com/HunterBelanger/papillon-ndl.git
-  GIT_TAG        develop
+  GIT_TAG        v0.3.1
 )
 set(PNDL_SHARED OFF CACHE BOOL "Build PapillonNDL as a shared library")
 set(PNDL_INSTALL OFF CACHE BOOL "Install the PapillonNDL library and header files")
