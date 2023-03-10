@@ -1,16 +1,14 @@
 #ifndef MATERIAL_HELPER_H
 #define MATERIAL_HELPER_H
 
-#include <materials/nuclide.hpp>
+#include <boost/unordered/unordered_flat_map.hpp>
+#include <cstdint>
 #include <materials/material.hpp>
+#include <materials/nuclide.hpp>
+#include <optional>
 #include <utils/constants.hpp>
 #include <utils/rng.hpp>
 #include <utils/settings.hpp>
-
-#include <boost/unordered/unordered_flat_map.hpp>
-
-#include <cstdint>
-#include <optional>
 
 class MaterialHelper {
  public:
@@ -27,11 +25,13 @@ class MaterialHelper {
     for (auto& rand : zaid_to_urr_rand_) rand.second = RNG::rand(rng);
   }
 
-  void set_urr_rand_vals(const boost::unordered_flat_map<uint32_t, std::optional<double>>& vals) {
+  void set_urr_rand_vals(
+      const boost::unordered_flat_map<uint32_t, std::optional<double>>& vals) {
     zaid_to_urr_rand_ = vals;
   }
 
-  const boost::unordered_flat_map<uint32_t, std::optional<double>>& urr_rand_vals() const {
+  const boost::unordered_flat_map<uint32_t, std::optional<double>>&
+  urr_rand_vals() const {
     return zaid_to_urr_rand_;
   }
 
@@ -59,7 +59,7 @@ class MaterialHelper {
 
   double Ew(double E, bool noise = false) {
     this->set_energy(E);
-    
+
     double Ew_ = 0.;
 
     if (noise) {
@@ -100,7 +100,8 @@ class MaterialHelper {
     // Go through all components in the material
     for (const auto& comp : mat->composition()) {
       const auto& micro_xs = this->get_micro_xs(comp.nuclide.get());
-      Ea_ += comp.concentration * std::max(micro_xs.total - micro_xs.absorption, 0.);
+      Ea_ += comp.concentration *
+             std::max(micro_xs.total - micro_xs.absorption, 0.);
     }
 
     return Ea_;
@@ -230,7 +231,7 @@ class MaterialHelper {
         case BranchlessReaction::SCATTER:
           sum += comp.concentration * (micro_xs.elastic + micro_xs.inelastic);
           break;
-        
+
         case BranchlessReaction::FISSION:
           sum += comp.concentration * micro_xs.nu_total * micro_xs.fission;
           break;
@@ -248,11 +249,13 @@ class MaterialHelper {
 
       switch (reaction) {
         case BranchlessReaction::SCATTER:
-          prob_sum += micro_xs.concentration * (micro_xs.elastic + micro_xs.inelastic);
+          prob_sum +=
+              micro_xs.concentration * (micro_xs.elastic + micro_xs.inelastic);
           break;
-        
+
         case BranchlessReaction::FISSION:
-          prob_sum += micro_xs.concentration * micro_xs.nu_total * micro_xs.fission;
+          prob_sum +=
+              micro_xs.concentration * micro_xs.nu_total * micro_xs.fission;
           break;
       }
 
@@ -290,7 +293,7 @@ class MaterialHelper {
   const MicroXSs& get_micro_xs(const Nuclide* nuc) {
     auto it = xs_.find(nuc);
 
-    // If for some reason there is no entry for this nuclide, we add it. 
+    // If for some reason there is no entry for this nuclide, we add it.
     if (it == xs_.end()) {
       xs_[nuc] = std::nullopt;
       it = xs_.find(nuc);
@@ -311,7 +314,7 @@ class MaterialHelper {
       it->second = nuc->get_micro_xs(E_, urr_rand);
     }
 
-    // Return the micro xs 
+    // Return the micro xs
     return it->second.value();
   }
 

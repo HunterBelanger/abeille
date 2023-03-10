@@ -33,15 +33,14 @@
  *============================================================================*/
 #include <materials/material.hpp>
 #include <materials/mg_nuclide.hpp>
+#include <materials/nuclide.hpp>
+#include <memory>
 #include <plotting/slice_plot.hpp>
+#include <sstream>
 #include <utils/error.hpp>
 #include <utils/output.hpp>
 #include <utils/rng.hpp>
 #include <utils/settings.hpp>
-#include <materials/nuclide.hpp>
-
-#include <memory>
-#include <sstream>
 #include <vector>
 
 std::map<uint32_t, std::shared_ptr<Material>> materials;
@@ -121,7 +120,7 @@ void fill_ce_material(const YAML::Node& mat,
 
     if (packet.nuclide_1) {
       const auto& nuc_frac = packet.nuclide_1.value();
-      
+
       // If this is a new nuclide, add it to the map of nuclides
       if (nuclides.find(nuc_frac.nuclide->id()) == nuclides.end()) {
         nuclides[nuc_frac.nuclide->id()] = nuc_frac.nuclide;
@@ -139,7 +138,7 @@ void fill_ce_material(const YAML::Node& mat,
 
     if (packet.nuclide_2) {
       const auto& nuc_frac = packet.nuclide_2.value();
-      
+
       // If this is a new nuclide, add it to the map of nuclides
       if (nuclides.find(nuc_frac.nuclide->id()) == nuclides.end()) {
         nuclides[nuc_frac.nuclide->id()] = nuc_frac.nuclide;

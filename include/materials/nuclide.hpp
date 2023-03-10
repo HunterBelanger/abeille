@@ -35,11 +35,10 @@
 #define NUCLIDE_H
 
 #include <cstdint>
-#include <simulation/noise_source.hpp>
-#include <simulation/particle.hpp>
-
 #include <map>
 #include <optional>
+#include <simulation/noise_source.hpp>
+#include <simulation/particle.hpp>
 #include <unordered_set>
 
 class Nuclide;
@@ -51,7 +50,8 @@ struct MicroXSs {
   double fission = 0.;
   double absorption = 0.;
   double elastic = 0.;
-  double inelastic = 0.; // Not actually inelastic, just all scattering that isn't elastic
+  double inelastic =
+      0.;  // Not actually inelastic, just all scattering that isn't elastic
   double nu_total = 0.;
   double nu_delayed = 0.;
   double energy = 0.;
@@ -96,14 +96,16 @@ class Nuclide {
   virtual double reaction_xs(uint32_t mt, double E_in, size_t i) const = 0;
   virtual double elastic_xs(double E_in, std::size_t i) const = 0;
   virtual std::size_t energy_grid_index(double E) const = 0;
-  virtual MicroXSs get_micro_xs(double E, std::optional<double> urr_rand = std::nullopt) const = 0;
+  virtual MicroXSs get_micro_xs(
+      double E, std::optional<double> urr_rand = std::nullopt) const = 0;
 
   virtual std::size_t num_delayed_groups() const = 0;
   virtual double delayed_group_constant(std::size_t g) const = 0;
   virtual double delayed_group_probability(std::size_t g, double E) const = 0;
 
   virtual ScatterInfo sample_scatter(double Ein, const Direction& u,
-                                     const MicroXSs& micro_xs, pcg32& rng) const = 0;
+                                     const MicroXSs& micro_xs,
+                                     pcg32& rng) const = 0;
   virtual ScatterInfo sample_scatter_mt(uint32_t mt, double Ein,
                                         const Direction& u, std::size_t i,
                                         pcg32& rng) const = 0;

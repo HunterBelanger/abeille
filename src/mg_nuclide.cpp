@@ -32,17 +32,16 @@
  * termes.
  *============================================================================*/
 
+#include <complex>
+#include <cstdint>
+#include <functional>
 #include <materials/legendre_distribution.hpp>
 #include <materials/mg_nuclide.hpp>
+#include <sstream>
 #include <utils/constants.hpp>
 #include <utils/error.hpp>
 #include <utils/rng.hpp>
 #include <utils/settings.hpp>
-
-#include <functional>
-#include <complex>
-#include <cstdint>
-#include <sstream>
 
 MGNuclide::MGNuclide(const std::vector<double>& speeds,
                      const std::vector<double>& Et,
@@ -407,7 +406,8 @@ std::size_t MGNuclide::energy_grid_index(double E) const {
   return i;
 }
 
-MicroXSs MGNuclide::get_micro_xs(double E, std::optional<double> /*urr_rand*/) const {
+MicroXSs MGNuclide::get_micro_xs(double E,
+                                 std::optional<double> /*urr_rand*/) const {
   MicroXSs xs;
   xs.energy = E;
   xs.energy_index = this->energy_grid_index(E);
@@ -416,11 +416,11 @@ MicroXSs MGNuclide::get_micro_xs(double E, std::optional<double> /*urr_rand*/) c
   xs.fission = this->fission_xs(E, xs.energy_index);
   xs.absorption = xs.fission + this->disappearance_xs(E, xs.energy_index);
   xs.elastic = this->elastic_xs(E, xs.energy_index);
-  xs.inelastic = 0.; // MG has no inelastic
+  xs.inelastic = 0.;  // MG has no inelastic
   xs.nu_total = this->nu_total(E, xs.energy_index);
   xs.nu_delayed = this->nu_delayed(E, xs.energy_index);
-  xs.concentration = 0.; // We set this as zero for now
-  xs.noise_copy = 0.; // We also leave this as zero
+  xs.concentration = 0.;  // We set this as zero for now
+  xs.noise_copy = 0.;     // We also leave this as zero
 
   return xs;
 }
@@ -448,9 +448,11 @@ double MGNuclide::speed(double /*E*/, std::size_t i) const {
 uint32_t MGNuclide::zaid() const { return this->id(); }
 
 ScatterInfo MGNuclide::sample_scatter(double /*Ein*/, const Direction& u,
-                                      const MicroXSs& micro_xs, pcg32& rng) const {
+                                      const MicroXSs& micro_xs,
+                                      pcg32& rng) const {
   // Change particle energy
-  std::size_t ei = static_cast<std::size_t>(RNG::discrete(rng, Ps_[micro_xs.energy_index]));
+  std::size_t ei =
+      static_cast<std::size_t>(RNG::discrete(rng, Ps_[micro_xs.energy_index]));
   double E_out =
       0.5 * (settings::energy_bounds[ei] + settings::energy_bounds[ei + 1]);
 

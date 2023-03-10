@@ -40,26 +40,24 @@
 #include <PapillonNDL/st_coherent_elastic.hpp>
 #include <PapillonNDL/st_incoherent_inelastic.hpp>
 #include <PapillonNDL/st_tsl_reaction.hpp>
+#include <algorithm>
+#include <boost/unordered/unordered_flat_map.hpp>
+#include <cmath>
+#include <iomanip>
+#include <iterator>
 #include <materials/ce_nuclide.hpp>
 #include <materials/material.hpp>
 #include <materials/material_helper.hpp>
 #include <materials/nuclide.hpp>
+#include <memory>
+#include <optional>
 #include <simulation/delta_tracker.hpp>
 #include <simulation/tracker.hpp>
-#include <utils/settings.hpp>
+#include <unordered_map>
 #include <utils/constants.hpp>
 #include <utils/error.hpp>
 #include <utils/output.hpp>
-
-#include <boost/unordered/unordered_flat_map.hpp>
-
-#include <algorithm>
-#include <cmath>
-#include <iomanip>
-#include <iterator>
-#include <memory>
-#include <optional>
-#include <unordered_map>
+#include <utils/settings.hpp>
 #include <vector>
 
 DeltaTracker::DeltaTracker(std::shared_ptr<Tallies> i_t)

@@ -39,22 +39,20 @@
 #include <PapillonNDL/st_coherent_elastic.hpp>
 #include <PapillonNDL/st_incoherent_inelastic.hpp>
 #include <PapillonNDL/st_tsl_reaction.hpp>
+#include <algorithm>
+#include <boost/unordered/unordered_flat_map.hpp>
+#include <iomanip>
+#include <materials/ce_nuclide.hpp>
 #include <materials/material.hpp>
 #include <materials/material_helper.hpp>
-#include <materials/ce_nuclide.hpp>
+#include <memory>
+#include <optional>
 #include <simulation/implicit_leakage_delta_tracker.hpp>
 #include <simulation/tracker.hpp>
+#include <unordered_map>
 #include <utils/constants.hpp>
 #include <utils/error.hpp>
 #include <utils/output.hpp>
-
-#include <boost/unordered/unordered_flat_map.hpp>
-
-#include <algorithm>
-#include <iomanip>
-#include <memory>
-#include <optional>
-#include <unordered_map>
 #include <vector>
 
 ImplicitLeakageDeltaTracker::ImplicitLeakageDeltaTracker(

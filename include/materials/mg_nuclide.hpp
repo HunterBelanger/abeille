@@ -65,14 +65,16 @@ class MGNuclide : public Nuclide {
   double reaction_xs(uint32_t mt, double E_in, size_t i) const override final;
   double elastic_xs(double E_in, std::size_t i) const override final;
   std::size_t energy_grid_index(double E) const override final;
-  MicroXSs get_micro_xs(double E, std::optional<double> urr_rand = std::nullopt) const override final;
+  MicroXSs get_micro_xs(double E, std::optional<double> urr_rand =
+                                      std::nullopt) const override final;
 
   std::size_t num_delayed_groups() const override final;
   double delayed_group_constant(std::size_t g) const override final;
   double delayed_group_probability(std::size_t g,
                                    double E) const override final;
 
-  ScatterInfo sample_scatter(double Ein, const Direction& u, const MicroXSs& micro_xs,
+  ScatterInfo sample_scatter(double Ein, const Direction& u,
+                             const MicroXSs& micro_xs,
                              pcg32& rng) const override final;
   ScatterInfo sample_scatter_mt(uint32_t mt, double Ein, const Direction& u,
                                 std::size_t i, pcg32& rng) const override final;

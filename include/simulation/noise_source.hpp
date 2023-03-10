@@ -34,11 +34,10 @@
 #ifndef NOISE_SOURCE_H
 #define NOISE_SOURCE_H
 
-#include <utils/position.hpp>
-
 #include <yaml-cpp/yaml.h>
 
 #include <complex>
+#include <utils/position.hpp>
 
 // Pure virtual interface to allow for the sampling of neutron noise particles.
 class NoiseSource {

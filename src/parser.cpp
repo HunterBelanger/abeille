@@ -547,7 +547,8 @@ void make_settings(YAML::Node input) {
       }
 
       // Get use of URR PTables option
-      if (settnode["use-urr-ptables"] && settnode["use-urr-ptables"].IsScalar()) {
+      if (settnode["use-urr-ptables"] &&
+          settnode["use-urr-ptables"].IsScalar()) {
         settings::use_urr_ptables = settnode["use-urr-ptables"].as<bool>();
       } else if (settnode["use-urr-ptables"]) {
         std::string mssg = "Invalid \"use-urr-ptables\" entry in settings.";
