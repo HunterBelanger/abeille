@@ -254,8 +254,7 @@ void NoiseMaker::sample_vibration_noise_scatter(
     const std::complex<double>& dN_N, const double Etfake_Et,
     const double P_scatter) const {
   // First, sample the scatter info from the nuclide
-  ScatterInfo sinfo =
-      nuclide.sample_scatter(p.E(), p.u(), microxs.energy_index, p.rng);
+  ScatterInfo sinfo = nuclide.sample_scatter(p.E(), p.u(), microxs, p.rng);
 
   // Make the noise particle without weights
   BankedParticle p_noise{p.r(),
@@ -340,8 +339,7 @@ void NoiseMaker::sample_oscillation_noise_scatter(Particle& p,
                                                   const double P_scatter,
                                                   const double w) const {
   // First, sample the scatter info from the nuclide
-  ScatterInfo sinfo =
-      nuclide.sample_scatter(p.E(), p.u(), microxs.energy_index, p.rng);
+  ScatterInfo sinfo = nuclide.sample_scatter(p.E(), p.u(), microxs, p.rng);
 
   // Make the noise particle without weights
   BankedParticle p_noise{p.r(),
@@ -478,6 +476,10 @@ void NoiseMaker::sample_vibration_noise_source(Particle& p, MaterialHelper& mat,
   // noise regions where the particle is currently located.
   std::unique_ptr<Material> fake_material = make_fake_material(p);
   MaterialHelper fake_mat(fake_material.get(), p.E());
+
+  // We now grab the URR data from the original material, and use it in the
+  // fake material.
+  fake_mat.set_urr_rand_vals(mat.urr_rand_vals());
 
   // We now sample a nuclide from this fake material.
   auto nuclide_data = fake_mat.sample_nuclide(p.E(), p.rng);

@@ -69,6 +69,8 @@ double w_noise = -1.;
 double eta = 1.;   // Used in noise transport
 double keff = 1.;  // Used in noise transport
 
+bool use_urr_ptables = true;
+
 bool converged = false;
 
 bool pair_distance_sqrd = false;

@@ -545,6 +545,19 @@ void make_settings(YAML::Node input) {
       if (settings::use_dbrc == false) {
         Output::instance()->write(" DBRC disabled in settings.\n");
       }
+
+      // Get use of URR PTables option
+      if (settnode["use-urr-ptables"] && settnode["use-urr-ptables"].IsScalar()) {
+        settings::use_urr_ptables = settnode["use-urr-ptables"].as<bool>();
+      } else if (settnode["use-urr-ptables"]) {
+        std::string mssg = "Invalid \"use-urr-ptables\" entry in settings.";
+        fatal_error(mssg, __FILE__, __LINE__);
+      }
+      if (settings::use_urr_ptables) {
+        Output::instance()->write(" Using URR PTables.\n");
+      } else {
+        Output::instance()->write(" Not using URR PTables.\n");
+      }
     }
 
     // If we are multi-group, get number of groups

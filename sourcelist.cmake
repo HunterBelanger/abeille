@@ -1,5 +1,6 @@
 set(ABEILLE_SOURCE_FILES ${ABEILLE_SOURCE_FILES}
   src/material.cpp
+  src/material_helper.cpp
   src/ce_nuclide.cpp
   src/mg_nuclide.cpp
   src/mg_angle_distribution.cpp

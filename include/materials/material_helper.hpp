@@ -1,88 +1,77 @@
-/*=============================================================================*
- * Copyright (C) 2021-2022, Commissariat à l'Energie Atomique et aux Energies
- * Alternatives
- *
- * Contributeur : Hunter Belanger (hunter.belanger@cea.fr)
- *
- * Ce logiciel est régi par la licence CeCILL soumise au droit français et
- * respectant les principes de diffusion des logiciels libres. Vous pouvez
- * utiliser, modifier et/ou redistribuer ce programme sous les conditions
- * de la licence CeCILL telle que diffusée par le CEA, le CNRS et l'INRIA
- * sur le site "http://www.cecill.info".
- *
- * En contrepartie de l'accessibilité au code source et des droits de copie,
- * de modification et de redistribution accordés par cette licence, il n'est
- * offert aux utilisateurs qu'une garantie limitée.  Pour les mêmes raisons,
- * seule une responsabilité restreinte pèse sur l'auteur du programme,  le
- * titulaire des droits patrimoniaux et les concédants successifs.
- *
- * A cet égard  l'attention de l'utilisateur est attirée sur les risques
- * associés au chargement,  à l'utilisation,  à la modification et/ou au
- * développement et à la reproduction du logiciel par l'utilisateur étant
- * donné sa spécificité de logiciel libre, qui peut le rendre complexe à
- * manipuler et qui le réserve donc à des développeurs et des professionnels
- * avertis possédant  des  connaissances  informatiques approfondies.  Les
- * utilisateurs sont donc invités à charger  et  tester  l'adéquation  du
- * logiciel à leurs besoins dans des conditions permettant d'assurer la
- * sécurité de leurs systèmes et ou de leurs données et, plus généralement,
- * à l'utiliser et l'exploiter dans les mêmes conditions de sécurité.
- *
- * Le fait que vous puissiez accéder à cet en-tête signifie que vous avez
- * pris connaissance de la licence CeCILL, et que vous en avez accepté les
- * termes.
- *============================================================================*/
 #ifndef MATERIAL_HELPER_H
 #define MATERIAL_HELPER_H
 
+#include <materials/nuclide.hpp>
 #include <materials/material.hpp>
 #include <utils/constants.hpp>
 #include <utils/rng.hpp>
 #include <utils/settings.hpp>
 
+#include <boost/unordered/unordered_flat_map.hpp>
+
+#include <cstdint>
+#include <optional>
+
 class MaterialHelper {
  public:
   enum class BranchlessReaction { SCATTER, FISSION };
 
-  MaterialHelper(Material* material, double E)
-      : mat(nullptr), index(), xs(), E_(0.) {
-    this->set_material(material, E);
-  }
+  MaterialHelper(Material* material, double E);
 
   void set_material(Material* material, double E) {
-    if (mat != material) {
-      mat = material;
-      index.resize(mat->composition().size());
-      xs.resize(mat->composition().size(), 0.);
-      get_energy_index(E);  // This sets xs_set to false !
-    } else if (E_ != E)
-      get_energy_index(E);  // This sets xs_set to false !
+    mat = material;
+    this->set_energy(E);
+  }
+
+  void set_urr_rand_vals(pcg32& rng) {
+    for (auto& rand : zaid_to_urr_rand_) rand.second = RNG::rand(rng);
+  }
+
+  void set_urr_rand_vals(const boost::unordered_flat_map<uint32_t, std::optional<double>>& vals) {
+    zaid_to_urr_rand_ = vals;
+  }
+
+  const boost::unordered_flat_map<uint32_t, std::optional<double>>& urr_rand_vals() const {
+    return zaid_to_urr_rand_;
+  }
+
+  void clear_urr_rand_vals() {
+    for (auto& rand : zaid_to_urr_rand_) rand.second = std::nullopt;
   }
 
   double Et(double E, bool noise = false) {
-    if (E_ != E) get_energy_index(E);
+    this->set_energy(E);
 
-    double Et_ = 0;
+    double Et_ = 0.;
 
-    for (size_t i = 0; i < mat->composition().size(); i++) {
-      double comp_xs = composition(i).concentration *
-                       composition(i).nuclide->total_xs(E_, index[i]);
-      Et_ += comp_xs;
+    // Go through all components in the material
+    for (const auto& comp : mat->composition()) {
+      const auto& micro_xs = this->get_micro_xs(comp.nuclide.get());
+      Et_ += comp.concentration * micro_xs.total;
     }
 
     if (noise) {
-      Et_ += Ew(E, noise);
+      Et_ += this->Ew(E, noise);
     }
 
     return Et_;
   }
 
   double Ew(double E, bool noise = false) {
-    if (E_ != E) get_energy_index(E);
-
+    this->set_energy(E);
+    
     double Ew_ = 0.;
 
     if (noise) {
-      double p_speed = speed(E, index[0]);
+      std::size_t energy_index = 0;
+
+      // Needing to check MG/CE here isn't exactly elegant, but I don't
+      // have a better solution for now...
+      if (settings::energy_mode == settings::EnergyMode::MG) {
+        energy_index = mat->composition()[0].nuclide->energy_grid_index(E);
+      }
+
+      double p_speed = speed(E, energy_index);
       Ew_ += settings::eta * settings::w_noise / p_speed;
     }
 
@@ -90,175 +79,244 @@ class MaterialHelper {
   }
 
   double Ea(double E) {
-    if (E_ != E) get_energy_index(E);
+    this->set_energy(E);
 
-    double Ea_ = 0;
+    double Ea_ = 0.;
 
-    for (size_t i = 0; i < mat->composition().size(); i++) {
-      Ea_ += composition(i).concentration *
-             (composition(i).nuclide->disappearance_xs(E_, index[i]) +
-              composition(i).nuclide->fission_xs(E_, index[i]));
+    // Go through all components in the material
+    for (const auto& comp : mat->composition()) {
+      const auto& micro_xs = this->get_micro_xs(comp.nuclide.get());
+      Ea_ += comp.concentration * micro_xs.absorption;
     }
 
     return Ea_;
   }
 
-  double Es(double E) { return this->Et(E) - this->Ea(E); }
+  double Es(double E) {
+    this->set_energy(E);
+
+    double Ea_ = 0.;
+
+    // Go through all components in the material
+    for (const auto& comp : mat->composition()) {
+      const auto& micro_xs = this->get_micro_xs(comp.nuclide.get());
+      Ea_ += comp.concentration * std::max(micro_xs.total - micro_xs.absorption, 0.);
+    }
+
+    return Ea_;
+  }
 
   double Ef(double E) {
-    if (E_ != E) get_energy_index(E);
+    this->set_energy(E);
 
-    double Ef_ = 0;
+    double Ef_ = 0.;
 
-    for (size_t i = 0; i < mat->composition().size(); i++) {
-      if (composition(i).nuclide->fissile()) {
-        Ef_ += composition(i).concentration *
-               composition(i).nuclide->fission_xs(E_, index[i]);
-      }
+    // Go through all components in the material
+    for (const auto& comp : mat->composition()) {
+      const auto& micro_xs = this->get_micro_xs(comp.nuclide.get());
+      Ef_ += comp.concentration * micro_xs.fission;
     }
 
     return Ef_;
   }
 
   double vEf(double E) {
-    if (E_ != E) get_energy_index(E);
+    this->set_energy(E);
 
     double vEf_ = 0.;
 
-    for (size_t i = 0; i < mat->composition().size(); i++) {
-      if (composition(i).nuclide->fissile()) {
-        vEf_ += composition(i).concentration *
-                composition(i).nuclide->nu_total(E_, index[i]) *
-                composition(i).nuclide->fission_xs(E_, index[i]);
-      }
+    // Go through all components in the material
+    for (const auto& comp : mat->composition()) {
+      const auto& micro_xs = this->get_micro_xs(comp.nuclide.get());
+      vEf_ += comp.concentration * micro_xs.nu_total * micro_xs.fission;
     }
 
     return vEf_;
   }
 
   double Eelastic(double E) {
-    if (E_ != E) get_energy_index(E);
+    this->set_energy(E);
 
-    double Eelastic_ = 0;
+    double Eela_ = 0.;
 
-    for (size_t i = 0; i < mat->composition().size(); i++) {
-      Eelastic_ += composition(i).concentration *
-                   composition(i).nuclide->elastic_xs(E_, index[i]);
+    // Go through all components in the material
+    for (const auto& comp : mat->composition()) {
+      const auto& micro_xs = this->get_micro_xs(comp.nuclide.get());
+      Eela_ += comp.concentration * micro_xs.elastic;
     }
 
-    return Eelastic_;
+    return Eela_;
   }
 
   double Emt(uint32_t mt, double E) {
-    if (E_ != E) get_energy_index(E);
+    this->set_energy(E);
 
-    double Emt_ = 0;
+    double Emt_ = 0.;
 
-    for (size_t i = 0; i < mat->composition().size(); i++) {
-      Emt_ += composition(i).concentration *
-              composition(i).nuclide->reaction_xs(mt, E_, index[i]);
+    // Go through all components in the material
+    for (const auto& comp : mat->composition()) {
+      const auto& micro_xs = this->get_micro_xs(comp.nuclide.get());
+      const auto& eindex = micro_xs.energy_index;
+      Emt_ += comp.concentration * comp.nuclide->reaction_xs(mt, E, eindex);
     }
 
     return Emt_;
   }
 
+  /*
+   * This method is used to sample a nuclide based on the traditional branching
+   * collision method, where the probability of sampling nuclide i is taken to
+   * be $N_i \sigma_i(E) / \Sigma_t(E)$. It can also be used for when performing
+   * branchless collisions on the isotope.
+   */
   std::pair<const Nuclide*, MicroXSs> sample_nuclide(double E, pcg32& rng,
                                                      bool noise = false) {
-    if (E_ != E) {
-      get_energy_index(E);
+    this->set_energy(E);
+
+    // First, get total xs
+    const double Et_ = this->Et(E, noise);
+    const double invs_Et = 1. / Et_;
+    const double Ew_ = this->Ew(E, noise);
+    const double N_nuclides = static_cast<double>(mat->composition().size());
+
+    // Get our random variable
+    const double xi = RNG::rand(rng);
+
+    // Iterate through all nuclides, untill we find the right one
+    double prob_sum = 0.;
+    for (const auto& comp : mat->composition()) {
+      MicroXSs micro_xs = this->get_micro_xs(comp.nuclide.get());
+      micro_xs.concentration = comp.concentration;
+
+      // If we are a noise neutron, we then need to get the copy xs for this
+      // nuclide, and adjust the total xs accordingly.
+      if (noise) {
+        micro_xs.noise_copy = Ew_ / (micro_xs.concentration * N_nuclides);
+        micro_xs.total += micro_xs.noise_copy;
+      }
+
+      // Get the probability for the nuclide, and add to the cumulative
+      const double nuc_prob = invs_Et * micro_xs.concentration * micro_xs.total;
+      prob_sum += nuc_prob;
+
+      if (xi <= prob_sum) {
+        return {comp.nuclide.get(), micro_xs};
+      }
     }
 
-    for (size_t i = 0; i < mat->composition().size(); i++) {
-      double comp_xs = composition(i).concentration *
-                       composition(i).nuclide->total_xs(E_, index[i]);
-      xs[i] = comp_xs;
-    }
-
-    std::size_t comp_ind = static_cast<std::size_t>(RNG::discrete(rng, xs));
-    size_t nuclide_index = index[comp_ind];
-    const Nuclide* nuclide = composition(comp_ind).nuclide.get();
-
-    // Get MicroXSs for use latter on
-    MicroXSs xss;
-    xss.energy = E_;
-    xss.concentration = composition(comp_ind).concentration;
-    xss.energy_index = nuclide_index;
-    xss.total = nuclide->total_xs(xss.energy, xss.energy_index);
-    xss.nu_total = nuclide->nu_total(xss.energy, xss.energy_index);
-    xss.nu_delayed = nuclide->nu_delayed(xss.energy, xss.energy_index);
-    xss.fission = nuclide->fission_xs(xss.energy, xss.energy_index);
-    xss.absorption =
-        nuclide->disappearance_xs(xss.energy, xss.energy_index) + xss.fission;
+    // We should never get here, but if we do, we just return the last nuclide
+    const auto& comp = mat->composition().back();
+    MicroXSs micro_xs = this->get_micro_xs(comp.nuclide.get());
+    micro_xs.concentration = comp.concentration;
 
     if (noise) {
-      xss.noise_copy =
-          Ew(E, noise) /
-          (xss.concentration * static_cast<double>(mat->composition().size()));
-      xss.total += xss.noise_copy;
+      micro_xs.noise_copy = Ew_ / (micro_xs.concentration * N_nuclides);
+      micro_xs.total += micro_xs.noise_copy;
     }
 
-    return {nuclide, xss};
+    return {comp.nuclide.get(), micro_xs};
   }
 
   std::pair<const Nuclide*, MicroXSs> sample_branchless_nuclide(
       double E, pcg32& rng, BranchlessReaction reaction) {
-    if (E_ != E) {
-      get_energy_index(E);
-    }
+    this->set_energy(E);
 
-    for (size_t i = 0; i < mat->composition().size(); i++) {
-      double comp_xs = 0.;
+    // First, get the total probability, depending on reaction type
+    double sum = 0.;
+    for (const auto& comp : mat->composition()) {
+      const MicroXSs& micro_xs = this->get_micro_xs(comp.nuclide.get());
+
       switch (reaction) {
         case BranchlessReaction::SCATTER:
-          comp_xs = composition(i).concentration *
-                    (composition(i).nuclide->total_xs(E_, index[i]) -
-                     (composition(i).nuclide->disappearance_xs(E_, index[i]) +
-                      composition(i).nuclide->fission_xs(E_, index[i])));
+          sum += comp.concentration * (micro_xs.elastic + micro_xs.inelastic);
           break;
+        
         case BranchlessReaction::FISSION:
-          comp_xs = composition(i).concentration *
-                    composition(i).nuclide->nu_total(E_, index[i]) *
-                    composition(i).nuclide->fission_xs(E_, index[i]);
+          sum += comp.concentration * micro_xs.nu_total * micro_xs.fission;
           break;
       }
-      xs[i] = comp_xs;
     }
 
-    std::size_t comp_ind = static_cast<std::size_t>(RNG::discrete(rng, xs));
-    size_t nuclide_index = index[comp_ind];
-    const Nuclide* nuclide = composition(comp_ind).nuclide.get();
+    // Get our random variable
+    const double xi = RNG::rand(rng) * sum;
 
-    // Get MicroXSs for use latter on
-    MicroXSs xss;
-    xss.energy = E_;
-    xss.concentration = composition(comp_ind).concentration;
-    xss.energy_index = nuclide_index;
-    xss.total = nuclide->total_xs(xss.energy, xss.energy_index);
-    xss.nu_total = nuclide->nu_total(xss.energy, xss.energy_index);
-    xss.nu_delayed = nuclide->nu_delayed(xss.energy, xss.energy_index);
-    xss.fission = nuclide->fission_xs(xss.energy, xss.energy_index);
-    xss.absorption =
-        nuclide->disappearance_xs(xss.energy, xss.energy_index) + xss.fission;
-    return {nuclide, xss};
+    // Iterate through all nuclides, untill we find the right one
+    double prob_sum = 0.;
+    for (const auto& comp : mat->composition()) {
+      MicroXSs micro_xs = this->get_micro_xs(comp.nuclide.get());
+      micro_xs.concentration = comp.concentration;
+
+      switch (reaction) {
+        case BranchlessReaction::SCATTER:
+          prob_sum += micro_xs.concentration * (micro_xs.elastic + micro_xs.inelastic);
+          break;
+        
+        case BranchlessReaction::FISSION:
+          prob_sum += micro_xs.concentration * micro_xs.nu_total * micro_xs.fission;
+          break;
+      }
+
+      if (xi <= prob_sum) {
+        return {comp.nuclide.get(), micro_xs};
+      }
+    }
+
+    // We should never get here, but if we do, we just return the last nuclide
+    const auto& comp = mat->composition().back();
+    MicroXSs micro_xs = this->get_micro_xs(comp.nuclide.get());
+    micro_xs.concentration = comp.concentration;
+    return {comp.nuclide.get(), micro_xs};
   }
 
  private:
   Material* mat;
-  std::vector<size_t> index;
-  std::vector<double> xs;
   double E_;
+  boost::unordered_flat_map<const Nuclide*, std::optional<MicroXSs>> xs_;
+  boost::unordered_flat_map<uint32_t, std::optional<double>> zaid_to_urr_rand_;
 
-  const Material::Component& composition(size_t i) {
-    return mat->composition()[i];
+  void clear_xs() {
+    // This sets all the MicroXSs objects to nullopt. This typically only
+    // called when we have changed energy.
+    for (auto& xs : xs_) xs.second = std::nullopt;
   }
 
-  void get_energy_index(double E) {
-    E_ = E;
-
-    // Go through all components and get energy index
-    for (size_t i = 0; i < mat->composition().size(); i++) {
-      index[i] = composition(i).nuclide->energy_grid_index(E_);
+  void set_energy(const double& E) {
+    if (E_ != E) {
+      E_ = E;
+      this->clear_xs();
     }
+  }
+
+  const MicroXSs& get_micro_xs(const Nuclide* nuc) {
+    auto it = xs_.find(nuc);
+
+    // If for some reason there is no entry for this nuclide, we add it. 
+    if (it == xs_.end()) {
+      xs_[nuc] = std::nullopt;
+      it = xs_.find(nuc);
+    }
+
+    if (it->second.has_value() == false) {
+      // We don't have info on this nuclide at this energy yet.
+      std::optional<double> urr_rand = std::nullopt;
+      const uint32_t zaid = nuc->zaid();
+
+      // If this zaid has URR info, we should use it
+      if (settings::use_urr_ptables &&
+          zaid_to_urr_rand_.find(zaid) != zaid_to_urr_rand_.end()) {
+        urr_rand = zaid_to_urr_rand_[zaid];
+      }
+
+      // Get the micro xs and set it
+      it->second = nuc->get_micro_xs(E_, urr_rand);
+    }
+
+    // Return the micro xs 
+    return it->second.value();
+  }
+
+  const Material::Component& comp(std::size_t i) {
+    return mat->composition()[i];
   }
 
   // Function to get the speed of a particle in cm/s

@@ -31,6 +31,7 @@
  * pris connaissance de la licence CeCILL, et que vous en avez accepté les
  * termes.
  *============================================================================*/
+#include "utils/settings.hpp"
 #ifdef _OPENMP
 #include <omp.h>
 #endif
@@ -71,8 +72,9 @@ std::vector<BankedParticle> SurfaceTracker::transport(
         p.kill();
       }
       // Only make helper if we aren't lost, to make sure that material isn't
-      // a nullptr
+      // a nullptr. We also set the URR random variable here, if using ptables.
       MaterialHelper mat(trkr.material(), p.E());
+      if (settings::use_urr_ptables) mat.set_urr_rand_vals(p.rng);
 
       while (p.is_alive()) {
         bool had_collision = false;
@@ -167,6 +169,7 @@ std::vector<BankedParticle> SurfaceTracker::transport(
               fatal_error(mssg.str(), __FILE__, __LINE__);
             }
             mat.set_material(trkr.material(), p.E());
+            if (settings::use_urr_ptables) mat.set_urr_rand_vals(p.rng);
           } else if (settings::rng_stride_warnings) {
             // History is truly dead.
             // Check if we went past the particle stride.

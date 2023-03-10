@@ -137,35 +137,6 @@ std::complex<double> SquareOscillationNoiseSource::dEt_Et(const Position& /*r*/,
   }
 }
 
-std::complex<double> SquareOscillationNoiseSource::dEf(const Position& r,
-                                                       double E,
-                                                       double w) const {
-  // Get the material
-  Tracker trkr(r, u);
-  auto material = trkr.material();
-
-  // Make sure material is valid
-  if (!material) {
-    std::string mssg = "";
-    fatal_error(mssg, __FILE__, __LINE__);
-  }
-
-  // Make material helper and evaluate XS
-  MaterialHelper mat(material, E);
-  double xs = mat.Ef(E);
-
-  // Get the frequency multiple n
-  int32_t n = static_cast<int32_t>(std::round(w / w0_));
-
-  double err = (n * w0_ - w) / w;
-
-  if ((n == 1 || n == -1) && std::abs(err) < 0.01) {
-    return {eps_f_ * xs * PI, 0.};
-  } else {
-    return {0., 0.};
-  }
-}
-
 std::complex<double> SquareOscillationNoiseSource::dEf_Ef(const Position& /*r*/,
                                                           double /*E*/,
                                                           double w) const {
@@ -181,35 +152,6 @@ std::complex<double> SquareOscillationNoiseSource::dEf_Ef(const Position& /*r*/,
   }
 }
 
-std::complex<double> SquareOscillationNoiseSource::dEelastic(const Position& r,
-                                                             double E,
-                                                             double w) const {
-  // Get the material
-  Tracker trkr(r, u);
-  auto material = trkr.material();
-
-  // Make sure material is valid
-  if (!material) {
-    std::string mssg = "";
-    fatal_error(mssg, __FILE__, __LINE__);
-  }
-
-  // Make material helper and evaluate XS
-  MaterialHelper mat(material, E);
-  double xs = mat.Eelastic(E);
-
-  // Get the frequency multiple n
-  int32_t n = static_cast<int32_t>(std::round(w / w0_));
-
-  double err = (n * w0_ - w) / w;
-
-  if ((n == 1 || n == -1) && std::abs(err) < 0.01) {
-    return {eps_s_ * xs * PI, 0.};
-  } else {
-    return {0., 0.};
-  }
-}
-
 std::complex<double> SquareOscillationNoiseSource::dEelastic_Eelastic(
     const Position& /*r*/, double /*E*/, double w) const {
   // Get the frequency multiple n
@@ -219,36 +161,6 @@ std::complex<double> SquareOscillationNoiseSource::dEelastic_Eelastic(
 
   if ((n == 1 || n == -1) && std::abs(err) < 0.01) {
     return {eps_s_ * PI, 0.};
-  } else {
-    return {0., 0.};
-  }
-}
-
-std::complex<double> SquareOscillationNoiseSource::dEmt(uint32_t mt,
-                                                        const Position& r,
-                                                        double E,
-                                                        double w) const {
-  // Get the material
-  Tracker trkr(r, u);
-  auto material = trkr.material();
-
-  // Make sure material is valid
-  if (!material) {
-    std::string mssg = "";
-    fatal_error(mssg, __FILE__, __LINE__);
-  }
-
-  // Make material helper and evaluate XS
-  MaterialHelper mat(material, E);
-  double xs = mat.Emt(mt, E);
-
-  // Get the frequency multiple n
-  int32_t n = static_cast<int32_t>(std::round(w / w0_));
-
-  double err = (n * w0_ - w) / w;
-
-  if ((n == 1 || n == -1) && std::abs(err) < 0.01) {
-    return {eps_s_ * xs * PI, 0.};
   } else {
     return {0., 0.};
   }

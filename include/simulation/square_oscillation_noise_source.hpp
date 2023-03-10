@@ -48,12 +48,6 @@ class SquareOscillationNoiseSource : public OscillationNoiseSource {
   bool is_inside(const Position& r) const override final;
   std::complex<double> dEt(const Position& r, double E,
                            double w) const override final;
-  std::complex<double> dEf(const Position& r, double E,
-                           double w) const override final;
-  std::complex<double> dEelastic(const Position& r, double E,
-                                 double w) const override final;
-  std::complex<double> dEmt(uint32_t mt, const Position& r, double E,
-                            double w) const override final;
 
   std::complex<double> dEt_Et(const Position& r, double E,
                               double w) const override final;

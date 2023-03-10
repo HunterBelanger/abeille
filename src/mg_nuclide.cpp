@@ -31,15 +31,18 @@
  * pris connaissance de la licence CeCILL, et que vous en avez accepté les
  * termes.
  *============================================================================*/
-#include <complex>
-#include <functional>
+
 #include <materials/legendre_distribution.hpp>
 #include <materials/mg_nuclide.hpp>
-#include <sstream>
 #include <utils/constants.hpp>
 #include <utils/error.hpp>
 #include <utils/rng.hpp>
 #include <utils/settings.hpp>
+
+#include <functional>
+#include <complex>
+#include <cstdint>
+#include <sstream>
 
 MGNuclide::MGNuclide(const std::vector<double>& speeds,
                      const std::vector<double>& Et,
@@ -351,6 +354,8 @@ void MGNuclide::check_fissile() {
 
 bool MGNuclide::fissile() const { return fissile_; }
 
+bool MGNuclide::has_urr() const { return false; }
+
 double MGNuclide::total_xs(double /*E_in*/, std::size_t i) const {
   return Et_[i];
 }
@@ -402,6 +407,24 @@ std::size_t MGNuclide::energy_grid_index(double E) const {
   return i;
 }
 
+MicroXSs MGNuclide::get_micro_xs(double E, std::optional<double> /*urr_rand*/) const {
+  MicroXSs xs;
+  xs.energy = E;
+  xs.energy_index = this->energy_grid_index(E);
+
+  xs.total = this->total_xs(E, xs.energy_index);
+  xs.fission = this->fission_xs(E, xs.energy_index);
+  xs.absorption = xs.fission + this->disappearance_xs(E, xs.energy_index);
+  xs.elastic = this->elastic_xs(E, xs.energy_index);
+  xs.inelastic = 0.; // MG has no inelastic
+  xs.nu_total = this->nu_total(E, xs.energy_index);
+  xs.nu_delayed = this->nu_delayed(E, xs.energy_index);
+  xs.concentration = 0.; // We set this as zero for now
+  xs.noise_copy = 0.; // We also leave this as zero
+
+  return xs;
+}
+
 std::size_t MGNuclide::num_delayed_groups() const {
   return P_delayed_group.size();
 }
@@ -422,15 +445,17 @@ double MGNuclide::speed(double /*E*/, std::size_t i) const {
   return group_speeds_[i];
 }
 
+uint32_t MGNuclide::zaid() const { return this->id(); }
+
 ScatterInfo MGNuclide::sample_scatter(double /*Ein*/, const Direction& u,
-                                      std::size_t i, pcg32& rng) const {
+                                      const MicroXSs& micro_xs, pcg32& rng) const {
   // Change particle energy
-  std::size_t ei = static_cast<std::size_t>(RNG::discrete(rng, Ps_[i]));
+  std::size_t ei = static_cast<std::size_t>(RNG::discrete(rng, Ps_[micro_xs.energy_index]));
   double E_out =
       0.5 * (settings::energy_bounds[ei] + settings::energy_bounds[ei + 1]);
 
   // Change direction
-  double mu = angle_dists_[i][ei].sample_mu(rng);
+  double mu = angle_dists_[micro_xs.energy_index][ei].sample_mu(rng);
   double phi = 2. * PI * RNG::rand(rng);
   Direction u_out = rotate_direction(u, mu, phi);
 
@@ -444,7 +469,9 @@ ScatterInfo MGNuclide::sample_scatter(double /*Ein*/, const Direction& u,
 ScatterInfo MGNuclide::sample_scatter_mt(uint32_t /*mt*/, double Ein,
                                          const Direction& u, std::size_t i,
                                          pcg32& rng) const {
-  return this->sample_scatter(Ein, u, i, rng);
+  MicroXSs micro_xs;
+  micro_xs.energy_index = i;
+  return this->sample_scatter(Ein, u, micro_xs, rng);
 }
 
 FissionInfo MGNuclide::sample_prompt_fission(double /*Ein*/, const Direction& u,

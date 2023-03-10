@@ -1,4 +1,7 @@
+#include <mpi.h>
+
 #include <array>
+#include <cstdint>
 #include <iomanip>
 #include <ios>
 #include <materials/ce_nuclide.hpp>
@@ -8,6 +11,9 @@
 #include <utils/error.hpp>
 #include <utils/rng.hpp>
 #include <utils/settings.hpp>
+
+#include "PapillonNDL/xs_packet.hpp"
+#include "materials/nuclide.hpp"
 
 CENuclide::CENuclide(const std::shared_ptr<pndl::STNeutron>& ce,
                      const std::shared_ptr<pndl::STThermalScatteringLaw>& tsl)
@@ -20,6 +26,8 @@ CENuclide::CENuclide(const std::shared_ptr<pndl::STNeutron>& ce,
 }
 
 bool CENuclide::fissile() const { return cedata_->fissile(); }
+
+bool CENuclide::has_urr() const { return cedata_->urr_ptables().is_valid(); }
 
 double CENuclide::total_xs(double E_in, std::size_t i) const {
   if (tsl_ && E_in < tsl_->max_energy()) {
@@ -68,6 +76,43 @@ std::size_t CENuclide::energy_grid_index(double E) const {
   return cedata_->energy_grid().get_lower_index(E);
 }
 
+MicroXSs CENuclide::get_micro_xs(double E,
+                                 std::optional<double> urr_rand) const {
+  MicroXSs xs;
+  xs.energy = E;
+  xs.energy_index = this->energy_grid_index(E);
+  xs.nu_total = this->nu_total(E, xs.energy_index);
+  xs.nu_delayed = this->nu_delayed(E, xs.energy_index);
+  xs.noise_copy = 0.;
+  xs.concentration = 0.;
+
+  // First, we check if we are gonna use the URR or not
+  if (urr_rand && cedata_->urr_ptables().is_valid() &&
+      cedata_->urr_ptables().energy_in_range(E)) {
+    // URR info being used
+    pndl::XSPacket urr_xs =
+        cedata_->urr_ptables()
+            .evaluate_xs(E, xs.energy_index, urr_rand.value())
+            .value();
+    xs.total = urr_xs.total;
+    xs.fission = urr_xs.fission;
+    xs.absorption = urr_xs.absorption;
+    xs.elastic = urr_xs.elastic;
+    xs.inelastic = urr_xs.inelastic;
+    xs.urr = true;
+  } else {
+    // No URR info being used
+    xs.total = this->total_xs(E, xs.energy_index);
+    xs.fission = this->fission_xs(E, xs.energy_index);
+    xs.absorption = xs.fission + this->disappearance_xs(E, xs.energy_index);
+    xs.elastic = this->elastic_xs(E, xs.energy_index);
+    xs.inelastic = xs.total - xs.absorption - xs.elastic;
+    if (xs.inelastic < 0.) xs.inelastic = 0.;
+  }
+
+  return xs;
+}
+
 std::size_t CENuclide::num_delayed_groups() const {
   return cedata_->fission().n_delayed_families();
 }
@@ -94,6 +139,8 @@ double CENuclide::speed(double E, std::size_t /*i*/) const {
   return std::sqrt(E * inv_mass_t2);         // Speed in [cm / s]
 }
 
+uint32_t CENuclide::zaid() const { return cedata_->zaid().zaid(); }
+
 // These are all possible MTs which result in an exit neutron
 // (other than fission) from the ENDF manual.
 static std::array<uint32_t, 106> MT_LIST{
@@ -106,51 +153,39 @@ static std::array<uint32_t, 106> MT_LIST{
     174, 175, 176, 177, 178, 179, 180, 181, 183, 184, 185, 186, 187, 188,
     189, 190, 194, 195, 196, 198, 199, 200};
 
-#include <utils/output.hpp>
 ScatterInfo CENuclide::sample_scatter(double Ein, const Direction& u,
-                                      std::size_t i, pcg32& rng) const {
+                                      const MicroXSs& micro_xs,
+                                      pcg32& rng) const {
   std::function<double()> rngfunc = std::bind(RNG::rand, std::ref(rng));
   std::array<double, 106> XS;
   XS.fill(0.);
 
   // Get XS value for all of the possible scattering reactions
-  const double xi = RNG::rand(rng);
-  const double scatter_xs = cedata_->total_xs()(Ein, i) -
-                            cedata_->disappearance_xs()(Ein, i) -
-                            cedata_->fission_xs()(Ein, i);
-  double xs_sum = 0;
-  uint32_t MT = 0;
-  for (size_t j = 0; j < MT_LIST.size(); j++) {
-    if (MT_LIST[j] != 2 && cedata_->has_reaction(MT_LIST[j]) &&
-        Ein > cedata_->reaction(MT_LIST[j]).threshold()) {
-      XS[j] = cedata_->reaction(MT_LIST[j]).xs()(Ein, i);
-    } else if (MT_LIST[j] == 2) {
-      XS[j] = cedata_->elastic_xs()(Ein, i);
-    }
-
-    xs_sum += XS[j];
-
-    if (xi < xs_sum / scatter_xs) {
-      MT = MT_LIST[j];
-      break;
-    }
-  }
-
-  // If for some reason we didn't sample the mt before,
-  // we do it now with a discrete distribution
-  if (MT == 0) {
-    MT = MT_LIST[static_cast<std::size_t>(
-        RNG::discrete(rng, &XS[0], &XS[XS.size() - 1]))];
-  }
+  const double xi_elastic = RNG::rand(rng);
+  const double P_elastic =
+      micro_xs.elastic / (micro_xs.elastic + micro_xs.inelastic);
 
   double yield = 1.;
   double Eout = 0.;
   Direction uout = Direction(1., 0., 0.);
+  uint32_t MT = 0;
 
-  // Check for elastic scattering
-  if (MT == 2) {
+  if (xi_elastic <= P_elastic) {
+    MT = 2;
     elastic_scatter(Ein, u, Eout, uout, rng);
   } else {
+    // Get all the non-elastic cross sections
+    for (std::size_t j = 1; j < MT_LIST.size(); j++) {
+      if (cedata_->has_reaction(MT_LIST[j]) &&
+          Ein > cedata_->reaction(MT_LIST[j]).threshold()) {
+        XS[j] = cedata_->reaction(MT_LIST[j]).xs()(Ein, micro_xs.energy_index);
+      }
+    }
+
+    // Sample the reaction
+    MT = MT_LIST[static_cast<std::size_t>(
+        RNG::discrete(rng, &XS[0], &XS[XS.size() - 1]))];
+
     // Get yield for the reaction
     yield = cedata_->reaction(MT).yield()(Ein);
 
@@ -175,7 +210,7 @@ ScatterInfo CENuclide::sample_scatter_mt(uint32_t mt, double Ein,
                                          pcg32& rng) const {
   std::function<double()> rngfunc = std::bind(RNG::rand, std::ref(rng));
 
-  if (cedata_->has_reaction(mt) == false) {
+  if (mt != 2 && cedata_->has_reaction(mt) == false) {
     std::stringstream mssg;
     mssg << "Nuclide " << this->id() << ", ZAID " << cedata_->zaid();
     mssg << ", has no reaction data for MT " << mt << ".";

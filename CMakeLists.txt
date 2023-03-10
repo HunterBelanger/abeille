@@ -77,6 +77,17 @@ set(PCG_CPP_INSTALL OFF CACHE BOOL "Install PCG-CPP")
 FetchContent_MakeAvailable(PCG_CXX)
 
 #===============================================================================
+# Get Boost
+message(STATUS "Downloading Boost 1.81.0")
+set(BOOST_INCLUDE_LIBRARIES unordered)
+set(BOOST_ENABLE_CMAKE ON)
+FetchContent_Declare(Boost
+  GIT_REPOSITORY https://github.com/boostorg/boost.git
+  GIT_TAG        boost-1.81.0
+)
+FetchContent_MakeAvailable(Boost)
+
+#===============================================================================
 # Get SOBOL
 add_subdirectory("${CMAKE_SOURCE_DIR}/vendor/sobol")
 
@@ -93,7 +104,7 @@ execute_process(COMMAND git describe --dirty --always
 add_executable(abeille src/main.cpp ${ABEILLE_SOURCE_FILES})
 target_include_directories(abeille PRIVATE include)
 target_compile_features(abeille PRIVATE cxx_std_17)
-target_link_libraries(abeille PUBLIC docopt_s yaml-cpp PapillonNDL::PapillonNDL NDArray::NDArray PCG::PCG_CXX sobol)
+target_link_libraries(abeille PUBLIC docopt_s yaml-cpp PapillonNDL::PapillonNDL NDArray::NDArray PCG::PCG_CXX sobol Boost::unordered)
 target_compile_definitions(abeille PUBLIC ABEILLE_GIT_HASH=\"${ABEILLE_GIT_HASH_RAW}\")
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC") # Comile options for Windows

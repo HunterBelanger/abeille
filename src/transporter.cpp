@@ -137,8 +137,7 @@ void Transporter::branchless_collision_iso(Particle& p, MaterialHelper& mat,
   if (p.is_alive()) {
     if (RNG::rand(p.rng) < Pscatter) {
       // Do scatter
-      ScatterInfo sinfo =
-          nuclide.sample_scatter(p.E(), p.u(), microxs.energy_index, p.rng);
+      ScatterInfo sinfo = nuclide.sample_scatter(p.E(), p.u(), microxs, p.rng);
 
       if (sinfo.yield == 0.) {
         // this scatter had a yield of 0... we have no choice but to kill
@@ -225,8 +224,7 @@ void Transporter::branchless_collision_mat(Particle& p, MaterialHelper& mat,
 
   if (reaction == MaterialHelper::BranchlessReaction::SCATTER) {
     // Do scatter
-    ScatterInfo sinfo =
-        nuclide->sample_scatter(p.E(), p.u(), microxs.energy_index, p.rng);
+    ScatterInfo sinfo = nuclide->sample_scatter(p.E(), p.u(), microxs, p.rng);
 
     if (sinfo.yield == 0.) {
       // this scatter had a yield of 0... we have no choice but to kill
@@ -324,8 +322,7 @@ void Transporter::branching_collision(Particle& p, MaterialHelper& mat,
 
 void Transporter::do_scatter(Particle& p, const Nuclide& nuclide,
                              const MicroXSs& microxs) const {
-  ScatterInfo sinfo =
-      nuclide.sample_scatter(p.E(), p.u(), microxs.energy_index, p.rng);
+  ScatterInfo sinfo = nuclide.sample_scatter(p.E(), p.u(), microxs, p.rng);
 
   if (sinfo.yield == 0.) {
     // this scatter had a yield of 0... we have no choice but to kill

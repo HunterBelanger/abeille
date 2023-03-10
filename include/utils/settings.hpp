@@ -90,6 +90,8 @@ extern double w_noise;
 extern double eta;
 extern double keff;
 
+extern bool use_urr_ptables;
+
 extern bool converged;
 
 extern bool pair_distance_sqrd;

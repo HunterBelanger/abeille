@@ -36,6 +36,7 @@
 
 #include <yaml-cpp/yaml.h>
 
+#include <cstdint>
 #include <materials/mg_angle_distribution.hpp>
 #include <materials/nuclide.hpp>
 #include <vector>
@@ -54,6 +55,7 @@ class MGNuclide : public Nuclide {
             const std::vector<double>& decay_cnsts);
 
   bool fissile() const override final;
+  bool has_urr() const override final;
   double total_xs(double E_in, std::size_t i) const override final;
   double disappearance_xs(double E_in, std::size_t i) const override final;
   double fission_xs(double E_in, std::size_t i) const override final;
@@ -63,11 +65,14 @@ class MGNuclide : public Nuclide {
   double reaction_xs(uint32_t mt, double E_in, size_t i) const override final;
   double elastic_xs(double E_in, std::size_t i) const override final;
   std::size_t energy_grid_index(double E) const override final;
+  MicroXSs get_micro_xs(double E, std::optional<double> urr_rand = std::nullopt) const override final;
+
   std::size_t num_delayed_groups() const override final;
   double delayed_group_constant(std::size_t g) const override final;
   double delayed_group_probability(std::size_t g,
                                    double E) const override final;
-  ScatterInfo sample_scatter(double Ein, const Direction& u, std::size_t i,
+
+  ScatterInfo sample_scatter(double Ein, const Direction& u, const MicroXSs& micro_xs,
                              pcg32& rng) const override final;
   ScatterInfo sample_scatter_mt(uint32_t mt, double Ein, const Direction& u,
                                 std::size_t i, pcg32& rng) const override final;
@@ -83,6 +88,8 @@ class MGNuclide : public Nuclide {
   double max_energy() const override final;
   double min_energy() const override final;
   double speed(double E, std::size_t i) const override final;
+
+  uint32_t zaid() const override final;
 
   // Methods unique to MGNuclide, for exact MG cancellation.
   const std::vector<double>& group_speeds() const { return group_speeds_; }

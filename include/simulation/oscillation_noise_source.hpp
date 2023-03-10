@@ -43,15 +43,6 @@ class OscillationNoiseSource : public NoiseSource {
   OscillationNoiseSource() = default;
   virtual ~OscillationNoiseSource() = default;
 
-  virtual std::complex<double> dEf(const Position& r, double E,
-                                   double w) const = 0;
-
-  virtual std::complex<double> dEelastic(const Position& r, double E,
-                                         double w) const = 0;
-
-  virtual std::complex<double> dEmt(uint32_t mt, const Position& r, double E,
-                                    double w) const = 0;
-
   virtual std::complex<double> dEt_Et(const Position& r, double E,
                                       double w) const = 0;
 

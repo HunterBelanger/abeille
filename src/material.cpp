@@ -33,13 +33,15 @@
  *============================================================================*/
 #include <materials/material.hpp>
 #include <materials/mg_nuclide.hpp>
-#include <memory>
 #include <plotting/slice_plot.hpp>
-#include <sstream>
 #include <utils/error.hpp>
 #include <utils/output.hpp>
 #include <utils/rng.hpp>
 #include <utils/settings.hpp>
+#include <materials/nuclide.hpp>
+
+#include <memory>
+#include <sstream>
 #include <vector>
 
 std::map<uint32_t, std::shared_ptr<Material>> materials;
@@ -98,7 +100,7 @@ void fill_ce_material(const YAML::Node& mat,
     const double concentration = comps[i]["concentration"].as<double>();
 
     // Make sure concentration is positive
-    if (concentration <= 0.) {
+    if (concentration < 0.) {
       std::stringstream mssg;
       mssg << "Entry index " << i << " in material ";
       mssg << material->name() << " has a negative concentration.";
@@ -108,7 +110,7 @@ void fill_ce_material(const YAML::Node& mat,
     // Get CENuclidePacket from NDDirectory
     auto packet = settings::nd_directory->load_nuclide(nuclide_key, temp);
 
-    // Add components
+    // Add components. I don't think this can actually happen though. TODO
     if (!packet.nuclide_1 && !packet.nuclide_2) {
       // If we have no nuclides, this is bad
       std::stringstream mssg;
@@ -119,9 +121,16 @@ void fill_ce_material(const YAML::Node& mat,
 
     if (packet.nuclide_1) {
       const auto& nuc_frac = packet.nuclide_1.value();
-
+      
+      // If this is a new nuclide, add it to the map of nuclides
       if (nuclides.find(nuc_frac.nuclide->id()) == nuclides.end()) {
         nuclides[nuc_frac.nuclide->id()] = nuc_frac.nuclide;
+      }
+
+      // If this is a new zaid with a URR, add it to the zaids with urr set
+      if (nuc_frac.nuclide->has_urr() &&
+          zaids_with_urr.contains(nuc_frac.nuclide->zaid()) == false) {
+        zaids_with_urr.insert(nuc_frac.nuclide->zaid());
       }
 
       material->add_component(nuc_frac.fraction * concentration,
@@ -130,9 +139,16 @@ void fill_ce_material(const YAML::Node& mat,
 
     if (packet.nuclide_2) {
       const auto& nuc_frac = packet.nuclide_2.value();
-
+      
+      // If this is a new nuclide, add it to the map of nuclides
       if (nuclides.find(nuc_frac.nuclide->id()) == nuclides.end()) {
         nuclides[nuc_frac.nuclide->id()] = nuc_frac.nuclide;
+      }
+
+      // If this is a new zaid with a URR, add it to the zaids with urr set
+      if (nuc_frac.nuclide->has_urr() &&
+          zaids_with_urr.contains(nuc_frac.nuclide->zaid()) == false) {
+        zaids_with_urr.insert(nuc_frac.nuclide->zaid());
       }
 
       material->add_component(nuc_frac.fraction * concentration,

@@ -3,6 +3,7 @@
 
 #include <PapillonNDL/st_neutron.hpp>
 #include <PapillonNDL/st_thermal_scattering_law.hpp>
+#include <cstdint>
 #include <materials/nuclide.hpp>
 #include <memory>
 
@@ -12,6 +13,7 @@ class CENuclide : public Nuclide {
             const std::shared_ptr<pndl::STThermalScatteringLaw>& tsl);
 
   bool fissile() const override final;
+  bool has_urr() const override final;
   double total_xs(double E_in, std::size_t i) const override final;
   double disappearance_xs(double E_in, std::size_t i) const override final;
   double fission_xs(double E_in, std::size_t i) const override final;
@@ -21,11 +23,14 @@ class CENuclide : public Nuclide {
   double reaction_xs(uint32_t mt, double E_in, size_t i) const override final;
   double elastic_xs(double E_in, std::size_t i) const override final;
   std::size_t energy_grid_index(double E) const override final;
+  MicroXSs get_micro_xs(double E, std::optional<double> urr_rand = std::nullopt) const override final;
+
   std::size_t num_delayed_groups() const override final;
   double delayed_group_constant(std::size_t g) const override final;
   double delayed_group_probability(std::size_t g,
                                    double E) const override final;
-  ScatterInfo sample_scatter(double Ein, const Direction& u, std::size_t i,
+  
+  ScatterInfo sample_scatter(double Ein, const Direction& u, const MicroXSs& micro_xs,
                              pcg32& rng) const override final;
   ScatterInfo sample_scatter_mt(uint32_t mt, double Ein, const Direction& u,
                                 std::size_t i, pcg32& rng) const override final;
@@ -41,6 +46,8 @@ class CENuclide : public Nuclide {
   double max_energy() const override final;
   double min_energy() const override final;
   double speed(double E, std::size_t i) const override final;
+
+  uint32_t zaid() const override final;
 
   // CENuclide specific options
   const std::shared_ptr<pndl::STNeutron>& cedata() const { return cedata_; }

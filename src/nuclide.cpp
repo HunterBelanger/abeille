@@ -31,7 +31,9 @@
  * pris connaissance de la licence CeCILL, et que vous en avez accepté les
  * termes.
  *============================================================================*/
+#include <cstdint>
 #include <materials/nuclide.hpp>
 
 std::map<uint32_t, std::shared_ptr<Nuclide>> nuclides;
+std::unordered_set<uint32_t> zaids_with_urr;
 uint32_t Nuclide::id_counter{0};

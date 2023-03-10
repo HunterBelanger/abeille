@@ -46,6 +46,11 @@
 #include <utils/error.hpp>
 #include <utils/output.hpp>
 #include <utils/settings.hpp>
+
+#include <boost/unordered/unordered_flat_map.hpp>
+
+#include <optional>
+#include <unordered_map>
 #include <vector>
 
 // Currently, carter tracking just finds the majorant xs like is done in
@@ -61,6 +66,10 @@ CarterTracker::CarterTracker(std::shared_ptr<Tallies> i_t)
     // problem. We do this by iterating through all nuclides. In CE mode, we
     // should be able to safely case a Nuclide pointer to a CENuclide pointer.
     std::vector<double> union_energy_grid;
+
+    // Get a map of all URR random values set to 1, for finding the majorant
+    boost::unordered_flat_map<uint32_t, std::optional<double>> urr_rands;
+    for (const auto& za : zaids_with_urr) urr_rands[za] = 1.;
 
     // Iterate through all nuclides
     for (const auto& id_nucld_pair : nuclides) {
@@ -116,6 +125,7 @@ CarterTracker::CarterTracker(std::shared_ptr<Tallies> i_t)
     for (const auto& material : materials) {
       // Make a MaterialHelper, to evaluate the material XS for us
       MaterialHelper mat(material.second.get(), union_energy_grid.front());
+      mat.set_urr_rand_vals(urr_rands);
 
       // Now iterate through all energy points. If xs is larger, update value
       for (std::size_t i = 0; i < union_energy_grid.size(); i++) {
@@ -208,6 +218,7 @@ std::vector<BankedParticle> CarterTracker::transport(
       // Only make helper if we aren't lost, to make sure that material isn't
       // a nullptr
       MaterialHelper mat(trkr.material(), p.E());
+      if (settings::use_urr_ptables) mat.set_urr_rand_vals(p.rng);
 
       // auto bound = trkr.boundary();
       while (p.is_alive()) {
@@ -330,6 +341,7 @@ std::vector<BankedParticle> CarterTracker::transport(
             }
             bound = trkr.boundary();
             mat.set_material(trkr.material(), p.E());
+            if (settings::use_urr_ptables) mat.set_urr_rand_vals(p.rng);
           } else if (settings::rng_stride_warnings) {
             // History is truly dead.
             // Check if we went past the particle stride.
