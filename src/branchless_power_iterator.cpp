@@ -333,12 +333,15 @@ void BranchlessPowerIterator::run() {
       perform_regional_cancellation(next_gen);
     }
 
-    // Calculate net positive and negative weight
-    if (mpi::rank == 0) normalize_weights(next_gen);
+    //// Calculate net positive and negative weight
+    //if (mpi::rank == 0) normalize_weights(next_gen);
 
-    // Comb particles
-    if (settings::branchless_combing && mpi::rank == 0)
-      comb_particles(next_gen);
+    //// Comb particles
+    //if (settings::branchless_combing && mpi::rank == 0)
+    //  comb_particles(next_gen);
+    if (mpi::rank == 0) {
+      sample_without_replacement(next_gen); 
+    }
 
     // Compute pair distance squared
     if (settings::pair_distance_sqrd && mpi::rank == 0) {
@@ -551,6 +554,52 @@ void BranchlessPowerIterator::comb_particles(
 
   // Reshuffle full buffer
   std::shuffle(next_gen.begin(), next_gen.end(), settings::rng);
+}
+
+void BranchlessPowerIterator::sample_without_replacement(std::vector<BankedParticle>& next_gen) {
+  std::vector<BankedParticle> new_next_gen;
+  new_next_gen.reserve(static_cast<std::size_t>(settings::nparticles));
+  
+  // The total number of particles we need to sample 
+  std::size_t N_to_sample = static_cast<std::size_t>(settings::nparticles);
+
+  if (next_gen.size() < N_to_sample) {
+    // If we don't have at least N_to_sample particles in the bank, we first
+    // add however many copies of each which are needed. 
+    const std::size_t ncopies = static_cast<std::size_t>(std::floor(static_cast<double>(N_to_sample)/static_cast<double>(next_gen.size())));
+
+    for (const auto& p : next_gen) {
+      for (std::size_t i = 0; i < ncopies; i++) {
+        new_next_gen.push_back(p); 
+        new_next_gen.back().wgt = 1.;
+        new_next_gen.back().wgt2 = 0.;
+      }
+    }
+
+    N_to_sample -= next_gen.size() * ncopies;
+  }
+  
+  // First, get all the particle weights
+  std::vector<double> weights(next_gen.size(), 0.);
+  for (std::size_t i = 0; i < next_gen.size(); i++) {
+    weights[i] = next_gen[i].wgt; 
+  }
+  
+  // We now sample all of our particles
+  for (std::size_t i = 0; i < N_to_sample; i++) {
+    // Sample index
+    std::size_t ip = static_cast<std::size_t>(RNG::discrete(settings::rng, weights));
+
+    // Add index to new bank
+    new_next_gen.push_back(next_gen[ip]);
+    new_next_gen.back().wgt = 1.;
+
+    // Set the weight of the sampled particle to zero, so that it will never
+    // be sampled again (i.e. it has not been replaced).
+    weights[ip] = 0.;
+  }
+
+  next_gen = new_next_gen;
 }
 
 void BranchlessPowerIterator::compute_pre_cancellation_entropy(

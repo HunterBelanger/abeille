@@ -61,7 +61,8 @@ uint64_t rng_seed = 19073486328125;
 uint64_t rng_stride = 152917;
 pcg32 rng;
 
-double wgt_cutoff = 0.8;  // Needs to be high for noise !
+//double wgt_cutoff = 0.8;  // Needs to be high for noise !
+double wgt_cutoff = 0.25;
 double wgt_survival = 1.0;
 double wgt_split = 2.0;
 
