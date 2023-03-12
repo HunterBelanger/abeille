@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <materials/nuclide.hpp>
 #include <memory>
+#include <vector>
 
 class CENuclide : public Nuclide {
  public:
@@ -55,6 +56,9 @@ class CENuclide : public Nuclide {
   const std::shared_ptr<pndl::STNeutron>& cedata() const { return cedata_; }
   const std::shared_ptr<pndl::STThermalScatteringLaw>& tsl() const {
     return tsl_;
+  }
+  const std::vector<double>& urr_energy_grid() const {
+    return cedata_->urr_ptables().energy();
   }
 
  private:

@@ -149,6 +149,7 @@ std::vector<BankedParticle> SurfaceTracker::transport(
         if (p.is_alive() && had_collision) {  // real collision
           collision(p, mat, thread_scores, noise, noise_maker);
           trkr.set_u(p.u());
+          if (settings::use_urr_ptables) mat.set_urr_rand_vals(p.rng);
         }  // If alive for real collision
 
         if (!p.is_alive()) {

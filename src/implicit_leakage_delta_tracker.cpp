@@ -106,6 +106,19 @@ ImplicitLeakageDeltaTracker::ImplicitLeakageDeltaTracker(
         std::sort(cenuc_grid.begin(), cenuc_grid.end());
       }
 
+      // Get the URR grid points
+      if (cenuc->has_urr()) {
+        cenuc_grid.reserve(cenuc_grid.size() + cenuc->urr_energy_grid().size());
+
+        // Get the URR energy points
+        for (const auto& urr_E : cenuc->urr_energy_grid()) {
+          cenuc_grid.push_back(urr_E);
+        }
+
+        // Now sort the grid
+        std::sort(cenuc_grid.begin(), cenuc_grid.end());
+      }
+
       // Now we perform the union operation
       std::vector<double> tmp;
       std::set_union(union_energy_grid.begin(), union_energy_grid.end(),
@@ -135,6 +148,9 @@ ImplicitLeakageDeltaTracker::ImplicitLeakageDeltaTracker(
         if (xsi > maj_xs[i]) maj_xs[i] = xsi;
       }
     }
+
+    // Multiply all majorant values by a small safety factor
+    for (auto& xsmaj : maj_xs) xsmaj *= 1.01;
 
     // With the majorant obtained, we can now construct the majorant xs
     EGrid = std::make_shared<pndl::EnergyGrid>(union_energy_grid);
@@ -328,8 +344,11 @@ std::vector<BankedParticle> ImplicitLeakageDeltaTracker::transport(
           double Et = mat.Et(p.E(), noise);
 
           if (Et - Emajorant > 1.E-10) {
-            std::string mssg = "Total cross section excedeed majorant.";
-            fatal_error(mssg, __FILE__, __LINE__);
+            std::stringstream mssg;
+            mssg << "Total cross section excedeed majorant at ";
+            mssg << p.E() << " MeV.";
+            mssg << " Et = " << Et << ", Emaj = " << Emajorant << "\n";
+            fatal_error(mssg.str(), __FILE__, __LINE__);
           }
 
           if (RNG::rand(p.rng) < (Et / Emajorant)) {
@@ -342,6 +361,7 @@ std::vector<BankedParticle> ImplicitLeakageDeltaTracker::transport(
           collision(p, mat, thread_scores, noise, noise_maker);
           trkr.set_u(p.u());
           p.set_previous_collision_real();
+          if (settings::use_urr_ptables) mat.set_urr_rand_vals(p.rng);
         } else if (p.is_alive()) {  // Virtual collision
           p.set_previous_collision_virtual();
         }

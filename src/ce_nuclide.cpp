@@ -1,9 +1,10 @@
-#include <mpi.h>
-
+#include <PapillonNDL/xs_packet.hpp>
 #include <array>
 #include <cstdint>
+#include <exception>
 #include <iomanip>
 #include <ios>
+#include <iterator>
 #include <materials/ce_nuclide.hpp>
 #include <sstream>
 #include <stdexcept>
@@ -11,9 +12,6 @@
 #include <utils/error.hpp>
 #include <utils/rng.hpp>
 #include <utils/settings.hpp>
-
-#include "PapillonNDL/xs_packet.hpp"
-#include "materials/nuclide.hpp"
 
 CENuclide::CENuclide(const std::shared_ptr<pndl::STNeutron>& ce,
                      const std::shared_ptr<pndl::STThermalScatteringLaw>& tsl)
@@ -170,7 +168,7 @@ ScatterInfo CENuclide::sample_scatter(double Ein, const Direction& u,
   Direction uout = Direction(1., 0., 0.);
   uint32_t MT = 0;
 
-  if (xi_elastic <= P_elastic) {
+  if (xi_elastic <= P_elastic || P_elastic > 1. - 1.E-9) {
     MT = 2;
     elastic_scatter(Ein, u, Eout, uout, rng);
   } else {

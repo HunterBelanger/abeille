@@ -104,6 +104,19 @@ CarterTracker::CarterTracker(std::shared_ptr<Tallies> i_t)
         std::sort(cenuc_grid.begin(), cenuc_grid.end());
       }
 
+      // Get the URR grid points
+      if (cenuc->has_urr()) {
+        cenuc_grid.reserve(cenuc_grid.size() + cenuc->urr_energy_grid().size());
+
+        // Get the URR energy points
+        for (const auto& urr_E : cenuc->urr_energy_grid()) {
+          cenuc_grid.push_back(urr_E);
+        }
+
+        // Now sort the grid
+        std::sort(cenuc_grid.begin(), cenuc_grid.end());
+      }
+
       // Now we perform the union operation
       std::vector<double> tmp;
       std::set_union(union_energy_grid.begin(), union_energy_grid.end(),
@@ -133,6 +146,9 @@ CarterTracker::CarterTracker(std::shared_ptr<Tallies> i_t)
         if (xsi > maj_xs[i]) maj_xs[i] = xsi;
       }
     }
+
+    // Multiply all majorant values by a small safety factor
+    for (auto& xsmaj : maj_xs) xsmaj *= 1.01;
 
     // With the majorant obtained, we can now construct the majorant xs
     EGrid = std::make_shared<pndl::EnergyGrid>(union_energy_grid);
@@ -310,6 +326,7 @@ std::vector<BankedParticle> CarterTracker::transport(
           trkr.set_u(p.u());
           bound = trkr.boundary();
           p.set_previous_collision_real();
+          if (settings::use_urr_ptables) mat.set_urr_rand_vals(p.rng);
         } else if (p.is_alive()) {
           p.set_previous_collision_virtual();
         }

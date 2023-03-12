@@ -23,11 +23,13 @@ class MaterialHelper {
 
   void set_urr_rand_vals(pcg32& rng) {
     for (auto& rand : zaid_to_urr_rand_) rand.second = RNG::rand(rng);
+    this->clear_xs();
   }
 
   void set_urr_rand_vals(
       const boost::unordered_flat_map<uint32_t, std::optional<double>>& vals) {
     zaid_to_urr_rand_ = vals;
+    this->clear_xs();
   }
 
   const boost::unordered_flat_map<uint32_t, std::optional<double>>&
@@ -37,6 +39,7 @@ class MaterialHelper {
 
   void clear_urr_rand_vals() {
     for (auto& rand : zaid_to_urr_rand_) rand.second = std::nullopt;
+    this->clear_xs();
   }
 
   double Et(double E, bool noise = false) {
