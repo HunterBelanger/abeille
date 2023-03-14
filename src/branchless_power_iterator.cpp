@@ -341,6 +341,7 @@ void BranchlessPowerIterator::run() {
     //  comb_particles(next_gen);
     if (mpi::rank == 0) {
       sample_without_replacement(next_gen); 
+      normalize_weights(next_gen);
     }
 
     // Compute pair distance squared
@@ -571,8 +572,6 @@ void BranchlessPowerIterator::sample_without_replacement(std::vector<BankedParti
     for (const auto& p : next_gen) {
       for (std::size_t i = 0; i < ncopies; i++) {
         new_next_gen.push_back(p); 
-        new_next_gen.back().wgt = 1.;
-        new_next_gen.back().wgt2 = 0.;
       }
     }
 
@@ -581,22 +580,45 @@ void BranchlessPowerIterator::sample_without_replacement(std::vector<BankedParti
   
   // First, get all the particle weights
   std::vector<double> weights(next_gen.size(), 0.);
+  double weights_sum = 0;
   for (std::size_t i = 0; i < next_gen.size(); i++) {
     weights[i] = next_gen[i].wgt; 
+    weights_sum += next_gen[i].wgt;
   }
+
+  // Now we define the lambda to sample a particle from the set
+  auto discrete = [&weights, &weights_sum](double xi) {
+    const double prob = weights_sum * xi;
+    double cum_prob = 0.;
+    for (std::size_t i = 0; i < weights.size(); i++) {
+      cum_prob += weights[i]; 
+      if (prob <= cum_prob) {
+        return i; 
+      }
+    }
+
+    // SHOULD NEVER GET HERE
+    if (weights.size() > 0) return static_cast<std::size_t>(weights.size() - 1);
+    else return static_cast<std::size_t>(0);
+  };
   
   // We now sample all of our particles
+#pragma omp parallel for
   for (std::size_t i = 0; i < N_to_sample; i++) {
     // Sample index
-    std::size_t ip = static_cast<std::size_t>(RNG::discrete(settings::rng, weights));
+    //std::size_t ip = static_cast<std::size_t>(RNG::discrete(settings::rng, weights));
+    std::size_t ip = discrete(RNG::rand(settings::rng));
+    
+#pragma omp critical
+    {
+      // Add index to new bank
+      new_next_gen.push_back(next_gen[ip]);
 
-    // Add index to new bank
-    new_next_gen.push_back(next_gen[ip]);
-    new_next_gen.back().wgt = 1.;
-
-    // Set the weight of the sampled particle to zero, so that it will never
-    // be sampled again (i.e. it has not been replaced).
-    weights[ip] = 0.;
+      // Set the weight of the sampled particle to zero, so that it will never
+      // be sampled again (i.e. it has not been replaced).
+      weights_sum -= weights[ip];
+      weights[ip] = 0.;
+    }
   }
 
   next_gen = new_next_gen;
