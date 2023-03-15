@@ -603,14 +603,14 @@ void BranchlessPowerIterator::sample_without_replacement(std::vector<BankedParti
   };
   
   // We now sample all of our particles
-#pragma omp parallel for
+//#pragma omp parallel for
   for (std::size_t i = 0; i < N_to_sample; i++) {
     // Sample index
     //std::size_t ip = static_cast<std::size_t>(RNG::discrete(settings::rng, weights));
     std::size_t ip = discrete(RNG::rand(settings::rng));
     
-#pragma omp critical
-    {
+//#pragma omp critical
+//    {
       // Add index to new bank
       new_next_gen.push_back(next_gen[ip]);
 
@@ -618,7 +618,7 @@ void BranchlessPowerIterator::sample_without_replacement(std::vector<BankedParti
       // be sampled again (i.e. it has not been replaced).
       weights_sum -= weights[ip];
       weights[ip] = 0.;
-    }
+//    }
   }
 
   next_gen = new_next_gen;
