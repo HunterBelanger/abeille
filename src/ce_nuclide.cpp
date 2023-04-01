@@ -141,12 +141,12 @@ uint32_t CENuclide::zaid() const { return cedata_->zaid().zaid(); }
 
 // These are all possible MTs which result in an exit neutron
 // (other than fission) from the ENDF manual.
-static std::array<uint32_t, 106> MT_LIST{
-    2,   5,   11,  16,  17,  22,  23,  24,  25,  28,  29,  30,  32,  33,
-    34,  35,  36,  37,  41,  42,  44,  45,  51,  52,  53,  54,  55,  56,
-    57,  58,  59,  60,  61,  62,  63,  64,  65,  66,  67,  68,  69,  70,
-    71,  72,  73,  74,  75,  76,  77,  78,  79,  80,  81,  82,  83,  84,
-    85,  86,  87,  88,  89,  90,  91,  152, 153, 154, 156, 157, 158, 159,
+static const std::array<uint32_t, 106> MT_LIST{
+      2,   5,  11,  16,  17,  22,  23,  24,  25,  28,  29,  30,  32,  33,
+     34,  35,  36,  37,  41,  42,  44,  45,  51,  52,  53,  54,  55,  56,
+     57,  58,  59,  60,  61,  62,  63,  64,  65,  66,  67,  68,  69,  70,
+     71,  72,  73,  74,  75,  76,  77,  78,  79,  80,  81,  82,  83,  84,
+     85,  86,  87,  88,  89,  90,  91, 152, 153, 154, 156, 157, 158, 159,
     160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173,
     174, 175, 176, 177, 178, 179, 180, 181, 183, 184, 185, 186, 187, 188,
     189, 190, 194, 195, 196, 198, 199, 200};
@@ -159,7 +159,6 @@ ScatterInfo CENuclide::sample_scatter(double Ein, const Direction& u,
   XS.fill(0.);
 
   // Get XS value for all of the possible scattering reactions
-  const double xi_elastic = RNG::rand(rng);
   const double P_elastic =
       micro_xs.elastic / (micro_xs.elastic + micro_xs.inelastic);
 
@@ -168,9 +167,10 @@ ScatterInfo CENuclide::sample_scatter(double Ein, const Direction& u,
   Direction uout = Direction(1., 0., 0.);
   uint32_t MT = 0;
 
+  // First, sample the reaction type
+  const double xi_elastic = RNG::rand(rng);
   if (xi_elastic <= P_elastic || P_elastic > 1. - 1.E-9) {
     MT = 2;
-    elastic_scatter(Ein, u, Eout, uout, rng);
   } else {
     // Get all the non-elastic cross sections
     for (std::size_t j = 1; j < MT_LIST.size(); j++) {
@@ -182,8 +182,17 @@ ScatterInfo CENuclide::sample_scatter(double Ein, const Direction& u,
 
     // Sample the reaction
     MT = MT_LIST[static_cast<std::size_t>(
-        RNG::discrete(rng, &XS[0], &XS[XS.size() - 1]))];
+        RNG::discrete(rng, &XS[1], &XS[XS.size() - 1])) + 1];
 
+    // If we don't have that reaction, something probably went wrong.
+    // We just use elastic anyway.
+    if (cedata_->has_reaction(MT) == false) MT = 2;
+  }
+  
+  // Sample reaction data
+  if (MT == 2) {
+    elastic_scatter(Ein, u, Eout, uout, rng);
+  } else {
     // Get yield for the reaction
     yield = cedata_->reaction(MT).yield()(Ein);
 
@@ -194,7 +203,8 @@ ScatterInfo CENuclide::sample_scatter(double Ein, const Direction& u,
     Eout = ae_out.energy;
     uout = rotate_direction(u, ae_out.cosine_angle, 2. * PI * rngfunc());
   }
-
+  
+  // Retturn the reaction iformation
   ScatterInfo info;
   info.mt = MT;
   info.yield = yield;
