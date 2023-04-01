@@ -1,0 +1,121 @@
+# STACY-30 - LEU-SOL-THERM-007 Case 30
+#
+#                keff         std
+# ENDF/B-VIII.0
+#-------------------------------------
+# Abeille      : 0.997668 +/- 0.000268
+# OpenMC       : 0.99735  +/- 0.00020
+
+materials:
+  - name: SS304
+    id: 1
+    color: [255,127,14]
+    temperature: 293.6
+    composition: [{nuclide: C12,  concentration: 4.3268E-05},
+                  {nuclide: C13,  concentration: 4.6798E-07},
+                  {nuclide: Si28, concentration: 9.8013E-04},
+                  {nuclide: Si29, concentration: 4.9628E-05},
+                  {nuclide: Si30, concentration: 3.2944E-05},
+                  {nuclide: P31,  concentration: 4.3170E-05},
+                  {nuclide: S32,  concentration: 2.8299E-06},
+                  {nuclide: S33,  concentration: 2.2337E-08},
+                  {nuclide: S34,  concentration: 1.2538E-07},
+                  {nuclide: S36,  concentration: 5.9564E-10},
+                  {nuclide: Cr50, concentration: 7.2887E-04},
+                  {nuclide: Cr52, concentration: 1.4056E-02},
+                  {nuclide: Cr53, concentration: 1.5936E-03},
+                  {nuclide: Cr54, concentration: 3.9673E-04},
+                  {nuclide: Mn55, concentration: 1.1561E-03},
+                  {nuclide: Fe54, concentration: 3.5058E-03},
+                  {nuclide: Fe56, concentration: 5.4501E-02},
+                  {nuclide: Fe57, concentration: 1.2478E-03},
+                  {nuclide: Fe58, concentration: 1.6638E-04},
+                  {nuclide: Ni58, concentration: 5.6939E-03},
+                  {nuclide: Ni60, concentration: 2.1768E-03},
+                  {nuclide: Ni61, concentration: 9.4245E-05},
+                  {nuclide: Ni62, concentration: 2.9942E-04},
+                  {nuclide: Ni64, concentration: 7.5897E-05}]
+
+  - name: Uranyl Nitrate Solution
+    id: 2
+    color: [214,39,40]
+    temperature: 293.6
+    composition: [{nuclide: H1_H2O, concentration: 5.7176E-02},
+                  {nuclide: N14,    concentration: 2.8052E-03},
+                  {nuclide: N15,    concentration: 1.0361E-05},
+                  {nuclide: O16,    concentration: 3.7821E-02},
+                  {nuclide: O17,    concentration: 1.5134E-05},
+                  {nuclide: U234,   concentration: 5.9840E-07},
+                  {nuclide: U235,   concentration: 7.4257E-05},
+                  {nuclide: U236,   concentration: 7.4165E-08},
+                  {nuclide: U238,   concentration: 6.6142E-04}]
+
+  - name: Air
+    id: 3
+    color: [44,160,44]
+    temperature: 293.6
+    composition: [{nuclide: N14, concentration: 3.8872E-05},
+                  {nuclide: N15, concentration: 1.4436E-07},
+                  {nuclide: O16, concentration: 1.0405E-05},
+                  {nuclide: O17, concentration: 4.1636E-09}]
+
+surfaces:
+  - {type: zcylinder, x0: 0., y0: 0., r: 29.5, id: 1}
+  - {type: zcylinder, x0: 0., y0: 0., r: 29.8, boundary: vacuum, id: 2}
+  - {type: zplane, z0: -2., boundary: vacuum, id: 3}
+  - {type: zplane, z0: 0., id: 4}
+  - {type: zplane, z0: 54.2, id: 5}
+  - {type: zplane, z0: 150., id: 6}
+  - {type: zplane, z0: 152.5, boundary: vacuum, id: 7}
+
+cells:
+  - region: "+1 & -2 & -6 & +4"
+    name: tank wall
+    material: 1
+    id: 1
+
+  - region: "-2 & -4 & +3"
+    name: tank bottom
+    material: 1
+    id: 2
+
+  - region: "-2 & -7 & + 6"
+    name: tank top
+    material: 1
+    id: 3
+
+  - region: "-1 & -5 & +4"
+    name: Uranyl Nitrate Solution
+    material: 2
+    id: 4
+
+  - region: "-1 & -6 & +5"
+    name: Air inside tank
+    material: 3
+    id: 5
+
+universes:
+  - cells: [1,2,3,4,5]
+    id: 1
+
+root-universe: 1
+
+sources:
+  - spatial:
+      type: box
+      low: [-10., -10., 0.1]
+      hi: [10., 10., 54.]
+    energy:
+      type: mono-energetic
+      energy: 0.7
+    direction:
+      type: isotropic
+    weight: 1.
+
+settings:
+  nparticles: 10000
+  ngenerations: 2100
+  nignored: 100
+  use-dbrc: false
+  transport: surface-tracking
+  simulation: k-eigenvalue
