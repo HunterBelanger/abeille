@@ -40,8 +40,7 @@
 
 std::shared_ptr<Cancelator> make_cancelator(const YAML::Node& node) {
   if (!node["type"] || !node["type"].IsScalar()) {
-    std::string mssg = "Invalid type entry for cancelator.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("Invalid type entry for cancelator.");
   }
   std::string type = node["type"].as<std::string>();
 
@@ -52,17 +51,15 @@ std::shared_ptr<Cancelator> make_cancelator(const YAML::Node& node) {
   } else if (type == "basic-exact") {
     // Check that we are not using surface-tracking !
     if (settings::tracking == settings::TrackingMode::SURFACE_TRACKING) {
-      std::string mssg =
-          "basic-exect cancelators may not be used with surface-tracking.";
-      fatal_error(mssg, __FILE__, __LINE__);
+      fatal_error(
+          "basic-exect cancelators may not be used with surface-tracking.");
     }
 
     // Check that we are not in CE mode !
     if (settings::energy_mode == settings::EnergyMode::CE) {
-      std::string mssg =
-          "basic-exact cancelators are not currently "
-          "supported for continuous energy.";
-      fatal_error(mssg, __FILE__, __LINE__);
+      fatal_error(
+          "basic-exact cancelators are not currently supported for continuous "
+          "energy.");
     }
 
     // looks like we meet all requirments, make the cancelator
@@ -70,24 +67,20 @@ std::shared_ptr<Cancelator> make_cancelator(const YAML::Node& node) {
   } else if (type == "exact") {
     // Check that we are not using surface-tracking !
     if (settings::tracking == settings::TrackingMode::SURFACE_TRACKING) {
-      std::string mssg =
-          "exect cancelators may not be used with surface-tracking.";
-      fatal_error(mssg, __FILE__, __LINE__);
+      fatal_error("exect cancelators may not be used with surface-tracking.");
     }
 
     // Check that we are not in CE mode !
     if (settings::energy_mode == settings::EnergyMode::CE) {
-      std::string mssg =
-          "exact cancelators are not currently "
-          "supported for continuous energy.";
-      fatal_error(mssg, __FILE__, __LINE__);
+      fatal_error(
+          "exact cancelators are not currently supported for continuous "
+          "energy.");
     }
 
     // looks like we meet all requirments, make the cancelator
     cancelator = make_exact_mg_cancelator(node);
   } else {
-    std::string mssg = "Unkown cancelator type \"" + type + "\".";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("Unkown cancelator type \"" + type + "\".");
   }
 
   return cancelator;

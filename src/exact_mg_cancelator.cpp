@@ -56,55 +56,42 @@ ExactMGCancelator::ExactMGCancelator(
       USE_VIRTUAL_COLLISIONS(use_virtual_collisions) {
   // Make sure N_SAMPLES != 0
   if (N_SAMPLES == 0) {
-    std::stringstream mssg;
-    mssg << "N_SAMPLES == 0";
-    fatal_error(mssg.str(), __FILE__, __LINE__);
+    fatal_error("N_SAMPLES == 0");
   }
 
   // Make sure r_low is low
   if (r_low.x() >= r_hi.x()) {
-    std::stringstream mssg;
-    mssg << "r_low.x() >= r_hi.x()";
-    fatal_error(mssg.str(), __FILE__, __LINE__);
+    fatal_error("r_low.x() >= r_hi.x()");
   }
   if (r_low.y() >= r_hi.y()) {
-    std::stringstream mssg;
-    mssg << "r_low.y() >= r_hi.y()";
-    fatal_error(mssg.str(), __FILE__, __LINE__);
+    fatal_error("r_low.y() >= r_hi.y()");
   }
   if (r_low.z() >= r_hi.z()) {
-    std::stringstream mssg;
-    mssg << "r_low.z() >= r_hi.z()";
-    fatal_error(mssg.str(), __FILE__, __LINE__);
+    fatal_error("r_low.z() >= r_hi.z()");
   }
 
   // Make sure shape[3] == group_bins.size()
   if (shape[3] != group_bins.size()) {
-    std::stringstream mssg;
-    mssg << "shape[3] != group_bins.size()";
-    fatal_error(mssg.str(), __FILE__, __LINE__);
+    fatal_error("shape[3] != group_bins.size()");
   }
 
   if (CHI_MATRIX && shape[3] == 0) {
-    std::stringstream mssg;
-    mssg << "Chi matrix is used, but no group_bins provided.\n";
-    mssg << "Impossible to have exact cancellation.";
-    fatal_error(mssg.str(), __FILE__, __LINE__);
+    fatal_error(
+        "Chi matrix is used, but no group_bins provided.\nImpossible to have "
+        "exact cancellation.");
   }
 
   std::set<std::size_t> bined_groups;
   for (const auto& bin : group_bins) {
     for (const auto& grp : bin) {
       if (grp >= settings::ngroups) {
-        std::stringstream mssg;
-        mssg << "grp >= settings::ngroups";
-        fatal_error(mssg.str(), __FILE__, __LINE__);
+        fatal_error("grp >= settings::ngroups");
       }
 
       if (bined_groups.count(grp) == 1) {
         std::stringstream mssg;
         mssg << "Group " << grp << " is included more than once in group_bins.";
-        fatal_error(mssg.str(), __FILE__, __LINE__);
+        fatal_error(mssg.str());
       } else {
         bined_groups.insert(grp);
       }
@@ -184,7 +171,7 @@ Material* ExactMGCancelator::get_material(const Position& r) const {
     std::stringstream mssg;
     mssg << "No material found at " << r
          << " in BasicExactMGCancelator::get_material.";
-    fatal_error(mssg.str(), __FILE__, __LINE__);
+    fatal_error(mssg.str());
   }
 
   return mat;
@@ -564,9 +551,7 @@ std::vector<BankedParticle> ExactMGCancelator::get_new_particles(pcg32& rng) {
             // is the case, we shouldn't have gotten this far, but hey, here
             // were are ! We are just gonna call this a fatal error for now,
             // and see if it ever pops up.
-            std::stringstream out;
-            out << "Couldn't sample position for uniform particle.";
-            fatal_error(out.str(), __FILE__, __LINE__);
+            fatal_error("Couldn't sample position for uniform particle.");
           }
 
           // Now we sample an energy group
@@ -617,8 +602,7 @@ std::shared_ptr<ExactMGCancelator> make_exact_mg_cancelator(
     const YAML::Node& node) {
   // Get low
   if (!node["low"] || !node["low"].IsSequence() || !(node["low"].size() == 3)) {
-    std::string mssg = "No valid low entry for basic exact MG cancelator.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("No valid low entry for basic exact MG cancelator.");
   }
 
   double xl = node["low"][0].as<double>();
@@ -629,8 +613,7 @@ std::shared_ptr<ExactMGCancelator> make_exact_mg_cancelator(
 
   // Get hi
   if (!node["hi"] || !node["hi"].IsSequence() || !(node["hi"].size() == 3)) {
-    std::string mssg = "No valid hi entry for basic exact MG cancelator.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("No valid hi entry for basic exact MG cancelator.");
   }
 
   double xh = node["hi"][0].as<double>();
@@ -640,17 +623,13 @@ std::shared_ptr<ExactMGCancelator> make_exact_mg_cancelator(
   Position r_hi(xh, yh, zh);
 
   if (r_low.x() >= r_hi.x() || r_low.y() >= r_hi.y() || r_low.z() >= r_hi.z()) {
-    std::stringstream mssg;
-    mssg << "In ExactMGCancelator, low is greater ";
-    mssg << "than or equal to hi.";
-    fatal_error(mssg.str(), __FILE__, __LINE__);
+    fatal_error("In ExactMGCancelator, low is greater than or equal to hi.");
   }
 
   // Get shape
   if (!node["shape"] || !node["shape"].IsSequence() ||
       !(node["shape"].size() == 3)) {
-    std::string mssg = "No valid shape entry for basic exact MG cancelator.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("No valid shape entry for basic exact MG cancelator.");
   }
 
   uint32_t Nx = node["shape"][0].as<uint32_t>();
@@ -662,11 +641,9 @@ std::shared_ptr<ExactMGCancelator> make_exact_mg_cancelator(
   if (node["group-bins"] && node["group-bins"].IsSequence()) {
     group_bins = node["group-bins"].as<std::vector<std::vector<std::size_t>>>();
   } else if (settings::chi_matrix) {
-    std::stringstream mssg;
-    mssg << "No group-bins are provided to ExactMGCancelator, ";
-    mssg << "but fission spectra are provided with a matrix.\n";
-    mssg << "Cancellation cannot be exact.";
-    warning(mssg.str(), __FILE__, __LINE__);
+    warning(
+        "No group-bins are provided to ExactMGCancelator, but fission spectra "
+        "are provided with a matrix.\nCancellation cannot be exact.");
   }
   Ne = static_cast<uint32_t>(group_bins.size());
 
@@ -678,13 +655,13 @@ std::shared_ptr<ExactMGCancelator> make_exact_mg_cancelator(
       if (grp >= settings::ngroups) {
         std::stringstream mssg;
         mssg << "Invalid group " << grp << " in group-bins.";
-        fatal_error(mssg.str(), __FILE__, __LINE__);
+        fatal_error(mssg.str());
       }
 
       if (bined_groups.count(grp) == 1) {
         std::stringstream mssg;
         mssg << "Group " << grp << " is included more than once in group-bins.";
-        fatal_error(mssg.str(), __FILE__, __LINE__);
+        fatal_error(mssg.str());
       } else {
         bined_groups.insert(grp);
       }
@@ -695,13 +672,11 @@ std::shared_ptr<ExactMGCancelator> make_exact_mg_cancelator(
   if (node["n-samples"] && node["n-samples"].IsScalar()) {
     n_samples = node["n-samples"].as<uint32_t>();
   } else if (node["n-samples"]) {
-    std::string mssg = "Invalid n-samples entry for cancelator.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("Invalid n-samples entry for cancelator.");
   }
 
   if (n_samples == 0) {
-    std::string mssg = "n-samples must be greater than zero.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("n-samples must be greater than zero.");
   }
 
   std::stringstream otpt;

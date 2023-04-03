@@ -67,20 +67,20 @@ void fill_ce_material(const YAML::Node& mat,
     std::stringstream mssg;
     mssg << "Material " << material->name()
          << " has no valid temperature entry.";
-    fatal_error(mssg.str(), __FILE__, __LINE__);
+    fatal_error(mssg.str());
   }
   temp = mat["temperature"].as<double>();
   if (temp < 0.) {
     std::stringstream mssg;
     mssg << "Material " << material->name() << " has a negative temperature.";
-    fatal_error(mssg.str(), __FILE__, __LINE__);
+    fatal_error(mssg.str());
   }
 
   // Get YAML list of all components
   if (!mat["composition"] || !mat["composition"].IsSequence()) {
     std::stringstream mssg;
     mssg << "Material " << material->name() << " has invalid composition list.";
-    fatal_error(mssg.str(), __FILE__, __LINE__);
+    fatal_error(mssg.str());
   }
   auto comps = mat["composition"];
 
@@ -92,7 +92,7 @@ void fill_ce_material(const YAML::Node& mat,
       std::stringstream mssg;
       mssg << "Entry index " << i << " in material ";
       mssg << material->name() << " is invalid.";
-      fatal_error(mssg.str(), __FILE__, __LINE__);
+      fatal_error(mssg.str());
     }
 
     const std::string nuclide_key = comps[i]["nuclide"].as<std::string>();
@@ -103,7 +103,7 @@ void fill_ce_material(const YAML::Node& mat,
       std::stringstream mssg;
       mssg << "Entry index " << i << " in material ";
       mssg << material->name() << " has a negative concentration.";
-      fatal_error(mssg.str(), __FILE__, __LINE__);
+      fatal_error(mssg.str());
     }
 
     // Get CENuclidePacket from NDDirectory
@@ -115,7 +115,7 @@ void fill_ce_material(const YAML::Node& mat,
       std::stringstream mssg;
       mssg << "Entry index " << i << " in material ";
       mssg << material->name() << " returned an empty CENuclidePacket.";
-      fatal_error(mssg.str(), __FILE__, __LINE__);
+      fatal_error(mssg.str());
     }
 
     if (packet.nuclide_1) {
@@ -163,15 +163,14 @@ void make_material(const YAML::Node& mat, bool plotting_mode) {
   if (mat["id"] && mat["id"].IsScalar()) {
     material->id_ = mat["id"].as<uint32_t>();
   } else {
-    std::string mssg = "Material is missing a valid id.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("Material is missing a valid id.");
   }
 
   // make sure material id isn't taken
   if (materials.find(material->id()) != materials.end()) {
     std::string mssg = "A material with id " + std::to_string(material->id()) +
                        " already exists.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error(mssg);
   }
 
   // Get material name

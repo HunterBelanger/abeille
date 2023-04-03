@@ -82,16 +82,14 @@ MGNuclide::MGNuclide(const std::vector<double>& speeds,
 void MGNuclide::normalize_chi() {
   // Make sure chi_ is properly sized
   if (chi_.size() != settings::ngroups) {
-    std::stringstream mssg;
-    mssg << "chi_.size() is not equal to settings::ngroups.";
-    fatal_error(mssg.str(), __FILE__, __LINE__);
+    fatal_error("chi_.size() is not equal to settings::ngroups.");
   }
 
   for (std::size_t i = 0; i < settings::ngroups; i++) {
     if (chi_[i].size() != settings::ngroups) {
       std::stringstream mssg;
       mssg << "chi_[" << i << "].size() is not equal to settings::ngroups.";
-      fatal_error(mssg.str(), __FILE__, __LINE__);
+      fatal_error(mssg.str());
     }
   }
 
@@ -105,22 +103,18 @@ void MGNuclide::normalize_chi() {
 void MGNuclide::make_scatter_xs() {
   // Make sure sizes are OK before calculating scatter xs and such
   if (Es_.size() != settings::ngroups) {
-    std::stringstream mssg;
-    mssg << "Es_.size() is not equal to settings::ngroups.";
-    fatal_error(mssg.str(), __FILE__, __LINE__);
+    fatal_error("Es_.size() is not equal to settings::ngroups.");
   }
 
   if (Ps_.size() != settings::ngroups) {
-    std::stringstream mssg;
-    mssg << "Ps_.size() is not equal to settings::ngroups.";
-    fatal_error(mssg.str(), __FILE__, __LINE__);
+    fatal_error("Ps_.size() is not equal to settings::ngroups.");
   }
 
   for (std::size_t i = 0; i < settings::ngroups; i++) {
     if (Ps_[i].size() != settings::ngroups) {
       std::stringstream mssg;
       mssg << "Ps_[" << i << "].size() is not equal to settings::ngroups.";
-      fatal_error(mssg.str(), __FILE__, __LINE__);
+      fatal_error(mssg.str());
     }
   }
 
@@ -137,49 +131,49 @@ void MGNuclide::check_sizes() const {
     std::stringstream mssg;
     mssg << "Size of Et_ is not " << settings::ngroups;
     mssg << " in nuclide " << this->id() << ".";
-    fatal_error(mssg.str(), __FILE__, __LINE__);
+    fatal_error(mssg.str());
   }
 
   if (Ea_.size() != settings::ngroups) {
     std::stringstream mssg;
     mssg << "Size of Ea_ is not " << settings::ngroups;
     mssg << " in nuclide " << this->id() << ".";
-    fatal_error(mssg.str(), __FILE__, __LINE__);
+    fatal_error(mssg.str());
   }
 
   if (Ef_.size() != settings::ngroups) {
     std::stringstream mssg;
     mssg << "Size of Ef_ is not " << settings::ngroups;
     mssg << " in nuclide " << this->id() << ".";
-    fatal_error(mssg.str(), __FILE__, __LINE__);
+    fatal_error(mssg.str());
   }
 
   if (Es_.size() != settings::ngroups) {
     std::stringstream mssg;
     mssg << "Size of Es_ is not " << settings::ngroups;
     mssg << " in nuclide " << this->id() << ".";
-    fatal_error(mssg.str(), __FILE__, __LINE__);
+    fatal_error(mssg.str());
   }
 
   if (nu_prmpt_.size() != settings::ngroups) {
     std::stringstream mssg;
     mssg << "Size of nu_prmpt_ is not " << settings::ngroups;
     mssg << " in nuclide " << this->id() << ".";
-    fatal_error(mssg.str(), __FILE__, __LINE__);
+    fatal_error(mssg.str());
   }
 
   if (nu_delyd_.size() != settings::ngroups) {
     std::stringstream mssg;
     mssg << "Size of nu_delyd_ is not " << settings::ngroups;
     mssg << " in nuclide " << this->id() << ".";
-    fatal_error(mssg.str(), __FILE__, __LINE__);
+    fatal_error(mssg.str());
   }
 
   if (chi_.size() != settings::ngroups) {
     std::stringstream mssg;
     mssg << "Size of chi_ is not " << settings::ngroups;
     mssg << " in nuclide " << this->id() << ".";
-    fatal_error(mssg.str(), __FILE__, __LINE__);
+    fatal_error(mssg.str());
   }
 
   for (std::size_t ei = 0; ei < settings::ngroups; ei++) {
@@ -187,7 +181,7 @@ void MGNuclide::check_sizes() const {
       std::stringstream mssg;
       mssg << "Size of chi_[" << ei << "] is not " << settings::ngroups;
       mssg << " in nuclide " << this->id() << ".";
-      fatal_error(mssg.str(), __FILE__, __LINE__);
+      fatal_error(mssg.str());
     }
   }
 
@@ -195,7 +189,7 @@ void MGNuclide::check_sizes() const {
     std::stringstream mssg;
     mssg << "Size of Ps_ is not " << settings::ngroups;
     mssg << " in nuclide " << this->id() << ".";
-    fatal_error(mssg.str(), __FILE__, __LINE__);
+    fatal_error(mssg.str());
   }
 
   for (std::size_t ei = 0; ei < settings::ngroups; ei++) {
@@ -203,7 +197,7 @@ void MGNuclide::check_sizes() const {
       std::stringstream mssg;
       mssg << "Size of Ps_[" << ei << "] is not " << settings::ngroups;
       mssg << " in nuclide " << this->id() << ".";
-      fatal_error(mssg.str(), __FILE__, __LINE__);
+      fatal_error(mssg.str());
     }
   }
 
@@ -211,7 +205,7 @@ void MGNuclide::check_sizes() const {
     std::stringstream mssg;
     mssg << "Size of mult_ is not " << settings::ngroups;
     mssg << " in nuclide " << this->id() << ".";
-    fatal_error(mssg.str(), __FILE__, __LINE__);
+    fatal_error(mssg.str());
   }
 
   for (std::size_t ei = 0; ei < settings::ngroups; ei++) {
@@ -219,7 +213,7 @@ void MGNuclide::check_sizes() const {
       std::stringstream mssg;
       mssg << "Size of mult_[" << ei << "] is not " << settings::ngroups;
       mssg << " in nuclide " << this->id() << ".";
-      fatal_error(mssg.str(), __FILE__, __LINE__);
+      fatal_error(mssg.str());
     }
   }
 
@@ -227,7 +221,7 @@ void MGNuclide::check_sizes() const {
     std::stringstream mssg;
     mssg << "Size of angle_dists_ is not " << settings::ngroups;
     mssg << " in nuclide " << this->id() << ".";
-    fatal_error(mssg.str(), __FILE__, __LINE__);
+    fatal_error(mssg.str());
   }
 
   for (std::size_t ei = 0; ei < settings::ngroups; ei++) {
@@ -235,7 +229,7 @@ void MGNuclide::check_sizes() const {
       std::stringstream mssg;
       mssg << "Size of angle_dists_[" << ei << "] is not " << settings::ngroups;
       mssg << " in nuclide " << this->id() << ".";
-      fatal_error(mssg.str(), __FILE__, __LINE__);
+      fatal_error(mssg.str());
     }
   }
 
@@ -243,7 +237,7 @@ void MGNuclide::check_sizes() const {
     std::stringstream mssg;
     mssg << "Size of P_delayed_group does not matche the size of ";
     mssg << "delayed_group_decay_constants in nuclide " << this->id() << ".";
-    fatal_error(mssg.str(), __FILE__, __LINE__);
+    fatal_error(mssg.str());
   }
 }
 
@@ -255,7 +249,7 @@ void MGNuclide::check_xs() const {
         std::stringstream mssg;
         mssg << "Ps_[" << ei << "][" << eo << "] in nuclide " << this->id();
         mssg << " is negative.";
-        fatal_error(mssg.str(), __FILE__, __LINE__);
+        fatal_error(mssg.str());
       }
 
       // Make sure yield is positive
@@ -263,27 +257,27 @@ void MGNuclide::check_xs() const {
         std::stringstream mssg;
         mssg << "mult_[" << ei << "][" << eo << "] in nuclide " << this->id();
         mssg << " is <= 0.";
-        fatal_error(mssg.str(), __FILE__, __LINE__);
+        fatal_error(mssg.str());
       }
     }
 
     if (Ea_[ei] < 0.) {
       std::stringstream mssg;
       mssg << "Ea_[" << ei << "] is negative in nuclide " << this->id() << ".";
-      fatal_error(mssg.str(), __FILE__, __LINE__);
+      fatal_error(mssg.str());
     }
 
     if (Ef_[ei] < 0.) {
       std::stringstream mssg;
       mssg << "Ef_[" << ei << "] is negative in nuclide " << this->id() << ".";
-      fatal_error(mssg.str(), __FILE__, __LINE__);
+      fatal_error(mssg.str());
     }
 
     if (Ef_[ei] > Ea_[ei]) {
       std::stringstream mssg;
       mssg << "Ef_[" << ei << "] > Ea_[" << ei << "] in nuclide " << this->id()
            << ".";
-      fatal_error(mssg.str(), __FILE__, __LINE__);
+      fatal_error(mssg.str());
     }
 
     double diff = Et_[ei] - (Es_[ei] + Ea_[ei]);
@@ -291,7 +285,7 @@ void MGNuclide::check_xs() const {
       std::stringstream mssg;
       mssg << "In nuclide " << this->id() << ", Es + Ea != Et ";
       mssg << " for group " << ei << ".";
-      fatal_error(mssg.str(), __FILE__, __LINE__);
+      fatal_error(mssg.str());
     }
   }
 }
@@ -302,14 +296,14 @@ void MGNuclide::check_fission_data() const {
       std::stringstream mssg;
       mssg << "nu_prmpt_[" << ei << "] is negative in nuclide ";
       mssg << this->id() << ".";
-      fatal_error(mssg.str(), __FILE__, __LINE__);
+      fatal_error(mssg.str());
     }
 
     if (nu_delyd_[ei] < 0.) {
       std::stringstream mssg;
       mssg << "nu_delyd_[" << ei << "] is negative in nuclide " << this->id()
            << ".";
-      fatal_error(mssg.str(), __FILE__, __LINE__);
+      fatal_error(mssg.str());
     }
 
     for (std::size_t eo = 0; eo < settings::ngroups; eo++) {
@@ -317,7 +311,7 @@ void MGNuclide::check_fission_data() const {
         std::stringstream mssg;
         mssg << "chi_[" << ei << "][" << eo << "] is negative in nuclide ";
         mssg << this->id() << ".";
-        fatal_error(mssg.str(), __FILE__, __LINE__);
+        fatal_error(mssg.str());
       }
     }
   }
@@ -329,7 +323,7 @@ void MGNuclide::check_dealyed_data() const {
       std::stringstream mssg;
       mssg << "P_delayed_group[" << i << "] is negative in nuclide ";
       mssg << this->id() << ".";
-      fatal_error(mssg.str(), __FILE__, __LINE__);
+      fatal_error(mssg.str());
     }
 
     if (delayed_group_decay_constants[i] < 0.) {
@@ -337,7 +331,7 @@ void MGNuclide::check_dealyed_data() const {
       mssg << "delayed_group_decay_constants[" << i
            << "] is negative in nuclide ";
       mssg << this->id() << ".";
-      fatal_error(mssg.str(), __FILE__, __LINE__);
+      fatal_error(mssg.str());
     }
   }
 }
@@ -560,7 +554,7 @@ void get_legendre_moment(
     if (!mat[key].IsSequence() || mat[key].size() != settings::ngroups) {
       std::stringstream mssg;
       mssg << "Invalid " << key << " matrix entry in material " << id << ".";
-      fatal_error(mssg.str(), __FILE__, __LINE__);
+      fatal_error(mssg.str());
     }
 
     // Go through all rows (incoming energy groups)
@@ -572,7 +566,7 @@ void get_legendre_moment(
         mssg << "Row " << ei << " of the " << key << " matrix for material "
              << id;
         mssg << " is invalid.";
-        fatal_error(mssg.str(), __FILE__, __LINE__);
+        fatal_error(mssg.str());
       }
 
       // Go through all columns (outgoing energy groups)
@@ -592,7 +586,7 @@ std::shared_ptr<MGNuclide> make_mg_nuclide(const YAML::Node& mat, uint32_t id) {
       mat["total"].size() != settings::ngroups) {
     std::stringstream mssg;
     mssg << "Invalid total xs entry in material " << id << ".";
-    fatal_error(mssg.str(), __FILE__, __LINE__);
+    fatal_error(mssg.str());
   }
   Et = mat["total"].as<std::vector<double>>();
 
@@ -603,7 +597,7 @@ std::shared_ptr<MGNuclide> make_mg_nuclide(const YAML::Node& mat, uint32_t id) {
       mat["absorption"].size() != settings::ngroups) {
     std::stringstream mssg;
     mssg << "Invalid absorption xs entry in material " << id << ".";
-    fatal_error(mssg.str(), __FILE__, __LINE__);
+    fatal_error(mssg.str());
   }
   Ea = mat["absorption"].as<std::vector<double>>();
 
@@ -615,7 +609,7 @@ std::shared_ptr<MGNuclide> make_mg_nuclide(const YAML::Node& mat, uint32_t id) {
       mat["scatter"].size() != settings::ngroups) {
     std::stringstream mssg;
     mssg << "Invalid scatter matrix entry in material " << id << ".";
-    fatal_error(mssg.str(), __FILE__, __LINE__);
+    fatal_error(mssg.str());
   }
 
   // Go through all rows (incoming energy groups)
@@ -626,7 +620,7 @@ std::shared_ptr<MGNuclide> make_mg_nuclide(const YAML::Node& mat, uint32_t id) {
       std::stringstream mssg;
       mssg << "Row " << ei << " of the scatter matrix for material " << id;
       mssg << " is invalid.";
-      fatal_error(mssg.str(), __FILE__, __LINE__);
+      fatal_error(mssg.str());
     }
 
     // Go through all columns (outgoing energy groups)
@@ -638,7 +632,7 @@ std::shared_ptr<MGNuclide> make_mg_nuclide(const YAML::Node& mat, uint32_t id) {
         mssg << "Negative scattering component at row " << ei;
         mssg << ", column " << eo << " of the scattering matrix";
         mssg << " for material " << id << ".";
-        fatal_error(mssg.str(), __FILE__, __LINE__);
+        fatal_error(mssg.str());
       }
     }
 
@@ -656,7 +650,7 @@ std::shared_ptr<MGNuclide> make_mg_nuclide(const YAML::Node& mat, uint32_t id) {
         mat["yields"].size() != settings::ngroups) {
       std::stringstream mssg;
       mssg << "Invalid yields matrix entry in material " << id << ".";
-      fatal_error(mssg.str(), __FILE__, __LINE__);
+      fatal_error(mssg.str());
     }
 
     // Go through all rows (incoming energy groups)
@@ -667,7 +661,7 @@ std::shared_ptr<MGNuclide> make_mg_nuclide(const YAML::Node& mat, uint32_t id) {
         std::stringstream mssg;
         mssg << "Row " << ei << " of the yields matrix for material " << id;
         mssg << " is invalid.";
-        fatal_error(mssg.str(), __FILE__, __LINE__);
+        fatal_error(mssg.str());
       }
 
       // Go through all columns (outgoing energy groups)
@@ -679,7 +673,7 @@ std::shared_ptr<MGNuclide> make_mg_nuclide(const YAML::Node& mat, uint32_t id) {
           mssg << "Negative scattering yield at row " << ei;
           mssg << ", column " << eo << " of the scattering matrix";
           mssg << " for material " << id << ".";
-          fatal_error(mssg.str(), __FILE__, __LINE__);
+          fatal_error(mssg.str());
         }
       }
     }
@@ -703,7 +697,7 @@ std::shared_ptr<MGNuclide> make_mg_nuclide(const YAML::Node& mat, uint32_t id) {
         mssg << "Angle distribution for scattering from group " << i;
         mssg << " to group " << o << " for material " << id;
         mssg << " has negative regions.";
-        warning(mssg.str(), __FILE__, __LINE__);
+        warning(mssg.str());
       }
     }
   }
@@ -730,7 +724,7 @@ std::shared_ptr<MGNuclide> make_mg_nuclide(const YAML::Node& mat, uint32_t id) {
         mat["fission"].size() != settings::ngroups) {
       std::stringstream mssg;
       mssg << "Invalid fission xs entry in material " << id << ".";
-      fatal_error(mssg.str(), __FILE__, __LINE__);
+      fatal_error(mssg.str());
     }
     Ef = mat["fission"].as<std::vector<double>>();
 
@@ -738,7 +732,7 @@ std::shared_ptr<MGNuclide> make_mg_nuclide(const YAML::Node& mat, uint32_t id) {
       if (xs_f < 0.) {
         std::stringstream mssg;
         mssg << "Negative fission xs in material " << id << ".";
-        fatal_error(mssg.str(), __FILE__, __LINE__);
+        fatal_error(mssg.str());
       }
 
       if (xs_f > 0.) fissile = true;
@@ -755,7 +749,7 @@ std::shared_ptr<MGNuclide> make_mg_nuclide(const YAML::Node& mat, uint32_t id) {
       if (!mat["nu"].IsSequence() || mat["nu"].size() != settings::ngroups) {
         std::stringstream mssg;
         mssg << "Invalid nu entry in material " << id << ".";
-        fatal_error(mssg.str(), __FILE__, __LINE__);
+        fatal_error(mssg.str());
       }
       nu_prmpt = mat["nu"].as<std::vector<double>>();
     } else if (mat["nu_prompt"] && mat["nu_delayed"]) {
@@ -764,7 +758,7 @@ std::shared_ptr<MGNuclide> make_mg_nuclide(const YAML::Node& mat, uint32_t id) {
           mat["nu_prompt"].size() != settings::ngroups) {
         std::stringstream mssg;
         mssg << "Invalid nu_prompt entry in material " << id << ".";
-        fatal_error(mssg.str(), __FILE__, __LINE__);
+        fatal_error(mssg.str());
       }
       nu_prmpt = mat["nu_prompt"].as<std::vector<double>>();
 
@@ -773,7 +767,7 @@ std::shared_ptr<MGNuclide> make_mg_nuclide(const YAML::Node& mat, uint32_t id) {
           mat["nu_delayed"].size() != settings::ngroups) {
         std::stringstream mssg;
         mssg << "Invalid nu_delayed entry in material " << id << ".";
-        fatal_error(mssg.str(), __FILE__, __LINE__);
+        fatal_error(mssg.str());
       }
       nu_dlyd = mat["nu_delayed"].as<std::vector<double>>();
     } else {
@@ -781,17 +775,17 @@ std::shared_ptr<MGNuclide> make_mg_nuclide(const YAML::Node& mat, uint32_t id) {
         // No nu_delayed data is given. This is bad
         std::stringstream mssg;
         mssg << "No nu_delayed data is provided in material " << id << ".";
-        fatal_error(mssg.str(), __FILE__, __LINE__);
+        fatal_error(mssg.str());
       } else if (mat["nu_delayed"]) {
         // No nu_prompt data is given. This is bad
         std::stringstream mssg;
         mssg << "No nu_prompt data is provided in material " << id << ".";
-        fatal_error(mssg.str(), __FILE__, __LINE__);
+        fatal_error(mssg.str());
       } else {
         // No nu data is given at all. This is really bad
         std::stringstream mssg;
         mssg << "No nu data is provided in material " << id << ".";
-        fatal_error(mssg.str(), __FILE__, __LINE__);
+        fatal_error(mssg.str());
       }
     }
   }
@@ -804,13 +798,13 @@ std::shared_ptr<MGNuclide> make_mg_nuclide(const YAML::Node& mat, uint32_t id) {
     if (!mat["chi"] || !mat["chi"].IsSequence()) {
       std::stringstream mssg;
       mssg << "Invalid chi matrix entry in material " << id << ".";
-      fatal_error(mssg.str(), __FILE__, __LINE__);
+      fatal_error(mssg.str());
     }
 
     if (mat["chi"].size() != 1 && mat["chi"].size() != settings::ngroups) {
       std::stringstream mssg;
       mssg << "Invalid chi matrix entry in material " << id << ".";
-      fatal_error(mssg.str(), __FILE__, __LINE__);
+      fatal_error(mssg.str());
     }
 
     const bool chi_matrix = (mat["chi"].size() == settings::ngroups);
@@ -825,7 +819,7 @@ std::shared_ptr<MGNuclide> make_mg_nuclide(const YAML::Node& mat, uint32_t id) {
           std::stringstream mssg;
           mssg << "Invalid length for chi[" << ei << "] in material " << id
                << ".";
-          fatal_error(mssg.str(), __FILE__, __LINE__);
+          fatal_error(mssg.str());
         }
 
         for (std::size_t eo = 0; eo < settings::ngroups; eo++) {
@@ -835,7 +829,7 @@ std::shared_ptr<MGNuclide> make_mg_nuclide(const YAML::Node& mat, uint32_t id) {
             std::stringstream mssg;
             mssg << "chi[" << ei << "][" << eo << "] is negative in material "
                  << id << ".";
-            fatal_error(mssg.str(), __FILE__, __LINE__);
+            fatal_error(mssg.str());
           }
         }
       }
@@ -844,7 +838,7 @@ std::shared_ptr<MGNuclide> make_mg_nuclide(const YAML::Node& mat, uint32_t id) {
           mat["chi"][0].size() != settings::ngroups) {
         std::stringstream mssg;
         mssg << "Invalid length for chi[0] in material " << id << ".";
-        fatal_error(mssg.str(), __FILE__, __LINE__);
+        fatal_error(mssg.str());
       }
 
       for (std::size_t ei = 0; ei < settings::ngroups; ei++) {
@@ -855,7 +849,7 @@ std::shared_ptr<MGNuclide> make_mg_nuclide(const YAML::Node& mat, uint32_t id) {
             std::stringstream mssg;
             mssg << "chi[" << ei << "][" << eo << "] is negative in material "
                  << id << ".";
-            fatal_error(mssg.str(), __FILE__, __LINE__);
+            fatal_error(mssg.str());
           }
         }
       }
@@ -873,7 +867,7 @@ std::shared_ptr<MGNuclide> make_mg_nuclide(const YAML::Node& mat, uint32_t id) {
       std::stringstream mssg;
       mssg << "No probabilities entry in delayed_groups for material " << id
            << ".";
-      fatal_error(mssg.str(), __FILE__, __LINE__);
+      fatal_error(mssg.str());
     }
     P_delayed_grp =
         mat["delayed_groups"]["probabilities"].as<std::vector<double>>();
@@ -883,7 +877,7 @@ std::shared_ptr<MGNuclide> make_mg_nuclide(const YAML::Node& mat, uint32_t id) {
         !mat["delayed_groups"]["constants"].IsSequence()) {
       std::stringstream mssg;
       mssg << "No constants entry in delayed_groups for material " << id << ".";
-      fatal_error(mssg.str(), __FILE__, __LINE__);
+      fatal_error(mssg.str());
     }
     delayed_constants =
         mat["delayed_groups"]["constants"].as<std::vector<double>>();
@@ -893,12 +887,12 @@ std::shared_ptr<MGNuclide> make_mg_nuclide(const YAML::Node& mat, uint32_t id) {
       std::stringstream mssg;
       mssg << "In delayed_groups entry for material " << id << ", ";
       mssg << "probabilities and constants entries have different sizes.";
-      fatal_error(mssg.str(), __FILE__, __LINE__);
+      fatal_error(mssg.str());
     }
   } else if (mat["delayed_groups"]) {
     std::stringstream mssg;
     mssg << "Invalid delayed_groups entry in material " << id << ".";
-    fatal_error(mssg.str(), __FILE__, __LINE__);
+    fatal_error(mssg.str());
   }
 
   //===========================================================================
@@ -909,13 +903,13 @@ std::shared_ptr<MGNuclide> make_mg_nuclide(const YAML::Node& mat, uint32_t id) {
         mat["group-speeds"].size() != settings::ngroups) {
       std::stringstream mssg;
       mssg << "Invalid group-speeds entry in material " << id << ".";
-      fatal_error(mssg.str(), __FILE__, __LINE__);
+      fatal_error(mssg.str());
     }
     grp_speeds = mat["group-speeds"].as<std::vector<double>>();
   } else if (settings::mode == settings::SimulationMode::NOISE) {
     std::stringstream mssg;
     mssg << "Missing group-speeds entry in material " << id << ".";
-    fatal_error(mssg.str(), __FILE__, __LINE__);
+    fatal_error(mssg.str());
   }
 
   // We should have all info ! Now we can return the nuclide

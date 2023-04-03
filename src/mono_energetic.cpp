@@ -37,8 +37,7 @@
 
 MonoEnergetic::MonoEnergetic(double energy) : energy_(energy) {
   if (energy_ <= 0.) {
-    std::string mssg = "Cannot have a negative or zero energy.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("Cannot have a negative or zero energy.");
   }
 }
 
@@ -47,8 +46,7 @@ double MonoEnergetic::sample(pcg32& /*rng*/) const { return energy_; }
 std::shared_ptr<MonoEnergetic> make_mono_energetic_distribution(
     const YAML::Node& node) {
   if (!node["energy"] || !node["energy"].IsScalar()) {
-    std::string mssg = "No valid energy entry to mono-energetic distribution.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("No valid energy entry to mono-energetic distribution.");
   }
 
   double E = node["energy"].as<double>();

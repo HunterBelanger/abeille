@@ -38,8 +38,7 @@
 std::shared_ptr<EnergyDistribution> make_energy_distribution(YAML::Node node) {
   // Get the type of the distribution
   if (!node["type"] || !node["type"].IsScalar()) {
-    std::string mssg = "No valid type provided to energy distribution entry.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("No valid type provided to energy distribution entry.");
   }
 
   std::string type = node["type"].as<std::string>();
@@ -49,8 +48,7 @@ std::shared_ptr<EnergyDistribution> make_energy_distribution(YAML::Node node) {
   if (type == "mono-energetic") {
     dist = make_mono_energetic_distribution(node);
   } else {
-    std::string mssg = "Invalid energy distribution type " + type + ".";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("Invalid energy distribution type " + type + ".");
   }
 
   return dist;

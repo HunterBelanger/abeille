@@ -62,10 +62,9 @@ BasicExactMGCancelator::BasicExactMGCancelator(Position low, Position hi,
       N_SAMPLES(nsmp) {
   // Make sure the low points are all lower than the high points
   if (r_low.x() >= r_hi.x() || r_low.y() >= r_hi.y() || r_low.z() >= r_hi.z()) {
-    std::string mssg =
+    fatal_error(
         "Low position is not lower than hi position in "
-        "BasicExactMGCancelator.";
-    fatal_error(mssg, __FILE__, __LINE__);
+        "BasicExactMGCancelator.");
   }
 
   hash_fn.shape[0] = Nx;
@@ -193,7 +192,7 @@ Material* BasicExactMGCancelator::get_material(const Position& r) const {
     std::stringstream mssg;
     mssg << "No material found at " << r
          << " in BasicExactMGCancelator::get_material.";
-    fatal_error(mssg.str(), __FILE__, __LINE__);
+    fatal_error(mssg.str());
   }
 
   return mat;
@@ -599,9 +598,7 @@ std::vector<BankedParticle> BasicExactMGCancelator::get_new_particles(
             // is the case, we shouldn't have gotten this far, but hey, here
             // were are ! We are just gonna call this a fatal error for now,
             // and see if it ever pops up.
-            std::stringstream out;
-            out << "Couldn't sample position for uniform particle.";
-            fatal_error(out.str(), __FILE__, __LINE__);
+            fatal_error("Couldn't sample position for uniform particle.");
           }
 
           // Sample particle energy and direction
@@ -634,8 +631,7 @@ std::shared_ptr<BasicExactMGCancelator> make_basic_exact_mg_cancelator(
     const YAML::Node& node) {
   // Get low
   if (!node["low"] || !node["low"].IsSequence() || !(node["low"].size() == 3)) {
-    std::string mssg = "No valid low entry for basic exact MG cancelator.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("No valid low entry for basic exact MG cancelator.");
   }
 
   double xl = node["low"][0].as<double>();
@@ -646,8 +642,7 @@ std::shared_ptr<BasicExactMGCancelator> make_basic_exact_mg_cancelator(
 
   // Get hi
   if (!node["hi"] || !node["hi"].IsSequence() || !(node["hi"].size() == 3)) {
-    std::string mssg = "No valid hi entry for basic exact MG cancelator.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("No valid hi entry for basic exact MG cancelator.");
   }
 
   double xh = node["hi"][0].as<double>();
@@ -659,8 +654,7 @@ std::shared_ptr<BasicExactMGCancelator> make_basic_exact_mg_cancelator(
   // Get shape
   if (!node["shape"] || !node["shape"].IsSequence() ||
       !(node["shape"].size() == 3)) {
-    std::string mssg = "No valid shape entry for basic exact MG cancelator.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("No valid shape entry for basic exact MG cancelator.");
   }
 
   uint32_t Nx = node["shape"][0].as<uint32_t>();
@@ -668,8 +662,7 @@ std::shared_ptr<BasicExactMGCancelator> make_basic_exact_mg_cancelator(
   uint32_t Nz = node["shape"][2].as<uint32_t>();
 
   if (!node["beta"] || !node["beta"].IsScalar()) {
-    std::string mssg = "No valid beta entry for basic exact MG cancelator.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("No valid beta entry for basic exact MG cancelator.");
   }
   std::string beta_str = node["beta"].as<std::string>();
 
@@ -685,30 +678,26 @@ std::shared_ptr<BasicExactMGCancelator> make_basic_exact_mg_cancelator(
   } else if (beta_str == "average-g") {
     beta = BasicExactMGCancelator::BetaMode::OptAverageGain;
   } else {
-    std::string mssg =
-        "Unkown beta entry \"" + beta_str + "\" for basic exact MG cancelator.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("Unkown beta entry \"" + beta_str +
+                "\" for basic exact MG cancelator.");
   }
 
   bool use_sobol = true;
   if (node["sobol"] && node["sobol"].IsScalar()) {
     use_sobol = node["sobol"].as<bool>();
   } else if (node["sobol"]) {
-    std::string mssg = "Invalid sobol entry for cancelator.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("Invalid sobol entry for cancelator.");
   }
 
   uint32_t n_samples = 10;
   if (node["n-samples"] && node["n-samples"].IsScalar()) {
     n_samples = node["n-samples"].as<uint32_t>();
   } else if (node["n-samples"]) {
-    std::string mssg = "Invalid n-samples entry for cancelator.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("Invalid n-samples entry for cancelator.");
   }
 
   if (n_samples == 0) {
-    std::string mssg = "n-samples must be greater than zero.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("n-samples must be greater than zero.");
   }
 
   std::stringstream otpt;

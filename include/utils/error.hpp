@@ -35,12 +35,16 @@
 #define ERROR_H
 
 #include <exception>
+#include <source_location>
 #include <string>
 
-void error(std::string mssg, std::string file, int line);
+void error(std::string mssg,
+           std::source_location loc = std::source_location::current());
 
-void fatal_error(std::string mssg, std::string file, int line);
+void fatal_error(std::string mssg,
+                 std::source_location loc = std::source_location::current());
 
-void warning(std::string mssg, std::string file, int line);
+void warning(std::string mssg,
+             std::source_location loc = std::source_location::current());
 
 #endif

@@ -201,9 +201,7 @@ std::vector<int32_t> infix_to_rpn(const std::vector<int32_t>& infix) {
     } else {
       for (auto it = stack.rbegin(); *it != OP::L_PAR; it++) {
         if (it == stack.rend()) {
-          std::string mssg =
-              "Mismatched parentheses in cell region definition.";
-          fatal_error(mssg, __FILE__, __LINE__);
+          fatal_error("Mismatched parentheses in cell region definition.");
         }
         rpn.push_back(stack.back());
         stack.pop_back();
@@ -217,8 +215,7 @@ std::vector<int32_t> infix_to_rpn(const std::vector<int32_t>& infix) {
 
     if (op >= OP::R_PAR) {
       // Thow error, parenth mis-match
-      std::string mssg = "Mismatched parentheses in cell region definition.";
-      fatal_error(mssg, __FILE__, __LINE__);
+      fatal_error("Mismatched parentheses in cell region definition.");
     }
 
     rpn.push_back(stack.back());
@@ -234,8 +231,7 @@ void make_cell(YAML::Node cell_node) {
   if (cell_node["region"]) {
     region_str = cell_node["region"].as<std::string>();
   } else {
-    std::string mssg = "Cell missing region definition.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("Cell missing region definition.");
   }
 
   // Parse region stirng
@@ -274,8 +270,7 @@ void make_cell(YAML::Node cell_node) {
       temp += c;
     } else if (c != ' ') {
       // Invalid char
-      std::string mssg = "Invalid character in cell region definition.";
-      fatal_error(mssg, __FILE__, __LINE__);
+      fatal_error("Invalid character in cell region definition.");
     }
   }
   if (temp.size() > 0) {
@@ -295,8 +290,7 @@ void make_cell(YAML::Node cell_node) {
   if (cell_node["id"] && cell_node["id"].IsScalar()) {
     id = cell_node["id"].as<uint32_t>();
   } else {
-    std::string mssg = "Cell is missing id.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("Cell is missing id.");
   }
 
   // Get material id
@@ -304,15 +298,14 @@ void make_cell(YAML::Node cell_node) {
   if (cell_node["material"] && cell_node["material"].IsScalar()) {
     mat_id = cell_node["material"].as<uint32_t>();
   } else {
-    std::string mssg = "Cell is missing material id.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("Cell is missing material id.");
   }
   std::shared_ptr<Material> material = nullptr;
   // Make sure material exists
   if (materials.find(mat_id) == materials.end()) {
-    std::string mssg =
-        "Could not find material with ID " + std::to_string(mat_id) + ".";
-    fatal_error(mssg, __FILE__, __LINE__);
+    std::stringstream mssg;
+    mssg << "Could not find material with ID " << mat_id << ".";
+    fatal_error(mssg.str());
   }
   material = materials[mat_id];
 
@@ -329,9 +322,9 @@ void make_cell(YAML::Node cell_node) {
   // Add cell ID to map of surface indicies
   if (cell_id_to_indx.find(cell_pntr->id()) != cell_id_to_indx.end()) {
     // ID already exists
-    std::string mssg = "The cell ID " + std::to_string(cell_pntr->id()) +
-                       " appears multiple times.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    std::stringstream mssg;
+    mssg << "The cell ID " << cell_pntr->id() << " appears multiple times.";
+    fatal_error(mssg.str());
   } else {
     cell_id_to_indx[cell_pntr->id()] = geometry::cells.size();
     geometry::cells.push_back(cell_pntr);

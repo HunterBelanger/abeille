@@ -37,9 +37,7 @@
 std::shared_ptr<Point> make_point_distribution(const YAML::Node& node) {
   if (!node["position"] || !node["position"].IsSequence() ||
       !(node["position"].size() == 3)) {
-    std::string mssg =
-        "No valid position entry for point spatial distribution.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("No valid position entry for point spatial distribution.");
   }
 
   double x = node["position"][0].as<double>();

@@ -45,8 +45,7 @@ Source::Source(std::shared_ptr<SpatialDistribution> spatial,
       fissile_only_(fissile_only),
       weight_(weight) {
   if (weight_ <= 0.) {
-    std::string mssg = "Source weight must be greater than zero.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("Source weight must be greater than zero.");
   }
 }
 
@@ -75,9 +74,8 @@ Particle Source::generate_particle(pcg32& rng) const {
     int count = 0;
     while (trkr.material()->fissile() == false || trkr.is_lost()) {
       if (count == 201) {
-        std::string mssg =
-            "Exceded 200 samplings of position in fissile-only source.";
-        fatal_error(mssg, __FILE__, __LINE__);
+        fatal_error(
+            "Exceded 200 samplings of position in fissile-only source.");
       }
 
       r = spatial_->sample(rng);
@@ -93,14 +91,12 @@ Particle Source::generate_particle(pcg32& rng) const {
 std::shared_ptr<Source> make_source(YAML::Node source_node) {
   // Make sure it is a map
   if (!source_node.IsMap()) {
-    std::string mssg = "Source entry must be a map.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("Source entry must be a map.");
   }
 
   // Get weight
   if (!source_node["weight"] || !source_node["weight"].IsScalar()) {
-    std::string mssg = "No weight given to source.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("No weight given to source.");
   }
   double wgt = source_node["weight"].as<double>();
 
@@ -109,34 +105,31 @@ std::shared_ptr<Source> make_source(YAML::Node source_node) {
   if (source_node["fissile-only"] && source_node["fissile-only"].IsScalar()) {
     fissile_only = source_node["fissile-only"].as<bool>();
   } else if (source_node["fissile-only"]) {
-    std::string mssg = "Invalid fissile-only entry in source description.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("Invalid fissile-only entry in source description.");
   }
 
   // Get spatial distribution
   if (!source_node["spatial"] || !source_node["spatial"].IsMap()) {
-    std::string mssg =
-        "No valid spatial distribution entry provided for source distribution.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error(
+        "No valid spatial distribution entry provided for source "
+        "distribution.");
   }
   std::shared_ptr<SpatialDistribution> spatial =
       make_spatial_distribution(source_node["spatial"]);
 
   // Get direction distribution
   if (!source_node["direction"] || !source_node["direction"].IsMap()) {
-    std::string mssg =
+    fatal_error(
         "No valid direction distribution entry provided for source "
-        "distribution.";
-    fatal_error(mssg, __FILE__, __LINE__);
+        "distribution.");
   }
   std::shared_ptr<DirectionDistribution> direction =
       make_direction_distribution(source_node["direction"]);
 
   // Get energy distribution
   if (!source_node["energy"] || !source_node["energy"].IsMap()) {
-    std::string mssg =
-        "No valid energy distribution entry provided for source distribution.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error(
+        "No valid energy distribution entry provided for source distribution.");
   }
   std::shared_ptr<EnergyDistribution> energy =
       make_energy_distribution(source_node["energy"]);

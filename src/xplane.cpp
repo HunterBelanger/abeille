@@ -77,8 +77,7 @@ std::shared_ptr<XPlane> make_xplane(YAML::Node surface_node) {
   if (surface_node["x0"])
     x0 = surface_node["x0"].as<double>();
   else {
-    std::string mssg = "XPlane surface must have x0 defined.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("XPlane surface must have x0 defined.");
   }
 
   // Get boundary type
@@ -91,8 +90,7 @@ std::shared_ptr<XPlane> make_xplane(YAML::Node surface_node) {
     else if (boundary_string == "normal")
       boundary = BoundaryType::Normal;
     else {
-      std::string mssg = "Unknown boundary type \"" + boundary_string + "\".";
-      fatal_error(mssg, __FILE__, __LINE__);
+      fatal_error("Unknown boundary type \"" + boundary_string + "\".");
     }
   } else {
     boundary = BoundaryType::Normal;
@@ -102,11 +100,8 @@ std::shared_ptr<XPlane> make_xplane(YAML::Node surface_node) {
   if (surface_node["id"])
     id = surface_node["id"].as<uint32_t>();
   else {
-    std::string mssg =
-        "Surface must have an id attribute with a unique"
-        " positive integer.";
-    std::cout << mssg << "\n";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error(
+        "Surface must have an id attribute with a unique positive integer.");
   }
 
   // Get name

@@ -122,8 +122,7 @@ void FixedSource::run() {
     // return and empty vector !
     auto fission_bank = transporter->transport(bank);
     if (!fission_bank.empty()) {
-      std::string mssg = "Returned bank not empty on fixed-source transport.";
-      fatal_error(mssg, __FILE__, __LINE__);
+      fatal_error("Returned bank not empty on fixed-source transport.");
     }
     mpi::synchronize();
 

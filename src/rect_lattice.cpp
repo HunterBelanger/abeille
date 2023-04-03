@@ -33,11 +33,10 @@
  *============================================================================*/
 #include <cmath>
 #include <geometry/rect_lattice.hpp>
+#include <geometry/surfaces/surface.hpp>
+#include <geometry/surfaces/xplane.hpp>
 #include <utils/constants.hpp>
 #include <utils/error.hpp>
-
-#include "geometry/surfaces/surface.hpp"
-#include "geometry/surfaces/xplane.hpp"
 
 RectLattice::RectLattice(uint32_t nx, uint32_t ny, uint32_t nz, double px,
                          double py, double pz, double xl, double yl, double zl,
@@ -269,16 +268,14 @@ void RectLattice::set_elements(std::vector<int32_t> univs) {
     lattice_universes = univs;
   } else {
     // Wrong number of elements provided, throw error
-    std::string mssg = "Improper number of elements provided to lattice.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("Improper number of elements provided to lattice.");
   }
 }
 
 size_t RectLattice::linear_index(uint32_t nx, uint32_t ny, uint32_t nz) const {
   if (nz >= Nz || nx >= Nx || ny >= Ny) {
     // Bad index
-    std::string mssg = "Invalid lattice indecies";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("Invalid lattice indecies");
   }
 
   size_t indx;
@@ -300,8 +297,7 @@ void make_rect_lattice(YAML::Node latt_node, YAML::Node input) {
   if (latt_node["id"] && latt_node["id"].IsScalar()) {
     id = latt_node["id"].as<uint32_t>();
   } else {
-    std::string mssg = "Lattice must have a valid id.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("Lattice must have a valid id.");
   }
 
   // Get name if present
@@ -319,8 +315,7 @@ void make_rect_lattice(YAML::Node latt_node, YAML::Node input) {
       shape[s] = latt_node["shape"][s].as<uint32_t>();
     }
   } else {
-    std::string mssg = "Lattice must have a valid shape.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("Lattice must have a valid shape.");
   }
 
   // Get pitch
@@ -332,8 +327,7 @@ void make_rect_lattice(YAML::Node latt_node, YAML::Node input) {
       pitch[s] = latt_node["pitch"][s].as<double>();
     }
   } else {
-    std::string mssg = "Lattice must have a valid pitch.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("Lattice must have a valid pitch.");
   }
 
   // Get origin
@@ -345,8 +339,7 @@ void make_rect_lattice(YAML::Node latt_node, YAML::Node input) {
       origin[s] = latt_node["origin"][s].as<double>();
     }
   } else {
-    std::string mssg = "Lattice must have a valid origin.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("Lattice must have a valid origin.");
   }
 
   // Vector for universes
@@ -370,21 +363,17 @@ void make_rect_lattice(YAML::Node latt_node, YAML::Node input) {
         }
       }
     } else {
-      std::string mssg = "Lattice instance has improper number of universes.";
-      fatal_error(mssg, __FILE__, __LINE__);
+      fatal_error("Lattice instance has improper number of universes.");
     }
   } else {
-    std::string mssg =
-        "Lattice instance must have a valid universes definition.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("Lattice instance must have a valid universes definition.");
   }
 
   // Make sure lattice id not taken
   if (lattice_id_to_indx.find(id) != lattice_id_to_indx.end()) {
-    std::string mssg = "Lattice id " + std::to_string(id) +
-                       " appears"
-                       " multiple times.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    std::stringstream mssg;
+    mssg << "Lattice id " << id << " appears multiple times.";
+    fatal_error(mssg.str());
   }
 
   // Make lattice

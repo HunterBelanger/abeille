@@ -59,8 +59,7 @@ void make_lattice_universe(YAML::Node uni_node, YAML::Node input) {
   if (uni_node["id"] && uni_node["id"].IsScalar()) {
     id = uni_node["id"].as<uint32_t>();
   } else {
-    std::string mssg = "Universe must have a valid id.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("Universe must have a valid id.");
   }
 
   // Get name if present
@@ -74,8 +73,7 @@ void make_lattice_universe(YAML::Node uni_node, YAML::Node input) {
   if (uni_node["lattice"] && uni_node["lattice"].IsScalar()) {
     lat_id = uni_node["lattice"].as<uint32_t>();
   } else {
-    std::string mssg = "Lattice universe must have a valid lattice id.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("Lattice universe must have a valid lattice id.");
   }
 
   // See if lattice exists yet or not
@@ -99,31 +97,26 @@ void make_lattice_universe(YAML::Node uni_node, YAML::Node input) {
               } else if (type == "hexagonal") {
                 make_hex_lattice(input["lattices"][l], input);
               } else {
-                std::string mssg = "Unknown lattice type " + type + ".";
-                fatal_error(mssg, __FILE__, __LINE__);
+                fatal_error("Unknown lattice type " + type + ".");
               }
             } else {
-              std::string mssg = "Lattice instances must have a valid type.";
-              fatal_error(mssg, __FILE__, __LINE__);
+              fatal_error("Lattice instances must have a valid type.");
             }
             lattice_found = true;
             break;
           }
         } else {
-          std::string mssg = "Lattice instances must have a valid id.";
-          fatal_error(mssg, __FILE__, __LINE__);
+          fatal_error("Lattice instances must have a valid id.");
         }
       }
       // If still not found, error
       if (lattice_found == false) {
-        std::string mssg = "Lattice with id " + std::to_string(lat_id) +
-                           " could not be found.";
-        fatal_error(mssg, __FILE__, __LINE__);
+        std::stringstream mssg;
+        mssg << "Lattice with id " << lat_id << " could not be found.";
+        fatal_error(mssg.str());
       }
     } else {
-      std::string mssg =
-          "Must have lattices in order to use a lattice universe.";
-      fatal_error(mssg, __FILE__, __LINE__);
+      fatal_error("Must have lattices in order to use a lattice universe.");
     }
   }
 
@@ -132,9 +125,9 @@ void make_lattice_universe(YAML::Node uni_node, YAML::Node input) {
 
   // Make sure id isn't take
   if (universe_id_to_indx.find(id) != universe_id_to_indx.end()) {
-    std::string mssg =
-        "Universe id " + std::to_string(id) + " appears multiple times.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    std::stringstream mssg;
+    mssg << "Universe id " << id << " appears multiple times.";
+    fatal_error(mssg.str());
   }
 
   // Make universe

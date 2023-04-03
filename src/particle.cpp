@@ -48,7 +48,7 @@ Particle::Particle(Position r, Direction u, double engy, double wgt,
     std::stringstream mssg;
     mssg << "Particle with id = " << id << " was instantiated with ";
     mssg << "wgt = NaN.";
-    fatal_error(mssg.str(), __FILE__, __LINE__);
+    fatal_error(mssg.str());
   }
 }
 
@@ -64,13 +64,13 @@ Particle::Particle(Position r, Direction u, double engy, double wgt,
     std::stringstream mssg;
     mssg << "Particle with id = " << id << " was instantiated with ";
     mssg << "wgt = NaN.";
-    fatal_error(mssg.str(), __FILE__, __LINE__);
+    fatal_error(mssg.str());
   }
 
   if (std::isnan(wgt2)) {
     std::stringstream mssg;
     mssg << "Particle with id = " << id << " was instantiated with ";
     mssg << "wgt2 = NaN.";
-    fatal_error(mssg.str(), __FILE__, __LINE__);
+    fatal_error(mssg.str());
   }
 }

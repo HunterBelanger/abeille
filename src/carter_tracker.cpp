@@ -226,7 +226,7 @@ std::vector<BankedParticle> CarterTracker::transport(
         std::stringstream mssg;
         mssg << "Particle become lost at " << p.r() << ", ";
         mssg << " u = " << p.u() << ", token = " << trkr.surface_token();
-        warning(mssg.str(), __FILE__, __LINE__);
+        warning(mssg.str());
         p.kill();
       }
       // Only make helper if we aren't lost, to make sure that material isn't
@@ -274,11 +274,11 @@ std::vector<BankedParticle> CarterTracker::transport(
               mssg << " at a distance of " << bound.distance << " cm.\n";
               mssg << "Currently lost at r = " << trkr.r()
                    << ", u = " << trkr.u() << ".";
-              fatal_error(mssg.str(), __FILE__, __LINE__);
+              fatal_error(mssg.str());
             }
             bound = trkr.boundary();
           } else {
-            fatal_error("Help me, how did I get here ?", __FILE__, __LINE__);
+            fatal_error("Help me, how did I get here ?");
           }
         } else {
           // Update Position
@@ -295,7 +295,7 @@ std::vector<BankedParticle> CarterTracker::transport(
             mssg << "Attempted to fly a distance of " << d_coll << " cm.\n";
             mssg << "Currently lost at r = " << trkr.r() << ", u = " << trkr.u()
                  << ".";
-            fatal_error(mssg.str(), __FILE__, __LINE__);
+            fatal_error(mssg.str());
           }
           bound.distance -= d_coll;
           mat.set_material(trkr.material(), p.E());
@@ -352,7 +352,7 @@ std::vector<BankedParticle> CarterTracker::transport(
               mssg << p.secondary_id() << " has become lost.\n";
               mssg << "Attempted resurection at r = " << trkr.r();
               mssg << ", u = " << trkr.u() << ".";
-              fatal_error(mssg.str(), __FILE__, __LINE__);
+              fatal_error(mssg.str());
             }
             bound = trkr.boundary();
             mat.set_material(trkr.material(), p.E());
@@ -366,7 +366,7 @@ std::vector<BankedParticle> CarterTracker::transport(
               // write a warning.
               std::string mssg = "History " + std::to_string(p.history_id()) +
                                  " overran the RNG stride.";
-              warning(mssg, __FILE__, __LINE__);
+              warning(mssg);
             }
           }
         }

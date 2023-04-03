@@ -54,8 +54,7 @@ double Cone::aperture() const { return std::acos(aperture_); }
 std::shared_ptr<Cone> make_cone_distribution(const YAML::Node& node) {
   if (!node["direction"] || !node["direction"].IsSequence() ||
       !(node["direction"].size() == 3)) {
-    std::string mssg = "No valid direction entry for cone distribution.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("No valid direction entry for cone distribution.");
   }
 
   double x = node["direction"][0].as<double>();
@@ -65,8 +64,7 @@ std::shared_ptr<Cone> make_cone_distribution(const YAML::Node& node) {
   Direction u(x, y, z);
 
   if (!node["aperture"] || !node["aperture"].IsScalar()) {
-    std::string mssg = "No valid aperture entry for cone distribution.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("No valid aperture entry for cone distribution.");
   }
   double aperture = node["aperture"].as<double>();
 
