@@ -113,55 +113,64 @@ if __name__ == "__main__":
   
   Fuel_UO2 = 1
   materials.append({"id": Fuel_UO2, "name": "Fuel UO2", "temperature": 293.6,
-                    "composition": [{"nuclide": "O16"   , "concentration": 4.70902E-02},
-                                    {"nuclide": "U235"  , "concentration": 4.30565E-04},
-                                    {"nuclide": "U238"  , "concentration": 2.31145E-02}]})
+                    "density-units": "sum", "fractions": "atoms",
+                    "composition": [{"nuclide": "O16"   , "fraction": 4.70902E-02},
+                                    {"nuclide": "U235"  , "fraction": 4.30565E-04},
+                                    {"nuclide": "U238"  , "fraction": 2.31145E-02}]})
 
   Fuel_Metal = 2
   materials.append({"id": Fuel_Metal, "name": "Fuel Metal", "temperature": 293.6,
-                    "composition": [{"nuclide": "U235"  , "concentration": 4.53160E-04},
-                                    {"nuclide": "U238"  , "concentration": 4.68003E-02}]})
+                    "density-units": "sum", "fractions": "atoms",
+                    "composition": [{"nuclide": "U235"  , "fraction": 4.53160E-04},
+                                    {"nuclide": "U238"  , "fraction": 4.68003E-02}]})
   
   Clad_UO2 = 3
   materials.append({"id": Clad_UO2, "name": "Clad UO2", "temperature": 293.6,
-                    "composition": [{"nuclide": "Al27", "concentration": 5.00614E-02}]})
+                    "density-units": "sum", "fractions": "atoms",
+                    "composition": [{"nuclide": "Al27", "fraction": 5.00614E-02}]})
 
   Clad_Metal = 4
   materials.append({"id": Clad_Metal, "name": "Clad Metal", "temperature": 293.6,
-                    "composition": [{"nuclide": "Al27", "concentration": 5.17799E-02}]})
+                    "density-units": "sum", "fractions": "atoms",
+                    "composition": [{"nuclide": "Al27", "fraction": 5.17799E-02}]})
   
   Moderator = 5
   materials.append({"id": Moderator, "name": "Moderator", "temperature": 293.6,
-                    "composition": [{"nuclide": "H1_H2O", "concentration": 6.67578E-02},
-                                    {"nuclide": "O16"   , "concentration": 3.33789E-02}]})
+                    "density-units": "sum", "fractions": "atoms",
+                    "composition": [{"nuclide": "H1_H2O", "fraction": 6.67578E-02},
+                                    {"nuclide": "O16"   , "fraction": 3.33789E-02}]})
   Base_Plate = 6
   materials.append({"id": Base_Plate, "name": "Base Plate", "temperature": 293.6,
-                    "composition": [{"nuclide": "Al27", "concentration": 6.02611E-02}]})
+                    "density-units": "sum", "fractions": "atoms",
+                    "composition": [{"nuclide": "Al27", "fraction": 6.02611E-02}]})
 
   Cadmium = 7
   materials.append({"id": Cadmium, "name": "Cadmium", "temperature": 293.6,
-                    "composition": [{"nuclide": "Cd106", "concentration": 0.01245*4.63334E-02},
-                                    {"nuclide": "Cd108", "concentration": 0.00888*4.63334E-02},
-                                    {"nuclide": "Cd110", "concentration": 0.1247*4.63334E-02},
-                                    {"nuclide": "Cd111", "concentration": 0.12795*4.63334E-02},
-                                    {"nuclide": "Cd112", "concentration": 0.24109*4.63334E-02},
-                                    {"nuclide": "Cd113", "concentration": 0.12227*4.63334E-02},
-                                    {"nuclide": "Cd114", "concentration": 0.28754*4.63334E-02},
-                                    {"nuclide": "Cd116", "concentration": 0.07512*4.63334E-02}]})
+                    "density-units": "sum", "fractions": "atoms",
+                    "composition": [{"nuclide": "Cd106", "fraction": 0.01245*4.63334E-02},
+                                    {"nuclide": "Cd108", "fraction": 0.00888*4.63334E-02},
+                                    {"nuclide": "Cd110", "fraction": 0.1247*4.63334E-02},
+                                    {"nuclide": "Cd111", "fraction": 0.12795*4.63334E-02},
+                                    {"nuclide": "Cd112", "fraction": 0.24109*4.63334E-02},
+                                    {"nuclide": "Cd113", "fraction": 0.12227*4.63334E-02},
+                                    {"nuclide": "Cd114", "fraction": 0.28754*4.63334E-02},
+                                    {"nuclide": "Cd116", "fraction": 0.07512*4.63334E-02}]})
 
   Filler_Gas = 8
   materials.append({"id": Filler_Gas, "name": "Filler Gas", "temperature": 293.6,
-                    "composition": [{"nuclide": "He4", "concentration": 1.6400E-04}]})
+                    "density-units": "sum", "fractions": "atoms",
+                    "composition": [{"nuclide": "He4", "fraction": 1.6400E-04}]})
 
   Air = 9
   materials.append({"id": Air, "name": "Air", "temperature": 293.6,
-                    "composition": [{"nuclide": "N14", "concentration": 4.1400E-05},
-                                    {"nuclide": "O16", "concentration": 9.0700E-06}]})
+                    "density-units": "sum", "fractions": "atoms",
+                    "composition": [{"nuclide": "N14", "fraction": 4.1400E-05},
+                                    {"nuclide": "O16", "fraction": 9.0700E-06}]})
 
   Void = 10
   materials.append({"id": Void, "name": "Void", "temperature": 293.6,
-                    "composition": [{"nuclide": "He4", "concentration": 1.E-16}]})
-
+                    "density-units": "sum", "fractions": "atoms",
+                    "composition": [{"nuclide": "He4", "fraction": 1.E-16}]})
 
   #=============================================================================
   # Cells

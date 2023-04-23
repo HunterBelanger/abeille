@@ -7,19 +7,23 @@
 # OpenMC       : 0.99754 +/-  0.00016
 
 materials:
-  - name: Plutonium Fuel 
-    id: 1
+  - id: 1
+    name: Plutonium Fuel 
     temperature: 293.6
-    composition: [{nuclide: Pu239, concentration: 3.6049E-2},
-                  {nuclide: Pu240, concentration: 1.9562E-3},
-                  {nuclide: Pu241, concentration: 1.1459E-4},
-                  {nuclide: Ga69,  concentration: 8.0175E-4},
-                  {nuclide: Ga71,  concentration: 5.3205E-4}]
+    density-units: sum
+    fractions: atoms
+    composition: [{nuclide: Pu239, fraction: 3.6049E-2},
+                  {nuclide: Pu240, fraction: 1.9562E-3},
+                  {nuclide: Pu241, fraction: 1.1459E-4},
+                  {nuclide: Ga69,  fraction: 8.0175E-4},
+                  {nuclide: Ga71,  fraction: 5.3205E-4}]
 
-  - name: Thorium Reflector
-    id: 2
+  - id: 2
+    name: Thorium Reflector
     temperature: 293.6
-    composition: [{nuclide: Th232, concentration: 3.0054E-2}]
+    density-units: sum
+    fractions: atoms
+    composition: [{nuclide: Th232, fraction: 3.0054E-2}]
 
 surfaces:
   - {type: sphere, x0: 0., y0: 0., z0: 0., r: 5.31, id: 1}

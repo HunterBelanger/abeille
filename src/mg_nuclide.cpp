@@ -441,6 +441,13 @@ double MGNuclide::speed(double /*E*/, std::size_t i) const {
 
 uint32_t MGNuclide::zaid() const { return this->id(); }
 
+double MGNuclide::awr() const {
+  std::stringstream mssg;
+  mssg << "MGNuclide::awr should never be called. Something bad has happened.";
+  fatal_error(mssg.str());
+  return 1.;
+}
+
 ScatterInfo MGNuclide::sample_scatter(double /*Ein*/, const Direction& u,
                                       const MicroXSs& micro_xs,
                                       pcg32& rng) const {

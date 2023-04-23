@@ -7,13 +7,15 @@
 # OpenMC       : 1.00041  +/- 0.00015
 
 materials:
-  - name: HEU Metal
-    id: 1
+  - id: 1
+    name: HEU Metal
     color: [31, 119, 180]
     temperature: 293.6
-    composition: [{nuclide: U234, concentration: 4.9184E-4},
-                  {nuclide: U235, concentration: 4.4994E-2},
-                  {nuclide: U238, concentration: 2.4984E-3}]
+    density-units: sum
+    fractions: atoms
+    composition: [{nuclide: U234, fraction: 4.9184E-4},
+                  {nuclide: U235, fraction: 4.4994E-2},
+                  {nuclide: U238, fraction: 2.4984E-3}]
 
 surfaces:
   - {type: sphere, x0: 0., y0: 0., z0: 0., r: 8.7407, boundary: vacuum, id: 1}

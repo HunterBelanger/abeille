@@ -56,6 +56,7 @@ constexpr double EV_TO_K{1.160451812E4};
 constexpr double MEV_TO_EV{1.E6};
 constexpr double EV_TO_MEV{1.E-6};
 constexpr double N_MASS_EV{939.56542052 * MEV_TO_EV};
+constexpr double N_MASS_AMU{1.00866491595};
 constexpr double C_CM_S{29979245800.0};
 constexpr double N_AVAGADRO{0.6022140857};  // [10^24 / mol]
 constexpr double TOLERANCE{0.0001};

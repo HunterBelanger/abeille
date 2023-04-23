@@ -7,57 +7,63 @@
 # OpenMC       : 0.99735  +/- 0.00020
 
 materials:
-  - name: SS304
-    id: 1
+  - id: 1
+    name: SS304
     color: [255,127,14]
     temperature: 293.6
-    composition: [{nuclide: C12,  concentration: 4.3268E-05},
-                  {nuclide: C13,  concentration: 4.6798E-07},
-                  {nuclide: Si28, concentration: 9.8013E-04},
-                  {nuclide: Si29, concentration: 4.9628E-05},
-                  {nuclide: Si30, concentration: 3.2944E-05},
-                  {nuclide: P31,  concentration: 4.3170E-05},
-                  {nuclide: S32,  concentration: 2.8299E-06},
-                  {nuclide: S33,  concentration: 2.2337E-08},
-                  {nuclide: S34,  concentration: 1.2538E-07},
-                  {nuclide: S36,  concentration: 5.9564E-10},
-                  {nuclide: Cr50, concentration: 7.2887E-04},
-                  {nuclide: Cr52, concentration: 1.4056E-02},
-                  {nuclide: Cr53, concentration: 1.5936E-03},
-                  {nuclide: Cr54, concentration: 3.9673E-04},
-                  {nuclide: Mn55, concentration: 1.1561E-03},
-                  {nuclide: Fe54, concentration: 3.5058E-03},
-                  {nuclide: Fe56, concentration: 5.4501E-02},
-                  {nuclide: Fe57, concentration: 1.2478E-03},
-                  {nuclide: Fe58, concentration: 1.6638E-04},
-                  {nuclide: Ni58, concentration: 5.6939E-03},
-                  {nuclide: Ni60, concentration: 2.1768E-03},
-                  {nuclide: Ni61, concentration: 9.4245E-05},
-                  {nuclide: Ni62, concentration: 2.9942E-04},
-                  {nuclide: Ni64, concentration: 7.5897E-05}]
+    density-units: sum
+    fractions: atoms
+    composition: [{nuclide: C12,  fraction: 4.3268E-05},
+                  {nuclide: C13,  fraction: 4.6798E-07},
+                  {nuclide: Si28, fraction: 9.8013E-04},
+                  {nuclide: Si29, fraction: 4.9628E-05},
+                  {nuclide: Si30, fraction: 3.2944E-05},
+                  {nuclide: P31,  fraction: 4.3170E-05},
+                  {nuclide: S32,  fraction: 2.8299E-06},
+                  {nuclide: S33,  fraction: 2.2337E-08},
+                  {nuclide: S34,  fraction: 1.2538E-07},
+                  {nuclide: S36,  fraction: 5.9564E-10},
+                  {nuclide: Cr50, fraction: 7.2887E-04},
+                  {nuclide: Cr52, fraction: 1.4056E-02},
+                  {nuclide: Cr53, fraction: 1.5936E-03},
+                  {nuclide: Cr54, fraction: 3.9673E-04},
+                  {nuclide: Mn55, fraction: 1.1561E-03},
+                  {nuclide: Fe54, fraction: 3.5058E-03},
+                  {nuclide: Fe56, fraction: 5.4501E-02},
+                  {nuclide: Fe57, fraction: 1.2478E-03},
+                  {nuclide: Fe58, fraction: 1.6638E-04},
+                  {nuclide: Ni58, fraction: 5.6939E-03},
+                  {nuclide: Ni60, fraction: 2.1768E-03},
+                  {nuclide: Ni61, fraction: 9.4245E-05},
+                  {nuclide: Ni62, fraction: 2.9942E-04},
+                  {nuclide: Ni64, fraction: 7.5897E-05}]
 
-  - name: Uranyl Nitrate Solution
-    id: 2
+  - id: 2
+    name: Uranyl Nitrate Solution
     color: [214,39,40]
     temperature: 293.6
-    composition: [{nuclide: H1_H2O, concentration: 5.7176E-02},
-                  {nuclide: N14,    concentration: 2.8052E-03},
-                  {nuclide: N15,    concentration: 1.0361E-05},
-                  {nuclide: O16,    concentration: 3.7821E-02},
-                  {nuclide: O17,    concentration: 1.5134E-05},
-                  {nuclide: U234,   concentration: 5.9840E-07},
-                  {nuclide: U235,   concentration: 7.4257E-05},
-                  {nuclide: U236,   concentration: 7.4165E-08},
-                  {nuclide: U238,   concentration: 6.6142E-04}]
+    density-units: sum
+    fractions: atoms
+    composition: [{nuclide: H1_H2O, fraction: 5.7176E-02},
+                  {nuclide: N14,    fraction: 2.8052E-03},
+                  {nuclide: N15,    fraction: 1.0361E-05},
+                  {nuclide: O16,    fraction: 3.7821E-02},
+                  {nuclide: O17,    fraction: 1.5134E-05},
+                  {nuclide: U234,   fraction: 5.9840E-07},
+                  {nuclide: U235,   fraction: 7.4257E-05},
+                  {nuclide: U236,   fraction: 7.4165E-08},
+                  {nuclide: U238,   fraction: 6.6142E-04}]
 
-  - name: Air
-    id: 3
+  - id: 3
+    name: Air
     color: [44,160,44]
     temperature: 293.6
-    composition: [{nuclide: N14, concentration: 3.8872E-05},
-                  {nuclide: N15, concentration: 1.4436E-07},
-                  {nuclide: O16, concentration: 1.0405E-05},
-                  {nuclide: O17, concentration: 4.1636E-09}]
+    density-units: sum
+    fractions: atoms
+    composition: [{nuclide: N14, fraction: 3.8872E-05},
+                  {nuclide: N15, fraction: 1.4436E-07},
+                  {nuclide: O16, fraction: 1.0405E-05},
+                  {nuclide: O17, fraction: 4.1636E-09}]
 
 surfaces:
   - {type: zcylinder, x0: 0., y0: 0., r: 29.5, id: 1}

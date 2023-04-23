@@ -48,9 +48,9 @@ class MaterialHelper {
     double Et_ = 0.;
 
     // Go through all components in the material
-    for (const auto& comp : mat->composition()) {
+    for (const auto& comp : mat->components()) {
       const auto& micro_xs = this->get_micro_xs(comp.nuclide.get());
-      Et_ += comp.concentration * micro_xs.total;
+      Et_ += comp.atoms_bcm * micro_xs.total;
     }
 
     if (noise) {
@@ -65,13 +65,13 @@ class MaterialHelper {
 
     double Ew_ = 0.;
 
-    if (noise) {
+    if (noise && mat->components().size() > 0) {
       std::size_t energy_index = 0;
 
       // Needing to check MG/CE here isn't exactly elegant, but I don't
       // have a better solution for now...
       if (settings::energy_mode == settings::EnergyMode::MG) {
-        energy_index = mat->composition()[0].nuclide->energy_grid_index(E);
+        energy_index = mat->components()[0].nuclide->energy_grid_index(E);
       }
 
       double p_speed = speed(E, energy_index);
@@ -87,9 +87,9 @@ class MaterialHelper {
     double Ea_ = 0.;
 
     // Go through all components in the material
-    for (const auto& comp : mat->composition()) {
+    for (const auto& comp : mat->components()) {
       const auto& micro_xs = this->get_micro_xs(comp.nuclide.get());
-      Ea_ += comp.concentration * micro_xs.absorption;
+      Ea_ += comp.atoms_bcm * micro_xs.absorption;
     }
 
     return Ea_;
@@ -101,10 +101,10 @@ class MaterialHelper {
     double Ea_ = 0.;
 
     // Go through all components in the material
-    for (const auto& comp : mat->composition()) {
+    for (const auto& comp : mat->components()) {
       const auto& micro_xs = this->get_micro_xs(comp.nuclide.get());
-      Ea_ += comp.concentration *
-             std::max(micro_xs.total - micro_xs.absorption, 0.);
+      Ea_ +=
+          comp.atoms_bcm * std::max(micro_xs.total - micro_xs.absorption, 0.);
     }
 
     return Ea_;
@@ -116,9 +116,9 @@ class MaterialHelper {
     double Ef_ = 0.;
 
     // Go through all components in the material
-    for (const auto& comp : mat->composition()) {
+    for (const auto& comp : mat->components()) {
       const auto& micro_xs = this->get_micro_xs(comp.nuclide.get());
-      Ef_ += comp.concentration * micro_xs.fission;
+      Ef_ += comp.atoms_bcm * micro_xs.fission;
     }
 
     return Ef_;
@@ -130,9 +130,9 @@ class MaterialHelper {
     double vEf_ = 0.;
 
     // Go through all components in the material
-    for (const auto& comp : mat->composition()) {
+    for (const auto& comp : mat->components()) {
       const auto& micro_xs = this->get_micro_xs(comp.nuclide.get());
-      vEf_ += comp.concentration * micro_xs.nu_total * micro_xs.fission;
+      vEf_ += comp.atoms_bcm * micro_xs.nu_total * micro_xs.fission;
     }
 
     return vEf_;
@@ -144,9 +144,9 @@ class MaterialHelper {
     double Eela_ = 0.;
 
     // Go through all components in the material
-    for (const auto& comp : mat->composition()) {
+    for (const auto& comp : mat->components()) {
       const auto& micro_xs = this->get_micro_xs(comp.nuclide.get());
-      Eela_ += comp.concentration * micro_xs.elastic;
+      Eela_ += comp.atoms_bcm * micro_xs.elastic;
     }
 
     return Eela_;
@@ -158,10 +158,10 @@ class MaterialHelper {
     double Emt_ = 0.;
 
     // Go through all components in the material
-    for (const auto& comp : mat->composition()) {
+    for (const auto& comp : mat->components()) {
       const auto& micro_xs = this->get_micro_xs(comp.nuclide.get());
       const auto& eindex = micro_xs.energy_index;
-      Emt_ += comp.concentration * comp.nuclide->reaction_xs(mt, E, eindex);
+      Emt_ += comp.atoms_bcm * comp.nuclide->reaction_xs(mt, E, eindex);
     }
 
     return Emt_;
@@ -181,16 +181,16 @@ class MaterialHelper {
     const double Et_ = this->Et(E, noise);
     const double invs_Et = 1. / Et_;
     const double Ew_ = this->Ew(E, noise);
-    const double N_nuclides = static_cast<double>(mat->composition().size());
+    const double N_nuclides = static_cast<double>(mat->components().size());
 
     // Get our random variable
     const double xi = RNG::rand(rng);
 
     // Iterate through all nuclides, untill we find the right one
     double prob_sum = 0.;
-    for (const auto& comp : mat->composition()) {
+    for (const auto& comp : mat->components()) {
       MicroXSs micro_xs = this->get_micro_xs(comp.nuclide.get());
-      micro_xs.concentration = comp.concentration;
+      micro_xs.concentration = comp.atoms_bcm;
 
       // If we are a noise neutron, we then need to get the copy xs for this
       // nuclide, and adjust the total xs accordingly.
@@ -209,9 +209,9 @@ class MaterialHelper {
     }
 
     // We should never get here, but if we do, we just return the last nuclide
-    const auto& comp = mat->composition().back();
+    const auto& comp = mat->components().back();
     MicroXSs micro_xs = this->get_micro_xs(comp.nuclide.get());
-    micro_xs.concentration = comp.concentration;
+    micro_xs.concentration = comp.atoms_bcm;
 
     if (noise) {
       micro_xs.noise_copy = Ew_ / (micro_xs.concentration * N_nuclides);
@@ -227,16 +227,16 @@ class MaterialHelper {
 
     // First, get the total probability, depending on reaction type
     double sum = 0.;
-    for (const auto& comp : mat->composition()) {
+    for (const auto& comp : mat->components()) {
       const MicroXSs& micro_xs = this->get_micro_xs(comp.nuclide.get());
 
       switch (reaction) {
         case BranchlessReaction::SCATTER:
-          sum += comp.concentration * (micro_xs.elastic + micro_xs.inelastic);
+          sum += comp.atoms_bcm * (micro_xs.elastic + micro_xs.inelastic);
           break;
 
         case BranchlessReaction::FISSION:
-          sum += comp.concentration * micro_xs.nu_total * micro_xs.fission;
+          sum += comp.atoms_bcm * micro_xs.nu_total * micro_xs.fission;
           break;
       }
     }
@@ -246,9 +246,9 @@ class MaterialHelper {
 
     // Iterate through all nuclides, untill we find the right one
     double prob_sum = 0.;
-    for (const auto& comp : mat->composition()) {
+    for (const auto& comp : mat->components()) {
       MicroXSs micro_xs = this->get_micro_xs(comp.nuclide.get());
-      micro_xs.concentration = comp.concentration;
+      micro_xs.concentration = comp.atoms_bcm;
 
       switch (reaction) {
         case BranchlessReaction::SCATTER:
@@ -268,9 +268,9 @@ class MaterialHelper {
     }
 
     // We should never get here, but if we do, we just return the last nuclide
-    const auto& comp = mat->composition().back();
+    const auto& comp = mat->components().back();
     MicroXSs micro_xs = this->get_micro_xs(comp.nuclide.get());
-    micro_xs.concentration = comp.concentration;
+    micro_xs.concentration = comp.atoms_bcm;
     return {comp.nuclide.get(), micro_xs};
   }
 
@@ -322,7 +322,7 @@ class MaterialHelper {
   }
 
   const Material::Component& comp(std::size_t i) {
-    return mat->composition()[i];
+    return mat->components()[i];
   }
 
   // Function to get the speed of a particle in cm/s
@@ -330,7 +330,7 @@ class MaterialHelper {
     // If we are in CE, it doesn't matter which nuclide we use
     // to get the speed. If we are in MG, then there should
     // only be 1 nuclide, so we always use component 0.
-    return mat->composition()[0].nuclide->speed(E, i);
+    return mat->components()[0].nuclide->speed(E, i);
   }
 };
 

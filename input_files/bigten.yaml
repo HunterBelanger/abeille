@@ -11,36 +11,44 @@ materials:
     id: 1
     color: [255,127,14]
     temperature: 293.6
-    composition: [{nuclide: U234, concentration: 5.4058E-5},
-                  {nuclide: U235, concentration: 4.9831E-3},
-                  {nuclide: U236, concentration: 1.3733E-5},
-                  {nuclide: U238, concentration: 4.3108E-2}]
+    density-units: sum
+    fractions: atoms
+    composition: [{nuclide: U234, fraction: 5.4058E-5},
+                  {nuclide: U235, fraction: 4.9831E-3},
+                  {nuclide: U236, fraction: 1.3733E-5},
+                  {nuclide: U238, fraction: 4.3108E-2}]
 
   - name: Intermediate Enriched U
     id: 2
     color: [214,39,40]
     temperature: 293.6
-    composition: [{nuclide: U234, concentration: 2.4761E-5},
-                  {nuclide: U235, concentration: 4.8461E-3},
-                  {nuclide: U236, concentration: 4.3348E-5},
-                  {nuclide: U238, concentration: 4.2695E-2}]
+    density-units: sum
+    fractions: atoms
+    composition: [{nuclide: U234, fraction: 2.4761E-5},
+                  {nuclide: U235, fraction: 4.8461E-3},
+                  {nuclide: U236, fraction: 4.3348E-5},
+                  {nuclide: U238, fraction: 4.2695E-2}]
 
   - name: Natural U
     id: 3
     color: [44,160,44]
     temperature: 293.6
-    composition: [{nuclide: U234, concentration: 2.6518E-6},
-                  {nuclide: U235, concentration: 3.4701E-4},
-                  {nuclide: U238, concentration: 4.7846E-2}]
+    density-units: sum
+    fractions: atoms
+    composition: [{nuclide: U234, fraction: 2.6518E-6},
+                  {nuclide: U235, fraction: 3.4701E-4},
+                  {nuclide: U238, fraction: 4.7846E-2}]
 
   - name: Depleted U
     id: 4
     color: [31,119,180]
     temperature: 293.6
-    composition: [{nuclide: U234, concentration: 2.8672E-7},
-                  {nuclide: U235, concentration: 1.0058E-4},
-                  {nuclide: U236, concentration: 1.1468E-6},
-                  {nuclide: U238, concentration: 4.7677E-2}]
+    density-units: sum
+    fractions: atoms
+    composition: [{nuclide: U234, fraction: 2.8672E-7},
+                  {nuclide: U235, fraction: 1.0058E-4},
+                  {nuclide: U236, fraction: 1.1468E-6},
+                  {nuclide: U238, fraction: 4.7677E-2}]
 
 surfaces:
   - {type: zcylinder, x0: 0., y0: 0., r: 2.25014, name: OR of top 10% Cyl, id: 1}

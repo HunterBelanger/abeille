@@ -31,12 +31,14 @@
  * pris connaissance de la licence CeCILL, et que vous en avez accepté les
  * termes.
  *============================================================================*/
+#include <iostream>
 #include <materials/material.hpp>
 #include <materials/mg_nuclide.hpp>
 #include <materials/nuclide.hpp>
 #include <memory>
 #include <plotting/slice_plot.hpp>
 #include <sstream>
+#include <utils/constants.hpp>
 #include <utils/error.hpp>
 #include <utils/output.hpp>
 #include <utils/rng.hpp>
@@ -44,6 +46,218 @@
 #include <vector>
 
 std::map<uint32_t, std::shared_ptr<Material>> materials;
+
+Material::Material(std::uint32_t id, const std::string& name)
+    : nuclide_info_(),
+      components_(),
+      name_(name),
+      temperature_(293.6),
+      density_(-1.),
+      atoms_per_bcm_(1.),
+      avg_molar_mass_(-1.),
+      id_(id) {}
+
+Material::Material(std::shared_ptr<Nuclide> nuc, std::uint32_t id,
+                   const std::string& name)
+    : nuclide_info_(),
+      components_(),
+      name_(name),
+      temperature_(293.6),
+      density_(-1.),
+      atoms_per_bcm_(1.),
+      avg_molar_mass_(-1.),
+      id_(id) {
+  // At the single nuclide component
+  components_.push_back({1., nuc});
+}
+
+Material::Material(double temperature, double density, DensityUnits dunits,
+                   Fraction frac, const std::vector<NuclideInfo>& nuclide_infos,
+                   std::uint32_t id, const std::string& name)
+    : nuclide_info_(nuclide_infos),
+      components_(),
+      name_(name),
+      temperature_(temperature),
+      density_(-1.),
+      atoms_per_bcm_(1.),
+      avg_molar_mass_(-1.),
+      id_(id) {
+  // First, check if temperatuer if positive
+  if (temperature_ < 0.) {
+    std::stringstream mssg;
+    mssg << "Temperature provided to Material " << id_ << " was < 0.";
+    fatal_error(mssg.str());
+  }
+
+  if (nuclide_info_.size() == 0 && density != 0.) {
+    std::stringstream mssg;
+    mssg << "Material " << id_ << " has no nuclides with a non-zero density.";
+    fatal_error(mssg.str());
+  } else if (nuclide_info_.size() != 0 && density == 0.) {
+    std::stringstream mssg;
+    mssg << "Material " << id_ << " has a density of zero with nuclides.";
+    fatal_error(mssg.str());
+  }
+
+  // Now check the density
+  if (density < 0.) {
+    std::stringstream mssg;
+    mssg << "Density provided to Material " << id_ << " was <= 0.";
+    fatal_error(mssg.str());
+  }
+
+  // Check which density we were given
+  if (dunits == DensityUnits::a_bcm) {
+    atoms_per_bcm_ = density;
+  } else {
+    density_ = density;
+  }
+
+  if (nuclide_info_.size() == 0) {
+    // Material is void
+    density_ = 0.;
+    avg_molar_mass_ = 0.;
+    atoms_per_bcm_ = 0.;
+  } else {
+    // Material is not void
+
+    // Make sure all awr and all fractions are positive
+    for (const auto& nuc : nuclide_info_) {
+      if (nuc.awr < 0.) {
+        std::stringstream mssg;
+        mssg << "Found negative awr for " << nuc.nuclide_key << " in material "
+             << id_ << ".";
+        fatal_error(mssg.str());
+      }
+
+      if ((frac == Fraction::Atom && nuc.atom_fraction < 0.) ||
+          (frac == Fraction::Weight && nuc.weight_fraction < 0.)) {
+        std::stringstream mssg;
+        mssg << "Found negative fraction for " << nuc.nuclide_key
+             << " in material " << id_ << ".";
+        fatal_error(mssg.str());
+      }
+    }
+
+    // Normalize given fractions
+    double frac_sum = 0.;
+    for (const auto& nuc : nuclide_info_) {
+      if (frac == Fraction::Atom) {
+        frac_sum += nuc.atom_fraction;
+      } else {
+        frac_sum += nuc.weight_fraction;
+      }
+    }
+    for (auto& nuc : nuclide_info_) {
+      if (frac == Fraction::Atom) {
+        nuc.atom_fraction /= frac_sum;
+      } else {
+        nuc.weight_fraction /= frac_sum;
+      }
+    }
+
+    // Now we need to get the average molar mass of the material before we can
+    // get the other fraction.
+    avg_molar_mass_ = this->calc_avg_molar_mass(frac);
+
+    // Now we get the other fraction
+    for (auto& nuc : nuclide_info_) {
+      if (frac == Fraction::Atom) {
+        nuc.weight_fraction =
+            nuc.atom_fraction * nuc.awr * N_MASS_AMU / avg_molar_mass_;
+      } else {
+        nuc.atom_fraction =
+            nuc.weight_fraction * avg_molar_mass_ / (nuc.awr * N_MASS_AMU);
+      }
+    }
+
+    // Either denisty_ = -1. or atoms_per_bcm_ = -1. at this point. We need to
+    // fix that one to the correct value
+    if (density_ < 0. && atoms_per_bcm_ < 0.) {
+      fatal_error("Something has gone terribly wrong.");
+    } else if (density_ < 0.) {
+      density_ = avg_molar_mass_ * atoms_per_bcm_ / N_AVAGADRO;
+    } else {
+      atoms_per_bcm_ = (density_ * N_AVAGADRO) / avg_molar_mass_;
+    }
+
+    // We can now set all of the atoms_bcm in each nuclide info !
+    for (auto& nuc : nuclide_info_) {
+      nuc.atoms_bcm = atoms_per_bcm_ * nuc.atom_fraction;
+    }
+
+    // At this point, all information in  the class is set, and all of the
+    // information in each NuclideInfo is set. We can now fill the components.
+    for (const auto& nuc : nuclide_info_) {
+      // Get CENuclidePacket from NDDirectory
+      auto packet =
+          settings::nd_directory->load_nuclide(nuc.nuclide_key, temperature_);
+
+      if (!packet.nuclide_1 && !packet.nuclide_2) {
+        // If we have no nuclides, this is bad
+        // I don't think this can actually happen though. TODO
+        std::stringstream mssg;
+        mssg << "Nuclide " << nuc.nuclide_key << " in material ";
+        mssg << id_ << " returned an empty CENuclidePacket.";
+        fatal_error(mssg.str());
+      }
+
+      if (packet.nuclide_1) {
+        const auto& temp_frac = packet.nuclide_1.value();
+
+        // If this is a new nuclide, add it to the map of nuclides
+        if (nuclides.find(temp_frac.nuclide->id()) == nuclides.end()) {
+          nuclides[temp_frac.nuclide->id()] = temp_frac.nuclide;
+        }
+
+        // If this is a new zaid with a URR, add it to the zaids with urr set
+        if (temp_frac.nuclide->has_urr() &&
+            zaids_with_urr.contains(temp_frac.nuclide->zaid()) == false) {
+          zaids_with_urr.insert(temp_frac.nuclide->zaid());
+        }
+
+        components_.push_back(
+            {nuc.atoms_bcm * temp_frac.fraction, temp_frac.nuclide});
+      }
+
+      if (packet.nuclide_2) {
+        const auto& temp_frac = packet.nuclide_2.value();
+
+        // If this is a new nuclide, add it to the map of nuclides
+        if (nuclides.find(temp_frac.nuclide->id()) == nuclides.end()) {
+          nuclides[temp_frac.nuclide->id()] = temp_frac.nuclide;
+        }
+
+        // If this is a new zaid with a URR, add it to the zaids with urr set
+        if (temp_frac.nuclide->has_urr() &&
+            zaids_with_urr.contains(temp_frac.nuclide->zaid()) == false) {
+          zaids_with_urr.insert(temp_frac.nuclide->zaid());
+        }
+
+        components_.push_back(
+            {nuc.atoms_bcm * temp_frac.fraction, temp_frac.nuclide});
+      }
+    }
+  }  // End if not void
+}
+
+double Material::calc_avg_molar_mass(Fraction frac) const {
+  double avg_mm = 0.;
+
+  for (const auto& nuc : nuclide_info_) {
+    if (frac == Fraction::Atom) {
+      avg_mm += nuc.atom_fraction * nuc.awr * N_MASS_AMU;
+    } else {
+      avg_mm += nuc.weight_fraction / (nuc.awr * N_MASS_AMU);
+    }
+  }
+
+  if (frac == Fraction::Weight) {
+    avg_mm = 1. / avg_mm;
+  }
+
+  return avg_mm;
+}
 
 void fill_mg_material(const YAML::Node& mat,
                       std::shared_ptr<Material> material) {
@@ -53,7 +267,12 @@ void fill_mg_material(const YAML::Node& mat,
   // Can add nuclide to material
   std::shared_ptr<Nuclide> nuclide = make_mg_nuclide(mat, material->id());
 
-  material->add_component(1., nuclide);
+  // Get the old name and id
+  std::uint32_t id = material->id();
+  std::string name = material->name();
+
+  // Reconstruct material
+  *material = Material(nuclide, id, name);
 }
 
 void fill_ce_material(const YAML::Node& mat,
@@ -65,95 +284,141 @@ void fill_ce_material(const YAML::Node& mat,
   double temp = 293.6;
   if (!mat["temperature"] || !mat["temperature"].IsScalar()) {
     std::stringstream mssg;
-    mssg << "Material " << material->name()
-         << " has no valid temperature entry.";
+    mssg << "Material " << material->id() << " has no valid temperature entry.";
     fatal_error(mssg.str());
   }
   temp = mat["temperature"].as<double>();
   if (temp < 0.) {
     std::stringstream mssg;
-    mssg << "Material " << material->name() << " has a negative temperature.";
+    mssg << "Material " << material->id() << " has a negative temperature.";
     fatal_error(mssg.str());
   }
 
-  // Get YAML list of all components
+  // Now we get the fraction type. Assume atom fractions by default.
+  Material::Fraction fractions = Material::Fraction::Atom;
+  if (mat["fractions"] && !mat["fractions"].IsScalar()) {
+    std::stringstream mssg;
+    mssg << "Material " << material->id()
+         << " has an ivalid \"fractions\" entry.";
+    fatal_error(mssg.str());
+  }
+  if (mat["fractions"]) {
+    std::string fractions_str = mat["fractions"].as<std::string>();
+
+    if (fractions_str == "atoms") {
+      fractions = Material::Fraction::Atom;
+    } else if (fractions_str == "weight") {
+      fractions = Material::Fraction::Weight;
+    } else {
+      std::stringstream mssg;
+      mssg << "Material " << material->id()
+           << " has invalid \"fractions\" entry.";
+      fatal_error(mssg.str());
+    }
+  }
+
+  // Now get density units str
+  if (!mat["density-units"] || !mat["density-units"].IsScalar()) {
+    std::stringstream mssg;
+    mssg << "Material " << material->id()
+         << " has invalid density-units entry.";
+    fatal_error(mssg.str());
+  }
+  std::string density_units_str = mat["density-units"].as<std::string>();
+  if (density_units_str != "g/cm3" && density_units_str != "atoms/b-cm" &&
+      density_units_str != "sum") {
+    std::stringstream mssg;
+    mssg << "Material " << material->id() << " has invalid density units.";
+    fatal_error(mssg.str());
+  }
+
+  Material::DensityUnits density_units = Material::DensityUnits::g_cm3;
+  bool sum_for_density = false;
+  if (density_units_str == "g/cm3") {
+    density_units = Material::DensityUnits::g_cm3;
+  } else if (density_units_str == "atoms/b-cm") {
+    density_units = Material::DensityUnits::a_bcm;
+  } else {
+    sum_for_density = true;
+
+    if (fractions == Material::Fraction::Atom) {
+      density_units = Material::DensityUnits::a_bcm;
+    } else {
+      density_units = Material::DensityUnits::g_cm3;
+    }
+  }
+
+  // Now get density if not sum
+  double density = 0.;
+  if (sum_for_density == false) {
+    if (!mat["density"] || !mat["density"].IsScalar()) {
+      std::stringstream mssg;
+      mssg << "Material " << material->id() << " has invalid density entry.";
+      fatal_error(mssg.str());
+    }
+    density = mat["density"].as<double>();
+
+    if (density < 0.) {
+      std::stringstream mssg;
+      mssg << "Material " << material->id() << " has a nevative density.";
+      fatal_error(mssg.str());
+    }
+  }
+
+  // Finally, get the vectory of nuclides info
   if (!mat["composition"] || !mat["composition"].IsSequence()) {
     std::stringstream mssg;
-    mssg << "Material " << material->name() << " has invalid composition list.";
+    mssg << "Material " << material->id() << " has invalid composition list.";
     fatal_error(mssg.str());
   }
   auto comps = mat["composition"];
+  std::vector<Material::NuclideInfo> nuclide_infos;
 
   for (std::size_t i = 0; i < comps.size(); i++) {
     // Make sure is a map !
     if (!comps[i].IsMap() || !comps[i]["nuclide"] ||
-        !comps[i]["nuclide"].IsScalar() || !comps[i]["concentration"] ||
-        !comps[i]["concentration"].IsScalar()) {
+        !comps[i]["nuclide"].IsScalar() || !comps[i]["fraction"] ||
+        !comps[i]["fraction"].IsScalar()) {
       std::stringstream mssg;
       mssg << "Entry index " << i << " in material ";
-      mssg << material->name() << " is invalid.";
+      mssg << material->id() << " is invalid.";
       fatal_error(mssg.str());
     }
 
-    const std::string nuclide_key = comps[i]["nuclide"].as<std::string>();
-    const double concentration = comps[i]["concentration"].as<double>();
+    Material::NuclideInfo nuc_info(comps[i]["nuclide"].as<std::string>());
+    nuc_info.awr = settings::nd_directory->awr(nuc_info.nuclide_key);
+    if (fractions == Material::Fraction::Atom) {
+      nuc_info.atom_fraction = comps[i]["fraction"].as<double>();
+      if (sum_for_density) density += nuc_info.atom_fraction;
 
-    // Make sure concentration is positive
-    if (concentration < 0.) {
-      std::stringstream mssg;
-      mssg << "Entry index " << i << " in material ";
-      mssg << material->name() << " has a negative concentration.";
-      fatal_error(mssg.str());
+      if (nuc_info.atom_fraction < 0.) {
+        std::stringstream mssg;
+        mssg << "Entry " << i << " of material " << material->id() << " has a";
+        mssg << " negative fraction.";
+        fatal_error(mssg.str());
+      }
+    } else {
+      nuc_info.weight_fraction = comps[i]["fraction"].as<double>();
+      if (sum_for_density) density += nuc_info.weight_fraction;
+
+      if (nuc_info.weight_fraction < 0.) {
+        std::stringstream mssg;
+        mssg << "Entry " << i << " of material " << material->id() << " has a";
+        mssg << " negative fraction.";
+        fatal_error(mssg.str());
+      }
     }
 
-    // Get CENuclidePacket from NDDirectory
-    auto packet = settings::nd_directory->load_nuclide(nuclide_key, temp);
-
-    // Add components. I don't think this can actually happen though. TODO
-    if (!packet.nuclide_1 && !packet.nuclide_2) {
-      // If we have no nuclides, this is bad
-      std::stringstream mssg;
-      mssg << "Entry index " << i << " in material ";
-      mssg << material->name() << " returned an empty CENuclidePacket.";
-      fatal_error(mssg.str());
-    }
-
-    if (packet.nuclide_1) {
-      const auto& nuc_frac = packet.nuclide_1.value();
-
-      // If this is a new nuclide, add it to the map of nuclides
-      if (nuclides.find(nuc_frac.nuclide->id()) == nuclides.end()) {
-        nuclides[nuc_frac.nuclide->id()] = nuc_frac.nuclide;
-      }
-
-      // If this is a new zaid with a URR, add it to the zaids with urr set
-      if (nuc_frac.nuclide->has_urr() &&
-          zaids_with_urr.contains(nuc_frac.nuclide->zaid()) == false) {
-        zaids_with_urr.insert(nuc_frac.nuclide->zaid());
-      }
-
-      material->add_component(nuc_frac.fraction * concentration,
-                              nuc_frac.nuclide);
-    }
-
-    if (packet.nuclide_2) {
-      const auto& nuc_frac = packet.nuclide_2.value();
-
-      // If this is a new nuclide, add it to the map of nuclides
-      if (nuclides.find(nuc_frac.nuclide->id()) == nuclides.end()) {
-        nuclides[nuc_frac.nuclide->id()] = nuc_frac.nuclide;
-      }
-
-      // If this is a new zaid with a URR, add it to the zaids with urr set
-      if (nuc_frac.nuclide->has_urr() &&
-          zaids_with_urr.contains(nuc_frac.nuclide->zaid()) == false) {
-        zaids_with_urr.insert(nuc_frac.nuclide->zaid());
-      }
-
-      material->add_component(nuc_frac.fraction * concentration,
-                              nuc_frac.nuclide);
-    }
+    nuclide_infos.push_back(nuc_info);
   }
+
+  // Get the name and id again
+  std::uint32_t id = material->id();
+  std::string name = material->name();
+
+  // Reconstruct material
+  *material = Material(temp, density, density_units, fractions, nuclide_infos,
+                       id, name);
 }
 
 void make_material(const YAML::Node& mat, bool plotting_mode) {

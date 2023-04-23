@@ -94,23 +94,23 @@ FlatVibrationNoiseSource::FlatVibrationNoiseSource(
   // and for FlatVibrationNoiseSource. We start by filling out
   // nuclide_info_, and nuclides_.
   // Negative Material
-  for (const auto& comp : material_neg_->composition()) {
+  for (const auto& comp : material_neg_->components()) {
     auto nuc_id = comp.nuclide->id();
-    nuclide_info_[nuc_id] = {nuc_id, comp.concentration};
+    nuclide_info_[nuc_id] = {nuc_id, comp.atoms_bcm};
     nuclides_.push_back(nuc_id);
   }
   // Positive Material
-  for (const auto& comp : material_pos_->composition()) {
+  for (const auto& comp : material_pos_->components()) {
     auto nuc_id = comp.nuclide->id();
     // Check if nuclide was already added
     if (nuclide_info_.find(nuc_id) != nuclide_info_.end()) {
       // Nuclide already added once. Update it's concentration
       // to contain the average concentration of the two.
-      nuclide_info_[nuc_id].concentration += comp.concentration;
+      nuclide_info_[nuc_id].concentration += comp.atoms_bcm;
       nuclide_info_[nuc_id].concentration /= 2.;
     } else {
       // New nuclide
-      nuclide_info_[nuc_id] = {nuc_id, comp.concentration};
+      nuclide_info_[nuc_id] = {nuc_id, comp.atoms_bcm};
       nuclides_.push_back(nuc_id);
     }
   }
@@ -129,8 +129,8 @@ FlatVibrationNoiseSource::FlatVibrationNoiseSource(
 
 double FlatVibrationNoiseSource::get_nuclide_concentration(
     const Material& mat, uint32_t nuclide_id) const {
-  for (const auto& comp : mat.composition()) {
-    if (comp.nuclide->id() == nuclide_id) return comp.concentration;
+  for (const auto& comp : mat.components()) {
+    if (comp.nuclide->id() == nuclide_id) return comp.atoms_bcm;
   }
 
   return 0.;

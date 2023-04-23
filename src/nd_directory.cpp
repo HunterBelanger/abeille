@@ -146,7 +146,7 @@ NDDirectory::TSLACEList& NDDirectory::get_tsl_list(const std::string& key) {
 }
 
 NDDirectory::NuclideEntry::NuclideEntry(const YAML::Node& node)
-    : neutron(), dbrc(false), tsl(std::nullopt), temps(), loaded() {
+    : neutron(), tsl(std::nullopt), temps(), loaded(), awr(0.), dbrc(false) {
   // Make sure node is a map
   if (node.IsMap() == false) {
     fatal_error("Nuclide entry of nuclear data directory must be a map.");
@@ -163,6 +163,15 @@ NDDirectory::NuclideEntry::NuclideEntry(const YAML::Node& node)
     dbrc = node["dbrc"].as<bool>();
   } else if (node["dbrc"]) {
     fatal_error("The dbrc entry of a Nuclide entry must be a boolean.");
+  }
+
+  // Now we get the AWR
+  if (!node["awr"] || !node["awr"].IsScalar()) {
+    fatal_error("No awr entry present in Nuclide entry " + neutron + ".");
+  }
+  awr = node["awr"].as<double>();
+  if (awr < 0.) {
+    fatal_error("The awr in a Nuclide entry must be > 0.");
   }
 
   // Now we get the TSL if present

@@ -586,7 +586,7 @@ std::vector<BankedParticle> BasicExactMGCancelator::get_new_particles(
 
         // Get the single nuclide from the material
         std::shared_ptr<Nuclide> nuclide =
-            mat_ptr->composition().front().nuclide;
+            mat_ptr->components().front().nuclide;
 
         for (size_t i = 0; i < N; i++) {
           // Sample position

@@ -139,6 +139,8 @@ double CENuclide::speed(double E, std::size_t /*i*/) const {
 
 uint32_t CENuclide::zaid() const { return cedata_->zaid().zaid(); }
 
+double CENuclide::awr() const { return cedata_->awr(); }
+
 // These are all possible MTs which result in an exit neutron
 // (other than fission) from the ENDF manual.
 static const std::array<uint32_t, 106> MT_LIST{

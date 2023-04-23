@@ -154,7 +154,7 @@ std::unique_ptr<Material> NoiseMaker::make_fake_material(
   for (std::size_t i = 0; i < nuclides_list.size(); i++) {
     const uint32_t& nuclide_id = nuclides_list[i];
     auto nuclide = nuclides.at(nuclide_id);
-    fake_mat->add_component(concentrations[i], nuclide);
+    fake_mat->add_component({concentrations[i], nuclide});
   }
 
   return fake_mat;

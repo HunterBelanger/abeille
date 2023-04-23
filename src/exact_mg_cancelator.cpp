@@ -438,7 +438,7 @@ void ExactMGCancelator::perform_cancellation(pcg32&) {
     // instances should have been created. This check is done in
     // make_cancelator in cancellator.cpp.
     MGNuclide* nuclide =
-        static_cast<MGNuclide*>(mat->composition()[0].nuclide.get());
+        static_cast<MGNuclide*>(mat->components()[0].nuclide.get());
 
     // Only atempt cancelation if we have two or more particles
     if (bin.particles.size() > 1) {
@@ -538,7 +538,7 @@ std::vector<BankedParticle> ExactMGCancelator::get_new_particles(pcg32& rng) {
         // This SHOULD be safe, as in theory, we wont construct an
         // ExactMGCancelator instance in CE mode.
         MGNuclide* nuclide =
-            static_cast<MGNuclide*>(mat->composition()[0].nuclide.get());
+            static_cast<MGNuclide*>(mat->components()[0].nuclide.get());
 
         // Make all N uniform particles for this bin
         for (size_t i = 0; i < N; i++) {
