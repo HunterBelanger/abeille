@@ -50,10 +50,9 @@ ApproximateMeshCancelator::ApproximateMeshCancelator(Position low, Position hi,
       bins() {
   // Make sure the low points are all lower than the high points
   if (r_low.x() >= r_hi.x() || r_low.y() >= r_hi.y() || r_low.z() >= r_hi.z()) {
-    std::string mssg =
+    fatal_error(
         "Low position is not lower than hi position in "
-        "ApproximateMeshCancelator.";
-    fatal_error(mssg, __FILE__, __LINE__);
+        "ApproximateMeshCancelator.");
   }
 
   dx = (r_hi.x() - r_low.x()) / static_cast<double>(shape[0]);
@@ -74,10 +73,9 @@ ApproximateMeshCancelator::ApproximateMeshCancelator(
       bins() {
   // Make sure the low points are all lower than the high points
   if (r_low.x() >= r_hi.x() || r_low.y() >= r_hi.y() || r_low.z() >= r_hi.z()) {
-    std::string mssg =
+    fatal_error(
         "Low position is not lower than hi position in "
-        "ApproximateMeshCancelator.";
-    fatal_error(mssg, __FILE__, __LINE__);
+        "ApproximateMeshCancelator.");
   }
 
   dx = (r_hi.x() - r_low.x()) / static_cast<double>(shape[0]);
@@ -86,23 +84,19 @@ ApproximateMeshCancelator::ApproximateMeshCancelator(
 
   // Make sure energy bins are valid
   if (energy_edges.size() < 2) {
-    std::string mssg =
+    fatal_error(
         "energy_edges must have at least two entries in "
-        "ApproximateMeshCancelator.";
-    fatal_error(mssg, __FILE__, __LINE__);
+        "ApproximateMeshCancelator.");
   }
 
   if (!std::is_sorted(energy_edges.begin(), energy_edges.end())) {
-    std::string mssg =
-        "energy_edges must be sorted in ApproximateMeshCancelator.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("energy_edges must be sorted in ApproximateMeshCancelator.");
   }
 
   if (energy_edges.front() < 0.) {
-    std::string mssg =
-        "All energy_edges must be greater than or equal to zero "
-        "in ApproximateMeshCancelator.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error(
+        "All energy_edges must be greater than or equal to zero in "
+        "ApproximateMeshCancelator.");
   }
 
   shape[3] = static_cast<uint32_t>(energy_edges.size() - 1);
@@ -214,8 +208,7 @@ std::shared_ptr<ApproximateMeshCancelator> make_approximate_mesh_cancelator(
     const YAML::Node& node) {
   // Get low
   if (!node["low"] || !node["low"].IsSequence() || !(node["low"].size() == 3)) {
-    std::string mssg = "No valid low entry for approximate mesh cancelator.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("No valid low entry for approximate mesh cancelator.");
   }
 
   double xl = node["low"][0].as<double>();
@@ -226,8 +219,7 @@ std::shared_ptr<ApproximateMeshCancelator> make_approximate_mesh_cancelator(
 
   // Get hi
   if (!node["hi"] || !node["hi"].IsSequence() || !(node["hi"].size() == 3)) {
-    std::string mssg = "No valid hi entry for approximate mesh cancelator.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("No valid hi entry for approximate mesh cancelator.");
   }
 
   double xh = node["hi"][0].as<double>();
@@ -239,8 +231,7 @@ std::shared_ptr<ApproximateMeshCancelator> make_approximate_mesh_cancelator(
   // Get shape
   if (!node["shape"] || !node["shape"].IsSequence() ||
       !(node["shape"].size() == 3)) {
-    std::string mssg = "No valid shape entry for approximate mesh cancelator.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("No valid shape entry for approximate mesh cancelator.");
   }
 
   uint32_t Nx = node["shape"][0].as<uint32_t>();
@@ -252,9 +243,8 @@ std::shared_ptr<ApproximateMeshCancelator> make_approximate_mesh_cancelator(
   }
 
   if (!node["energy-bounds"].IsSequence()) {
-    std::string mssg =
-        "No valid energy-bounds entry for approximate mesh cancelator.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error(
+        "No valid energy-bounds entry for approximate mesh cancelator.");
   }
 
   std::vector<double> energy_bounds =

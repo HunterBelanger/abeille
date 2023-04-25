@@ -81,32 +81,28 @@ std::shared_ptr<Plane> make_plane(YAML::Node surface_node) {
   if (surface_node["A"])
     A = surface_node["A"].as<double>();
   else {
-    std::string mssg = "Plane surface must have A defined.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("Plane surface must have A defined.");
   }
 
   // Get B
   if (surface_node["B"])
     B = surface_node["B"].as<double>();
   else {
-    std::string mssg = "Plane surface must have B defined.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("Plane surface must have B defined.");
   }
 
   // Get C
   if (surface_node["C"])
     C = surface_node["C"].as<double>();
   else {
-    std::string mssg = "Plane surface must have C defined.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("Plane surface must have C defined.");
   }
 
   // Get D
   if (surface_node["D"])
     D = surface_node["D"].as<double>();
   else {
-    std::string mssg = "Plane surface must have D defined.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("Plane surface must have D defined.");
   }
 
   // Get boundary type
@@ -119,8 +115,7 @@ std::shared_ptr<Plane> make_plane(YAML::Node surface_node) {
     else if (boundary_string == "normal")
       boundary = BoundaryType::Normal;
     else {
-      std::string mssg = "Unknown boundary type \"" + boundary_string + "\".";
-      fatal_error(mssg, __FILE__, __LINE__);
+      fatal_error("Unknown boundary type \"" + boundary_string + "\".");
     }
   } else {
     boundary = BoundaryType::Normal;
@@ -130,10 +125,8 @@ std::shared_ptr<Plane> make_plane(YAML::Node surface_node) {
   if (surface_node["id"])
     id = surface_node["id"].as<uint32_t>();
   else {
-    std::string mssg =
-        "Surface must have an id attribute with a unique"
-        " positive integer.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error(
+        "Surface must have an id attribute with a unique positive integer.");
   }
 
   // Get name

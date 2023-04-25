@@ -126,6 +126,7 @@ class Nuclide {
   virtual double speed(double E, std::size_t i) const = 0;
 
   virtual uint32_t zaid() const = 0;
+  virtual double awr() const = 0;
 
   uint32_t id() const { return id_; }
 

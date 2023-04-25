@@ -135,8 +135,7 @@ void make_materials(YAML::Node input, bool plotting_mode) {
 
   } else {
     // If materials doesn't exist and isn't a sequence, kill program
-    std::string mssg = "No materials are provided in input file.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("No materials are provided in input file.");
   }
 
   // Once all materials have been read in, we need to go find the max
@@ -177,8 +176,7 @@ void make_geometry(YAML::Node input) {
 
   } else {
     // If surfaces doesn't exist and isn't a sequence, kill program
-    std::string mssg = "No surfaces are provided in input file.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("No surfaces are provided in input file.");
   }
 
   // Parse Cells
@@ -190,8 +188,7 @@ void make_geometry(YAML::Node input) {
 
   } else {
     // If cells doesn't exist and isn't a sequence, kill program
-    std::string mssg = "No cells are provided in input file.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("No cells are provided in input file.");
   }
 
   // Parse all universes
@@ -203,8 +200,7 @@ void make_geometry(YAML::Node input) {
 
   } else {
     // If cells doesn't exist and isn't a sequence, kill program
-    std::string mssg = "No universes are provided in input file.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("No universes are provided in input file.");
   }
 
   // Parse root universe
@@ -213,15 +209,13 @@ void make_geometry(YAML::Node input) {
 
     // Make sure it can be found
     if (universe_id_to_indx.find(root_id) == universe_id_to_indx.end()) {
-      std::string mssg = "Root-Universe id was not found.";
-      fatal_error(mssg, __FILE__, __LINE__);
+      fatal_error("Root-Universe id was not found.");
     }
 
     geometry::root_universe = geometry::universes[universe_id_to_indx[root_id]];
   } else {
     // If doesn't exist and isn't a scalar, kill program
-    std::string mssg = "No root-universe is provided in input file.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("No root-universe is provided in input file.");
   }
 }
 
@@ -232,8 +226,7 @@ void make_surface(YAML::Node surface_node) {
     surf_type = surface_node["type"].as<std::string>();
   else {
     // Error, all surfaces must have a type
-    std::string mssg = "Surface is missing \"type\" attribute.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("Surface is missing \"type\" attribute.");
   }
 
   // Call appropriate function to build pointer to surface
@@ -256,16 +249,15 @@ void make_surface(YAML::Node surface_node) {
     surf_pntr = make_sphere(surface_node);
   } else {
     // Error, unknown surface type
-    std::string mssg = "Surface type \"" + surf_type + "\" is unknown.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("Surface type \"" + surf_type + "\" is unknown.");
   }
 
   // Add surface ID to map of surface indicies
   if (surface_id_to_indx.find(surf_pntr->id()) != surface_id_to_indx.end()) {
     // ID already exists
-    std::string mssg = "The surface ID " + std::to_string(surf_pntr->id()) +
-                       " appears multiple times.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    std::stringstream mssg;
+    mssg << "The surface ID " << surf_pntr->id() << " appears multiple times.";
+    fatal_error(mssg.str());
   } else {
     surface_id_to_indx[surf_pntr->id()] = geometry::surfaces.size();
     geometry::surfaces.push_back(surf_pntr);
@@ -290,14 +282,12 @@ void make_universe(YAML::Node uni_node, YAML::Node input) {
       } else if (uni_node["lattice"] && uni_node["lattice"].IsScalar()) {
         make_lattice_universe(uni_node, input);
       } else {
-        std::string mssg = "Invalid universe definition.";
-        fatal_error(mssg, __FILE__, __LINE__);
+        fatal_error("Invalid universe definition.");
       }
     }
 
   } else {
-    std::string mssg = "Universe must have a valid id.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("Universe must have a valid id.");
   }
 }
 
@@ -315,15 +305,14 @@ void find_universe(YAML::Node input, uint32_t id) {
           break;
         }
       } else {
-        std::string mssg = "Universes must have a valid id.";
-        fatal_error(mssg, __FILE__, __LINE__);
+        fatal_error("Universes must have a valid id.");
       }
     }
 
     if (found == false) {
-      std::string mssg =
-          "Could not find universe with id " + std::to_string(id) + ".";
-      fatal_error(mssg, __FILE__, __LINE__);
+      std::stringstream mssg;
+      mssg << "Could not find universe with id " << id << ".";
+      fatal_error(mssg.str());
     }
   }
 }
@@ -337,8 +326,7 @@ void make_settings(YAML::Node input) {
     if (settnode["simulation"] && settnode["simulation"].IsScalar()) {
       sim_type = settnode["simulation"].as<std::string>();
     } else {
-      std::string mssg = "No simulation type provided.";
-      fatal_error(mssg, __FILE__, __LINE__);
+      fatal_error("No simulation type provided.");
     }
 
     if (sim_type == "k-eigenvalue") {
@@ -352,8 +340,7 @@ void make_settings(YAML::Node input) {
     } else if (sim_type == "noise") {
       settings::mode = settings::SimulationMode::NOISE;
     } else {
-      std::string mssg = "Unknown simulation type " + sim_type + ".";
-      fatal_error(mssg, __FILE__, __LINE__);
+      fatal_error("Unknown simulation type " + sim_type + ".");
     }
 
     // Get brancless settings if we are using branchless-k-eigenvalue
@@ -416,9 +403,9 @@ void make_settings(YAML::Node input) {
 
         // Read the sampling-xs entry in the input file
         if (!input["sampling-xs"] || !input["sampling-xs"].IsSequence()) {
-          std::string mssg =
-              "Must provide the \"sampling-xs\" vector to use Carter Tracking.";
-          fatal_error(mssg, __FILE__, __LINE__);
+          fatal_error(
+              "Must provide the \"sampling-xs\" vector to use Carter "
+              "Tracking.");
         }
 
         settings::sample_xs_ratio =
@@ -427,14 +414,13 @@ void make_settings(YAML::Node input) {
         // Make sure all ratios are positive
         for (const auto& v : settings::sample_xs_ratio) {
           if (v <= 0.) {
-            std::string mssg = "Sampling XS ratios must be > 0.";
-            fatal_error(mssg, __FILE__, __LINE__);
+            fatal_error("Sampling XS ratios must be > 0.");
           }
         }
       } else {
         std::string mssg = "Invalid tracking method " +
                            settnode["transport"].as<std::string>() + ".";
-        fatal_error(mssg, __FILE__, __LINE__);
+        fatal_error(mssg);
       }
     } else {
       // By default, use surface tracking
@@ -453,7 +439,7 @@ void make_settings(YAML::Node input) {
       } else {
         std::string mssg = "Invalid energy mode ";
         mssg += settnode["energy-mode"].as<std::string>() + ".";
-        fatal_error(mssg, __FILE__, __LINE__);
+        fatal_error(mssg);
       }
     } else {
       // CE by default
@@ -482,12 +468,10 @@ void make_settings(YAML::Node input) {
           std::stringstream mssg;
           mssg << "Unknown \"temperature-interpolation\" entry in settings: "
                << temp_interp << ".";
-          fatal_error(mssg.str(), __FILE__, __LINE__);
+          fatal_error(mssg.str());
         }
       } else if (settnode["temperature-interpolation"]) {
-        std::stringstream mssg;
-        mssg << "Invalid \"temperature-interpolation\" entry in settings.";
-        fatal_error(mssg.str(), __FILE__, __LINE__);
+        fatal_error("Invalid \"temperature-interpolation\" entry in settings.");
       }
 
       // Write temperature interpolation method
@@ -512,16 +496,13 @@ void make_settings(YAML::Node input) {
             settnode["nuclear-data"].as<std::string>();
       } else if (settnode["nuclear-data"]) {
         // A file entry is present, but is of invalid type.
-        std::stringstream mssg;
-        mssg << "Invalid \"nulcear-data\" entry in settings.";
-        fatal_error(mssg.str(), __FILE__, __LINE__);
+        fatal_error("Invalid \"nulcear-data\" entry in settings.");
       } else {
         // Get the file name from the environment variable
         if (!std::getenv("ABEILLE_ND_DIRECTORY")) {
-          std::stringstream mssg;
-          mssg << "No \"nuclear-data\" entry in settings, and the environment "
-                  "variable ABEILLE_ND_DIRECTORY is undefined.";
-          fatal_error(mssg.str(), __FILE__, __LINE__);
+          fatal_error(
+              "No \"nuclear-data\" entry in settings, and the environment "
+              "variable ABEILLE_ND_DIRECTORY is undefined.");
         }
         settings::nd_directory_fname = std::getenv("ABEILLE_ND_DIRECTORY");
       }
@@ -537,9 +518,7 @@ void make_settings(YAML::Node input) {
       if (settnode["use-dbrc"] && settnode["use-dbrc"].IsScalar()) {
         settings::use_dbrc = settnode["use-dbrc"].as<bool>();
       } else if (settnode["use-dbrc"]) {
-        std::stringstream mssg;
-        mssg << "Invalid \"use-dbrc\" entry in settings.";
-        fatal_error(mssg.str(), __FILE__, __LINE__);
+        fatal_error("Invalid \"use-dbrc\" entry in settings.");
       }
       settings::nd_directory->set_use_dbrc(settings::use_dbrc);
       if (settings::use_dbrc == false) {
@@ -551,8 +530,7 @@ void make_settings(YAML::Node input) {
           settnode["use-urr-ptables"].IsScalar()) {
         settings::use_urr_ptables = settnode["use-urr-ptables"].as<bool>();
       } else if (settnode["use-urr-ptables"]) {
-        std::string mssg = "Invalid \"use-urr-ptables\" entry in settings.";
-        fatal_error(mssg, __FILE__, __LINE__);
+        fatal_error("Invalid \"use-urr-ptables\" entry in settings.");
       }
       if (settings::use_urr_ptables) {
         Output::instance()->write(" Using URR PTables.\n");
@@ -564,15 +542,12 @@ void make_settings(YAML::Node input) {
     // If we are multi-group, get number of groups
     if (settings::energy_mode == settings::EnergyMode::MG) {
       if (!settnode["ngroups"] || !settnode["ngroups"].IsScalar()) {
-        std::string mssg =
-            "Number of groups for mutli-group mode not provided.";
-        fatal_error(mssg, __FILE__, __LINE__);
+        fatal_error("Number of groups for mutli-group mode not provided.");
       }
       int ngrps = settnode["ngroups"].as<int>();
 
       if (ngrps <= 0) {
-        std::string mssg = "Number of groups may not be negative.";
-        fatal_error(mssg, __FILE__, __LINE__);
+        fatal_error("Number of groups may not be negative.");
       }
 
       settings::ngroups = static_cast<uint32_t>(ngrps);
@@ -580,15 +555,13 @@ void make_settings(YAML::Node input) {
       // Must also get the energy-bounds for the groups
       if (!settnode["energy-bounds"] ||
           !settnode["energy-bounds"].IsSequence()) {
-        std::string mssg =
-            "No energy-bounds entry found in settings for multi-group mode.";
-        fatal_error(mssg, __FILE__, __LINE__);
+        fatal_error(
+            "No energy-bounds entry found in settings for multi-group mode.");
       }
 
       if (settnode["energy-bounds"].size() != settings::ngroups + 1) {
-        std::string mssg =
-            "The number of energy-bounds must be equal to ngroups + 1.";
-        fatal_error(mssg, __FILE__, __LINE__);
+        fatal_error(
+            "The number of energy-bounds must be equal to ngroups + 1.");
       }
       settings::energy_bounds =
           settnode["energy-bounds"].as<std::vector<double>>();
@@ -596,19 +569,16 @@ void make_settings(YAML::Node input) {
       // Check bounds
       if (!std::is_sorted(settings::energy_bounds.begin(),
                           settings::energy_bounds.end())) {
-        std::string mssg =
-            "The energy-bounds for multi-group mode are not sorted.";
-        fatal_error(mssg, __FILE__, __LINE__);
+        fatal_error("The energy-bounds for multi-group mode are not sorted.");
       }
 
       // If we are using carter tracking, make sure we have the right number
       // of sampling xs ratios !
       if (settings::tracking == settings::TrackingMode::CARTER_TRACKING) {
         if (settings::sample_xs_ratio.size() != settings::ngroups) {
-          std::string mssg =
+          fatal_error(
               "The number of energy groups does not match the size of "
-              "\"sampling-xs\".";
-          fatal_error(mssg, __FILE__, __LINE__);
+              "\"sampling-xs\".");
         }
       }
     }
@@ -617,16 +587,14 @@ void make_settings(YAML::Node input) {
     if (settnode["nparticles"] && settnode["nparticles"].IsScalar()) {
       settings::nparticles = settnode["nparticles"].as<int>();
     } else {
-      std::string mssg = "Number of particles not specified in settings.";
-      fatal_error(mssg, __FILE__, __LINE__);
+      fatal_error("Number of particles not specified in settings.");
     }
 
     // Get number of generations
     if (settnode["ngenerations"] && settnode["ngenerations"].IsScalar()) {
       settings::ngenerations = settnode["ngenerations"].as<int>();
     } else {
-      std::string mssg = "Number of generations not specified in settings.";
-      fatal_error(mssg, __FILE__, __LINE__);
+      fatal_error("Number of generations not specified in settings.");
     }
 
     // Get number of ignored
@@ -634,9 +602,7 @@ void make_settings(YAML::Node input) {
       settings::nignored = settnode["nignored"].as<int>();
     } else if (settnode["simulation"] &&
                settnode["simulation"].as<std::string>() == "k-eigenvalue") {
-      std::string mssg =
-          "Number of ignored generations not specified in settings.";
-      fatal_error(mssg, __FILE__, __LINE__);
+      fatal_error("Number of ignored generations not specified in settings.");
     } else {
       settings::nignored = 0;
     }
@@ -647,7 +613,7 @@ void make_settings(YAML::Node input) {
       std::stringstream mssg;
       mssg << "Number of ignored generations is greater than or equal to the";
       mssg << "number of total generations.";
-      fatal_error(mssg.str(), __FILE__, __LINE__);
+      fatal_error(mssg.str());
     }
 
     // Get number of skips between noise batches.
@@ -666,8 +632,7 @@ void make_settings(YAML::Node input) {
       // Change minutes to seconds
       settings::max_time = max_time_in_mins * 60.;
     } else if (settnode["max-run-time"]) {
-      std::string mssg = "Invalid max-run-time entry in settings.";
-      fatal_error(mssg, __FILE__, __LINE__);
+      fatal_error("Invalid max-run-time entry in settings.");
     }
 
     // Get the frequency and keff for noise simulations
@@ -675,10 +640,9 @@ void make_settings(YAML::Node input) {
       // Frequency
       if (!settnode["noise-angular-frequency"] ||
           !settnode["noise-angular-frequency"].IsScalar()) {
-        std::string mssg =
+        fatal_error(
             "No valid noise-angular-frequency in settings for noise "
-            "simulation.";
-        fatal_error(mssg, __FILE__, __LINE__);
+            "simulation.");
       }
       settings::w_noise = settnode["noise-angular-frequency"].as<double>();
 
@@ -688,14 +652,12 @@ void make_settings(YAML::Node input) {
 
       // Keff
       if (!settnode["keff"] || !settnode["keff"].IsScalar()) {
-        std::string mssg = "No valid keff in settings for noise simulation.";
-        fatal_error(mssg, __FILE__, __LINE__);
+        fatal_error("No valid keff in settings for noise simulation.");
       }
       settings::keff = settnode["keff"].as<double>();
 
       if (settings::keff <= 0.) {
-        std::string mssg = "Noise keff must be greater than zero.";
-        fatal_error(mssg, __FILE__, __LINE__);
+        fatal_error("Noise keff must be greater than zero.");
       }
 
       Output::instance()->write(
@@ -706,9 +668,8 @@ void make_settings(YAML::Node input) {
           settnode["inner-generations"].IsScalar()) {
         settings::inner_generations = settnode["inner-generations"].as<bool>();
       } else if (settnode["inner-generations"]) {
-        std::string mssg =
-            "Invalid \"inner-generations\" entry provided in settings.";
-        fatal_error(mssg, __FILE__, __LINE__);
+        fatal_error(
+            "Invalid \"inner-generations\" entry provided in settings.");
       }
 
       // Get the normalize_noise_source option
@@ -720,9 +681,8 @@ void make_settings(YAML::Node input) {
           Output::instance()->write(" Normalizing noise source\n");
         }
       } else if (settnode["normalize-noise-source"]) {
-        std::string mssg =
-            "Invalid \"normalize-noise-source\" entry provided in settings.";
-        fatal_error(mssg, __FILE__, __LINE__);
+        fatal_error(
+            "Invalid \"normalize-noise-source\" entry provided in settings.");
       }
     }
 
@@ -732,9 +692,8 @@ void make_settings(YAML::Node input) {
       settings::rng_stride_warnings =
           settnode["rng-stride-warnings"].as<bool>();
     } else if (settnode["rng-stride-warnings"]) {
-      std::string mssg =
-          "Invalid \"rng-stride-warnings\" entry provided in settings.";
-      fatal_error(mssg, __FILE__, __LINE__);
+      fatal_error(
+          "Invalid \"rng-stride-warnings\" entry provided in settings.");
     }
 
     // Get name of source out file
@@ -751,9 +710,10 @@ void make_settings(YAML::Node input) {
       // Make sure source file exists
       std::ifstream source_fl(settings::in_source_file_name);
       if (!source_fl.good()) {
-        std::string mssg = "Could not find source input file with name \"";
-        mssg += settings::in_source_file_name + "\".";
-        fatal_error(mssg, __FILE__, __LINE__);
+        std::stringstream mssg;
+        mssg << "Could not find source input file with name \"";
+        mssg << settings::in_source_file_name + "\".";
+        fatal_error(mssg.str());
       }
     }
 
@@ -804,25 +764,21 @@ void make_settings(YAML::Node input) {
         settnode["pair-distance-sqrd"].IsScalar()) {
       settings::pair_distance_sqrd = settnode["pair-distance-sqrd"].as<bool>();
     } else if (settnode["pair-distance-sqrd"]) {
-      std::string mssg =
+      fatal_error(
           "The settings option \"pair-distance-sqrd\" must be a single boolean "
-          "value.";
-      fatal_error(mssg, __FILE__, __LINE__);
+          "value.");
     }
 
     // Get option for showing the number of particle families
     if (settnode["families"] && settnode["families"].IsScalar()) {
       settings::families = settnode["families"].as<bool>();
     } else if (settnode["families"]) {
-      std::string mssg =
-          "The settings option \"families\" must be a single boolean "
-          "value.";
-      fatal_error(mssg, __FILE__, __LINE__);
+      fatal_error(
+          "The settings option \"families\" must be a single boolean value.");
     }
 
   } else {
-    std::string mssg = "Not settings specified in input file.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("Not settings specified in input file.");
   }
 }
 
@@ -834,8 +790,7 @@ void make_tallies(YAML::Node input) {
   if (!input["tallies"]) {
     return;
   } else if (!input["tallies"].IsSequence()) {
-    std::string mssg = "Tallies entry must be provided as a sequence.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("Tallies entry must be provided as a sequence.");
   }
 
   // Add all spatial mesh tallies to the tallies instance
@@ -874,18 +829,16 @@ void make_transporter() {
 
 void make_cancellation_bins(YAML::Node input) {
   if (!input["cancelator"] || !input["cancelator"].IsMap()) {
-    std::string mssg =
+    fatal_error(
         "Regional cancelation is activated, but no cancelator entry is "
-        "provided.";
-    fatal_error(mssg, __FILE__, __LINE__);
+        "provided.");
   }
 
   // Make sure we are using cancelation with a valid transport method !
   if (settings::mode == settings::SimulationMode::FIXED_SOURCE) {
-    std::string mssg =
+    fatal_error(
         "Cancellation may only be used with k-eigenvalue, "
-        "modified-fixed-source, or noise problems.";
-    fatal_error(mssg, __FILE__, __LINE__);
+        "modified-fixed-source, or noise problems.");
   }
 
   // Make cancelator will check the cancelator type agains the tracking type.
@@ -904,8 +857,7 @@ void make_sources(YAML::Node input) {
   } else if (settings::mode == settings::SimulationMode::FIXED_SOURCE ||
              !settings::load_source_file) {
     // No source file given
-    std::string mssg = "No source specified for problem.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("No source specified for problem.");
   }
 }
 
@@ -917,14 +869,12 @@ void make_noise_sources(YAML::Node input) {
     }
   } else if (settings::mode == settings::SimulationMode::NOISE) {
     // No source file given
-    std::string mssg = "No valid noise-source entry for noise problem.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("No valid noise-source entry for noise problem.");
   }
 
   if (noise_maker.num_noise_sources() == 0 &&
       settings::mode == settings::SimulationMode::NOISE) {
-    std::string mssg = "No noise source specified for noise problem.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("No noise source specified for noise problem.");
   }
 }
 
@@ -979,8 +929,7 @@ void make_entropy_mesh(YAML::Node entropy) {
       entropy["low"].size() == 3) {
     low = entropy["low"].as<std::vector<double>>();
   } else {
-    fatal_error("No valid lower corner provided for entropy mesh.", __FILE__,
-                __LINE__);
+    fatal_error("No valid lower corner provided for entropy mesh.");
   }
 
   // Get upper corner
@@ -989,8 +938,7 @@ void make_entropy_mesh(YAML::Node entropy) {
       entropy["hi"].size() == 3) {
     hi = entropy["hi"].as<std::vector<double>>();
   } else {
-    fatal_error("No valid upper corner provided for entropy mesh.", __FILE__,
-                __LINE__);
+    fatal_error("No valid upper corner provided for entropy mesh.");
   }
 
   // Get shape
@@ -999,8 +947,7 @@ void make_entropy_mesh(YAML::Node entropy) {
       entropy["shape"].size() == 3) {
     shape = entropy["shape"].as<std::vector<uint32_t>>();
   } else {
-    fatal_error("No valid shape provided for entropy mesh.", __FILE__,
-                __LINE__);
+    fatal_error("No valid shape provided for entropy mesh.");
   }
 
   // Add entropy to simulation

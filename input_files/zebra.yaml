@@ -7,86 +7,95 @@
 # OpenMC       : 1.02301  +/- 0.00014
 
 materials:
-  - name: Enriched U metal (37.5 w/o)
-    id: 1
+  - id: 1
+    name: Enriched U metal (37.5 w/o)
     temperature: 293.6
-    composition: [{nuclide: U235, concentration: 0.01773},
-                  {nuclide: U238, concentration: 0.028957},
-                  {nuclide: C12,   concentration: 0.00018452}, # THis is actually nat
-                  {nuclide: O16,  concentration: 0.00034617874851},
-                  {nuclide: O17,  concentration: 1.3125149e-07},
-                  {nuclide: Fe54, concentration: 3.47935315e-06},
-                  {nuclide: Fe56, concentration: 5.4618403580000004e-05},
-                  {nuclide: Fe57, concentration: 1.26137713e-06},
-                  {nuclide: Fe58, concentration: 1.6786614e-07},
-                  {nuclide: Al27, concentration: 4.107e-05},
-                  {nuclide: H1,   concentration: 4.397115086628e-05},
-                  {nuclide: H2,   concentration: 6.84913372e-09},
-                  {nuclide: Si28, concentration: 3.639014254080001e-05},
-                  {nuclide: Si29, concentration: 1.8477876096000002e-06},
-                  {nuclide: Si30, concentration: 1.2180698496e-06}]
+    density-units: sum
+    fractions: atoms
+    composition: [{nuclide: U235, fraction: 0.01773},
+                  {nuclide: U238, fraction: 0.028957},
+                  {nuclide: C12,  fraction: 0.00018452}, # THis is actually nat
+                  {nuclide: O16,  fraction: 0.00034617874851},
+                  {nuclide: O17,  fraction: 1.3125149e-07},
+                  {nuclide: Fe54, fraction: 3.47935315e-06},
+                  {nuclide: Fe56, fraction: 5.4618403580000004e-05},
+                  {nuclide: Fe57, fraction: 1.26137713e-06},
+                  {nuclide: Fe58, fraction: 1.6786614e-07},
+                  {nuclide: Al27, fraction: 4.107e-05},
+                  {nuclide: H1,   fraction: 4.397115086628e-05},
+                  {nuclide: H2,   fraction: 6.84913372e-09},
+                  {nuclide: Si28, fraction: 3.639014254080001e-05},
+                  {nuclide: Si29, fraction: 1.8477876096000002e-06},
+                  {nuclide: Si30, fraction: 1.2180698496e-06}]
 
-  - name: Natural U metal
-    id: 2
+  - id: 2
+    name: Natural U metal
     temperature: 293.6
-    composition: [{nuclide: U235, concentration: 0.00033316},
-                  {nuclide: U238, concentration: 0.045948},
-                  {nuclide: C12,   concentration: 0.00049205}, # This is actually nat
-                  {nuclide: Fe54, concentration: 6.1857635e-06},
-                  {nuclide: Fe56, concentration: 9.71032582e-05},
-                  {nuclide: Fe57, concentration: 2.2425377e-06},
-                  {nuclide: Fe58, concentration: 2.9844059999999997e-07},
-                  {nuclide: H1,   concentration: 4.397115086628e-05},
-                  {nuclide: H2,   concentration: 6.84913372e-09},
-                  {nuclide: Si28, concentration: 0.00019407891562400002},
-                  {nuclide: Si29, concentration: 9.854773588e-06},
-                  {nuclide: Si30, concentration: 6.496310788e-06}]
+    density-units: sum
+    fractions: atoms
+    composition: [{nuclide: U235, fraction: 0.00033316},
+                  {nuclide: U238, fraction: 0.045948},
+                  {nuclide: C12,  fraction: 0.00049205}, # This is actually nat
+                  {nuclide: Fe54, fraction: 6.1857635e-06},
+                  {nuclide: Fe56, fraction: 9.71032582e-05},
+                  {nuclide: Fe57, fraction: 2.2425377e-06},
+                  {nuclide: Fe58, fraction: 2.9844059999999997e-07},
+                  {nuclide: H1,   fraction: 4.397115086628e-05},
+                  {nuclide: H2,   fraction: 6.84913372e-09},
+                  {nuclide: Si28, fraction: 0.00019407891562400002},
+                  {nuclide: Si29, fraction: 9.854773588e-06},
+                  {nuclide: Si30, fraction: 6.496310788e-06}]
 
-  - name: Sheath
-    id: 3 
+  - id: 3
+    name: Sheath
     temperature: 293.6
-    composition: [{nuclide: C12  , concentration: 0.00077829            }, # actually nat
-                  {nuclide: Fe54 , concentration: 0.0033096728000000003 },
-                  {nuclide: Fe56 , concentration: 0.05195478496         },
-                  {nuclide: Fe57 , concentration: 0.00119986256         },
-                  {nuclide: Fe58 , concentration: 0.00015967968         },
-                  {nuclide: Cr50 , concentration: 0.00069984915         },
-                  {nuclide: Cr52 , concentration: 0.01349589423         },
-                  {nuclide: Cr53 , concentration: 0.00153032607         },
-                  {nuclide: Cr54 , concentration: 0.00038093055         },
-                  {nuclide: Cu63 , concentration: 5.10693495e-05        },
-                  {nuclide: Cu65 , concentration: 2.2783650499999998e-05},
-                  {nuclide: Mo100, concentration: 1.4260344e-05         },
-                  {nuclide: Mo92 , concentration: 2.1438811500000004e-05},
-                  {nuclide: Mo94 , concentration: 1.34451745e-05        },
-                  {nuclide: Mo95 , concentration: 2.3230135500000004e-05},
-                  {nuclide: Mo96 , concentration: 2.44009355e-05        },
-                  {nuclide: Mo97 , concentration: 1.4023257e-05         },
-                  {nuclide: Mo98 , concentration: 3.5551342e-05         },
-                  {nuclide: Mn55 , concentration: 0.0011918             },
-                  {nuclide: Ni58 , concentration: 0.006129712152899999  },
-                  {nuclide: Ni60 , concentration: 0.0023611541470999996 },
-                  {nuclide: Ni61 , concentration: 0.00010263773589999998},
-                  {nuclide: Ni62 , concentration: 0.0003272540145       },
-                  {nuclide: Ni64 , concentration: 8.334194959999999e-05 },
-                  {nuclide: Al27 , concentration: 0.00034646            },
-                  {nuclide: Ti46 , concentration: 2.419395e-05          },
-                  {nuclide: Ti47 , concentration: 2.1818543999999998e-05},
-                  {nuclide: Ti48 , concentration: 0.000216191272        },
-                  {nuclide: Ti49 , concentration: 1.5865366e-05         },
-                  {nuclide: Ti50 , concentration: 1.5190868e-05         },
-                  {nuclide: H1   , concentration: 2.271046252164e-05    },
-                  {nuclide: H2   , concentration: 3.53747836e-09        },
-                  {nuclide: Si28 , concentration: 0.0009221861243840001 },
-                  {nuclide: Si29 , concentration: 4.6825980208000006e-05},
-                  {nuclide: Si30 , concentration: 3.0867895408e-05      },
-                  {nuclide: V50  , concentration: 2.303175e-07          },
-                  {nuclide: V51  , concentration: 9.18966825e-05        }]                                                
+    density-units: sum
+    fractions: atoms
+    composition: [{nuclide: C12  , fraction: 0.00077829            }, # actually nat
+                  {nuclide: Fe54 , fraction: 0.0033096728000000003 },
+                  {nuclide: Fe56 , fraction: 0.05195478496         },
+                  {nuclide: Fe57 , fraction: 0.00119986256         },
+                  {nuclide: Fe58 , fraction: 0.00015967968         },
+                  {nuclide: Cr50 , fraction: 0.00069984915         },
+                  {nuclide: Cr52 , fraction: 0.01349589423         },
+                  {nuclide: Cr53 , fraction: 0.00153032607         },
+                  {nuclide: Cr54 , fraction: 0.00038093055         },
+                  {nuclide: Cu63 , fraction: 5.10693495e-05        },
+                  {nuclide: Cu65 , fraction: 2.2783650499999998e-05},
+                  {nuclide: Mo100, fraction: 1.4260344e-05         },
+                  {nuclide: Mo92 , fraction: 2.1438811500000004e-05},
+                  {nuclide: Mo94 , fraction: 1.34451745e-05        },
+                  {nuclide: Mo95 , fraction: 2.3230135500000004e-05},
+                  {nuclide: Mo96 , fraction: 2.44009355e-05        },
+                  {nuclide: Mo97 , fraction: 1.4023257e-05         },
+                  {nuclide: Mo98 , fraction: 3.5551342e-05         },
+                  {nuclide: Mn55 , fraction: 0.0011918             },
+                  {nuclide: Ni58 , fraction: 0.006129712152899999  },
+                  {nuclide: Ni60 , fraction: 0.0023611541470999996 },
+                  {nuclide: Ni61 , fraction: 0.00010263773589999998},
+                  {nuclide: Ni62 , fraction: 0.0003272540145       },
+                  {nuclide: Ni64 , fraction: 8.334194959999999e-05 },
+                  {nuclide: Al27 , fraction: 0.00034646            },
+                  {nuclide: Ti46 , fraction: 2.419395e-05          },
+                  {nuclide: Ti47 , fraction: 2.1818543999999998e-05},
+                  {nuclide: Ti48 , fraction: 0.000216191272        },
+                  {nuclide: Ti49 , fraction: 1.5865366e-05         },
+                  {nuclide: Ti50 , fraction: 1.5190868e-05         },
+                  {nuclide: H1   , fraction: 2.271046252164e-05    },
+                  {nuclide: H2   , fraction: 3.53747836e-09        },
+                  {nuclide: Si28 , fraction: 0.0009221861243840001 },
+                  {nuclide: Si29 , fraction: 4.6825980208000006e-05},
+                  {nuclide: Si30 , fraction: 3.0867895408e-05      },
+                  {nuclide: V50  , fraction: 2.303175e-07          },
+                  {nuclide: V51  , fraction: 9.18966825e-05        }]                                                
 
-  - name: void
-    id: 4
+  - id: 4
+    name: void
     temperature: 293.6
-    composition: [{nuclide: He4, concentration: 0.}]
+    density-units: g/cm3
+    density: 0.
+    fractions: atoms
+    composition: []
 
 surfaces:
   - {type: xplane, x0: -2.62720, id: 1, boundary: reflective}
@@ -131,65 +140,6 @@ universes:
   - {cells: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], id: 1}
 
 root-universe: 1
-
-tallies:
-  - low: [-2.62720, -2.62720, -1.11125]
-    hi: [2.62720, 2.62720, 1.11125]
-    shape: [1, 1, 1]
-    energy-bounds: [1.000000E-02, 1.035142E-02, 1.071519E-02, 1.109175E-02,
-                    1.148154E-02, 1.188502E-02, 1.230269E-02, 1.273503E-02,
-                    1.318257E-02, 1.364583E-02, 1.412538E-02, 1.462177E-02,
-                    1.513561E-02, 1.566751E-02, 1.621810E-02, 1.678804E-02,
-                    1.737801E-02, 1.798871E-02, 1.862087E-02, 1.927525E-02,
-                    1.995262E-02, 2.065380E-02, 2.137962E-02, 2.213095E-02,
-                    2.290868E-02, 2.371374E-02, 2.454709E-02, 2.540973E-02,
-                    2.630268E-02, 2.722701E-02, 2.818383E-02, 2.917427E-02,
-                    3.019952E-02, 3.126079E-02, 3.235937E-02, 3.349654E-02,
-                    3.467369E-02, 3.589219E-02, 3.715352E-02, 3.845918E-02,
-                    3.981072E-02, 4.120975E-02, 4.265795E-02, 4.415704E-02,
-                    4.570882E-02, 4.731513E-02, 4.897788E-02, 5.069907E-02,
-                    5.248075E-02, 5.432503E-02, 5.623413E-02, 5.821032E-02,
-                    6.025596E-02, 6.237348E-02, 6.456542E-02, 6.683439E-02,
-                    6.918310E-02, 7.161434E-02, 7.413102E-02, 7.673615E-02,
-                    7.943282E-02, 8.222426E-02, 8.511380E-02, 8.810489E-02,
-                    9.120108E-02, 9.440609E-02, 9.772372E-02, 1.011579E-01,
-                    1.047129E-01, 1.083927E-01, 1.122018E-01, 1.161449E-01,
-                    1.202264E-01, 1.244515E-01, 1.288250E-01, 1.333521E-01,
-                    1.380384E-01, 1.428894E-01, 1.479108E-01, 1.531087E-01,
-                    1.584893E-01, 1.640590E-01, 1.698244E-01, 1.757924E-01,
-                    1.819701E-01, 1.883649E-01, 1.949845E-01, 2.018366E-01,
-                    2.089296E-01, 2.162719E-01, 2.238721E-01, 2.317395E-01,
-                    2.398833E-01, 2.483133E-01, 2.570396E-01, 2.660725E-01,
-                    2.754229E-01, 2.851018E-01, 2.951209E-01, 3.054921E-01,
-                    3.162278E-01, 3.273407E-01, 3.388442E-01, 3.507519E-01,
-                    3.630781E-01, 3.758374E-01, 3.890451E-01, 4.027170E-01,
-                    4.168694E-01, 4.315191E-01, 4.466836E-01, 4.623810E-01,
-                    4.786301E-01, 4.954502E-01, 5.128614E-01, 5.308844E-01,
-                    5.495409E-01, 5.688529E-01, 5.888437E-01, 6.095369E-01,
-                    6.309573E-01, 6.531306E-01, 6.760830E-01, 6.998420E-01,
-                    7.244360E-01, 7.498942E-01, 7.762471E-01, 8.035261E-01,
-                    8.317638E-01, 8.609938E-01, 8.912509E-01, 9.225714E-01,
-                    9.549926E-01, 9.885531E-01, 1.023293E+00, 1.059254E+00,
-                    1.096478E+00, 1.135011E+00, 1.174898E+00, 1.216186E+00,
-                    1.258925E+00, 1.303167E+00, 1.348963E+00, 1.396368E+00,
-                    1.445440E+00, 1.496236E+00, 1.548817E+00, 1.603245E+00,
-                    1.659587E+00, 1.717908E+00, 1.778279E+00, 1.840772E+00,
-                    1.905461E+00, 1.972423E+00, 2.041738E+00, 2.113489E+00,
-                    2.187762E+00, 2.264644E+00, 2.344229E+00, 2.426610E+00,
-                    2.511886E+00, 2.600160E+00, 2.691535E+00, 2.786121E+00,
-                    2.884032E+00, 2.985383E+00, 3.090295E+00, 3.198895E+00,
-                    3.311311E+00, 3.427678E+00, 3.548134E+00, 3.672823E+00,
-                    3.801894E+00, 3.935501E+00, 4.073803E+00, 4.216965E+00,
-                    4.365158E+00, 4.518559E+00, 4.677351E+00, 4.841724E+00,
-                    5.011872E+00, 5.188000E+00, 5.370318E+00, 5.559043E+00,
-                    5.754399E+00, 5.956621E+00, 6.165950E+00, 6.382635E+00,
-                    6.606934E+00, 6.839116E+00, 7.079458E+00, 7.328245E+00,
-                    7.585776E+00, 7.852356E+00, 8.128305E+00, 8.413951E+00,
-                    8.709636E+00, 9.015711E+00, 9.332543E+00, 9.660509E+00,
-                    1.000000E+01]
-    quantity: flux
-    estimator: track-length
-    name: zebra-spectrum
 
 sources:
   - spatial:

@@ -46,59 +46,43 @@ MGAngleDistribution::MGAngleDistribution(const std::vector<double>& mu,
     : mu_(mu), pdf_(pdf), cdf_(cdf) {
   // Make sure good mu bounds
   if (mu_.front() < -1.) {
-    std::stringstream mssg;
-    mssg << "Angle limit less than -1.";
-    fatal_error(mssg.str(), __FILE__, __LINE__);
+    fatal_error("Angle limit less than -1.");
   }
 
   if (mu_.front() > 1.) {
-    std::stringstream mssg;
-    mssg << "Angle limit greater than 1.";
-    fatal_error(mssg.str(), __FILE__, __LINE__);
+    fatal_error("Angle limit greater than 1.");
   }
 
   // Make sure mu is sorted
   if (std::is_sorted(mu_.begin(), mu_.end()) == false) {
-    std::stringstream mssg;
-    mssg << "Mu values are not sorted.";
-    fatal_error(mssg.str(), __FILE__, __LINE__);
+    fatal_error("Mu values are not sorted.");
   }
 
   // Make sure PDF is positive
   for (const auto& p : pdf_) {
     if (p < 0.) {
-      std::stringstream mssg;
-      mssg << "PDF is less than 0.";
-      fatal_error(mssg.str(), __FILE__, __LINE__);
+      fatal_error("PDF is less than 0.");
     }
   }
 
   // Make sure CDF is positive
   for (const auto& c : cdf_) {
     if (c < 0.) {
-      std::stringstream mssg;
-      mssg << "CDF is less than 0.";
-      fatal_error(mssg.str(), __FILE__, __LINE__);
+      fatal_error("CDF is less than 0.");
     }
   }
 
   // Make sure CDF is sorted
   if (std::is_sorted(cdf_.begin(), cdf_.end()) == false) {
-    std::stringstream mssg;
-    mssg << "CDF is not sorted.";
-    fatal_error(mssg.str(), __FILE__, __LINE__);
+    fatal_error("CDF is not sorted.");
   }
 
   // Make sure CDF starts at 0, and ends at 1
   if (cdf_.front() != 0.) {
-    std::stringstream mssg;
-    mssg << "First CDF value is not 0.";
-    fatal_error(mssg.str(), __FILE__, __LINE__);
+    fatal_error("First CDF value is not 0.");
   }
 
   if (cdf_.back() != 1.) {
-    std::stringstream mssg;
-    mssg << "Last CDF value is not 1.";
-    fatal_error(mssg.str(), __FILE__, __LINE__);
+    fatal_error("Last CDF value is not 1.");
   }
 }

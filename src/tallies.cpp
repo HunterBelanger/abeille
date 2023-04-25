@@ -234,7 +234,6 @@ void add_mesh_tally(Tallies& tallies, const YAML::Node& node) {
       tallies.add_source_mesh_tally(stally);
     }
   } else {
-    std::string mssg = "Unknown estimator type of \"" + estimator_str + "\".";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("Unknown estimator type of \"" + estimator_str + "\".");
   }
 }

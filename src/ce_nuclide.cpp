@@ -19,7 +19,7 @@ CENuclide::CENuclide(const std::shared_ptr<pndl::STNeutron>& ce,
   if (!cedata_) {
     std::string mssg =
         "CENuclide instance must have a valid pndl::STNeutron instance.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error(mssg);
   }
 }
 
@@ -139,14 +139,16 @@ double CENuclide::speed(double E, std::size_t /*i*/) const {
 
 uint32_t CENuclide::zaid() const { return cedata_->zaid().zaid(); }
 
+double CENuclide::awr() const { return cedata_->awr(); }
+
 // These are all possible MTs which result in an exit neutron
 // (other than fission) from the ENDF manual.
 static const std::array<uint32_t, 106> MT_LIST{
-      2,   5,  11,  16,  17,  22,  23,  24,  25,  28,  29,  30,  32,  33,
-     34,  35,  36,  37,  41,  42,  44,  45,  51,  52,  53,  54,  55,  56,
-     57,  58,  59,  60,  61,  62,  63,  64,  65,  66,  67,  68,  69,  70,
-     71,  72,  73,  74,  75,  76,  77,  78,  79,  80,  81,  82,  83,  84,
-     85,  86,  87,  88,  89,  90,  91, 152, 153, 154, 156, 157, 158, 159,
+    2,   5,   11,  16,  17,  22,  23,  24,  25,  28,  29,  30,  32,  33,
+    34,  35,  36,  37,  41,  42,  44,  45,  51,  52,  53,  54,  55,  56,
+    57,  58,  59,  60,  61,  62,  63,  64,  65,  66,  67,  68,  69,  70,
+    71,  72,  73,  74,  75,  76,  77,  78,  79,  80,  81,  82,  83,  84,
+    85,  86,  87,  88,  89,  90,  91,  152, 153, 154, 156, 157, 158, 159,
     160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173,
     174, 175, 176, 177, 178, 179, 180, 181, 183, 184, 185, 186, 187, 188,
     189, 190, 194, 195, 196, 198, 199, 200};
@@ -182,13 +184,14 @@ ScatterInfo CENuclide::sample_scatter(double Ein, const Direction& u,
 
     // Sample the reaction
     MT = MT_LIST[static_cast<std::size_t>(
-        RNG::discrete(rng, &XS[1], &XS[XS.size() - 1])) + 1];
+                     RNG::discrete(rng, &XS[1], &XS[XS.size() - 1])) +
+                 1];
 
     // If we don't have that reaction, something probably went wrong.
     // We just use elastic anyway.
     if (cedata_->has_reaction(MT) == false) MT = 2;
   }
-  
+
   // Sample reaction data
   if (MT == 2) {
     elastic_scatter(Ein, u, Eout, uout, rng);
@@ -203,7 +206,7 @@ ScatterInfo CENuclide::sample_scatter(double Ein, const Direction& u,
     Eout = ae_out.energy;
     uout = rotate_direction(u, ae_out.cosine_angle, 2. * PI * rngfunc());
   }
-  
+
   // Retturn the reaction iformation
   ScatterInfo info;
   info.mt = MT;
@@ -222,7 +225,7 @@ ScatterInfo CENuclide::sample_scatter_mt(uint32_t mt, double Ein,
     std::stringstream mssg;
     mssg << "Nuclide " << this->id() << ", ZAID " << cedata_->zaid();
     mssg << ", has no reaction data for MT " << mt << ".";
-    fatal_error(mssg.str(), __FILE__, __LINE__);
+    fatal_error(mssg.str());
   }
 
   double yield = 1.;
@@ -365,9 +368,9 @@ void CENuclide::thermal_scatter(double Ein, const Direction& uin, double& Eout,
   } else {
     // This is bad. For some reason, we couldn't sample something....
     // Let's just write a warning, and then sample II ?
-    std::string mssg =
+    const std::string mssg =
         " Could not sample a TSL reaction. Using Incoherent Inelastic.\n";
-    warning(mssg, __FILE__, __LINE__);
+    warning(mssg);
     ae_out = tsl_->incoherent_inelastic().sample_angle_energy(Ein, rngfunc);
   }
 

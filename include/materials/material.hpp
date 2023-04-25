@@ -36,9 +36,15 @@
 
 #include <yaml-cpp/yaml.h>
 
+#include <cmath>
+#include <cstdint>
 #include <map>
 #include <materials/nuclide.hpp>
 #include <memory>
+#include <sstream>
+#include <string>
+#include <utils/constants.hpp>
+#include <utils/error.hpp>
 #include <utils/rng.hpp>
 #include <vector>
 
@@ -47,20 +53,42 @@ extern std::map<uint32_t, std::shared_ptr<Material>> materials;
 
 class Material : public std::enable_shared_from_this<Material> {
  public:
-  Material() : composition_(), id_(), name_() {}
+  enum class Fraction { Atom, Weight };
+  enum class DensityUnits { g_cm3, a_bcm };
+
+  struct NuclideInfo {
+    std::string nuclide_key{};
+    double awr{-1.};
+    double atoms_bcm{-1.};
+    double atom_fraction{-1.};
+    double weight_fraction{-1.};
+
+    NuclideInfo(const std::string& nuc_key) : nuclide_key(nuc_key) {}
+  };
 
   struct Component {
-    double concentration;
+    double atoms_bcm;  // atoms / (b * cm)
     std::shared_ptr<Nuclide> nuclide;
   };
 
-  void add_component(double concentration, std::shared_ptr<Nuclide> nuclide) {
-    composition_.push_back({concentration, nuclide});
-  }
+  // This is used when making a ficticious material in noise vibrations
+  Material() = default;
+
+  // For initializing an empty material (i.e. plotting mode)
+  Material(std::uint32_t id, const std::string& name = "");
+
+  // For initializing a MG material.
+  Material(std::shared_ptr<Nuclide> nuc, std::uint32_t id,
+           const std::string& name = "");
+
+  // For initializing a CE material.
+  Material(double temperature, double density, DensityUnits dunits,
+           Fraction frac, const std::vector<NuclideInfo>& nuclides,
+           std::uint32_t id, const std::string& name = "");
 
   double max_energy() const {
     double max = 10000.;
-    for (const auto& comp : composition_) {
+    for (const auto& comp : components_) {
       if (comp.nuclide->max_energy() < max) {
         max = comp.nuclide->max_energy();
       }
@@ -71,7 +99,7 @@ class Material : public std::enable_shared_from_this<Material> {
 
   double min_energy() const {
     double min = 0.;
-    for (const auto& comp : composition_) {
+    for (const auto& comp : components_) {
       if (comp.nuclide->min_energy() > min) {
         min = comp.nuclide->min_energy();
       }
@@ -80,20 +108,45 @@ class Material : public std::enable_shared_from_this<Material> {
     return min;
   }
 
-  const std::vector<Component>& composition() const { return composition_; }
+  // Used for building a custom material in noise vibrations
+  const std::vector<Component>& components() const { return components_; }
+
+  void add_component(const Component& comp) {
+    if (comp.atoms_bcm <= 0.) {
+      fatal_error("Cannot at component with negative atoms_bcm to a Material.");
+    }
+
+    components_.push_back(comp);
+  }
+
+  double temperature() const { return temperature_; }
+
+  double density() const { return density_; }
+
+  double atoms_per_bcm() const { return atoms_per_bcm_; }
+
   const std::string& name() const { return name_; }
+
   uint32_t id() const { return id_; }
+
   bool fissile() const {
-    for (const auto& comp : composition_) {
+    for (const auto& comp : components_) {
       if (comp.nuclide->fissile()) return true;
     }
     return false;
   }
 
  private:
-  std::vector<Component> composition_;
-  uint32_t id_;
+  std::vector<NuclideInfo> nuclide_info_;
+  std::vector<Component> components_;
   std::string name_;
+  double temperature_;         // Temperature in Kelvin
+  double density_{-1.};        // Density in g / cm^3
+  double atoms_per_bcm_{-1.};  // atoms / (b * cm) sum of all components
+  double avg_molar_mass_{-1.};
+  std::uint32_t id_;
+
+  double calc_avg_molar_mass(Fraction frac) const;
 
   friend void make_material(const YAML::Node& mat, bool plotting_mode);
   friend void fill_ce_material(const YAML::Node& mat,

@@ -7,21 +7,25 @@
 # OpenMC       : 1.00085  +/- 0.00017
 
 materials:
-  - name: U Fuel
-    id: 1
+  - id: 1
+    name: U Fuel
     color: [31, 119, 180]
     temperature: 293.6
-    composition: [{nuclide: U234, concentration: 4.8869E-4},
-                  {nuclide: U235, concentration: 4.4482E-2},
-                  {nuclide: U238, concentration: 2.7038E-3}]
+    density-units: sum
+    fractions: atoms
+    composition: [{nuclide: U234, fraction: 4.8869E-4},
+                  {nuclide: U235, fraction: 4.4482E-2},
+                  {nuclide: U238, fraction: 2.7038E-3}]
 
-  - name: U Reflector
-    id: 2
+  - id: 2
+    name: U Reflector
     color: [255, 127, 14]
     temperature: 293.6
-    composition: [{nuclide: U234, concentration: 2.6438E-6},
-                  {nuclide: U235, concentration: 3.4610E-4},
-                  {nuclide: U238, concentration: 4.7721E-2}]
+    density-units: sum
+    fractions: atoms
+    composition: [{nuclide: U234, fraction: 2.6438E-6},
+                  {nuclide: U235, fraction: 3.4610E-4},
+                  {nuclide: U238, fraction: 4.7721E-2}]
 
 surfaces:
   - {type: sphere, x0: 0., y0: 0., z0: 0., r:  6.1156, id: 1}

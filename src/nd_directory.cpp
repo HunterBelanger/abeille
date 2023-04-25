@@ -24,7 +24,7 @@ const std::shared_ptr<pndl::STNeutron>& NDDirectory::NeutronACEList::get_temp(
     std::stringstream mssg;
     mssg << "Could not find required temperature " << T << " for " << key
          << '.';
-    fatal_error(mssg.str(), __FILE__, __LINE__);
+    fatal_error(mssg.str());
   }
 
   if (!neutron_ace_files[closest_tmp_indx].loaded()) {
@@ -76,7 +76,7 @@ NDDirectory::TSLACEList::get_temp(const std::string& key, double T) {
     std::stringstream mssg;
     mssg << "Could not find required temperature " << T << " for " << key
          << '.';
-    fatal_error(mssg.str(), __FILE__, __LINE__);
+    fatal_error(mssg.str());
   }
 
   if (!tsl_ace_files[closest_tmp_indx].loaded()) {
@@ -118,7 +118,7 @@ NDDirectory::NuclideEntry& NDDirectory::get_nuclide_entry(
   if (!has_nuclide_entry(key)) {
     std::stringstream mssg;
     mssg << "No Nuclide entry for " << key << '\n';
-    fatal_error(mssg.str(), __FILE__, __LINE__);
+    fatal_error(mssg.str());
   }
 
   return nuclides.at(key);
@@ -129,7 +129,7 @@ NDDirectory::NeutronACEList& NDDirectory::get_neutron_list(
   if (!has_neutron_list(key)) {
     std::stringstream mssg;
     mssg << "No NeutronACEList for " << key << '\n';
-    fatal_error(mssg.str(), __FILE__, __LINE__);
+    fatal_error(mssg.str());
   }
 
   return neutron_dir.at(key);
@@ -139,26 +139,22 @@ NDDirectory::TSLACEList& NDDirectory::get_tsl_list(const std::string& key) {
   if (!has_tsl_list(key)) {
     std::stringstream mssg;
     mssg << "No TSLACEList for " << key << '\n';
-    fatal_error(mssg.str(), __FILE__, __LINE__);
+    fatal_error(mssg.str());
   }
 
   return tsl_dir.at(key);
 }
 
 NDDirectory::NuclideEntry::NuclideEntry(const YAML::Node& node)
-    : neutron(), dbrc(false), tsl(std::nullopt), temps(), loaded() {
+    : neutron(), tsl(std::nullopt), temps(), loaded(), awr(0.), dbrc(false) {
   // Make sure node is a map
   if (node.IsMap() == false) {
-    std::stringstream mssg;
-    mssg << "Nuclide entry of nuclear data directory must be a map.";
-    fatal_error(mssg.str(), __FILE__, __LINE__);
+    fatal_error("Nuclide entry of nuclear data directory must be a map.");
   }
 
   // Get the mandatory neutron entry
   if (!node["neutron"] || !node["neutron"].IsScalar()) {
-    std::stringstream mssg;
-    mssg << "A Nuclide entry is missing a valid \"neutron\" entry.";
-    fatal_error(mssg.str(), __FILE__, __LINE__);
+    fatal_error("A Nuclide entry is missing a valid \"neutron\" entry.");
   }
   neutron = node["neutron"].as<std::string>();
 
@@ -166,26 +162,30 @@ NDDirectory::NuclideEntry::NuclideEntry(const YAML::Node& node)
   if (node["dbrc"] && node["dbrc"].IsScalar()) {
     dbrc = node["dbrc"].as<bool>();
   } else if (node["dbrc"]) {
-    std::stringstream mssg;
-    mssg << "The dbrc entry of a Nuclide entry must be a boolean.";
-    fatal_error(mssg.str(), __FILE__, __LINE__);
+    fatal_error("The dbrc entry of a Nuclide entry must be a boolean.");
+  }
+
+  // Now we get the AWR
+  if (!node["awr"] || !node["awr"].IsScalar()) {
+    fatal_error("No awr entry present in Nuclide entry " + neutron + ".");
+  }
+  awr = node["awr"].as<double>();
+  if (awr < 0.) {
+    fatal_error("The awr in a Nuclide entry must be > 0.");
   }
 
   // Now we get the TSL if present
   if (node["tsl"] && node["tsl"].IsScalar()) {
     tsl = node["tsl"].as<std::string>();
   } else if (node["tsl"]) {
-    std::stringstream mssg;
-    mssg << "The tsl entry of a Nuclide entry must be a string.";
-    fatal_error(mssg.str(), __FILE__, __LINE__);
+    fatal_error("The tsl entry of a Nuclide entry must be a string.");
   }
 
   // Now we get the temperature list
   if (!node["temperatures"] || !node["temperatures"].IsSequence()) {
-    std::stringstream mssg;
-    mssg << "The temperatures entry of a Nuclide entry must be a sequence of "
-            "positive floats.";
-    fatal_error(mssg.str(), __FILE__, __LINE__);
+    fatal_error(
+        "The temperatures entry of a Nuclide entry must be a sequence of "
+        "positive floats.");
   }
   temps = node["temperatures"].as<std::vector<double>>();
 
@@ -194,9 +194,7 @@ NDDirectory::NuclideEntry::NuclideEntry(const YAML::Node& node)
 
   // Make sure all temps are positive
   if (temps.front() < 0.) {
-    std::stringstream mssg;
-    mssg << "All temperatures in a Nuclide entry must be >= 0.";
-    fatal_error(mssg.str(), __FILE__, __LINE__);
+    fatal_error("All temperatures in a Nuclide entry must be >= 0.");
   }
 
   // Fill loaded vector will nullptr
@@ -240,17 +238,14 @@ NDDirectory::ACEEntry::ACEEntry(const std::filesystem::path& basename,
     : fname(), type(pndl::ACE::Type::ASCII), temperature() {
   // Make sure node is a map
   if (node.IsMap() == false) {
-    std::stringstream mssg;
-    mssg << "ACE entry of nuclear data directory must be a map.";
-    fatal_error(mssg.str(), __FILE__, __LINE__);
+    fatal_error("ACE entry of nuclear data directory must be a map.");
   }
 
   // Get the file path
   if (!node["file"] || !node["file"].IsScalar()) {
-    std::stringstream mssg;
-    mssg << "ACE entry of nuclear data directory must have a file entry with a "
-            "single file name.";
-    fatal_error(mssg.str(), __FILE__, __LINE__);
+    fatal_error(
+        "ACE entry of nuclear data directory must have a file entry with a "
+        "single file name.");
   }
   fname = basename / node["file"].as<std::string>();
 
@@ -258,26 +253,23 @@ NDDirectory::ACEEntry::ACEEntry(const std::filesystem::path& basename,
   if (node["binary"] && node["binary"].IsScalar()) {
     if (node["binary"].as<bool>()) type = pndl::ACE::Type::BINARY;
   } else if (node["binary"]) {
-    std::stringstream mssg;
-    mssg << "ACE entry of nuclear data directory can only have a \"binary\" "
-            "entry that is boolean.";
-    fatal_error(mssg.str(), __FILE__, __LINE__);
+    fatal_error(
+        "ACE entry of nuclear data directory can only have a \"binary\" entry "
+        "that is boolean.");
   }
 
   // Get temperature
   if (!node["temperature"] || !node["temperature"].IsScalar()) {
-    std::stringstream mssg;
-    mssg << "ACE entry of nuclear data directory must have a \"temperature\" "
-            "entry that is positive float.";
-    fatal_error(mssg.str(), __FILE__, __LINE__);
+    fatal_error(
+        "ACE entry of nuclear data directory must have a \"temperature\" entry "
+        "that is positive float.");
   }
   temperature = node["temperature"].as<double>();
 
   if (temperature < 0.) {
-    std::stringstream mssg;
-    mssg << "ACE entry of nuclear data directory must have a \"temperature\" "
-            "entry that is positive float.";
-    fatal_error(mssg.str(), __FILE__, __LINE__);
+    fatal_error(
+        "ACE entry of nuclear data directory must have a \"temperature\" entry "
+        "that is positive float.");
   }
 }
 
@@ -294,16 +286,12 @@ NDDirectory::NeutronACEList::NeutronACEList(
     : neutron_ace_files(), first_loaded(nullptr) {
   // Make sure the node is a sequence
   if (!node.IsSequence()) {
-    std::stringstream mssg;
-    mssg << "Neutron entry list must be a sequence of ACEEntry items.";
-    fatal_error(mssg.str(), __FILE__, __LINE__);
+    fatal_error("Neutron entry list must be a sequence of ACEEntry items.");
   }
 
   if (node.size() == 0) {
-    std::stringstream mssg;
-    mssg
-        << "Neutron entry list must be a non-empty sequence of ACEEntry items.";
-    fatal_error(mssg.str(), __FILE__, __LINE__);
+    fatal_error(
+        "Neutron entry list must be a non-empty sequence of ACEEntry items.");
   }
 
   // Iterate through all elements in the node
@@ -317,15 +305,12 @@ NDDirectory::TSLACEList::TSLACEList(const std::filesystem::path& basename,
     : tsl_ace_files() {
   // Make sure the node is a sequence
   if (!node.IsSequence()) {
-    std::stringstream mssg;
-    mssg << "TSL entry list must be a sequence of ACEEntry items.";
-    fatal_error(mssg.str(), __FILE__, __LINE__);
+    fatal_error("TSL entry list must be a sequence of ACEEntry items.");
   }
 
   if (node.size() == 0) {
-    std::stringstream mssg;
-    mssg << "TSL entry list must be a non-empty sequence of ACEEntry items.";
-    fatal_error(mssg.str(), __FILE__, __LINE__);
+    fatal_error(
+        "TSL entry list must be a non-empty sequence of ACEEntry items.");
   }
 
   // Iterate through all elements in the node
@@ -350,7 +335,7 @@ NDDirectory::NDDirectory(const std::filesystem::path& fname,
   if (std::filesystem::exists(fname) == false) {
     std::stringstream mssg;
     mssg << "The file " << fname << " does not exist.";
-    fatal_error(mssg.str(), __FILE__, __LINE__);
+    fatal_error(mssg.str());
   }
   YAML::Node xsdir = YAML::LoadFile(fname.string());
 
@@ -358,10 +343,9 @@ NDDirectory::NDDirectory(const std::filesystem::path& fname,
   if (xsdir["basename"] && xsdir["basename"].IsScalar()) {
     basename_ = xsdir["basename"].as<std::string>();
   } else if (xsdir["basename"]) {
-    std::stringstream mssg;
-    mssg << "The basename entry of the nuclear data directory must be a valid "
-            "system path.";
-    fatal_error(mssg.str(), __FILE__, __LINE__);
+    fatal_error(
+        "The basename entry of the nuclear data directory must be a valid "
+        "system path.");
   }
 
   // Make sure the basename exists (if given)
@@ -370,15 +354,14 @@ NDDirectory::NDDirectory(const std::filesystem::path& fname,
       std::stringstream mssg;
       mssg << "The basename \"" << basename_
            << "\" for the nuclear data directory does not exist.";
-      fatal_error(mssg.str(), __FILE__, __LINE__);
+      fatal_error(mssg.str());
     }
   }
 
   // We now have the basename. We now iterate through the neutron-dir node
   if (!xsdir["neutron-dir"] || !xsdir["neutron-dir"].IsMap()) {
-    std::stringstream mssg;
-    mssg << "No valid \"neutron-dir\" entry in the nuclear data directory.";
-    fatal_error(mssg.str(), __FILE__, __LINE__);
+    fatal_error(
+        "No valid \"neutron-dir\" entry in the nuclear data directory.");
   }
   for (YAML::const_iterator it = xsdir["neutron-dir"].begin();
        it != xsdir["neutron-dir"].end(); it++) {
@@ -388,13 +371,13 @@ NDDirectory::NDDirectory(const std::filesystem::path& fname,
       std::stringstream mssg;
       mssg << "The key \"" << key
            << "\" appears multiple times in neutron-dir.";
-      fatal_error(mssg.str(), __FILE__, __LINE__);
+      fatal_error(mssg.str());
     }
 
     if (it->second.IsSequence() == false) {
       std::stringstream mssg;
       mssg << "The key \"" << key << "\" of neutron-dir is not a sequence.";
-      fatal_error(mssg.str(), __FILE__, __LINE__);
+      fatal_error(mssg.str());
     }
 
     neutron_dir[key] = NeutronACEList(basename_, it->second);
@@ -402,9 +385,7 @@ NDDirectory::NDDirectory(const std::filesystem::path& fname,
 
   // We now iterate through the tsl-dir node, which is actually optional
   if (xsdir["tsl-dir"] && !xsdir["tsl-dir"].IsMap()) {
-    std::stringstream mssg;
-    mssg << "Invalid \"tsl-dir\" entry in the nuclear data directory.";
-    fatal_error(mssg.str(), __FILE__, __LINE__);
+    fatal_error("Invalid \"tsl-dir\" entry in the nuclear data directory.");
   } else if (xsdir["tsl-dir"]) {
     for (YAML::const_iterator it = xsdir["tsl-dir"].begin();
          it != xsdir["tsl-dir"].end(); it++) {
@@ -413,13 +394,13 @@ NDDirectory::NDDirectory(const std::filesystem::path& fname,
       if (has_tsl_list(key)) {
         std::stringstream mssg;
         mssg << "The key \"" << key << "\" appears multiple times in tsl-dir.";
-        fatal_error(mssg.str(), __FILE__, __LINE__);
+        fatal_error(mssg.str());
       }
 
       if (it->second.IsSequence() == false) {
         std::stringstream mssg;
         mssg << "The key \"" << key << "\" of tsl-dir is not a sequence.";
-        fatal_error(mssg.str(), __FILE__, __LINE__);
+        fatal_error(mssg.str());
       }
 
       tsl_dir[key] = TSLACEList(basename_, it->second);
@@ -428,9 +409,7 @@ NDDirectory::NDDirectory(const std::filesystem::path& fname,
 
   // Finally, we get all the nuclide entries
   if (!xsdir["nuclides"] || !xsdir["nuclides"].IsMap()) {
-    std::stringstream mssg;
-    mssg << "Invalid \"nuclides\" entry in the nuclear data directory.";
-    fatal_error(mssg.str(), __FILE__, __LINE__);
+    fatal_error("Invalid \"nuclides\" entry in the nuclear data directory.");
   }
   for (YAML::const_iterator it = xsdir["nuclides"].begin();
        it != xsdir["nuclides"].end(); it++) {
@@ -439,13 +418,13 @@ NDDirectory::NDDirectory(const std::filesystem::path& fname,
     if (has_nuclide_entry(key)) {
       std::stringstream mssg;
       mssg << "The key \"" << key << "\" appears multiple times in nuclides.";
-      fatal_error(mssg.str(), __FILE__, __LINE__);
+      fatal_error(mssg.str());
     }
 
     if (it->second.IsMap() == false) {
       std::stringstream mssg;
       mssg << "The key \"" << key << "\" of nuclides is not a map.";
-      fatal_error(mssg.str(), __FILE__, __LINE__);
+      fatal_error(mssg.str());
     }
 
     nuclides[key] = NuclideEntry(it->second);
@@ -459,7 +438,7 @@ NDDirectory::NDDirectory(const std::filesystem::path& fname,
     } else if (xsdir["library-info"][key]) {
       std::stringstream mssg;
       mssg << "No valid \"" << key << "\" in library-info.";
-      fatal_error(mssg.str(), __FILE__, __LINE__);
+      fatal_error(mssg.str());
     }
 
     key = "date";
@@ -468,7 +447,7 @@ NDDirectory::NDDirectory(const std::filesystem::path& fname,
     } else if (xsdir["library-info"][key]) {
       std::stringstream mssg;
       mssg << "No valid \"" << key << "\" in library-info.";
-      fatal_error(mssg.str(), __FILE__, __LINE__);
+      fatal_error(mssg.str());
     }
 
     key = "code";
@@ -477,7 +456,7 @@ NDDirectory::NDDirectory(const std::filesystem::path& fname,
     } else if (xsdir["library-info"][key]) {
       std::stringstream mssg;
       mssg << "No valid \"" << key << "\" in library-info.";
-      fatal_error(mssg.str(), __FILE__, __LINE__);
+      fatal_error(mssg.str());
     }
 
     key = "notes";
@@ -486,12 +465,10 @@ NDDirectory::NDDirectory(const std::filesystem::path& fname,
     } else if (xsdir["library-info"][key]) {
       std::stringstream mssg;
       mssg << "No valid \"" << key << "\" in library-info.";
-      fatal_error(mssg.str(), __FILE__, __LINE__);
+      fatal_error(mssg.str());
     }
   } else if (xsdir["library-info"]) {
-    std::stringstream mssg;
-    mssg << "No valid \"library-info\" entry in nuclear data directory.";
-    fatal_error(mssg.str(), __FILE__, __LINE__);
+    fatal_error("No valid \"library-info\" entry in nuclear data directory.");
   }
 }
 
@@ -505,7 +482,7 @@ std::shared_ptr<CENuclide> NDDirectory::get_cenuclide(const std::string& key,
   if (std::abs(T - closest_T) > 0.1) {
     std::stringstream mssg;
     mssg << "The nuclide \"" << key << "\" has no temperature " << T << ".";
-    fatal_error(mssg.str(), __FILE__, __LINE__);
+    fatal_error(mssg.str());
   }
 
   if (!nuclide.loaded[closest_T_indx]) {
@@ -538,7 +515,7 @@ NDDirectory::CENuclidePacket NDDirectory::load_nuclide(const std::string& key,
   if (!has_nuclide_entry(key)) {
     std::stringstream mssg;
     mssg << "No entry in nuclear data directory for " << key << ".";
-    fatal_error(mssg.str(), __FILE__, __LINE__);
+    fatal_error(mssg.str());
   }
 
   NuclideEntry& nuclide = get_nuclide_entry(key);
@@ -564,7 +541,7 @@ NDDirectory::CENuclidePacket NDDirectory::load_nuclide(const std::string& key,
         std::abs(T - closest_T) > 0.1) {
       std::stringstream mssg;
       mssg << "The nuclide \"" << key << "\" has no temperature " << T << ".";
-      fatal_error(mssg.str(), __FILE__, __LINE__);
+      fatal_error(mssg.str());
     }
 
     fraction1 = 1.;
@@ -581,7 +558,7 @@ NDDirectory::CENuclidePacket NDDirectory::load_nuclide(const std::string& key,
       std::stringstream mssg;
       mssg << "Could not find any temperatures for nuclide " << key << ", at "
            << T << " Kelvin.";
-      fatal_error(mssg.str(), __FILE__, __LINE__);
+      fatal_error(mssg.str());
     } else if (Tli < 0) {
       // Check if the upper temp is within 0.1 K of desired temp
       if (std::abs(nuclide.temps[static_cast<std::size_t>(Thi)] - T) < 0.1) {
@@ -593,7 +570,7 @@ NDDirectory::CENuclidePacket NDDirectory::load_nuclide(const std::string& key,
         std::stringstream mssg;
         mssg << "Could not find bouding temperatures for " << key << ", at "
              << T << " Kelvin.";
-        fatal_error(mssg.str(), __FILE__, __LINE__);
+        fatal_error(mssg.str());
       }
     } else if (Thi < 0) {
       // Check if the lower temp is within 0.1 K of desired temp
@@ -606,7 +583,7 @@ NDDirectory::CENuclidePacket NDDirectory::load_nuclide(const std::string& key,
         std::stringstream mssg;
         mssg << "Could not find bouding temperatures for " << key << ", at "
              << T << " Kelvin.";
-        fatal_error(mssg.str(), __FILE__, __LINE__);
+        fatal_error(mssg.str());
       }
     } else {
       const double Tl = nuclide.temps[static_cast<std::size_t>(Tli)];
@@ -619,14 +596,14 @@ NDDirectory::CENuclidePacket NDDirectory::load_nuclide(const std::string& key,
         std::stringstream mssg;
         mssg << "fraction1 = " << fraction1 << ", for " << key << " at " << T
              << " Kelvin.";
-        fatal_error(mssg.str(), __FILE__, __LINE__);
+        fatal_error(mssg.str());
       }
 
       if (fraction2 < 0.) {
         std::stringstream mssg;
         mssg << "fraction2 = " << fraction2 << ", for " << key << " at " << T
              << " Kelvin.";
-        fatal_error(mssg.str(), __FILE__, __LINE__);
+        fatal_error(mssg.str());
       }
 
       if (std::abs(Tl - T) < 0.1 || std::abs(Th - T) < 0.1) {

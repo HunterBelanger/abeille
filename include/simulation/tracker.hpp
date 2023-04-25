@@ -186,7 +186,7 @@ class Tracker {
         std::stringstream mssg;
         mssg << " BAD POSITIONS!\n r_ = " << r_
              << "\n rl = " << tree.front().r_local << "\n";
-        fatal_error(mssg.str(), __FILE__, __LINE__);
+        fatal_error(mssg.str());
       }
     }
 
@@ -241,8 +241,7 @@ class Tracker {
   void do_reflection(Particle& p, geometry::Boundary boundary) {
     // Get the surface first
     if (boundary.surface_index < 0) {
-      fatal_error("Bad surface index in Tracker::do_reflection", __FILE__,
-                  __LINE__);
+      fatal_error("Bad surface index in Tracker::do_reflection");
     }
     const std::shared_ptr<Surface>& surface =
         geometry::surfaces[static_cast<std::size_t>(boundary.surface_index)];

@@ -92,6 +92,7 @@ class MGNuclide : public Nuclide {
   double speed(double E, std::size_t i) const override final;
 
   uint32_t zaid() const override final;
+  double awr() const override final;
 
   // Methods unique to MGNuclide, for exact MG cancellation.
   const std::vector<double>& group_speeds() const { return group_speeds_; }

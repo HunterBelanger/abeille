@@ -38,9 +38,7 @@ std::shared_ptr<MonoDirectional> make_mono_directional_distribution(
     const YAML::Node& node) {
   if (!node["direction"] || !node["direction"].IsSequence() ||
       !(node["direction"].size() == 3)) {
-    std::string mssg =
-        "No valid direction entry for mono-directional distribution.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("No valid direction entry for mono-directional distribution.");
   }
 
   double x = node["direction"][0].as<double>();

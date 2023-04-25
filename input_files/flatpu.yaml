@@ -7,23 +7,27 @@
 # OpenMC       : 0.99886  +/- 0.00018
 
 materials:
-  - name: Pu Alloy Fuel
-    id: 1
+  - id: 1
+    name: Pu Alloy Fuel
     color: [31, 119, 180]
     temperature: 293.6
-    composition: [{nuclide: Pu239, concentration: 3.6697E-2},
-                  {nuclide: Pu240, concentration: 1.8700E-3},
-                  {nuclide: Pu241, concentration: 1.1639E-4},
-                  {nuclide: Ga69,  concentration: 8.8692E-5},
-                  {nuclide: Ga71,  concentration: 5.8858E-5}]
+    density-units: sum
+    fractions: atoms
+    composition: [{nuclide: Pu239, fraction: 3.6697E-2},
+                  {nuclide: Pu240, fraction: 1.8700E-3},
+                  {nuclide: Pu241, fraction: 1.1639E-4},
+                  {nuclide: Ga69,  fraction: 8.8692E-5},
+                  {nuclide: Ga71,  fraction: 5.8858E-5}]
 
-  - name: U Reflector
-    id: 2
+  - id: 2
+    name: U Reflector
     color: [255, 127, 14]
     temperature: 293.6
-    composition: [{nuclide: U234, concentration: 2.6438E-6},
-                  {nuclide: U235, concentration: 3.4610E-4},
-                  {nuclide: U238, concentration: 4.7721E-2}]
+    density-units: sum
+    fractions: atoms
+    composition: [{nuclide: U234, fraction: 2.6438E-6},
+                  {nuclide: U235, fraction: 3.4610E-4},
+                  {nuclide: U238, fraction: 4.7721E-2}]
 
 surfaces:
   - {type: sphere, x0: 0., y0: 0., z0: 0., r: 4.5332, id: 1}

@@ -110,8 +110,7 @@ int32_t id_to_token(int32_t id) {
 void do_reflection(Particle& p, Boundary boundary) {
   // First, we should get the surface from the index
   if (boundary.surface_index < 0) {
-    fatal_error("Surface index is less than zero in reflection.", __FILE__,
-                __LINE__);
+    fatal_error("Surface index is less than zero in reflection.");
   }
   const std::shared_ptr<Surface>& surface =
       surfaces[static_cast<std::size_t>(boundary.surface_index)];

@@ -228,7 +228,7 @@ std::vector<BankedParticle> ImplicitLeakageDeltaTracker::transport(
         std::stringstream mssg;
         mssg << "Particle become lost at " << p.r() << ", ";
         mssg << " u = " << p.u() << ", token = " << trkr.surface_token();
-        warning(mssg.str(), __FILE__, __LINE__);
+        warning(mssg.str());
         p.kill();
       }
       // Only make helper if we aren't lost, to make sure that material isn't
@@ -316,10 +316,10 @@ std::vector<BankedParticle> ImplicitLeakageDeltaTracker::transport(
               mssg << " at a distance of " << bound.distance << " cm.\n";
               mssg << "Currently lost at r = " << trkr.r()
                    << ", u = " << trkr.u() << ".";
-              fatal_error(mssg.str(), __FILE__, __LINE__);
+              fatal_error(mssg.str());
             }
           } else {
-            fatal_error("Help me, how did I get here ?", __FILE__, __LINE__);
+            fatal_error("Help me, how did I get here ?");
           }
         } else {
           // Update Position
@@ -336,7 +336,7 @@ std::vector<BankedParticle> ImplicitLeakageDeltaTracker::transport(
             mssg << "Attempted to fly a distance of " << d_coll << " cm.\n";
             mssg << "Currently lost at r = " << trkr.r() << ", u = " << trkr.u()
                  << ".";
-            fatal_error(mssg.str(), __FILE__, __LINE__);
+            fatal_error(mssg.str());
           }
           mat.set_material(trkr.material(), p.E());
 
@@ -348,7 +348,7 @@ std::vector<BankedParticle> ImplicitLeakageDeltaTracker::transport(
             mssg << "Total cross section excedeed majorant at ";
             mssg << p.E() << " MeV.";
             mssg << " Et = " << Et << ", Emaj = " << Emajorant << "\n";
-            fatal_error(mssg.str(), __FILE__, __LINE__);
+            fatal_error(mssg.str());
           }
 
           if (RNG::rand(p.rng) < (Et / Emajorant)) {
@@ -381,7 +381,7 @@ std::vector<BankedParticle> ImplicitLeakageDeltaTracker::transport(
               mssg << p.secondary_id() << " has become lost.\n";
               mssg << "Attempted resurection at r = " << trkr.r();
               mssg << ", u = " << trkr.u() << ".";
-              fatal_error(mssg.str(), __FILE__, __LINE__);
+              fatal_error(mssg.str());
             }
             mat.set_material(trkr.material(), p.E());
             if (settings::use_urr_ptables) mat.set_urr_rand_vals(p.rng);
@@ -394,7 +394,7 @@ std::vector<BankedParticle> ImplicitLeakageDeltaTracker::transport(
               // write a warning.
               std::string mssg = "History " + std::to_string(p.history_id()) +
                                  " overran the RNG stride.";
-              warning(mssg, __FILE__, __LINE__);
+              warning(mssg);
             }
           }
         }

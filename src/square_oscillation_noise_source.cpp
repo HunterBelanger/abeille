@@ -34,6 +34,7 @@
 #include <materials/material_helper.hpp>
 #include <simulation/square_oscillation_noise_source.hpp>
 #include <simulation/tracker.hpp>
+#include <sstream>
 #include <utils/constants.hpp>
 #include <utils/direction.hpp>
 #include <utils/error.hpp>
@@ -53,35 +54,30 @@ SquareOscillationNoiseSource::SquareOscillationNoiseSource(
       eps_s_(eps_sct) {
   // Check low and high
   if (low_.x() >= hi_.x() || low_.y() >= hi_.y() || low_.z() >= hi_.z()) {
-    std::string mssg =
-        "Low is greater than or equal to hi in OscillationNoiseSource.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error(
+        "Low is greater than or equal to hi in OscillationNoiseSource.");
   }
 
   // Make sure frequency is positive
   if (w0_ <= 0.) {
-    std::string mssg =
-        "Negative or zero frequency provided to OscillationNoiseSource.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error(
+        "Negative or zero frequency provided to OscillationNoiseSource.");
   }
 
   // Make sure epsilons are positive
   if (eps_t_ <= 0.) {
-    std::string mssg =
-        "Negative or zero epsilon total provided to OscillationNoiseSource.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error(
+        "Negative or zero epsilon total provided to OscillationNoiseSource.");
   }
 
   if (eps_f_ <= 0.) {
-    std::string mssg =
-        "Negative or zero epsilon fission provided to OscillationNoiseSource.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error(
+        "Negative or zero epsilon fission provided to OscillationNoiseSource.");
   }
 
   if (eps_s_ <= 0.) {
-    std::string mssg =
-        "Negative or zero epsilon scatter provided to OscillationNoiseSource.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error(
+        "Negative or zero epsilon scatter provided to OscillationNoiseSource.");
   }
 }
 
@@ -102,8 +98,9 @@ std::complex<double> SquareOscillationNoiseSource::dEt(const Position& r,
 
   // Make sure material is valid
   if (!material) {
-    std::string mssg = "";
-    fatal_error(mssg, __FILE__, __LINE__);
+    std::stringstream mssg;
+    mssg << "No material found at position " << r << ".";
+    fatal_error(mssg.str());
   }
 
   // Make material helper and evaluate XS
@@ -185,8 +182,7 @@ std::shared_ptr<OscillationNoiseSource> make_square_oscillation_noise_source(
   // Get low
   if (!snode["low"] || !snode["low"].IsSequence() ||
       !(snode["low"].size() == 3)) {
-    std::string mssg = "No valid low entry for oscillation noise source.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("No valid low entry for oscillation noise source.");
   }
 
   double xl = snode["low"][0].as<double>();
@@ -197,8 +193,7 @@ std::shared_ptr<OscillationNoiseSource> make_square_oscillation_noise_source(
 
   // Get hi
   if (!snode["hi"] || !snode["hi"].IsSequence() || !(snode["hi"].size() == 3)) {
-    std::string mssg = "No valid hi entry for oscillation noise source.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("No valid hi entry for oscillation noise source.");
   }
 
   double xh = snode["hi"][0].as<double>();
@@ -209,64 +204,53 @@ std::shared_ptr<OscillationNoiseSource> make_square_oscillation_noise_source(
 
   // Get frequency
   if (!snode["angular-frequency"] || !snode["angular-frequency"].IsScalar()) {
-    std::string mssg =
-        "No valid angular-frequency entry for oscillation noise source.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error(
+        "No valid angular-frequency entry for oscillation noise source.");
   }
 
   double w0 = snode["angular-frequency"].as<double>();
 
   if (w0 <= 0.) {
-    std::string mssg =
+    fatal_error(
         "Angular frequency can not be negative or zero for oscillation noise "
-        "source.";
-    fatal_error(mssg, __FILE__, __LINE__);
+        "source.");
   }
 
   // Get epsilons
   if (!snode["epsilon-total"] || !snode["epsilon-total"].IsScalar()) {
-    std::string mssg =
-        "No valid epsilon-total entry for oscillation noise source.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("No valid epsilon-total entry for oscillation noise source.");
   }
 
   double eps_t = snode["epsilon-total"].as<double>();
 
   if (eps_t <= 0.) {
-    std::string mssg =
+    fatal_error(
         "Epsilon total can not be negative or zero for oscillation noise "
-        "source.";
-    fatal_error(mssg, __FILE__, __LINE__);
+        "source.");
   }
 
   if (!snode["epsilon-fission"] || !snode["epsilon-fission"].IsScalar()) {
-    std::string mssg =
-        "No valid epsilon-fission entry for oscillation noise source.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("No valid epsilon-fission entry for oscillation noise source.");
   }
 
   double eps_f = snode["epsilon-fission"].as<double>();
 
   if (eps_f <= 0.) {
-    std::string mssg =
+    fatal_error(
         "Epsilon fission can not be negative or zero for oscillation noise "
-        "source.";
-    fatal_error(mssg, __FILE__, __LINE__);
+        "source.");
   }
 
   if (!snode["epsilon-scatter"] || !snode["epsilon-scatter"].IsScalar()) {
-    std::string mssg =
-        "No valid epsilon-scatter entry for oscillation noise source.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("No valid epsilon-scatter entry for oscillation noise source.");
   }
 
   double eps_s = snode["epsilon-scatter"].as<double>();
 
   if (eps_s <= 0.) {
-    std::string mssg =
+    fatal_error(
         "Epsilon scatter can not be negative or zero for oscillation noise "
-        "source.";
-    fatal_error(mssg, __FILE__, __LINE__);
+        "source.");
   }
 
   return std::make_shared<SquareOscillationNoiseSource>(r_low, r_hi, eps_t,

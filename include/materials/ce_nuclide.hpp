@@ -51,6 +51,7 @@ class CENuclide : public Nuclide {
   double speed(double E, std::size_t i) const override final;
 
   uint32_t zaid() const override final;
+  double awr() const override final;
 
   // CENuclide specific options
   const std::shared_ptr<pndl::STNeutron>& cedata() const { return cedata_; }

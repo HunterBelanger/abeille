@@ -35,6 +35,7 @@
 #include <cmath>
 #include <materials/material_helper.hpp>
 #include <simulation/flat_vibration_noise_source.hpp>
+#include <sstream>
 #include <utils/constants.hpp>
 #include <utils/error.hpp>
 
@@ -52,29 +53,23 @@ FlatVibrationNoiseSource::FlatVibrationNoiseSource(
       Delta_N() {
   // Check low and high
   if (low_.x() >= hi_.x() || low_.y() >= hi_.y() || low_.z() >= hi_.z()) {
-    std::string mssg =
-        "Low is greater than or equal to hi in FlatVibrationNoiseSource.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error(
+        "Low is greater than or equal to hi in FlatVibrationNoiseSource.");
   }
 
   // Make sure frequency is positive
   if (w0_ <= 0.) {
-    std::string mssg =
-        "Negative or zero frequency provided to FlatVibrationNoiseSource.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error(
+        "Negative or zero frequency provided to FlatVibrationNoiseSource.");
   }
 
   // Make sure materials aren't nullptr
   if (material_pos_ == nullptr) {
-    std::string mssg =
-        "Nullptr positive material given to FlatVibrationNoiseSource.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("Nullptr positive material given to FlatVibrationNoiseSource.");
   }
 
   if (material_neg_ == nullptr) {
-    std::string mssg =
-        "Nullptr negative material given to FlatVibrationNoiseSource.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("Nullptr negative material given to FlatVibrationNoiseSource.");
   }
 
   // Get x0_ and eps_, based on the basis
@@ -99,23 +94,23 @@ FlatVibrationNoiseSource::FlatVibrationNoiseSource(
   // and for FlatVibrationNoiseSource. We start by filling out
   // nuclide_info_, and nuclides_.
   // Negative Material
-  for (const auto& comp : material_neg_->composition()) {
+  for (const auto& comp : material_neg_->components()) {
     auto nuc_id = comp.nuclide->id();
-    nuclide_info_[nuc_id] = {nuc_id, comp.concentration};
+    nuclide_info_[nuc_id] = {nuc_id, comp.atoms_bcm};
     nuclides_.push_back(nuc_id);
   }
   // Positive Material
-  for (const auto& comp : material_pos_->composition()) {
+  for (const auto& comp : material_pos_->components()) {
     auto nuc_id = comp.nuclide->id();
     // Check if nuclide was already added
     if (nuclide_info_.find(nuc_id) != nuclide_info_.end()) {
       // Nuclide already added once. Update it's concentration
       // to contain the average concentration of the two.
-      nuclide_info_[nuc_id].concentration += comp.concentration;
+      nuclide_info_[nuc_id].concentration += comp.atoms_bcm;
       nuclide_info_[nuc_id].concentration /= 2.;
     } else {
       // New nuclide
-      nuclide_info_[nuc_id] = {nuc_id, comp.concentration};
+      nuclide_info_[nuc_id] = {nuc_id, comp.atoms_bcm};
       nuclides_.push_back(nuc_id);
     }
   }
@@ -134,8 +129,8 @@ FlatVibrationNoiseSource::FlatVibrationNoiseSource(
 
 double FlatVibrationNoiseSource::get_nuclide_concentration(
     const Material& mat, uint32_t nuclide_id) const {
-  for (const auto& comp : mat.composition()) {
-    if (comp.nuclide->id() == nuclide_id) return comp.concentration;
+  for (const auto& comp : mat.components()) {
+    if (comp.nuclide->id() == nuclide_id) return comp.atoms_bcm;
   }
 
   return 0.;
@@ -326,8 +321,7 @@ std::shared_ptr<VibrationNoiseSource> make_flat_vibration_noise_source(
   // Get low
   if (!snode["low"] || !snode["low"].IsSequence() ||
       !(snode["low"].size() == 3)) {
-    std::string mssg = "No valid low entry for flat vibration noise source.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("No valid low entry for flat vibration noise source.");
   }
 
   double xl = snode["low"][0].as<double>();
@@ -338,8 +332,7 @@ std::shared_ptr<VibrationNoiseSource> make_flat_vibration_noise_source(
 
   // Get hi
   if (!snode["hi"] || !snode["hi"].IsSequence() || !(snode["hi"].size() == 3)) {
-    std::string mssg = "No valid hi entry for flat vibration noise source.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("No valid hi entry for flat vibration noise source.");
   }
 
   double xh = snode["hi"][0].as<double>();
@@ -350,27 +343,23 @@ std::shared_ptr<VibrationNoiseSource> make_flat_vibration_noise_source(
 
   // Get frequency
   if (!snode["angular-frequency"] || !snode["angular-frequency"].IsScalar()) {
-    std::string mssg =
-        "No valid angular-frequency entry for flat vibration noise source.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error(
+        "No valid angular-frequency entry for flat vibration noise source.");
   }
 
   double w0 = snode["angular-frequency"].as<double>();
 
   if (w0 <= 0.) {
-    std::string mssg =
+    fatal_error(
         "Angular frequency can not be negative or zero for flat vibration "
-        "noise "
-        "source.";
-    fatal_error(mssg, __FILE__, __LINE__);
+        "noise source.");
   }
 
   // Get the Basis
   FlatVibrationNoiseSource::Basis basis = FlatVibrationNoiseSource::Basis::X;
   if (!snode["direction"] || !snode["direction"].IsScalar()) {
-    std::string mssg =
-        "No valid \"direction\" entry for flat vibration noise source.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error(
+        "No valid \"direction\" entry for flat vibration noise source.");
   }
   if (snode["direction"].as<std::string>() == "x" ||
       snode["direction"].as<std::string>() == "X") {
@@ -382,45 +371,42 @@ std::shared_ptr<VibrationNoiseSource> make_flat_vibration_noise_source(
              snode["direction"].as<std::string>() == "Z") {
     basis = FlatVibrationNoiseSource::Basis::Z;
   } else {
-    std::string mssg = "Invalid direction for flat vibration noise source.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("Invalid direction for flat vibration noise source.");
   }
 
   // Get the positive material
   uint32_t pos_mat_id = 0;
   if (!snode["positive-material"] || !snode["positive-material"].IsScalar()) {
-    std::string mssg =
+    fatal_error(
         "No valid positive-material entry given for flat vibration noise "
-        "source.";
-    fatal_error(mssg, __FILE__, __LINE__);
+        "source.");
   }
   pos_mat_id = snode["positive-material"].as<uint32_t>();
 
   std::shared_ptr<Material> pos_mat = nullptr;
   if (materials.find(pos_mat_id) == materials.end()) {
-    std::string mssg = "poitive-material with id " +
-                       std::to_string(pos_mat_id) +
-                       " not found for flat vibration noise source.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    std::stringstream mssg;
+    mssg << "poitive-material with id " << pos_mat_id
+         << " not found for flat vibration noise source.";
+    fatal_error(mssg.str());
   }
   pos_mat = materials[pos_mat_id];
 
   // Get the negative material
   uint32_t neg_mat_id = 0;
   if (!snode["negative-material"] || !snode["negative-material"].IsScalar()) {
-    std::string mssg =
+    fatal_error(
         "No valid negative-material entry given for flat vibration noise "
-        "source.";
-    fatal_error(mssg, __FILE__, __LINE__);
+        "source.");
   }
   neg_mat_id = snode["negative-material"].as<uint32_t>();
 
   std::shared_ptr<Material> neg_mat = nullptr;
   if (materials.find(neg_mat_id) == materials.end()) {
-    std::string mssg = "negative-material with id " +
-                       std::to_string(pos_mat_id) +
-                       " not found for flat vibration noise source.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    std::stringstream mssg;
+    mssg << "negative-material with id " << pos_mat_id
+         << " not found for flat vibration noise source.";
+    fatal_error(mssg.str());
   }
   neg_mat = materials[neg_mat_id];
 

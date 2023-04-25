@@ -42,9 +42,7 @@ std::shared_ptr<DirectionDistribution> make_direction_distribution(
     YAML::Node node) {
   // Get the type of the distribution
   if (!node["type"] || !node["type"].IsScalar()) {
-    std::string mssg =
-        "No valid type provided to direction distribution entry.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("No valid type provided to direction distribution entry.");
   }
 
   std::string type = node["type"].as<std::string>();
@@ -58,8 +56,7 @@ std::shared_ptr<DirectionDistribution> make_direction_distribution(
   } else if (type == "cone") {
     dist = make_cone_distribution(node);
   } else {
-    std::string mssg = "Invalid direction distribution type " + type + ".";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("Invalid direction distribution type " + type + ".");
   }
 
   return dist;

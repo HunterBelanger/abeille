@@ -88,9 +88,8 @@ void Transporter::collision(Particle& p, MaterialHelper& mat,
   switch (settings::mode) {
     case settings::SimulationMode::BRANCHLESS_K_EIGENVALUE: {
       if (noise) {
-        std::stringstream mssg;
-        mssg << "Cannot perform noise simulations with branchless collisions.";
-        fatal_error(mssg.str(), __FILE__, __LINE__);
+        fatal_error(
+            "Cannot perform noise simulations with branchless collisions.");
       }
       branchless_collision(p, mat, thread_scores);
       break;
@@ -411,7 +410,7 @@ void Transporter::make_fission_neutrons(Particle& p, const MicroXSs& microxs,
       break;
 
     case settings::SimulationMode::BRANCHLESS_K_EIGENVALUE:
-      fatal_error("Should never get here.", __FILE__, __LINE__);
+      fatal_error("Should never get here.");
       break;
   }
 
@@ -489,7 +488,7 @@ void Transporter::make_fission_neutrons(Particle& p, const MicroXSs& microxs,
         break;
 
       case settings::SimulationMode::BRANCHLESS_K_EIGENVALUE:
-        fatal_error("Should never get here.", __FILE__, __LINE__);
+        fatal_error("Should never get here.");
         break;
     }
   }

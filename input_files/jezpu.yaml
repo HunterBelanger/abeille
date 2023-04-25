@@ -7,15 +7,17 @@
 # OpenMC       : 0.99983  +/- 0.00015
 
 materials:
-  - name: Pu Metal
-    id: 1
+  - id: 1
+    name: Pu Metal
     color: [31, 119, 180]
     temperature: 293.6
-    composition: [{nuclide: Pu239, concentration: 3.7047E-2},
-                  {nuclide: Pu240, concentration: 1.7512E-3},
-                  {nuclide: Pu241, concentration: 1.1674E-4},
-                  {nuclide: Ga69,  concentration: 8.2663E-4},
-                  {nuclide: Ga71,  concentration: 5.4857E-4}]
+    density-units: sum
+    fractions: atoms
+    composition: [{nuclide: Pu239, fraction: 3.7047E-2},
+                  {nuclide: Pu240, fraction: 1.7512E-3},
+                  {nuclide: Pu241, fraction: 1.1674E-4},
+                  {nuclide: Ga69,  fraction: 8.2663E-4},
+                  {nuclide: Ga71,  fraction: 5.4857E-4}]
 
 surfaces:
   - {type: sphere, x0: 0., y0: 0., z0: 0., r: 6.3849, boundary: vacuum, id: 1}

@@ -37,8 +37,7 @@
 
 Box::Box(Position low, Position hi) : low_(low), hi_(hi) {
   if (low.x() > hi.x() || low.y() > hi.y() || low.z() > hi.z()) {
-    std::string mssg = "Coordinate of low is greater than hi.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("Coordinate of low is greater than hi.");
   }
 }
 
@@ -51,8 +50,7 @@ Position Box::sample(pcg32& rng) const {
 
 std::shared_ptr<Box> make_box_distribution(const YAML::Node& node) {
   if (!node["low"] || !node["low"].IsSequence() || !(node["low"].size() == 3)) {
-    std::string mssg = "No valid low entry for box spatial distribution.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("No valid low entry for box spatial distribution.");
   }
 
   double xl = node["low"][0].as<double>();
@@ -62,8 +60,7 @@ std::shared_ptr<Box> make_box_distribution(const YAML::Node& node) {
   Position r_low(xl, yl, zl);
 
   if (!node["hi"] || !node["hi"].IsSequence() || !(node["hi"].size() == 3)) {
-    std::string mssg = "No valid hi entry for box spatial distribution.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("No valid hi entry for box spatial distribution.");
   }
 
   double xh = node["hi"][0].as<double>();

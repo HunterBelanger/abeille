@@ -206,8 +206,7 @@ Cell* HexLattice::get_cell(std::vector<GeoLilyPad>& stack, Position r,
 void HexLattice::set_elements(std::vector<int32_t> univs) {
   // Make sure proper number of universes are provided
   if (univs.size() != Nhex * Nz) {
-    std::string mssg = "Improper number of universes for HexLattice.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("Improper number of universes for HexLattice.");
   }
   lattice_universes.resize(width * width * Nz, -1);
 
@@ -239,8 +238,7 @@ size_t HexLattice::linear_index(std::array<int32_t, 2> qr, int32_t z) const {
   indx = static_cast<uint32_t>(z) * (width * width) + r * (width) + q;
 
   if (indx >= lattice_universes.size()) {
-    std::string mssg = "Invalid index for HexLattice.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("Invalid index for HexLattice.");
   }
 
   return indx;
@@ -446,8 +444,7 @@ void make_hex_lattice(YAML::Node latt_node, YAML::Node input) {
   if (latt_node["id"] && latt_node["id"].IsScalar()) {
     id = latt_node["id"].as<uint32_t>();
   } else {
-    std::string mssg = "Lattice must have a valid id.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("Lattice must have a valid id.");
   }
 
   // Get name if present
@@ -465,8 +462,7 @@ void make_hex_lattice(YAML::Node latt_node, YAML::Node input) {
       shape[s] = latt_node["shape"][s].as<uint32_t>();
     }
   } else {
-    std::string mssg = "Lattice must have a valid shape.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("Lattice must have a valid shape.");
   }
 
   // Get pitch
@@ -478,8 +474,7 @@ void make_hex_lattice(YAML::Node latt_node, YAML::Node input) {
       pitch[s] = latt_node["pitch"][s].as<double>();
     }
   } else {
-    std::string mssg = "Lattice must have a valid pitch.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("Lattice must have a valid pitch.");
   }
 
   // Get origin
@@ -491,8 +486,7 @@ void make_hex_lattice(YAML::Node latt_node, YAML::Node input) {
       origin[s] = latt_node["origin"][s].as<double>();
     }
   } else {
-    std::string mssg = "Lattice must have a valid origin.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("Lattice must have a valid origin.");
   }
 
   // Vector for universes
@@ -515,17 +509,14 @@ void make_hex_lattice(YAML::Node latt_node, YAML::Node input) {
       }
     }
   } else {
-    std::string mssg =
-        "Lattice instance must have a valid universes definition.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("Lattice instance must have a valid universes definition.");
   }
 
   // Make sure lattice id not taken
   if (lattice_id_to_indx.find(id) != lattice_id_to_indx.end()) {
-    std::string mssg = "Lattice id " + std::to_string(id) +
-                       " appears"
-                       " multiple times.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    std::stringstream mssg;
+    mssg << "Lattice id " << id << " appears multiple times.";
+    fatal_error(mssg.str());
   }
 
   // Get top type
@@ -536,9 +527,10 @@ void make_hex_lattice(YAML::Node latt_node, YAML::Node input) {
     } else if (latt_node["top"].as<std::string>() == "flat") {
       top = HexLattice::Top::Flat;
     } else {
-      std::string mssg = " Uknown top for hexagonal lattice " +
-                         latt_node["top"].as<std::string>() + ".";
-      fatal_error(mssg, __FILE__, __LINE__);
+      std::stringstream mssg;
+      mssg << " Uknown top for hexagonal lattice "
+           << latt_node["top"].as<std::string>() << ".";
+      fatal_error(mssg.str());
     }
   }
 

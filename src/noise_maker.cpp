@@ -47,14 +47,12 @@
 void NoiseMaker::add_noise_source(const YAML::Node& snode) {
   // Make sure it is a map
   if (!snode.IsMap()) {
-    std::string mssg = "Noise source entry must be a map.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("Noise source entry must be a map.");
   }
 
   // Get the type of the source
   if (!snode["type"] || !snode["type"].IsScalar()) {
-    std::string mssg = "No valid type provided to noise source entry.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("No valid type provided to noise source entry.");
   }
   std::string type = snode["type"].as<std::string>();
 
@@ -63,8 +61,7 @@ void NoiseMaker::add_noise_source(const YAML::Node& snode) {
   } else if (type == "square-oscillation") {
     this->add_noise_source(make_square_oscillation_noise_source(snode));
   } else {
-    std::string mssg = "Invalid noise source type " + type + ".";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("Invalid noise source type " + type + ".");
   }
 }
 
@@ -157,7 +154,7 @@ std::unique_ptr<Material> NoiseMaker::make_fake_material(
   for (std::size_t i = 0; i < nuclides_list.size(); i++) {
     const uint32_t& nuclide_id = nuclides_list[i];
     auto nuclide = nuclides.at(nuclide_id);
-    fake_mat->add_component(concentrations[i], nuclide);
+    fake_mat->add_component({concentrations[i], nuclide});
   }
 
   return fake_mat;

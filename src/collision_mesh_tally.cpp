@@ -163,8 +163,7 @@ std::shared_ptr<CollisionMeshTally> make_collision_mesh_tally(
   // Get low position
   double xl = 0., yl = 0., zl = 0.;
   if (!node["low"] || !node["low"].IsSequence() || node["low"].size() != 3) {
-    std::string mssg = "Now valid low entry for mesh tally.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("Now valid low entry for mesh tally.");
   }
   xl = node["low"][0].as<double>();
   yl = node["low"][1].as<double>();
@@ -174,8 +173,7 @@ std::shared_ptr<CollisionMeshTally> make_collision_mesh_tally(
   // Get hi position
   double xh = 0., yh = 0., zh = 0.;
   if (!node["hi"] || !node["hi"].IsSequence() || node["hi"].size() != 3) {
-    std::string mssg = "Now valid hi entry for mesh tally.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("Now valid hi entry for mesh tally.");
   }
   xh = node["hi"][0].as<double>();
   yh = node["hi"][1].as<double>();
@@ -184,9 +182,8 @@ std::shared_ptr<CollisionMeshTally> make_collision_mesh_tally(
 
   // Check positions
   if (plow.x() >= phi.x() || plow.y() >= phi.y() || plow.x() >= phi.x()) {
-    std::string mssg =
-        "Low coordinates for mesh tally must be less than hi coordinates.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error(
+        "Low coordinates for mesh tally must be less than hi coordinates.");
   }
 
   // Get shape
@@ -200,9 +197,8 @@ std::shared_ptr<CollisionMeshTally> make_collision_mesh_tally(
     int64_t tmp_nz = node["shape"][2].as<int64_t>();
 
     if (tmp_nx < 1 || tmp_ny < 1 || tmp_nz < 1) {
-      std::string mssg =
-          "Mesh tally shapes must be values greater than or equal to 1.";
-      fatal_error(mssg, __FILE__, __LINE__);
+      fatal_error(
+          "Mesh tally shapes must be values greater than or equal to 1.");
     }
 
     nx = static_cast<uint64_t>(tmp_nx);
@@ -213,26 +209,21 @@ std::shared_ptr<CollisionMeshTally> make_collision_mesh_tally(
   // Get energy bounds
   std::vector<double> ebounds;
   if (!node["energy-bounds"] || !node["energy-bounds"].IsSequence()) {
-    std::string mssg = "No valid energy-bounds enetry provided to mesh tally.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("No valid energy-bounds enetry provided to mesh tally.");
   }
   ebounds = node["energy-bounds"].as<std::vector<double>>();
   if (ebounds.size() < 2) {
-    std::string mssg = "Energy-bounds must have at least two entries.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("Energy-bounds must have at least two entries.");
   } else if (!std::is_sorted(ebounds.begin(), ebounds.end())) {
-    std::string mssg = "Energy-bounds must be sorted.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("Energy-bounds must be sorted.");
   } else if (ebounds.front() < 0.) {
-    std::string mssg = "All energy-bounds entries must be positive.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("All energy-bounds entries must be positive.");
   }
 
   // Get name
   std::string fname;
   if (!node["name"] || !node["name"].IsScalar()) {
-    std::string mssg = "No valid name provided to mesh tally.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("No valid name provided to mesh tally.");
   }
   fname = node["name"].as<std::string>();
 
@@ -241,8 +232,7 @@ std::shared_ptr<CollisionMeshTally> make_collision_mesh_tally(
   std::string quant_str = "none";
   Quantity quantity = Quantity::Flux;
   if (!node["quantity"] || !node["quantity"].IsScalar()) {
-    std::string mssg = "No quantity entry provided to mesh tally.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("No quantity entry provided to mesh tally.");
   }
   quant_str = node["quantity"].as<std::string>();
   if (quant_str == "flux") {
@@ -260,22 +250,18 @@ std::shared_ptr<CollisionMeshTally> make_collision_mesh_tally(
 
     if (settings::energy_mode == settings::EnergyMode::MG) {
       // Can't do an MT tally in MG mode !
-      std::string mssg = "Cannot do MT tallies in multi-group mode.";
-      fatal_error(mssg, __FILE__, __LINE__);
+      fatal_error("Cannot do MT tallies in multi-group mode.");
     }
 
     // Check for mt
     if (!node["mt"] || !node["mt"].IsScalar()) {
-      std::string mssg =
-          "Quantity of \"mt\" selected, but no provided mt value.";
-      fatal_error(mssg, __FILE__, __LINE__);
+      fatal_error("Quantity of \"mt\" selected, but no provided mt value.");
     }
 
     int32_t tmp_mt = node["mt"].as<int32_t>();
     if (tmp_mt < 4 || tmp_mt > 891) {
-      std::string mssg =
-          "The value " + std::to_string(tmp_mt) + " is not a valid MT.";
-      fatal_error(mssg, __FILE__, __LINE__);
+      fatal_error("The value " + std::to_string(tmp_mt) +
+                  " is not a valid MT.");
     }
 
     mt = static_cast<uint32_t>(tmp_mt);
@@ -284,8 +270,7 @@ std::shared_ptr<CollisionMeshTally> make_collision_mesh_tally(
   } else if (quant_str == "img-flux") {
     quantity = Quantity::ImgFlux;
   } else {
-    std::string mssg = "Unkown tally quantity \"" + quant_str + "\".";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("Unkown tally quantity \"" + quant_str + "\".");
   }
 
   // Construct based on estimator type

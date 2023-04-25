@@ -314,8 +314,7 @@ void Noise::power_iteration(bool sample_noise) {
   mpi::synchronize();
 
   if (next_gen.size() == 0) {
-    std::string mssg = "No fission neutrons were produced.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("No fission neutrons were produced.");
   }
 
   // Synchronize the fission banks across all nodes, so that each node will

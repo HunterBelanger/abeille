@@ -13,6 +13,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <utils/error.hpp>
 #include <variant>
 #include <vector>
 
@@ -39,6 +40,18 @@ class NDDirectory {
   CENuclidePacket load_nuclide(const std::string& key, double T);
 
   TemperatureInterpolation interpolation() const { return interp_; }
+
+  double awr(const std::string& key) const {
+    const auto it = nuclides.find(key);
+    if (it == nuclides.end()) {
+      std::stringstream mssg;
+      mssg << "The key \"" << key
+           << "\" is not present in the nuclides directory.";
+      fatal_error(mssg.str());
+    }
+
+    return it->second.awr;
+  }
 
   const std::string& name() const { return name_; }
 
@@ -101,10 +114,11 @@ class NDDirectory {
 
   struct NuclideEntry {
     std::string neutron;
-    bool dbrc;
     std::optional<std::string> tsl;
     std::vector<double> temps;
     std::vector<std::shared_ptr<CENuclide>> loaded;
+    double awr;
+    bool dbrc;
 
     NuclideEntry() {}
     NuclideEntry(const YAML::Node& node);

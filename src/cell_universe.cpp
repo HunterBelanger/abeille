@@ -79,8 +79,7 @@ void make_cell_universe(YAML::Node uni_node) {
   if (uni_node["id"] && uni_node["id"].IsScalar()) {
     id = uni_node["id"].as<uint32_t>();
   } else {
-    std::string mssg = "Universe must have a valid id.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("Universe must have a valid id.");
   }
 
   // Get name if present
@@ -99,9 +98,9 @@ void make_cell_universe(YAML::Node uni_node) {
       // Get index for id
       uint32_t cell_indx = 0;
       if (cell_id_to_indx.find(cell_id) == cell_id_to_indx.end()) {
-        std::string mssg = "Referenced cell id " + std::to_string(cell_id) +
-                           " could not be found.";
-        fatal_error(mssg, __FILE__, __LINE__);
+        std::stringstream mssg;
+        mssg << "Referenced cell id " << cell_id << " could not be found.";
+        fatal_error(mssg.str());
       } else {
         cell_indx = static_cast<uint32_t>(cell_id_to_indx[cell_id]);
       }
@@ -109,15 +108,14 @@ void make_cell_universe(YAML::Node uni_node) {
     }
 
   } else {
-    std::string mssg = "Cell based universe must have a list of cells.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("Cell based universe must have a list of cells.");
   }
 
   // Make sure universe id not already taken
   if (universe_id_to_indx.find(id) != universe_id_to_indx.end()) {
-    std::string mssg =
-        "Universe id " + std::to_string(id) + " appears multiple times.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    std::stringstream mssg;
+    mssg << "Universe id " << id << " appears multiple times.";
+    fatal_error(mssg.str());
   }
 
   // Make universe

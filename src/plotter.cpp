@@ -69,16 +69,15 @@ void plotter(const std::string& input_fname) {
         if (plot_type == "slice") {
           slice_plotter(input["plots"][p]);
         } else {
-          error(plot_type + " is not a valid plot type.\n", __FILE__, __LINE__);
+          error(plot_type + " is not a valid plot type.\n");
         }
       } else {
         error(" Plot " + std::to_string(p) +
-                  " is missing a valid type attribute.\n",
-              __FILE__, __LINE__);
+              " is missing a valid type attribute.\n");
       }
     }
   } else {
-    error(" No plots are specified in the input file.\n", __FILE__, __LINE__);
+    error(" No plots are specified in the input file.\n");
   }
 }
 
@@ -89,8 +88,7 @@ void slice_plotter(YAML::Node plot_node) {
   if (plot_node["name"] && plot_node["name"].IsScalar()) {
     name = plot_node["name"].as<std::string>();
   } else {
-    std::string mssg = "Plot definition is missing name.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("Plot definition is missing name.");
   }
 
   // Get basis
@@ -105,12 +103,10 @@ void slice_plotter(YAML::Node plot_node) {
     else if (basis_str == "xz")
       basis = SlicePlot::Basis::XZ;
     else {
-      std::string mssg = "Plot definition has an invalid basis";
-      fatal_error(mssg, __FILE__, __LINE__);
+      fatal_error("Plot definition has an invalid basis");
     }
   } else {
-    std::string mssg = "Plot definition is missing basis.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("Plot definition is missing basis.");
   }
 
   // Get resolution
@@ -120,12 +116,10 @@ void slice_plotter(YAML::Node plot_node) {
       pheight = plot_node["resolution"][0].as<uint64_t>();
       pwidth = plot_node["resolution"][1].as<uint64_t>();
     } else {
-      std::string mssg = "Plot resolution must have two entries.";
-      fatal_error(mssg, __FILE__, __LINE__);
+      fatal_error("Plot resolution must have two entries.");
     }
   } else {
-    std::string mssg = "Plot must have a valid resolution entry.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("Plot must have a valid resolution entry.");
   }
 
   // Get dimensions
@@ -135,17 +129,14 @@ void slice_plotter(YAML::Node plot_node) {
       height = plot_node["dimensions"][0].as<double>();
       width = plot_node["dimensions"][1].as<double>();
     } else {
-      std::string mssg = "Plot dimension must have two entries.";
-      fatal_error(mssg, __FILE__, __LINE__);
+      fatal_error("Plot dimension must have two entries.");
     }
   } else {
-    std::string mssg = "Plot must have a valid dimensions entry.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("Plot must have a valid dimensions entry.");
   }
 
   if (height <= 0. || width <= 0.) {
-    std::string mssg = "Plot heigh and width must be greater than zero.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("Plot heigh and width must be greater than zero.");
   }
 
   // Get origin
@@ -156,12 +147,10 @@ void slice_plotter(YAML::Node plot_node) {
       y = plot_node["origin"][1].as<double>();
       z = plot_node["origin"][2].as<double>();
     } else {
-      std::string mssg = "Plot origin must have three entries.";
-      fatal_error(mssg, __FILE__, __LINE__);
+      fatal_error("Plot origin must have three entries.");
     }
   } else {
-    std::string mssg = "Plot must have a valid origin entry.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("Plot must have a valid origin entry.");
   }
   Position origin(x, y, z);
 
@@ -173,12 +162,10 @@ void slice_plotter(YAML::Node plot_node) {
     } else if (plot_node["color"].as<std::string>() == "material") {
       color = SlicePlot::ColorBy::Material;
     } else {
-      std::string mssg = "Plot must have a valid color scheme.";
-      fatal_error(mssg, __FILE__, __LINE__);
+      fatal_error("Plot must have a valid color scheme.");
     }
   } else {
-    std::string mssg = "Plot must have a valid color entry.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("Plot must have a valid color entry.");
   }
 
   // Make plot

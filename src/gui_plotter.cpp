@@ -566,8 +566,7 @@ Position GuiPlotter::get_start_position(uint64_t i) const {
   // Make sure indicies are valid. i goes down so is height, j goes
   // across so is width
   if (i >= image.height()) {
-    std::string mssg = "Trying to deffine invalid pixel for plot.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("Trying to deffine invalid pixel for plot.");
   }
 
   if (basis == Basis::XY) {
@@ -622,8 +621,7 @@ Position GuiPlotter::get_comp_start_position(uint64_t j) const {
   // Make sure indicies are valid. i goes down so is height, j goes
   // across so is width
   if (j >= image.width()) {
-    std::string mssg = "Trying to deffine invalid pixel for plot.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("Trying to deffine invalid pixel for plot.");
   }
 
   if (basis == Basis::XY) {
@@ -678,8 +676,7 @@ Position GuiPlotter::get_pixel_position(uint64_t i, uint64_t j) const {
   // Make sure indicies are valid. i goes down so is height, j goes
   // across so is width
   if (i >= image.height() || j >= image.width()) {
-    std::string mssg = "Trying to deffine invalid pixel for plot.";
-    fatal_error(mssg, __FILE__, __LINE__);
+    fatal_error("Trying to deffine invalid pixel for plot.");
   }
 
   if (basis == Basis::XY) {

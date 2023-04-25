@@ -7,15 +7,18 @@ library-info:
 nuclides:
   H1:
     neutron: H1
+    awr: 0.99916733
     temperatures: [293.6, 600., 900.]
 
   H1_H2O:
     neutron: H1
     tsl: HinH2O
+    awr: 0.99916733
     temperatures: [293.6, 600.]
 
   U235:
     neutron: U235
+    awr: 233.02478975
     dbrc: True
     temperatures: [0., 293.6, 600., 900.]
 
