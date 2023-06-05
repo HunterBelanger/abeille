@@ -58,12 +58,11 @@
 #include <sstream>
 #include <string>
 #include <utils/error.hpp>
+#include <utils/nd_directory.hpp>
 #include <utils/output.hpp>
 #include <utils/parser.hpp>
 #include <utils/settings.hpp>
 #include <utils/timer.hpp>
-
-#include "utils/nd_directory.hpp"
 
 //===========================================================================
 // Initialize Maps from id to index
@@ -775,6 +774,16 @@ void make_settings(YAML::Node input) {
     } else if (settnode["families"]) {
       fatal_error(
           "The settings option \"families\" must be a single boolean value.");
+    }
+
+    // Get option for writing the fraction of empty entropy bins
+    if (settnode["empty-entropy-bins"] &&
+        settnode["empty-entropy-bins"].IsScalar()) {
+      settings::empty_entropy_bins = settnode["empty-entropy-bins"].as<bool>();
+    } else if (settnode["empty-entropy-bins"]) {
+      fatal_error(
+          "The settings option \"empty-entropy-bins\" must be a single boolean "
+          "value.");
     }
 
   } else {

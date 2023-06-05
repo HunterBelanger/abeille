@@ -76,6 +76,7 @@ bool converged = false;
 
 bool pair_distance_sqrd = false;
 bool families = false;
+bool empty_entropy_bins = false;
 
 bool regional_cancellation = false;
 bool regional_cancellation_noise = false;

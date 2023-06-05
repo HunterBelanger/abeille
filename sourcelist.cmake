@@ -19,6 +19,7 @@ set(ABEILLE_SOURCE_FILES ${ABEILLE_SOURCE_FILES}
   src/noise.cpp
   src/branchless_power_iterator.cpp
   src/power_iterator.cpp
+  src/entropy.cpp
   src/fixed_source.cpp
   src/modified_fixed_source.cpp
   src/noise_maker.cpp

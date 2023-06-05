@@ -35,6 +35,7 @@
 #define MPI_H
 
 #include <cstdint>
+#include <source_location>
 #include <vector>
 
 #ifdef ABEILLE_USE_MPI
@@ -107,83 +108,82 @@ void initialize_mpi(int* argc, char*** argv);
 void finalize_mpi();
 void abort_mpi();
 void synchronize();
-void check_error(int err, const char* file, int line);
+void check_error(int err, const std::source_location& loc);
 
 //==============================================================================
 // MPI Operations
 template <typename T>
-void Bcast(T& val, int root, const char* file = __FILE__, int line = __LINE__) {
+void Bcast(T& val, int root,
+           std::source_location loc = std::source_location::current()) {
 #ifdef ABEILLE_USE_MPI
   if (size > 1) {
     timer.start();
     int err = MPI_Bcast(&val, 1, dtype<T>(), root, com);
-    check_error(err, file, line);
+    check_error(err, loc);
     timer.stop();
   }
 #else
   (void)val;
   (void)root;
-  (void)file;
-  (void)line;
+  (void)loc;
 #endif
 }
 
 template <typename T>
-void Allreduce_sum(T& val, const char* file = __FILE__, int line = __LINE__) {
+void Allreduce_sum(T& val,
+                   std::source_location loc = std::source_location::current()) {
 #ifdef ABEILLE_USE_MPI
   if (size > 1) {
     timer.start();
     T tmp_send = val;
     int err = MPI_Allreduce(&tmp_send, &val, 1, dtype<T>(), Sum, com);
-    check_error(err, file, line);
+    check_error(err, loc);
     timer.stop();
   }
 #else
   (void)val;
-  (void)file;
-  (void)line;
+  (void)loc;
 #endif
 }
 
 template <typename T>
-void Allreduce_or(T& val, const char* file = __FILE__, int line = __LINE__) {
+void Allreduce_or(T& val,
+                  std::source_location loc = std::source_location::current()) {
 #ifdef ABEILLE_USE_MPI
   if (size > 1) {
     timer.start();
     T tmp_send = val;
     int err = MPI_Allreduce(&tmp_send, &val, 1, dtype<T>(), Or, com);
-    check_error(err, file, line);
+    check_error(err, loc);
     timer.stop();
   }
 #else
   (void)val;
-  (void)file;
-  (void)line;
+  (void)loc;
 #endif
 }
 
 template <typename T>
-void Reduce_sum(T& val, int root, const char* file = __FILE__,
-                int line = __LINE__) {
+void Reduce_sum(T& val, int root,
+                std::source_location loc = std::source_location::current()) {
 #ifdef ABEILLE_USE_MPI
   if (size > 1) {
     timer.start();
     T tmp_send = val;
     int err = MPI_Reduce(&tmp_send, &val, 1, dtype<T>(), Sum, root, com);
-    check_error(err, file, line);
+    check_error(err, loc);
     timer.stop();
   }
 #else
   (void)val;
   (void)root;
-  (void)file;
-  (void)line;
+  (void)loc;
 #endif
 }
 
 template <typename T>
-void Reduce_sum(std::vector<T>& vals, int root, const char* file = __FILE__,
-                int line = __LINE__) {
+void Reduce_sum(std::vector<T>& vals, int root,
+                std::source_location loc = std::source_location::current()) {
 #ifdef ABEILLE_USE_MPI
   if (size > 1) {
     timer.start();
@@ -196,10 +196,10 @@ void Reduce_sum(std::vector<T>& vals, int root, const char* file = __FILE__,
 
     int err = MPI_Reduce(&vals[0], &tmp_rcv[0], static_cast<int>(vals.size()),
                          dtype<T>(), Sum, root, com);
-    check_error(err, file, line);
+    check_error(err, loc);
 
     if (rank == root) {
-      for (std::size_t i = 0; i < vals; i++) {
+      for (std::size_t i = 0; i < vals.size(); i++) {
         vals[i] = tmp_rcv[i];
       }
     }
@@ -208,14 +208,13 @@ void Reduce_sum(std::vector<T>& vals, int root, const char* file = __FILE__,
 #else
   (void)vals;
   (void)root;
-  (void)file;
-  (void)line;
+  (void)loc;
 #endif
 }
 
 template <typename T>
-void Reduce_sum(T* vals, int count, int root, const char* file = __FILE__,
-                int line = __LINE__) {
+void Reduce_sum(T* vals, int count, int root,
+                std::source_location loc = std::source_location::current()) {
 #ifdef ABEILLE_USE_MPI
   if (size > 1) {
     timer.start();
@@ -227,7 +226,7 @@ void Reduce_sum(T* vals, int count, int root, const char* file = __FILE__,
     }
 
     int err = MPI_Reduce(vals, &tmp_rcv[0], count, dtype<T>(), Sum, root, com);
-    check_error(err, file, line);
+    check_error(err, loc);
 
     if (rank == root) {
       for (std::size_t i = 0; i < tmp_rcv.size(); i++) {
@@ -240,14 +239,13 @@ void Reduce_sum(T* vals, int count, int root, const char* file = __FILE__,
   (void)vals;
   (void)count;
   (void)root;
-  (void)file;
-  (void)line;
+  (void)loc;
 #endif
 }
 
 template <typename T>
-void Gatherv(std::vector<T>& vals, int root, const char* file = __FILE__,
-             int line = __LINE__) {
+void Gatherv(std::vector<T>& vals, int root,
+             std::source_location loc = std::source_location::current()) {
 #ifdef ABEILLE_USE_MPI
   if (size > 1) {
     timer.start();
@@ -281,7 +279,7 @@ void Gatherv(std::vector<T>& vals, int root, const char* file = __FILE__,
     int err =
         MPI_Gatherv(&vals[0], static_cast<int>(vals.size()), dtype<T>(),
                     &tmp_rcv[0], &sizes[0], &disps[0], dtype<T>(), root, com);
-    check_error(err, file, line);
+    check_error(err, loc);
 
     if (rank == root) {
       vals = tmp_rcv;
@@ -293,14 +291,13 @@ void Gatherv(std::vector<T>& vals, int root, const char* file = __FILE__,
 #else
   (void)vals;
   (void)root;
-  (void)file;
-  (void)line;
+  (void)loc;
 #endif
 }
 
 template <typename T>
-void Scatterv(std::vector<T>& vals, int root, const char* file = __FILE__,
-              int line = __LINE__) {
+void Scatterv(std::vector<T>& vals, int root,
+              std::source_location loc = std::source_location::current()) {
 #ifdef ABEILLE_USE_MPI
   if (size > 1) {
     timer.start();
@@ -339,7 +336,7 @@ void Scatterv(std::vector<T>& vals, int root, const char* file = __FILE__,
     int err = MPI_Scatterv(&vals[0], &sizes[0], &disps[0], dtype<T>(),
                            &tmp_rcv[0], sizes[static_cast<std::size_t>(rank)],
                            dtype<T>(), root, com);
-    check_error(err, file, line);
+    check_error(err, loc);
 
     vals = tmp_rcv;
     timer.stop();
@@ -347,8 +344,7 @@ void Scatterv(std::vector<T>& vals, int root, const char* file = __FILE__,
 #else
   (void)vals;
   (void)root;
-  (void)file;
-  (void)line;
+  (void)loc;
 #endif
 }
 

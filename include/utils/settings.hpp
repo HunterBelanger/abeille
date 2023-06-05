@@ -96,6 +96,7 @@ extern bool converged;
 
 extern bool pair_distance_sqrd;
 extern bool families;
+extern bool empty_entropy_bins;
 
 extern bool regional_cancellation;
 extern bool regional_cancellation_noise;

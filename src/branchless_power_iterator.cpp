@@ -204,6 +204,10 @@ void BranchlessPowerIterator::print_header() {
     output << "   N_Families  ";
   }
 
+  if (t_pre_entropy && settings::empty_entropy_bins) {
+    output << "   Empty Entropy Frac.  ";
+  }
+
   // Add line underneath
   output << "\n " << std::string(output.str().size() - 3, '-') << "\n";
 
@@ -275,7 +279,14 @@ void BranchlessPowerIterator::generation_output() {
   }
 
   if (settings::families) {
-    output << "   " << std::fixed << families.size();
+    std::size_t nfamilies = families.size();
+    mpi::Reduce_sum(nfamilies, 0);
+    output << "   " << std::fixed << nfamilies;
+  }
+
+  if (t_pre_entropy && settings::empty_entropy_bins) {
+    output << "   " << std::setprecision(6)
+           << t_pre_entropy->calculate_empty_fraction();
   }
 
   // Add line underneath

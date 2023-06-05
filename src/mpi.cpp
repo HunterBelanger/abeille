@@ -96,18 +96,19 @@ void register_banked_particle_type() {
   }
 
   DType tmp_BParticle;
-  err = MPI_Type_create_struct(13, sizes, disps, dtypes, &tmp_BParticle);
-  check_error(err, __FILE__, __LINE__);
+  err = MPI_Type_create_struct(BP_NUM_MEMBERS, sizes, disps, dtypes,
+                               &tmp_BParticle);
+  check_error(err, std::source_location::current());
 
   MPI_Aint lb, extnt;
   err = MPI_Type_get_extent(tmp_BParticle, &lb, &extnt);
-  check_error(err, __FILE__, __LINE__);
+  check_error(err, std::source_location::current());
 
   err = MPI_Type_create_resized(tmp_BParticle, lb, extnt, &BParticle);
-  check_error(err, __FILE__, __LINE__);
+  check_error(err, std::source_location::current());
 
   err = MPI_Type_commit(&BParticle);
-  check_error(err, __FILE__, __LINE__);
+  check_error(err, std::source_location::current());
 #endif
 }
 
@@ -119,14 +120,14 @@ void initialize_mpi(int* argc, char*** argv) {
 
   // Initialize MPI
   err = MPI_Init(argc, argv);
-  check_error(err, __FILE__, __LINE__);
+  check_error(err, std::source_location::current());
 
   // Get worls size and our rank
   err = MPI_Comm_size(com, &size);
-  check_error(err, __FILE__, __LINE__);
+  check_error(err, std::source_location::current());
 
   err = MPI_Comm_rank(com, &rank);
-  check_error(err, __FILE__, __LINE__);
+  check_error(err, std::source_location::current());
 
   // Register baked particle type
   register_banked_particle_type();
@@ -158,7 +159,7 @@ void synchronize() {
 #endif
 }
 
-void check_error(int err, const char* file, int line) {
+void check_error(int err, const std::source_location& loc) {
 #ifdef ABEILLE_USE_MPI
   if (err != MPI_SUCCESS) {
     // First, we should get the error string
@@ -166,12 +167,11 @@ void check_error(int err, const char* file, int line) {
     int str_len = 0;
     MPI_Error_string(err, err_str, &str_len);
     std::string mssg(err_str, static_cast<std::size_t>(str_len));
-    fatal_error(mssg, file, line);
+    fatal_error(mssg, loc);
   }
 #else
   (void)err;
-  (void)file;
-  (void)line;
+  (void)loc;
 #endif
 }
 }  // namespace mpi
