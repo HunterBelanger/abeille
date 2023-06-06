@@ -54,10 +54,12 @@ noise calculations in the frequency domain,” Ann Nucl Energy, vol. 102,
 pp. 465–475, 2017, doi: 10.1016/j.anucene.2016.11.035. 
 
 ## Install
-To build Abeille, a linux system with a C++17 compliant compiler is required
-(gcc >= 7 or clang >= 6 works), along with cmake >= 3.11. A few third-party
-compile-time dependencies ([yaml-cpp](https://github.com/jbeder/yaml-cpp),
+To build Abeille, a linux system with a C++20 compliant compiler is required
+(gcc >= 11 or clang >= 15 works), along with cmake >= 3.11. A few third-party
+compile-time dependencies ([papillon-ndl](https://github.com/HunterBelanger/papillon-ndl),
+[yaml-cpp](https://github.com/jbeder/yaml-cpp),
 [docopt](http://docopt.org/), [pcg](https://www.pcg-random.org),
+[ImApp](https://github.com/HunterBelanger/ImApp),
 [ndarray](https://github.com/HunterBelanger/ndarray)) are downloaded
 and compiled automatically by CMake during the build.
 
