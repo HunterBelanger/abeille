@@ -22,35 +22,27 @@
  * along with Abeille. If not, see <https://www.gnu.org/licenses/>.
  *
  * */
-#include <simulation/energy_distribution.hpp>
-#include <simulation/maxwellian.hpp>
-#include <simulation/mono_energetic.hpp>
 #include <simulation/tabulated_energy.hpp>
-#include <simulation/watt.hpp>
 #include <utils/error.hpp>
+#include <utils/pctable.hpp>
 
-std::shared_ptr<EnergyDistribution> make_energy_distribution(
-    const YAML::Node& node) {
-  // Get the type of the distribution
-  if (!node["type"] || !node["type"].IsScalar()) {
-    fatal_error("No valid type provided to energy distribution entry.");
+#include <PapillonNDL/pndl_exception.hpp>
+
+#include <algorithm>
+
+TabulatedEnergy::TabulatedEnergy(const pndl::PCTable& table)
+    : EnergyDistribution(), table_(table) {
+  if (table_.min_value() <= 0.) {
+    fatal_error("All values in a tabulated energy distribution must be > 0.");
   }
+}
 
-  std::string type = node["type"].as<std::string>();
+double TabulatedEnergy::sample(pcg32& rng) const {
+  return table_.sample_value(RNG::rand(rng));
+}
 
-  std::shared_ptr<EnergyDistribution> dist = nullptr;
+std::shared_ptr<TabulatedEnergy> make_tabulated_energy(const YAML::Node& node) {
+  pndl::PCTable table = make_pctable(node);
 
-  if (type == "mono-energetic") {
-    dist = make_mono_energetic_distribution(node);
-  } else if (type == "maxwellian") {
-    dist = make_maxwellian(node);
-  } else if (type == "watt") {
-    dist = make_watt(node);
-  } else if (type == "tabulated") {
-    dist = make_tabulated_energy(node);
-  } else {
-    fatal_error("Invalid energy distribution type " + type + ".");
-  }
-
-  return dist;
+  return std::make_shared<TabulatedEnergy>(table);
 }
