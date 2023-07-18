@@ -1,0 +1,1065 @@
+#!/usr/bin/python
+
+"""
+Abeille Monte Carlo Code
+Copyright 2019-2023, Hunter Belanger
+
+hunter.belanger@gmail.com
+
+This file is part of the Abeille Monte Carlo code (Abeille).
+
+Abeille is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+Abeille is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with Abeille. If not, see <https://www.gnu.org/licenses/>.
+"""
+
+import tempfile
+import shutil
+import os
+import zipfile
+import tarfile
+import subprocess
+from urllib.parse import urlparse
+from urllib.request import urlopen
+from pathlib import Path
+import hashlib
+from multiprocessing import Pool, cpu_count
+import argparse
+import ENDFtk
+import pyPapillonNDL as pndl
+
+
+_BLOCK_SIZE = 16384
+
+
+__ELEMENT_SYMBOLS = ["H", "He", "Li", "Be", "B", "C", "N", "O", "F", "Ne", "Na",
+    "Mg", "Al", "Si", "P", "S", "Cl", "Ar", "K", "Ca", "Sc", "Ti", "V", "Cr",
+    "Mn", "Fe", "Co", "Ni", "Cu", "Zn", "Ga", "Ge", "As", "Se", "Br", "Kr",
+    "Rb", "Sr", "Y", "Zr", "Nb", "Mo", "Tc", "Ru", "Rh", "Pd", "Ag", "Cd", "In",
+    "Sn", "Sb", "Te", "I", "Xe", "Cs", "Ba", "La", "Ce", "Pr", "Nd", "Pm", "Sm",
+    "Eu", "Gd", "Tb", "Dy", "Ho", "Er", "Tm", "Yb", "Lu", "Hf", "Ta", "W", "Re",
+    "Os", "Ir", "Pt", "Au", "Hg", "Tl", "Pb", "Bi", "Po", "At", "Rn", "Fr",
+    "Ra", "Ac", "Th", "Pa", "U", "Np", "Pu", "Am", "Cm", "Bk", "Cf", "Es", "Fm",
+    "Md", "No", "Lr", "Rf", "Db", "Sg", "Bh", "Hs", "Mt", "Ds", "Rg", "Cn",
+    "Nh", "Fl", "Mc", "Lv", "Ts", "Og"]
+
+
+_FRENDY_TSL_INPT = """
+ace_file_generation_thermal_scatter_mode
+  nucl_file_name          {ENDF}
+  nucl_file_name_tsl      {TSL}
+  temp                    {TEMP}
+  equi_probable_angle_no  {NANGLES}
+  suffix_id               {SUFFIX}
+  thermal_za_id_name      {ZAID}
+  ace_label_data          \"{COMMENT}\"
+  ace_file_name           {ACE}
+  ace_dir_file_name       {DIR}\n
+"""
+
+
+_FRENDY_FG_INPT = """
+ace_file_generation_fast_mode
+  nucl_file_name          {ENDF}
+  temp                    {TEMP}
+  suffix_id               {SUFFIX}
+  ace_label_data          \"{COMMENT}\"
+  ace_file_name           {ACE}
+  ace_dir_file_name       {DIR}\n
+"""
+
+
+_NJOY_FG_INPT_NO_ACER = """
+reconr /
+20 21 /
+'' /
+{MAT} /
+0.001 / reconstruction tollerance
+0 /
+broadr /
+20 21 22 /
+{MAT} {NTMPS} /
+0.001 / thinning tolerance
+{TEMPS} / list of all temps (NTMPS in total)
+0 /
+heatr /
+20 22 23 /
+{MAT} 4 0 0 1 / last val is 0 for transport photons, 1 for localy deposited photons
+302 318 402 444 /
+purr /
+20 23 24 /
+{MAT} {NTMPS} 1 20 200 /
+{TEMPS} /
+1.e10 /
+0 /
+stop /
+"""
+
+
+_NJOY_FG_INPT_ACER = """
+acer /
+20 24 0 25 26 / second to last is ace, last is xsdir
+1 0 1 .{SUFFIX} /
+'{COMMENT}' /
+{MAT} {TEMP} /
+1 1 {ISMOOTH} /
+/
+stop /
+"""
+
+
+# This method comes from the openmc-dev/data repo in utils.py (modified)
+def download(page, checksum=None, output_path=None):
+  """Download file from a URL
+  Parameters
+  ----------
+  page : str
+      URL from which to download
+  checksum : str or None
+      MD5 checksum to check against
+  output_path : str or Path
+      Specifies a location to save the downloaded file
+  Returns
+  -------
+  local_path : pathlib.Path
+      Name of file written locally
+  """
+  with urlopen(page) as response:
+    # Get file size from header
+    file_size = response.length
+
+    local_path = Path(Path(urlparse(page).path).name)
+    if output_path is not None:
+      Path(output_path).mkdir(parents=True, exist_ok=True)
+      local_path = output_path / local_path
+    # Check if file already downloaded
+    if local_path.is_file():
+      if local_path.stat().st_size == file_size:
+        print('Skipping {}, already downloaded'.format(local_path))
+        return local_path
+
+    # Copy file to disk in chunks
+    print('Downloading {}... '.format(local_path), end='')
+    downloaded = 0
+    with open(local_path, 'wb') as fh:
+      while True:
+        chunk = response.read(_BLOCK_SIZE)
+        if not chunk:
+          break
+        fh.write(chunk)
+        downloaded += len(chunk)
+        status = '{:10}  [{:3.2f}%]'.format(downloaded, downloaded * 100. / file_size)
+        print(status + '\b'*len(status), end='', flush=True)
+      print('')
+
+  if checksum is not None:
+    downloadsum = hashlib.md5(open(local_path, 'rb').read()).hexdigest()
+    if downloadsum != checksum:
+      raise OSError("MD5 checksum for {} does not match.".format(local_path))
+
+  return local_path
+
+
+def process_free_gas_njoy(data_dir: str, elem_symb: str, nuc_symb: str, nuclide: dict, lib: str):
+  # First, get the working directory
+  orig_working_dir = os.getcwd()
+
+  # Get the full path to endf file
+  endf_fname = os.path.join(orig_working_dir, 'neutrons', nuclide['file'])
+
+  # Move to temp directory
+  tempdirpath = tempfile.mkdtemp()
+  os.chdir(tempdirpath)
+  
+  # Copy initial ENDF to tape20 in local temp dir
+  shutil.copy(endf_fname, "tape20")
+
+  # Get MAT number from ENDFtk
+  tape = ENDFtk.tree.Tape.from_file(endf_fname)
+  mat = tape.material_numbers[0]
+
+  ntemps = len(nuclide["temperatures"])
+  temps_str = ""
+  for T in nuclide["temperatures"]:
+    temps_str += "{:.1f} ".format(T)
+
+  #--------------------
+  # RUN NJOY 1
+  inpt_str = _NJOY_FG_INPT_NO_ACER.format(MAT=mat, NTMPS=ntemps, TEMPS=temps_str)
+  res = subprocess.run(['njoy'], stdout=subprocess.DEVNULL, input=inpt_str, text=True)
+
+  if res.returncode != 0:
+    print("Could not process {} at {}K.".format(endf_fname, T))
+  # END RUN NJOY 1
+  #--------------------
+
+  # Now run frendy_fast for all temps
+  for T in nuclide["temperatures"]:
+    print("Processing {S} at {TEMP:.1f}".format(S=nuc_symb, TEMP=T))
+    simple_ace_fname = os.path.join(data_dir, 'neutron_dir', elem_symb, nuc_symb, nuc_symb+".{:.1f}.ace".format(T))
+    acefname = os.path.join(orig_working_dir, simple_ace_fname)
+    comments = "{NUC} from {LIB} at {TEMP}K.".format(NUC=nuc_symb, LIB=lib, TEMP=T)
+
+    #--------------------
+    # RUN NJOY 2
+    inpt_str = _NJOY_FG_INPT_ACER.format(MAT=mat, TEMP=T, SUFFIX='00', COMMENT=comments, ISMOOTH=0)
+    res = subprocess.run(['njoy'], stdout=subprocess.DEVNULL, input=inpt_str, text=True)
+
+    if res.returncode != 0:
+      print("Could not process {} at {}K.".format(endf_fname, T))
+    # END RUN NJOY 2
+    #--------------------
+
+    # Copy ACE tape to acefname
+    if os.path.exists('tape25'):
+      shutil.copy('tape25', acefname)
+
+  # Move back
+  os.chdir(orig_working_dir)
+  shutil.rmtree(tempdirpath)
+
+
+def process_free_gas_frendy(data_dir: str, elem_symb: str, nuc_symb: str, nuclide: dict, lib: str):
+  # First, get the working directory
+  orig_working_dir = os.getcwd()
+
+  # Get the full path to endf file
+  endf_fname = os.path.join(orig_working_dir, 'neutrons', nuclide['file'])
+
+  # Move to temp directory
+  tempdirpath = tempfile.mkdtemp()
+  os.chdir(tempdirpath)
+
+  # Now run frendy_fast for all temps
+  for T in nuclide["temperatures"]:
+    print("Processing {S} at {TEMP:.1f}".format(S=nuc_symb, TEMP=T))
+    simple_ace_fname = os.path.join(data_dir, 'neutron_dir', elem_symb, nuc_symb, nuc_symb+".{:.1f}.ace".format(T))
+    acefname = os.path.join(orig_working_dir, simple_ace_fname)
+    xsdirfname = os.path.join(orig_working_dir, data_dir, 'neutron_dir', elem_symb, nuc_symb, 'xsdir')
+    comments = "{NUC} from {LIB} at {TEMP}K.".format(NUC=nuc_symb, LIB=lib, TEMP=T)
+
+    #--------------------
+    # RUN FRENDY
+    frndy_inpt = open("frendy_input", 'w')
+    inpt_str = _FRENDY_FG_INPT.format(ENDF=endf_fname, TEMP=T, SUFFIX='.00', COMMENT=comments, ACE=acefname, DIR=xsdirfname)
+    frndy_inpt.write(inpt_str)
+    frndy_inpt.close()
+    res = subprocess.run(['frendy', 'frendy_input'], stdout=subprocess.DEVNULL)
+    os.remove('frendy_input')
+
+    if res.returncode != 0:
+      print("Could not process {} at {}K.".format(endf, T))
+    # END RUN FRENDY
+    #--------------------
+
+    # Remove xsdir file
+    if os.path.exists(xsdirfname):
+      os.remove(xsdirfname)
+
+  # Move back
+  os.chdir(orig_working_dir)
+  shutil.rmtree(tempdirpath)
+
+
+def process_free_gas_pool_njoy(args):
+    return process_free_gas_njoy(args[0], args[1], args[2], args[3], args[4])
+
+
+def process_free_gas_pool_frendy(args):
+    return process_free_gas_frendy(args[0], args[1], args[2], args[3], args[4])
+
+
+def process_tsl_frendy(data_dir: str, tsl_symb: str, tsl: dict, lib: str):
+  # First, get the working directory
+  orig_working_dir = os.getcwd()
+
+  # Get the full path to endf file
+  tsl_endf_fname = os.path.join(orig_working_dir, 'thermal_scatt', tsl['file'])
+  nuc_endf_fname = os.path.join(orig_working_dir, 'neutrons', tsl['nuc-file'])
+
+  # Move to temp directory
+  tempdirpath = tempfile.mkdtemp()
+  os.chdir(tempdirpath)
+
+  # Now run frendy_thermal for all temps
+  for T in tsl["temperatures"]:
+    print("Processing {S} at {TEMP:.1f}".format(S=tsl_symb, TEMP=T))
+    simple_ace_fname = os.path.join(data_dir, 'tsl_dir', tsl_symb, tsl_symb+".{:.1f}.ace".format(T))
+    acefname = os.path.join(orig_working_dir, simple_ace_fname)
+    xsdirfname = os.path.join(orig_working_dir, data_dir, 'tsl_dir', tsl_symb, 'xsdir')
+    zaid = tsl['zaid']
+    name = tsl['name']
+    comments = "{NAME} from {LIB} at {TEMP}K.".format(NAME=name, LIB=lib, TEMP=T)
+    
+    #--------------------
+    # RUN FRENDY
+    frndy_inpt = open("frendy_input", 'w')
+    inpt_str = _FRENDY_TSL_INPT.format(ENDF=nuc_endf_fname, TSL=tsl_endf_fname, TEMP=T, NANGLES=100, SUFFIX='.00', ZAID=zaid, COMMENT=comments, ACE=acefname, DIR=xsdirfname)
+    frndy_inpt.write(inpt_str)
+    frndy_inpt.close()
+    res = subprocess.run(['frendy', 'frendy_input'], stdout=subprocess.DEVNULL)
+    os.remove('frendy_input')
+
+    if res.returncode != 0:
+      print("Could not process {} at {}K.".format(tsl, T))
+    # END RUN FRENDY
+    #--------------------
+
+    # Remove xsdir file
+    if os.path.exists(xsdirfname):
+      os.remove(xsdirfname)
+
+  # Move back
+  os.chdir(orig_working_dir)
+  shutil.rmtree(tempdirpath)
+
+
+def process_tsl_panglos(data_dir: str, tsl_symb: str, tsl: dict, lib: str):
+  # First, get the working directory
+  orig_working_dir = os.getcwd()
+
+  # Get the full path to endf file
+  tsl_endf_fname = os.path.join(orig_working_dir, 'thermal_scatt', tsl['file'])
+
+  # Move to temp directory
+  tempdirpath = tempfile.mkdtemp()
+  os.chdir(tempdirpath)
+
+  # Now run frendy_thermal for all temps
+  for T in tsl["temperatures"]:
+    print("Processing {S} at {TEMP:.1f}".format(S=tsl_symb, TEMP=T))
+    simple_ace_fname = os.path.join(data_dir, 'tsl_dir', tsl_symb, tsl_symb+".{:.1f}.ace".format(T))
+    acefname = os.path.join(orig_working_dir, simple_ace_fname)
+    zaid = tsl['zaid']
+    name = tsl['name']
+    comments = "{NAME} from {LIB} at {TEMP}K.".format(NAME=name, LIB=lib, TEMP=T)
+    
+    #--------------------
+    # RUN PANGLOS
+    res = subprocess.run(['panglos', 'process', tsl_endf_fname, str(T), zaid, comments, acefname], stdout=subprocess.DEVNULL)
+
+    if res.returncode != 0:
+      print("Could not process {} at {}K.".format(tsl, T))
+    # END RUN PANGLOS
+    #--------------------
+
+  # Move back
+  os.chdir(orig_working_dir)
+  shutil.rmtree(tempdirpath)
+
+
+def download_endf8():
+  # Download neutron data
+  download("https://www.nndc.bnl.gov/endf-b8.0/zips/ENDF-B-VIII.0_neutrons.zip", "90c1b1a6653a148f17cbf3c5d1171859") 
+  # Download tsl data
+  download("https://www.nndc.bnl.gov/endf-b8.0/zips/ENDF-B-VIII.0_thermal_scatt.zip", "ecd503d3f8214f703e95e17cc947062c")
+  # Download B10 errata
+  download("https://www.nndc.bnl.gov/endf-b8.0/erratafiles/n-005_B_010.endf")
+
+  # Unzip neutron data
+  with zipfile.ZipFile("ENDF-B-VIII.0_neutrons.zip", 'r') as zip_ref:
+        zip_ref.extractall()
+  with zipfile.ZipFile("ENDF-B-VIII.0_thermal_scatt.zip", 'r') as zip_ref:
+        zip_ref.extractall()
+
+  # Rename folders
+  os.rename("ENDF-B-VIII.0_neutrons", "neutrons")
+  os.rename("ENDF-B-VIII.0_thermal_scatt", "thermal_scatt")
+
+  # Move errata
+  subprocess.run(['mv', 'n-005_B_010.endf', os.path.join('neutrons', 'n-005_B_010.endf')])
+
+  # Remove zips
+  os.remove("ENDF-B-VIII.0_neutrons.zip")
+  os.remove("ENDF-B-VIII.0_thermal_scatt.zip")
+
+  # Now construct the nuclides dictionary
+  nuclides = {}
+  for file in os.listdir('neutrons'):
+    if ".endf" in file:
+      # Reconstruct the Abeille symbol
+      prts = file.replace('.endf', '')
+      prts = prts.split('_')
+      elem_symb = prts[1]
+      if elem_symb == 'n':
+        continue
+      m1 = False
+      if 'm1' in prts[2]:
+        m1 = True
+        prts[2] = prts[2].replace('m1', '')
+
+      symbol = elem_symb
+      A = int(prts[2])
+      if A > 0:
+        symbol += str(A)
+
+      if m1:
+        symbol += 'm1'
+
+      # Save info
+      nuclides[symbol] = {}
+      nuclides[symbol]['file'] = file
+
+  # Construct TSL dictionary
+  tsls = {}
+  
+  tsls["HinH2O"] = {"file": "tsl-HinH2O.endf",
+                    "nuc-file": "n-001_H_001.endf",
+                    "temperatures": [283.6, 293.6, 300., 323.6, 350., 373.6, 400., 423.6, 450., 473.6, 500., 523.6, 550., 573.6, 600., 623.6, 650., 800.],
+                    "free-gas": ["H1"],
+                    "other-nuclides": ["O16", "O17", "O18"],
+                    "zaid": "H-H2O",
+                    "name": "H in H2O",
+                    "suffix": "H2O"
+                   }
+  
+  tsls["Al27"] = {"file": "tsl-013_Al_027.endf",
+                  "nuc-file": "n-013_Al_027.endf",
+                  "temperatures": [20., 80., 293.6, 400., 600., 800.],
+                  "free-gas": ["Al27"],
+                  "zaid": "Al27",
+                  "name": "Al27 TSL",
+                  "suffix": "Al27"
+                 }
+
+  tsls["Fe56"] = {"file": "tsl-026_Fe_056.endf",
+                  "nuc-file": "n-026_Fe_056.endf",
+                  "temperatures": [20., 80., 293.6, 400., 600., 800.],
+                  "free-gas": ["Fe56"],
+                  "zaid": "Fe56",
+                  "name": "Fe56 TSL",
+                  "suffix": "Fe56"
+                 }
+
+  tsls["BeinBeO"] = {"file": "tsl-BeinBeO.endf",
+                  "nuc-file": "n-004_Be_007.endf",
+                  "temperatures": [293.6, 400., 500., 600., 700., 800., 1000., 1200.],
+                  "free-gas": ["Be7", "Be9"],
+                  "zaid": "Be-BeO",
+                  "name": "Be in BeO",
+                  "suffix": "BeO"
+                 }
+
+  tsls["OinBeO"] = {"file": "tsl-OinBeO.endf",
+                  "nuc-file": "n-008_O_016.endf",
+                  "temperatures": [293.6, 400., 500., 600., 700., 800., 1000., 1200.],
+                  "free-gas": ["O16", "O17", "O18"],
+                  "zaid": "O-BeO",
+                  "name": "O in BeO",
+                  "suffix": "BeO"
+                 }
+
+  tsls["BeMetal"] = {"file": "tsl-Be-metal.endf",
+                  "nuc-file": "n-004_Be_007.endf",
+                  "temperatures": [296., 400., 500., 600., 700., 800., 1000., 1200.],
+                  "free-gas": ["Be7", "Be9"],
+                  "zaid": "Be",
+                  "name": "Be TSL",
+                  "suffix": "BeMetal"
+                 }
+
+ 
+  tsls["DinD2O"] = {"file": "tsl-DinD2O.endf",
+                  "nuc-file": "n-001_H_002.endf",
+                  "temperatures": [283.6, 293.6, 300., 323.6, 350., 373.6, 400., 423.6, 450., 473.6, 500., 523.6, 550.0, 573.6, 600., 623.6, 650.],
+                  "free-gas": ["H2"],
+                  "zaid": "D-D2O",
+                  "name": "D in D2O",
+                  "suffix": "D2O"
+                 }
+
+  tsls["OinD2O"] = {"file": "tsl-OinD2O.endf",
+                  "nuc-file": "n-008_O_016.endf",
+                  "temperatures": [283.6, 293.6, 300., 323.6, 350., 373.6, 400., 423.6, 450., 473.6, 500., 523.6, 550.0, 573.6, 600., 623.6, 650.],
+                  "free-gas": ["O16", "O17", "O18"],
+                  "zaid": "O-D2O",
+                  "name": "O in D2O",
+                  "suffix": "D2O"
+                 }
+
+  tsls["NinUN"] = {"file": "tsl-NinUN.endf",
+                    "nuc-file": "n-007_N_014.endf",
+                    "temperatures": [296., 400., 500., 600., 700., 800., 1000., 1200.],
+                    "free-gas": ["N14", "N15"],
+                    "zaid": "N-UN",
+                    "name": "N in UN",
+                    "suffix": "UN"
+                   }
+
+  tsls["UinUN"] = {"file": "tsl-UinUN.endf",
+                  "nuc-file": "n-092_U_235.endf",
+                  "temperatures": [296., 400., 500., 600., 700., 800., 1000., 1200.],
+                  "free-gas": ["U234", "U235", "U238"],
+                  "zaid": "U-UN",
+                  "name": "U in UN",
+                  "suffix": "UN"
+                 }
+
+  tsls["UinUO2"] = {"file": "tsl-UinUO2.endf",
+                  "nuc-file": "n-092_U_235.endf",
+                  "temperatures": [296., 400., 500., 600., 700., 800., 1000., 1200.],
+                  "free-gas": ["U234", "U235", "U238"],
+                  "zaid": "U-UO2",
+                  "name": "U in UO2",
+                  "suffix": "UO2"
+                 }
+
+
+  tsls["OinUO2"] = {"file": "tsl-OinUO2.endf",
+                  "nuc-file": "n-008_O_016.endf",
+                  "temperatures": [296., 400., 500., 600., 700., 800., 1000., 1200.],
+                  "free-gas": ["O16", "O17", "O18"],
+                  "zaid": "O-UO2",
+                  "name": "O in UO2",
+                  "suffix": "UO2"
+                 }
+
+  tsls["HinZrH"] = {"file": "tsl-HinZrH.endf",
+                  "nuc-file": "n-001_H_001.endf",
+                  "temperatures": [296., 400., 500., 600., 700., 800., 1000., 1200.],
+                  "free-gas": ["H1"],
+                  "zaid": "H-ZrH",
+                  "name": "H in ZrH",
+                  "suffix": "ZrH"
+                 }
+
+  tsls["ZrinZrH"] = {"file": "tsl-ZrinZrH.endf",
+                  "nuc-file": "n-040_Zr_094.endf",
+                  "temperatures": [296., 400., 500., 600., 700., 800., 1000., 1200.],
+                  "free-gas": ["Zr90", "Zr91", "Zr92", "Zr94", "Zr96"],
+                  "zaid": "Zr-ZrH",
+                  "name": "Zr in ZrH",
+                  "suffix": "ZrH"
+                 }
+
+
+  tsls["Graphite10"] = {"file": "tsl-reactor-graphite-10P.endf",
+                  "nuc-file": "n-006_C_012.endf",
+                  "temperatures": [296., 400., 500., 600., 700., 800., 1000., 1200., 1600., 2000.],
+                  "free-gas": ["C12", "C13"],
+                  "zaid": "Grph10",
+                  "name": "Graphite-10",
+                  "suffix": "Graphite10"
+                 }
+
+  tsls["Graphite30"] = {"file": "tsl-reactor-graphite-30P.endf",
+                  "nuc-file": "n-006_C_012.endf",
+                  "temperatures": [296., 400., 500., 600., 700., 800., 1000., 1200., 1600., 2000.],
+                  "free-gas": ["C12", "C13"],
+                  "zaid": "Grph30",
+                  "name": "Graphite-30",
+                  "suffix": "Graphite30"
+                 }
+
+  tsls["Graphite"] = {"file": "tsl-crystalline-graphite.endf",
+                  "nuc-file": "n-006_C_012.endf",
+                  "temperatures": [296., 400., 500., 600., 700., 800., 1000., 1200., 1600., 2000.],
+                  "free-gas": ["C12", "C13"],
+                  "zaid": "Grph",
+                  "name": "Graphite",
+                  "suffix": "Graphite"
+                 }
+
+  tsls["Lucite"] = {"file": "tsl-HinC5O2H8.endf",
+                  "nuc-file": "n-001_H_001.endf",
+                  "temperatures": [300.],
+                  "free-gas": ["H1"],
+                  "other-nuclides": ["C12", "C13", "O16", "O17", "O18"],
+                  "zaid": "H-Luct",
+                  "name": "H in Lucite",
+                  "suffix": "Lucite"
+                 }
+
+  tsls["CH2"] = {"file": "tsl-HinCH2.endf",
+                  "nuc-file": "n-001_H_001.endf",
+                  "temperatures": [77., 196., 233., 293.6, 300., 303., 313., 323., 333., 343., 350.],
+                  "free-gas": ["H1"],
+                  "other-nuclides": ["C12", "C13"],
+                  "zaid": "H-CH2",
+                  "name": "H in CH2",
+                  "suffix": "CH2"
+                 }
+  
+  return "ENDF/B-VIII.0", nuclides, tsls
+
+
+def download_jeff33():
+  # Download neutron data
+  download("https://www.oecd-nea.org/dbdata/jeff/jeff33/downloads/JEFF33-n.tgz") 
+  # Download tsl data
+  download("https://www.oecd-nea.org/dbdata/jeff/jeff33/downloads/JEFF33-tsl.tgz")
+
+  # Unzip data
+  ntball = tarfile.open("JEFF33-n.tgz")
+  ntball.extractall()
+  ntball.close()
+  os.rename("endf6", "neutrons")
+
+  ttball = tarfile.open("JEFF33-tsl.tgz")
+  ttball.extractall()
+  ttball.close()
+  os.rename("JEFF33-tsl", "thermal_scatt")
+
+  # Remove tarballs
+  os.remove("JEFF33-n.tgz")
+  os.remove("JEFF33-tsl.tgz")
+
+  # Now construct the nuclides dictionary
+  nuclides = {}
+  for file in os.listdir('neutrons'):
+    if ".jeff33" in file:
+      # Reconstruct the Abeille symbol
+      prts = file.replace('.jeff33', '')
+      prts = prts.split('-')
+      elem_symb = prts[1]
+      m1 = False
+      if 'm' in prts[2]:
+        m1 = True
+        prts[2] = prts[2].replace('m', '')
+      else:
+        prts[2] = prts[2].replace('g', '')
+
+      A = int(prts[2])
+      symbol = elem_symb
+      if A > 0:
+        symbol += str(A)
+
+      if m1:
+        symbol += 'm1'
+
+      # Save info
+      nuclides[symbol] = {}
+      nuclides[symbol]['file'] = file
+
+  # Construct TSL dictionary
+  tsls = {}
+  tsls["HinH2O"] = {"file": "tsl-HinH2O.jeff33",
+                    "nuc-file": "1-H-1g.jeff33",
+                    "temperatures": [293.6, 323.6, 373.6, 423.6, 473.6, 523.6, 573.6, 623.6, 647.2, 800., 1000.],
+                    "free-gas": ["H1"],
+                    "other-nuclides": ["O16", "O17", "O18"],
+                    "zaid": "H-H2O",
+                    "name": "H in H2O",
+                    "suffix": "H2O"
+                   }
+
+  tsls["DinD2O"] = {"file": "tsl-DinD2O.jeff33",
+                    "nuc-file": "1-H-2g.jeff33",
+                    "temperatures": [283.6, 293.6, 300., 323.6, 350., 373.6, 400., 423.6, 450., 473.6, 500., 523.6, 550., 573.6, 600., 623.6],
+                    "free-gas": ["H2"],
+                    "zaid": "D-D2O",
+                    "name": "D in D2O",
+                    "suffix": "D2O"
+                   }
+
+  tsls["OinD2O"] = {"file": "tsl-OinD2O.jeff33",
+                    "nuc-file": "8-O-16g.jeff33",
+                    "temperatures": [283.6, 293.6, 300., 323.6, 350., 373.6, 400., 423.6, 450., 473.6, 500., 523.6, 550., 573.6, 600., 623.6],
+                    "free-gas": ["O16", "O17", "O18"],
+                    "zaid": "O-D2O",
+                    "name": "O in D2O",
+                    "suffix": "D2O"
+                   }
+
+
+  tsls["BeMetal"] = {"file": "tsl-Be.jeff33",
+                  "nuc-file": "4-Be-9g.jeff33",
+                  "temperatures": [293.6, 400., 500., 600., 700., 800., 1000., 1200.],
+                  "free-gas": ["Be9"],
+                  "zaid": "Be",
+                  "name": "Be TSL",
+                  "suffix": "BeMetal"
+                 }
+
+  tsls["Graphite"] = {"file": "tsl-Graphite.jeff33",
+                  "nuc-file": "6-C-0g.jeff33",
+                  "temperatures": [293.6, 400., 500., 600., 700., 800., 1000., 1200., 1600., 2000., 3000.],
+                  "free-gas": ["C"],
+                  "zaid": "Grph",
+                  "name": "Graphite",
+                  "suffix": "Graphite"
+                 }
+
+  tsls["HinZrH"] = {"file": "tsl-HinZrH.jeff33",
+                  "nuc-file": "1-H-1g.jeff33",
+                  "temperatures": [293.6, 400., 500., 600., 700., 800., 1000., 1200.],
+                  "free-gas": ["H1"],
+                  "other-nuclides": ["Zr90", "Zr91", "Zr92", "Zr94", "Zr96"],
+                  "zaid": "H-ZrH",
+                  "name": "H in ZrH",
+                  "suffix": "ZrH"
+                 }
+
+  return "JEFF-3.3", nuclides, tsls
+
+
+def download_jeff311():
+  # Download neutron data
+  os.mkdir("neutrons")
+  os.chdir("neutrons")
+  download("https://www.oecd-nea.org/dbforms/data/eva/evatapes/jeff_31/JEFF311/FINAL/JEFF311N_0_IND.zip") 
+
+  # Unzip neutron data
+  with zipfile.ZipFile("JEFF311N_0_IND.zip", 'r') as zip_ref:
+        zip_ref.extractall()
+
+  # Go through all files and rename them
+  for fl in os.listdir():
+    if ".ASC" not in fl:
+      continue
+
+    # Read file with ENDFtk
+    tape = ENDFtk.tree.Tape.from_file(fl)
+
+    # Assume only 1 mat per file 
+    mat_num = tape.material_numbers[0]
+
+    tape_info = tape.material(mat_num).file(1).section(451).parse()
+    Z = int(tape_info.ZA / 1000.)
+    A = tape_info.ZA - (Z*1000)
+    m = tape_info.LISO
+
+    if Z > len(__ELEMENT_SYMBOLS):
+      raise RuntimeError("Unkown isotope with Z={}, A={}, m={}.".format(Z, A, m))
+
+    Sym = __ELEMENT_SYMBOLS[Z-1]
+
+    if m == 0:
+      m = 'g'
+    else:
+      m = 'm'
+
+    new_name = str(Z) + '-' + Sym + '-' + str(A) + m + '.jeff311'
+
+    os.rename(fl, new_name)
+
+  os.chdir("..")
+
+  # Download tsl data
+  os.mkdir("thermal_scatt")
+  os.chdir("thermal_scatt")
+  download("https://www.oecd-nea.org/dbforms/data/eva/evatapes/jeff_31/JEFF31/JEFF31TS_INDIV.tar.gz")
+
+  ttball = tarfile.open("JEFF31TS_INDIV.tar.gz")
+  ttball.extractall()
+  ttball.close()
+  os.chdir("..")
+
+  # Now construct the nuclides dictionary
+  nuclides = {}
+  for file in os.listdir('neutrons'):
+    if ".jeff311" in file:
+      # Reconstruct the Abeille symbol
+      prts = file.replace('.jeff311', '')
+      prts = prts.split('-')
+      elem_symb = prts[1]
+      m1 = False
+      if 'm' in prts[2]:
+        m1 = True
+        prts[2] = prts[2].replace('m', '')
+      else:
+        prts[2] = prts[2].replace('g', '')
+
+      A = int(prts[2])
+      symbol = elem_symb
+      if A > 0:
+        symbol += str(A)
+
+      if m1:
+        symbol += 'm1'
+
+      # Save info
+      nuclides[symbol] = {}
+      nuclides[symbol]['file'] = file
+
+  # Construct TSL dictionary
+  tsls = {}
+  tsls["HinH2O"] = {"file": "JEFF31TS0001_1.ASC",
+                    "nuc-file": "1-H-1g.jeff311",
+                    "temperatures": [293.6, 323.6, 373.6, 423.6, 473.6, 523.6, 573.6, 623.6, 647.2, 800., 1000.],
+                    "free-gas": ["H1"],
+                    "other-nuclides": ["O16", "O17"],
+                    "zaid": "H-H2O",
+                    "name": "H in H2O",
+                    "suffix": "H2O"
+                   }
+
+  tsls["HinZrH"] = {"file": "JEFF31TS0007_1.ASC",
+                  "nuc-file": "1-H-1g.jeff311",
+                  "temperatures": [293.6, 400., 500., 600., 700., 800., 1000., 1200.],
+                  "free-gas": ["H1"],
+                  "other-nuclides": ["Zr90", "Zr91", "Zr92", "Zr93", "Zr94", "Zr95", "Zr96"],
+                  "zaid": "H-ZrH",
+                  "name": "H in ZrH",
+                  "suffix": "ZrH"
+                 }
+
+  tsls["DinD2O"] = {"file": "JEFF31TS0011_1.ASC",
+                    "nuc-file": "1-H-2g.jeff311",
+                    "temperatures": [293.6, 323.6, 373.6, 423.6, 473.6, 523.6, 573.6, 643.9],
+                    "free-gas": ["H2"],
+                    "other-nuclides": ["O16", "O17"],
+                    "zaid": "D-D2O",
+                    "name": "D in D2O",
+                    "suffix": "D2O"
+                   }
+
+  tsls["BeMetal"] = {"file": "JEFF31TS0026_1.ASC",
+                  "nuc-file": "4-Be-9g.jeff311",
+                  "temperatures": [293.6, 400., 500., 600., 700., 800., 1000., 1200.],
+                  "free-gas": ["Be9"],
+                  "zaid": "Be",
+                  "name": "Be TSL",
+                  "suffix": "BeMetal"
+                 }
+
+  tsls["Graphite"] = {"file": "JEFF31TS0031_1.ASC",
+                  "nuc-file": "6-C-0g.jeff311",
+                  "temperatures": [293.6, 400., 500., 600., 700., 800., 1000., 1200., 1600., 2000., 3000.],
+                  "free-gas": ["C"],
+                  "zaid": "Grph",
+                  "name": "Graphite",
+                  "suffix": "Graphite"
+                 }
+
+  return "JEFF-3.1.1", nuclides, tsls
+  
+
+def main():
+  # Get the arguments
+  parser =  argparse.ArgumentParser(prog="nectaire",
+                                    description="Produces nuclear data libraries for use with Abeille.")
+  parser.add_argument('--library', type=str, choices=['endf8.0', 'jeff3.3', 'jeff3.1.1'], default='endf8.0')
+  parser.add_argument('--temperatures', type=float, nargs='+', default=[0.1, 250., 293.6, 600., 900., 1200., 2500.])
+  parser.add_argument('--free-gas-code', type=str, choices=['njoy', 'frendy'], default='njoy')
+  parser.add_argument('--tsl-code', type=str, choices=['frendy', 'panglos'], default='frendy')
+
+  args = parser.parse_args()
+
+  # Make sure all temps are positive
+  for T in args.temperatures:
+    if T < 0.1:
+      raise RuntimeError("All Temperatures must be >= 0.1 K.")
+
+  # Get set of mandatory temps
+  base_temps = set(args.temperatures)
+
+  # Go download the library
+  if args.library == 'endf8.0':
+    lib, nuclides, tsls = download_endf8()
+  elif args.library == 'jeff3.3':
+    lib, nuclides, tsls = download_jeff33()
+  elif args.library == 'jeff3.1.1':
+    lib, nuclides, tsls = download_jeff311()
+
+  print("Nuclear Data Library: {}".format(lib))
+  print("Base Temperatures: {}".format(base_temps))
+  print("Free Gas Code: {}".format(args.free_gas_code))
+
+  # Make data directory which will hold folders for each element
+  data_dir = 'data'
+  os.makedirs(data_dir)
+
+  # Make directory for the neutron_dir and the tsl_dir
+  os.makedirs(os.path.join(data_dir,'neutron_dir'))
+  os.makedirs(os.path.join(data_dir,'tsl_dir'))
+  
+  # Give all nuclides the initial required temperatures
+  for nuclide in nuclides:
+    element_symbol = nuclide[0:2]
+    if element_symbol[-1].isdigit():
+      element_symbol = element_symbol[0:1]
+
+    # Make directory for the element symbol if it doesn't exist
+    if not os.path.exists(os.path.join(data_dir, 'neutron_dir', element_symbol)):
+      os.makedirs(os.path.join(data_dir, 'neutron_dir', element_symbol))
+    # Make directory for specific nuclide
+    os.makedirs(os.path.join(data_dir, 'neutron_dir', element_symbol, nuclide))
+    # Save base temps to temperature list
+    nuclides[nuclide]['temperatures'] = base_temps.copy()
+  
+  # Now go through all TSLs, and for each nuclide, add all the extra temps
+  for tsl in tsls:
+    # Make directory for the TSL in the data dir
+    os.makedirs(os.path.join(data_dir, 'tsl_dir', tsl))
+
+    # Now add all extra temps to the nuclides
+    for nuc in tsls[tsl]['free-gas']:
+      for temp in tsls[tsl]['temperatures']:
+        nuclides[nuc]['temperatures'].add(temp)
+
+    # Some TSLs only provide one nuclide for the compount (Like H2O only has H)
+    # So we will also add the same temps for O, to allow us to get a good
+    # resolusion of water
+    if "other-nuclides" in tsls[tsl]:
+      for nuc in tsls[tsl]['other-nuclides']:
+        for temp in tsls[tsl]['temperatures']:
+          nuclides[nuc]['temperatures'].add(temp)
+
+  # Now we add the list of all ACE files to be created by each TSL or nuclide
+  for nuclide in nuclides:
+    element_symbol = nuclide[0:2]
+    if element_symbol[-1].isdigit():
+      element_symbol = element_symbol[0:1]
+    nuclides[nuclide]["ace-files"] = []
+    for T in nuclides[nuclide]["temperatures"]:
+      simple_ace_fname = os.path.join(data_dir, 'neutron_dir', element_symbol, nuclide, nuclide+".{:.1f}.ace".format(T))
+      nuclides[nuclide]["ace-files"].append({"file": simple_ace_fname, "temperature": T})
+
+  for tsl in tsls:
+    tsls[tsl]["ace-files"] = []
+    for T in tsls[tsl]["temperatures"]:
+      simple_ace_fname = os.path.join(data_dir, 'tsl_dir', tsl, tsl+".{:.1f}.ace".format(T))
+      tsls[tsl]["ace-files"].append({"file": simple_ace_fname, "temperature": T})
+  
+  #=============================================================================
+  # Processing starts here
+  print("Number of Parallel Processes: {}".format(cpu_count()))
+
+  # We should now have a complete list of all free-gas temps which must
+  # be generated for each nuclide. We can now generate all of the required
+  # ACE files.
+  nuc_args = []
+  for nuclide in nuclides:
+    element_symbol = nuclide[0:2]
+    if element_symbol[-1].isdigit():
+      element_symbol = element_symbol[0:1]
+    nuc_args.append((data_dir, element_symbol, nuclide, nuclides[nuclide], lib))
+
+  with Pool(cpu_count()) as p:
+    if args.free_gas_code == 'njoy':
+      p.map(process_free_gas_pool_njoy, nuc_args)
+    else:
+      p.map(process_free_gas_pool_frendy, nuc_args)
+
+  # We do the TSLs in serial, due to the high memory requirements
+  for tsl in tsls:
+    if args.tsl_code == 'frendy':
+      process_tsl_frendy(data_dir, tsl, tsls[tsl], lib)
+    else:
+      process_tsl_panglos(data_dir, tsl, tsls[tsl], lib)
+
+  #=============================================================================
+  # Now we need to make the xsdir structure
+  neutron_dir = {}
+  tsl_dir = {}
+  nuclide_dir = {}
+
+  # First, we populate the tsl-dir
+  for tsl in tsls:
+    tsl_dir[tsl] = []
+    # Then go through all ACE entries
+    for i in range(len(tsls[tsl]["ace-files"])):
+      tsl_dir[tsl].append(tsls[tsl]["ace-files"][i])
+
+  # Now, we populate the neutron-dir
+  for nuc in nuclides:
+    neutron_dir[nuc] = []
+    # Then go through all ACE entries
+    for i in range(len(nuclides[nuc]["ace-files"])):
+      neutron_dir[nuc].append(nuclides[nuc]["ace-files"][i])
+
+  # Finally, we populate the nuclide dir, which requires iterating
+  # through both again
+  for nuc in nuclides:
+    nuclide_dir[nuc] = {}
+    nuclide_dir[nuc]["neutron"] = nuc
+    nuclide_dir[nuc]["temperatures"] = nuclides[nuc]["temperatures"]
+
+  for tsl in tsls:
+    nucs = tsls[tsl]["free-gas"]
+    for nuc in nucs:
+      key = nuc + "_" + tsls[tsl]["suffix"]
+      nuclide_dir[key] = {}
+      nuclide_dir[key]["neutron"] = nuc
+      nuclide_dir[key]["tsl"] = tsl
+      nuclide_dir[key]["temperatures"] = tsls[tsl]["temperatures"]
+
+  # Now for each entry in "nuclides", get the awr
+  for nuc in nuclides.keys():
+    # Get first ace file
+    fname = nuclides[nuc]['ace-files'][0]['file']
+    # Open ace file
+    ace = pndl.ACE(fname)
+    # get and save awr
+    nuclide_dir[nuc]['awr'] = ace.awr()
+
+  xsdir = {'nuclides': nuclide_dir, 'neutron-dir': neutron_dir, 'tsl-dir': tsl_dir}
+
+  #=============================================================================
+  # Write the xsdir by hand so that it is a little more readable
+  xsfl = open("xsdir.yaml", 'w')
+  
+  # Write all nuclides
+  xsfl.write("nuclides:\n")
+  nuclide_keys = list(nuclide_dir.keys())
+  for key in nuclide_keys:
+    xsfl.write("  " + key + ":\n")
+    xsfl.write("    neutron: " + nuclide_dir[key]["neutron"] + "\n")
+    xsfl.write("    awr: {:.10f}\n".format(nuclide_dir[key]["awr"]))
+    if "tsl" in nuclide_dir[key]:
+      xsfl.write("    tsl: " + nuclide_dir[key]["tsl"] + "\n")
+    if "dbrc" in nuclide_dir[key]:
+      xsfl.write("    dbrc: " + str(nuclide_dir[key]["dbrc"]) + "\n")
+    xsfl.write("    temperatures: [")
+    temps = list(nuclide_dir[key]["temperatures"])
+    temps.sort()
+    for i in range(len(temps)):
+      xsfl.write("{T:.1f}".format(T=temps[i]))
+      if i < len(temps) - 1:
+        xsfl.write(", ")
+      else:
+        xsfl.write("]\n")
+  xsfl.write("\n")
+
+  # Write the neutron-dir
+  xsfl.write("neutron-dir:\n")
+  for nutrn in neutron_dir:
+    xsfl.write("  " + nutrn + ":\n")
+    for ace in neutron_dir[nutrn]:
+      f = ace["file"]
+      t = ace["temperature"]
+      fstr = "file: {F}".format(F=f)
+      tstr = "temperature: {T:.1f}".format(T=t)
+      if "binary" in ace:
+        b = str(ace["binary"])
+        ln = "    - {" + fstr + ", binary: {B}, ".format(B=b) + tstr + "}\n"
+      else:
+        ln = "    - {" + fstr + ", " + tstr + "}\n"
+      xsfl.write(ln)
+  xsfl.write("\n")
+
+  # Write tsl-dir
+  xsfl.write("tsl-dir:\n")
+  for tsl in tsl_dir:
+    xsfl.write("  " + tsl + ":\n")
+    for ace in tsl_dir[tsl]:
+      f = ace["file"]
+      t = ace["temperature"]
+      fstr = "file: {F}".format(F=f)
+      tstr = "temperature: {T:.1f}".format(T=t)
+      if "binary" in tsl_dir[tsl]:
+        b = str(tsl_dir[tsl]["binary"])
+        ln = "    - {" + fstr + ", binary: {B}, ".format(B=b) + tstr + "}\n"
+      else:
+        ln = "    - {" + fstr + ", " + tstr + "}\n"
+      xsfl.write(ln)
+  xsfl.write("\n")
+
+  xsfl.close()
+
+  # Remove un-needed ENDF files
+  shutil.rmtree("neutrons")
+  shutil.rmtree("thermal_scatt")
+
+if __name__ == "__main__":
+  main()
