@@ -1,14 +1,16 @@
 #ifndef MATERIAL_HELPER_H
 #define MATERIAL_HELPER_H
 
-#include <boost/unordered/unordered_flat_map.hpp>
-#include <cstdint>
 #include <materials/material.hpp>
 #include <materials/nuclide.hpp>
-#include <optional>
 #include <utils/constants.hpp>
 #include <utils/rng.hpp>
 #include <utils/settings.hpp>
+
+#include <boost/unordered/unordered_flat_map.hpp>
+
+#include <cstdint>
+#include <optional>
 
 class MaterialHelper {
  public:

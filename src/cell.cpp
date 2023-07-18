@@ -1,75 +1,71 @@
-/*=============================================================================*
- * Copyright (C) 2021-2022, Commissariat à l'Energie Atomique et aux Energies
+/*
+ * Abeille Monte Carlo Code
+ * Copyright 2019-2023, Hunter Belanger
+ * Copyright 2021-2022, Commissariat à l'Energie Atomique et aux Energies
  * Alternatives
  *
- * Contributeur : Hunter Belanger (hunter.belanger@cea.fr)
+ * hunter.belanger@gmail.com
  *
- * Ce logiciel est régi par la licence CeCILL soumise au droit français et
- * respectant les principes de diffusion des logiciels libres. Vous pouvez
- * utiliser, modifier et/ou redistribuer ce programme sous les conditions
- * de la licence CeCILL telle que diffusée par le CEA, le CNRS et l'INRIA
- * sur le site "http://www.cecill.info".
+ * This file is part of the Abeille Monte Carlo code (Abeille).
  *
- * En contrepartie de l'accessibilité au code source et des droits de copie,
- * de modification et de redistribution accordés par cette licence, il n'est
- * offert aux utilisateurs qu'une garantie limitée.  Pour les mêmes raisons,
- * seule une responsabilité restreinte pèse sur l'auteur du programme,  le
- * titulaire des droits patrimoniaux et les concédants successifs.
+ * Abeille is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- * A cet égard  l'attention de l'utilisateur est attirée sur les risques
- * associés au chargement,  à l'utilisation,  à la modification et/ou au
- * développement et à la reproduction du logiciel par l'utilisateur étant
- * donné sa spécificité de logiciel libre, qui peut le rendre complexe à
- * manipuler et qui le réserve donc à des développeurs et des professionnels
- * avertis possédant  des  connaissances  informatiques approfondies.  Les
- * utilisateurs sont donc invités à charger  et  tester  l'adéquation  du
- * logiciel à leurs besoins dans des conditions permettant d'assurer la
- * sécurité de leurs systèmes et ou de leurs données et, plus généralement,
- * à l'utiliser et l'exploiter dans les mêmes conditions de sécurité.
+ * Abeille is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
  *
- * Le fait que vous puissiez accéder à cet en-tête signifie que vous avez
- * pris connaissance de la licence CeCILL, et que vous en avez accepté les
- * termes.
- *============================================================================*/
+ * You should have received a copy of the GNU General Public License
+ * along with Abeille. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * */
 #include <geometry/cell.hpp>
+#include <geometry/geometry.hpp>
+#include <geometry/surfaces/surface.hpp>
 #include <plotting/plotter.hpp>
 #include <utils/constants.hpp>
 #include <utils/error.hpp>
+#include <utils/parser.hpp>
 #include <utils/rng.hpp>
 #include <utils/settings.hpp>
 
+#include <sstream>
+
 Cell::Cell(std::vector<int32_t> i_rpn, std::shared_ptr<Material> material,
            uint32_t i_id, std::string i_name)
-    : rpn{},
+    : fill_{Fill::Material},
+      rpn{i_rpn},
       id_{i_id},
       name_{i_name},
       material_{material},
-      material_raw_{material.get()} {
+      material_raw_{material.get()},
+      universe_{nullptr},
+      universe_raw_{nullptr} {
   // Check if simple or not
-  simple = true;
-  for (const auto& el : i_rpn) {
-    if (el == OP::COMP || el == OP::UNIN) {
-      simple = false;
-      break;
-    }
-  }
+  simplify();
 
-  rpn = i_rpn;
+  // Check for vacuum or reflective boundary conditions
+  check_for_bc();
+}
 
-  // If simple, remove un-needed operators
-  if (simple) {
-    size_t i0 = 0;
-    size_t i1 = 0;
-    while (i1 < rpn.size()) {
-      if (rpn[i1] < OP::UNIN) {
-        rpn[i0] = rpn[i1];
-        i0++;
-      }
-      i1++;
-    }
-    rpn.resize(i0);
-  }
-  rpn.shrink_to_fit();
+Cell::Cell(std::vector<int32_t> i_rpn, std::shared_ptr<Universe> universe,
+           uint32_t i_id, std::string i_name)
+    : fill_{Fill::Universe},
+      rpn{i_rpn},
+      id_{i_id},
+      name_{i_name},
+      material_{nullptr},
+      material_raw_{nullptr},
+      universe_{universe},
+      universe_raw_{universe.get()} {
+  // Check if simple or not
+  simplify();
+
+  // Check for vacuum or reflective boundary conditions
+  check_for_bc();
 }
 
 bool Cell::is_inside(const Position& r, const Direction& u,
@@ -96,6 +92,42 @@ std::pair<double, int32_t> Cell::distance_to_boundary(const Position& r,
     double d =
         geometry::surfaces[static_cast<std::size_t>(abs(token) - 1)]->distance(
             r, u, coincident);
+
+    // Check if this distance is the new minimum.
+    if (d < min_dist) {
+      if (std::abs(d - min_dist) / min_dist >= 1e-14) {
+        min_dist = d;
+        i_surf = -token;
+      }
+    }
+  }
+
+  return {min_dist, i_surf};
+}
+
+std::pair<double, int32_t> Cell::distance_to_boundary_condition(
+    const Position& r, const Direction& u, int32_t on_surf) const {
+  if (this->vacuum_or_reflective_ == false) return {INF, 0};
+
+  double min_dist = INF;
+  int32_t i_surf{0};
+
+  for (int32_t token : rpn) {
+    // Ignore this token if it corresponds to an operator rather than a region.
+    if (token >= OP::UNIN) continue;
+
+    // Calculate the distance to this surface.
+    // Note the off-by-one indexing
+    bool coincident = std::abs(token) == std::abs(on_surf);
+
+    Surface* surf =
+        geometry::surfaces[static_cast<std::size_t>(abs(token) - 1)].get();
+
+    // Ignore surfaces which aren't vacuum or reflective
+    if (surf->boundary() == BoundaryType::Normal) continue;
+    ;
+
+    double d = surf->distance(r, u, coincident);
 
     // Check if this distance is the new minimum.
     if (d < min_dist) {
@@ -172,6 +204,47 @@ uint32_t Cell::id() const { return id_; }
 
 const std::string& Cell::name() const { return name_; }
 
+void Cell::check_for_bc() {
+  // Check for vacuum or reflective boundary conditions
+  for (int32_t token : rpn) {
+    // Ignore this token if it corresponds to an operator rather than a region.
+    if (token >= OP::UNIN) continue;
+
+    Surface* surf =
+        geometry::surfaces[static_cast<std::size_t>(abs(token) - 1)].get();
+    if (surf->boundary() == BoundaryType::Vacuum ||
+        surf->boundary() == BoundaryType::Reflective) {
+      vacuum_or_reflective_ = true;
+    }
+  }
+}
+
+void Cell::simplify() {
+  // Check if simple or not
+  simple = true;
+  for (const auto& el : rpn) {
+    if (el == OP::COMP || el == OP::UNIN) {
+      simple = false;
+      break;
+    }
+  }
+
+  // If simple, remove un-needed operators
+  if (simple) {
+    size_t i0 = 0;
+    size_t i1 = 0;
+    while (i1 < rpn.size()) {
+      if (rpn[i1] < OP::UNIN) {
+        rpn[i0] = rpn[i1];
+        i0++;
+      }
+      i1++;
+    }
+    rpn.resize(i0);
+  }
+  rpn.shrink_to_fit();
+}
+
 //============================================================================
 // Non-Member functions
 std::vector<int32_t> infix_to_rpn(const std::vector<int32_t>& infix) {
@@ -225,7 +298,7 @@ std::vector<int32_t> infix_to_rpn(const std::vector<int32_t>& infix) {
   return rpn;
 }
 
-void make_cell(YAML::Node cell_node) {
+void make_cell(const YAML::Node& cell_node, const YAML::Node& input) {
   // Get region string
   std::string region_str;
   if (cell_node["region"]) {
@@ -293,22 +366,6 @@ void make_cell(YAML::Node cell_node) {
     fatal_error("Cell is missing id.");
   }
 
-  // Get material id
-  uint32_t mat_id = 0;
-  if (cell_node["material"] && cell_node["material"].IsScalar()) {
-    mat_id = cell_node["material"].as<uint32_t>();
-  } else {
-    fatal_error("Cell is missing material id.");
-  }
-  std::shared_ptr<Material> material = nullptr;
-  // Make sure material exists
-  if (materials.find(mat_id) == materials.end()) {
-    std::stringstream mssg;
-    mssg << "Could not find material with ID " << mat_id << ".";
-    fatal_error(mssg.str());
-  }
-  material = materials[mat_id];
-
   // Get name
   std::string name;
   if (cell_node["name"]) {
@@ -316,8 +373,64 @@ void make_cell(YAML::Node cell_node) {
   } else
     name = "";
 
-  std::shared_ptr<Cell> cell_pntr =
-      std::make_shared<Cell>(region, material, id, name);
+  // Check if there is a material and cell definition
+  if (cell_node["material"] && cell_node["universe"]) {
+    std::stringstream mssg;
+    mssg << "Cell with id " << id << " has both a material and a universe.";
+    fatal_error(mssg.str());
+  }
+
+  if (!cell_node["material"] && !cell_node["universe"]) {
+    std::stringstream mssg;
+    mssg << "Cell with id " << id << " neither a material nor a universe.";
+    fatal_error(mssg.str());
+  }
+
+  // Initial nullptr, will be filled with either universe or material cell
+  std::shared_ptr<Cell> cell_pntr{nullptr};
+
+  if (cell_node["material"]) {
+    // Get material id
+    uint32_t mat_id = 0;
+    if (cell_node["material"] && cell_node["material"].IsScalar()) {
+      mat_id = cell_node["material"].as<uint32_t>();
+    } else {
+      std::stringstream mssg;
+      mssg << "Cell " << id << " has an invalid material definition.";
+      fatal_error(mssg.str());
+    }
+    std::shared_ptr<Material> material = nullptr;
+    // Make sure material exists
+    if (materials.find(mat_id) == materials.end()) {
+      std::stringstream mssg;
+      mssg << "Could not find material with ID " << mat_id << ".";
+      fatal_error(mssg.str());
+    }
+    material = materials[mat_id];
+
+    cell_pntr = std::make_shared<Cell>(region, material, id, name);
+  } else {
+    // We must have a universe then
+    // Get universe id
+    uint32_t uni_id = 0;
+    if (cell_node["universe"] && cell_node["universe"].IsScalar()) {
+      uni_id = cell_node["universe"].as<uint32_t>();
+    } else {
+      std::stringstream mssg;
+      mssg << "Cell " << id << " has an invalid material definition.";
+      fatal_error(mssg.str());
+    }
+
+    // Make sure universe exists
+    if (universe_id_to_indx.find(uni_id) == universe_id_to_indx.end()) {
+      find_universe(input, uni_id);
+    }
+
+    auto uni_indx = universe_id_to_indx[uni_id];
+    std::shared_ptr<Universe> universe = geometry::universes[uni_indx];
+
+    cell_pntr = std::make_shared<Cell>(region, universe, id, name);
+  }
 
   // Add cell ID to map of surface indicies
   if (cell_id_to_indx.find(cell_pntr->id()) != cell_id_to_indx.end()) {

@@ -1,48 +1,42 @@
-/*=============================================================================*
- * Copyright (C) 2021-2022, Commissariat à l'Energie Atomique et aux Energies
+/*
+ * Abeille Monte Carlo Code
+ * Copyright 2019-2023, Hunter Belanger
+ * Copyright 2021-2022, Commissariat à l'Energie Atomique et aux Energies
  * Alternatives
  *
- * Contributeur : Hunter Belanger (hunter.belanger@cea.fr)
+ * hunter.belanger@gmail.com
  *
- * Ce logiciel est régi par la licence CeCILL soumise au droit français et
- * respectant les principes de diffusion des logiciels libres. Vous pouvez
- * utiliser, modifier et/ou redistribuer ce programme sous les conditions
- * de la licence CeCILL telle que diffusée par le CEA, le CNRS et l'INRIA
- * sur le site "http://www.cecill.info".
+ * This file is part of the Abeille Monte Carlo code (Abeille).
  *
- * En contrepartie de l'accessibilité au code source et des droits de copie,
- * de modification et de redistribution accordés par cette licence, il n'est
- * offert aux utilisateurs qu'une garantie limitée.  Pour les mêmes raisons,
- * seule une responsabilité restreinte pèse sur l'auteur du programme,  le
- * titulaire des droits patrimoniaux et les concédants successifs.
+ * Abeille is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- * A cet égard  l'attention de l'utilisateur est attirée sur les risques
- * associés au chargement,  à l'utilisation,  à la modification et/ou au
- * développement et à la reproduction du logiciel par l'utilisateur étant
- * donné sa spécificité de logiciel libre, qui peut le rendre complexe à
- * manipuler et qui le réserve donc à des développeurs et des professionnels
- * avertis possédant  des  connaissances  informatiques approfondies.  Les
- * utilisateurs sont donc invités à charger  et  tester  l'adéquation  du
- * logiciel à leurs besoins dans des conditions permettant d'assurer la
- * sécurité de leurs systèmes et ou de leurs données et, plus généralement,
- * à l'utiliser et l'exploiter dans les mêmes conditions de sécurité.
+ * Abeille is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
  *
- * Le fait que vous puissiez accéder à cet en-tête signifie que vous avez
- * pris connaissance de la licence CeCILL, et que vous en avez accepté les
- * termes.
- *============================================================================*/
+ * You should have received a copy of the GNU General Public License
+ * along with Abeille. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * */
 #ifndef TRACKER_H
 #define TRACKER_H
 
+#include <geometry/boundary.hpp>
 #include <geometry/cell.hpp>
 #include <geometry/geo_lily_pad.hpp>
 #include <geometry/geometry.hpp>
 #include <materials/material.hpp>
 #include <simulation/particle.hpp>
-#include <sstream>
-#include <stdexcept>
+#include <utils/constants.hpp>
 #include <utils/error.hpp>
 #include <utils/parser.hpp>
+
+#include <sstream>
+#include <stdexcept>
 
 class Tracker {
  public:
@@ -92,16 +86,82 @@ class Tracker {
   Material* material() { return current_mat; }
   Cell* cell() { return current_cell; }
 
-  geometry::Boundary boundary() const {
-    return geometry::get_boundary(r_, u_, surface_token_);
+  Boundary get_boundary_condition() const {
+    if (!this->is_lost()) {
+      double dist = INF;
+      BoundaryType btype = BoundaryType::Vacuum;
+      int surface_index = -1;
+      int32_t token = 0;
+
+      // Go up the entire tree
+      for (const auto& pad : tree) {
+        if (pad.type == GeoLilyPad::PadType::Cell) {
+          auto cell_id = cell_id_to_indx[pad.id];
+          Cell* cell = geometry::cells[cell_id].get();
+
+          // Only consider cells which have a boundary condition.
+          if (cell->vacuum_or_reflective() == false) continue;
+
+          auto d_t = cell->distance_to_boundary_condition(pad.r_local, u_,
+                                                          surface_token_);
+          if (d_t.first < dist && std::abs(d_t.first - dist) > BOUNDRY_TOL) {
+            double tmp_dist = d_t.first;
+            int32_t tmp_token = std::abs(d_t.second);
+
+            if (tmp_token) {
+              dist = tmp_dist;
+              token = tmp_token;
+              surface_index = token - 1;
+            } else {
+              // Not actually a surface, so we continue
+              continue;
+            }
+
+            btype = geometry::surfaces[static_cast<std::size_t>(surface_index)]
+                        ->boundary();
+
+            if (geometry::surfaces[static_cast<std::size_t>(surface_index)]
+                    ->sign(pad.r_local, u_) < 0)
+              token *= -1;
+          }
+        } else if (pad.type == GeoLilyPad::PadType::Universe) {
+          auto uni_indx = universe_id_to_indx[pad.id];
+          Universe* uni = geometry::universes[uni_indx].get();
+          if (uni->has_boundary_conditions()) {
+            Boundary uni_bound =
+                uni->get_boundary_condition(pad.r_local, u_, surface_token_);
+            if (uni_bound.distance < dist &&
+                std::abs(uni_bound.distance - dist) > BOUNDRY_TOL) {
+              dist = uni_bound.distance;
+              token = uni_bound.token;
+              surface_index = uni_bound.surface_index;
+              btype = uni_bound.boundary_type;
+            }
+          }
+        }
+      }
+
+      Boundary ret_bound(dist, surface_index, btype);
+      ret_bound.token = token;
+
+      // Distance to surface, and token, with sign indicating the positions
+      // current orientation to the surface.
+      return ret_bound;
+    } else {
+      // This else is mainly useful when plotting the geometry, and the window
+      // extends beyond the defined geometry.
+      return geometry::root_universe->get_boundary_condition(r_, u_,
+                                                             surface_token_);
+    }
   }
 
-  // geometry::Boundary __attribute__ ((noinline)) get_nearest_boundary() const
-  // {
-  geometry::Boundary get_nearest_boundary() const {
-    auto bound = this->boundary();
-
+  Boundary get_nearest_boundary() const {
     if (!this->is_lost()) {
+      // This must be first, so that we make sure that boundary condition
+      // surfaces are given the higher priority. That is, we need to really be
+      // closer to another surface, to ignore the boundary condition surface.
+      auto bound = this->get_boundary_condition();
+
       double dist = bound.distance;
       BoundaryType btype = bound.boundary_type;
       int surface_index = bound.surface_index;
@@ -113,7 +173,7 @@ class Tracker {
           auto lat_id = lattice_id_to_indx[pad.id];
           double d = geometry::lattices[lat_id]->distance_to_tile_boundary(
               pad.r_local, u_, pad.tile);
-          if (d < dist && std::abs(d - dist) > 100 * SURFACE_COINCIDENT) {
+          if (d < dist && std::abs(d - dist) > BOUNDRY_TOL) {
             dist = d;
             btype = BoundaryType::Normal;
             surface_index = -1;
@@ -123,8 +183,7 @@ class Tracker {
           auto cell_id = cell_id_to_indx[pad.id];
           auto d_t = geometry::cells[cell_id]->distance_to_boundary(
               pad.r_local, u_, surface_token_);
-          if (d_t.first < dist &&
-              std::abs(d_t.first - dist) > 100 * SURFACE_COINCIDENT) {
+          if (d_t.first < dist && std::abs(d_t.first - dist) > BOUNDRY_TOL) {
             dist = d_t.first;
             token = std::abs(d_t.second);
 
@@ -149,29 +208,24 @@ class Tracker {
         }
       }
 
-      geometry::Boundary ret_bound(dist, surface_index, btype);
+      Boundary ret_bound(dist, surface_index, btype);
       ret_bound.token = token;
 
       // Distance to surface, and token, with sign indicating the positions
       // current orientation to the surface.
       return ret_bound;
     } else {
-      return geometry::get_boundary(r_, u_, surface_token_);
+      return geometry::root_universe->lost_get_boundary(r_, u_, surface_token_);
     }
   }
 
-  void cross_surface(geometry::Boundary d_t) {
+  void cross_surface(Boundary d_t) {
     this->move(d_t.distance);
     // Use negative as we have changed orientation !
     surface_token_ = -d_t.token;
   }
 
   bool is_lost() const { return !current_cell; }
-
-  /*void get_current() {
-    current_cell = geometry::get_cell(r_, u_, surface_token_);
-    current_mat = current_cell->material();
-  }*/
 
   void get_current() {
     // Iterator pointing to the highest leaf in the tree
@@ -221,14 +275,29 @@ class Tracker {
           static_cast<std::size_t>(std::distance(tree.begin(), first_bad));
       tree.resize(size);
 
-      // Now start at the last element, and get the new position
+      // Now start at the last element, and get the new position.
+      // Since only a Cell or Lattice can invalidate the tree, that means the
+      // last entry in the tree will always be a Universe. We can get the info
+      // for that universe, and then call get_cell from that Universe to desend
+      // the geometry tree.
       auto uni_indx = universe_id_to_indx[tree.back().id];
       const auto& uni = geometry::universes[uni_indx];
       Position r_local = tree.back().r_local;
       tree.pop_back();
       current_cell = uni->get_cell(tree, r_local, u_, surface_token_);
+
+      // If we couldn't get a cell, we need to call in the big guns, and
+      // re-start from scratch.
       if (!current_cell) restart_get_current();
-      if (current_cell) current_mat = current_cell->material();
+
+      // If we have a valid cell, we must now also fill the material.
+      if (current_cell) {
+        if (current_cell->fill() == Cell::Fill::Universe) {
+          fatal_error("Did not find a cell with a material.");
+        }
+
+        current_mat = current_cell->material();
+      }
     }
   }
 
@@ -238,7 +307,7 @@ class Tracker {
            r_.z() == tree.front().r_local.z();
   }
 
-  void do_reflection(Particle& p, geometry::Boundary boundary) {
+  void do_reflection(Particle& p, Boundary boundary) {
     // Get the surface first
     if (boundary.surface_index < 0) {
       fatal_error("Bad surface index in Tracker::do_reflection");

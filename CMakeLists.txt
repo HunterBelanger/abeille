@@ -23,10 +23,10 @@ FetchContent_MakeAvailable(yaml-cpp)
 
 #===============================================================================
 # Get PapillonNDL develop
-message(STATUS "Downloading PapillonNDL develop branch")
+message(STATUS "Downloading PapillonNDL feature/sab branch")
 FetchContent_Declare(PapillonNDL
   GIT_REPOSITORY https://github.com/HunterBelanger/papillon-ndl.git
-  GIT_TAG        develop
+  GIT_TAG        feature/sab
 )
 set(PNDL_SHARED OFF CACHE BOOL "Build PapillonNDL as a shared library")
 set(PNDL_INSTALL OFF CACHE BOOL "Install the PapillonNDL library and header files")
@@ -88,6 +88,18 @@ FetchContent_Declare(Boost
 FetchContent_MakeAvailable(Boost)
 
 #===============================================================================
+# Get HighFive
+message(STATUS "Downloading HighFive 2.7.1")
+set(HIGHFIVE_USE_BOOST OFF)
+set(HIGHFIVE_EXAMPLES OFF)
+set(HIGHFIVE_BUILD_DOCS OFF)
+FetchContent_Declare(HighFive
+  GIT_REPOSITORY https://github.com/BlueBrain/HighFive.git
+  GIT_TAG        v2.7.1
+)
+FetchContent_MakeAvailable(HighFive)
+
+#===============================================================================
 # Get SOBOL
 add_subdirectory("${CMAKE_SOURCE_DIR}/vendor/sobol")
 
@@ -104,8 +116,10 @@ execute_process(COMMAND git describe --dirty --always
 add_executable(abeille src/main.cpp ${ABEILLE_SOURCE_FILES})
 target_include_directories(abeille PRIVATE include)
 target_compile_features(abeille PRIVATE cxx_std_17)
-target_link_libraries(abeille PUBLIC docopt_s yaml-cpp PapillonNDL::PapillonNDL NDArray::NDArray PCG::PCG_CXX sobol Boost::unordered)
+target_link_libraries(abeille PUBLIC docopt_s yaml-cpp PapillonNDL::PapillonNDL NDArray::NDArray PCG::PCG_CXX sobol Boost::unordered HighFive)
 target_compile_definitions(abeille PUBLIC ABEILLE_GIT_HASH=\"${ABEILLE_GIT_HASH_RAW}\")
+target_compile_definitions(abeille PUBLIC ABEILLE_COMPILER_NAME=\"${CMAKE_CXX_COMPILER_ID}\")
+target_compile_definitions(abeille PUBLIC ABEILLE_COMPILER_VERSION=\"${CMAKE_CXX_COMPILER_VERSION}\")
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC") # Comile options for Windows
   target_compile_options(abeille PRIVATE /W3)
@@ -125,6 +139,7 @@ if(ABEILLE_USE_OMP)
     if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC") # Comile options for Windows
       target_compile_options(abeille PRIVATE /openmp:llvm) 
     endif()
+    target_compile_definitions(abeille PUBLIC ABEILLE_USE_OMP)
   endif()
 endif()
 
@@ -143,14 +158,6 @@ if(ABEILLE_GUI_PLOT)
 endif()
 
 #===============================================================================
-# Copy input files to build directory so that the user can try them right
-# after the build.
-configure_file("${CMAKE_CURRENT_SOURCE_DIR}/input_files/c5g7.yaml"
-               "${CMAKE_CURRENT_BINARY_DIR}/c5g7.yaml")
-
-configure_file("${CMAKE_CURRENT_SOURCE_DIR}/input_files/ref_sqr_c5g7.yaml"
-               "${CMAKE_CURRENT_BINARY_DIR}/ref_sqr_c5g7.yaml")
-
 # Allow for install of executable
 install(TARGETS abeille
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}

@@ -1,211 +1,98 @@
-/*=============================================================================*
- * Copyright (C) 2021-2022, Commissariat à l'Energie Atomique et aux Energies
+/*
+ * Abeille Monte Carlo Code
+ * Copyright 2019-2023, Hunter Belanger
+ * Copyright 2021-2022, Commissariat à l'Energie Atomique et aux Energies
  * Alternatives
  *
- * Contributeur : Hunter Belanger (hunter.belanger@cea.fr)
+ * hunter.belanger@gmail.com
  *
- * Ce logiciel est régi par la licence CeCILL soumise au droit français et
- * respectant les principes de diffusion des logiciels libres. Vous pouvez
- * utiliser, modifier et/ou redistribuer ce programme sous les conditions
- * de la licence CeCILL telle que diffusée par le CEA, le CNRS et l'INRIA
- * sur le site "http://www.cecill.info".
+ * This file is part of the Abeille Monte Carlo code (Abeille).
  *
- * En contrepartie de l'accessibilité au code source et des droits de copie,
- * de modification et de redistribution accordés par cette licence, il n'est
- * offert aux utilisateurs qu'une garantie limitée.  Pour les mêmes raisons,
- * seule une responsabilité restreinte pèse sur l'auteur du programme,  le
- * titulaire des droits patrimoniaux et les concédants successifs.
+ * Abeille is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- * A cet égard  l'attention de l'utilisateur est attirée sur les risques
- * associés au chargement,  à l'utilisation,  à la modification et/ou au
- * développement et à la reproduction du logiciel par l'utilisateur étant
- * donné sa spécificité de logiciel libre, qui peut le rendre complexe à
- * manipuler et qui le réserve donc à des développeurs et des professionnels
- * avertis possédant  des  connaissances  informatiques approfondies.  Les
- * utilisateurs sont donc invités à charger  et  tester  l'adéquation  du
- * logiciel à leurs besoins dans des conditions permettant d'assurer la
- * sécurité de leurs systèmes et ou de leurs données et, plus généralement,
- * à l'utiliser et l'exploiter dans les mêmes conditions de sécurité.
+ * Abeille is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
  *
- * Le fait que vous puissiez accéder à cet en-tête signifie que vous avez
- * pris connaissance de la licence CeCILL, et que vous en avez accepté les
- * termes.
- *============================================================================*/
-#ifdef _OPENMP
-#include <omp.h>
-#endif
-
-#include <PapillonNDL/st_coherent_elastic.hpp>
-#include <PapillonNDL/st_incoherent_inelastic.hpp>
-#include <PapillonNDL/st_tsl_reaction.hpp>
-#include <boost/unordered/unordered_flat_map.hpp>
+ * You should have received a copy of the GNU General Public License
+ * along with Abeille. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * */
 #include <materials/material.hpp>
 #include <materials/material_helper.hpp>
-#include <optional>
 #include <simulation/carter_tracker.hpp>
 #include <simulation/tracker.hpp>
-#include <unordered_map>
 #include <utils/constants.hpp>
 #include <utils/error.hpp>
+#include <utils/majorant.hpp>
+#include <utils/mpi.hpp>
 #include <utils/output.hpp>
 #include <utils/settings.hpp>
+
+#include <PapillonNDL/cross_section.hpp>
+#include <PapillonNDL/energy_grid.hpp>
+
+#include <ndarray.hpp>
+
+#include <cmath>
+#include <memory>
+#include <sstream>
 #include <vector>
+
+#ifdef ABEILLE_USE_OMP
+#include <omp.h>
+#endif
 
 // Currently, carter tracking just finds the majorant xs like is done in
 // delta tracking. I am not sure yet how we will implement under-estimations
 // of the xs in continuous energy, so for now, we just have this.
 CarterTracker::CarterTracker(std::shared_ptr<Tallies> i_t)
     : Transporter(i_t), EGrid(nullptr), Esmp(nullptr) {
-  Output::instance()->write(" Finding majorant cross sections.\n");
-  // Must first create a unionized energy grid. How this is done depends on
-  // whether or not we are in continuous energy or multi-group mode.
-  if (settings::energy_mode == settings::EnergyMode::CE) {
-    // First, we must construct a unionized energy grid, for all nuclides in the
-    // problem. We do this by iterating through all nuclides. In CE mode, we
-    // should be able to safely case a Nuclide pointer to a CENuclide pointer.
-    std::vector<double> union_energy_grid;
+  Output::instance().write(" Finding majorant cross sections.\n");
+  auto Egrid_Emaj_pair = make_majorant_xs();
+  EGrid = std::make_shared<pndl::EnergyGrid>(Egrid_Emaj_pair.first);
+  Esmp = std::make_shared<pndl::CrossSection>(Egrid_Emaj_pair.second, EGrid, 0);
 
-    // Get a map of all URR random values set to 1, for finding the majorant
-    boost::unordered_flat_map<uint32_t, std::optional<double>> urr_rands;
-    for (const auto& za : zaids_with_urr) urr_rands[za] = 1.;
+  if (settings::energy_mode == settings::EnergyMode::MG) {
+    for (uint32_t g = 0; g < settings::ngroups; g++) {
+      // Get the energy at the mid-point for the group
+      size_t i = g * 2;
+      double Eg =
+          0.5 * (Egrid_Emaj_pair.first[i] + Egrid_Emaj_pair.first[i + 1]);
 
-    // Iterate through all nuclides
-    for (const auto& id_nucld_pair : nuclides) {
-      Nuclide* nuc = id_nucld_pair.second.get();
-      CENuclide* cenuc = static_cast<CENuclide*>(nuc);
-
-      // Get the nuclide's energy grid
-      std::vector<double> cenuc_grid = cenuc->cedata()->energy_grid().grid();
-      if (cenuc->tsl()) {
-        // If we have a TSL, we need to change cenuc_grid to add those points.
-        // First, get ref to IncoherentInelastic
-        const pndl::STTSLReaction& origII =
-            cenuc->tsl()->incoherent_inelastic();
-        const pndl::STIncoherentInelastic& II =
-            reinterpret_cast<const pndl::STIncoherentInelastic&>(origII);
-        const pndl::STTSLReaction& origCE = cenuc->tsl()->coherent_elastic();
-        const pndl::STCoherentElastic& CE =
-            reinterpret_cast<const pndl::STCoherentElastic&>(origCE);
-        std::size_t NEtsl = II.xs().x().size() + (2 * CE.bragg_edges().size());
-        cenuc_grid.reserve(cenuc_grid.size() + NEtsl);
-
-        // First, add all II points
-        for (std::size_t i = 0; i < II.xs().x().size(); i++) {
-          cenuc_grid.push_back(II.xs().x()[i]);
-        }
-
-        // Now add all CE bragg edges
-        for (std::size_t i = 0; i < CE.bragg_edges().size(); i++) {
-          cenuc_grid.push_back(std::nextafter(CE.bragg_edges()[i], 0.));
-          cenuc_grid.push_back(CE.bragg_edges()[i]);
-        }
-
-        // Now sort the grid
-        std::sort(cenuc_grid.begin(), cenuc_grid.end());
-      }
-
-      // Get the URR grid points
-      if (cenuc->has_urr()) {
-        cenuc_grid.reserve(cenuc_grid.size() + cenuc->urr_energy_grid().size());
-
-        // Get the URR energy points
-        for (const auto& urr_E : cenuc->urr_energy_grid()) {
-          cenuc_grid.push_back(urr_E);
-        }
-
-        // Now sort the grid
-        std::sort(cenuc_grid.begin(), cenuc_grid.end());
-      }
-
-      // Now we perform the union operation
-      std::vector<double> tmp;
-      std::set_union(union_energy_grid.begin(), union_energy_grid.end(),
-                     cenuc_grid.begin(), cenuc_grid.end(),
-                     std::back_inserter(tmp));
-      union_energy_grid = tmp;
-
-      // We now throw the grid into a set temporarily, to remove the duplicates
-      std::set<double> tmp_union_energy_grid(union_energy_grid.begin(),
-                                             union_energy_grid.end());
-      union_energy_grid.assign(tmp_union_energy_grid.begin(),
-                               tmp_union_energy_grid.end());
+      double xs = (*Esmp)(Eg);
+      Egrid_Emaj_pair.second[i] = xs * settings::sample_xs_ratio[g];
+      Egrid_Emaj_pair.second[i + 1] = xs * settings::sample_xs_ratio[g];
     }
 
-    // With the energy grid unionized, we can go about finding majorants !
-    std::vector<double> maj_xs(union_energy_grid.size(), 0.);
-    for (const auto& material : materials) {
-      // Make a MaterialHelper, to evaluate the material XS for us
-      MaterialHelper mat(material.second.get(), union_energy_grid.front());
-      mat.set_urr_rand_vals(urr_rands);
+    EGrid = std::make_shared<pndl::EnergyGrid>(Egrid_Emaj_pair.first);
+    Esmp =
+        std::make_shared<pndl::CrossSection>(Egrid_Emaj_pair.second, EGrid, 0);
+  }
 
-      // Now iterate through all energy points. If xs is larger, update value
-      for (std::size_t i = 0; i < union_energy_grid.size(); i++) {
-        const double Ei = union_energy_grid[i];
-        const double xsi = mat.Et(Ei);
-
-        if (xsi > maj_xs[i]) maj_xs[i] = xsi;
-      }
+  if (mpi::rank == 0) {
+    // We now create a temporary array, which will hold the sampling xs info,
+    // so we can save it to the output file.
+    NDArray<double> smp_xs({2, Egrid_Emaj_pair.first.size()});
+    for (std::size_t i = 0; i < Egrid_Emaj_pair.first.size(); i++) {
+      smp_xs(0, i) = Egrid_Emaj_pair.first[i];
+      smp_xs(1, i) = Egrid_Emaj_pair.second[i];
     }
-
-    // Multiply all majorant values by a small safety factor
-    for (auto& xsmaj : maj_xs) xsmaj *= 1.01;
-
-    // With the majorant obtained, we can now construct the majorant xs
-    EGrid = std::make_shared<pndl::EnergyGrid>(union_energy_grid);
-    Esmp = std::make_shared<pndl::CrossSection>(maj_xs, EGrid, 0);
-  } else {
-    // We are in multi-group mode. Here, the energy-bounds are kept in the
-    // settings, so we can construct something with that
-
-    std::vector<double> egrid;
-    egrid.push_back(settings::energy_bounds[0]);
-    if (egrid.front() == 0.) egrid.front() = 1.E-11;
-
-    for (size_t i = 1; i < settings::energy_bounds.size() - 1; i++) {
-      egrid.push_back(settings::energy_bounds[i]);
-      egrid.push_back(settings::energy_bounds[i]);
-    }
-
-    egrid.push_back(settings::energy_bounds.back());
-
-    // This now has created the vector egrid which will look something like this
-    // for the case of 5 energy groups.
-    // [0., 1.,   1., 2.,   2., 3.,   3., 4.,   4., 5.]
-    // This works, because the energy of multi-group particles should always be
-    // inbetween the bounds for the group.
-
-    // Now we need to make a vector which will contian the majorant cross
-    // cross sections for each group.
-    std::vector<double> maj_xs(egrid.size(), 0.);
-
-    // We loop through materials
-    for (const auto& material : materials) {
-      // Then we loop through energies
-      MaterialHelper mat(material.second.get(), 1.);
-
-      for (uint32_t g = 0; g < settings::ngroups; g++) {
-        // Get the energy at the mid-point for the group
-        size_t i = g * 2;
-        double Eg = 0.5 * (egrid[i] + egrid[i + 1]);
-
-        double xs = mat.Et(Eg);
-        if (xs > maj_xs[i]) {
-          maj_xs[i] = xs * settings::sample_xs_ratio[g];
-          maj_xs[i + 1] = xs * settings::sample_xs_ratio[g];
-        }
-      }
-    }
-
-    // Now we construct the energy grid and majorant
-    EGrid = std::make_shared<pndl::EnergyGrid>(egrid, settings::ngroups);
-    Esmp = std::make_shared<pndl::CrossSection>(maj_xs, EGrid, 0);
+    auto& h5 = Output::instance().h5();
+    auto smp_xs_ds =
+        h5.createDataSet<double>("sampling-xs", H5::DataSpace(smp_xs.shape()));
+    smp_xs_ds.write_raw(&smp_xs[0]);
   }
 }
 
 std::vector<BankedParticle> CarterTracker::transport(
     std::vector<Particle>& bank, bool noise,
     std::vector<BankedParticle>* noise_bank, const NoiseMaker* noise_maker) {
-#ifdef _OPENMP
+#ifdef ABEILLE_USE_OMP
 #pragma omp parallel
 #endif
   {
@@ -213,7 +100,7 @@ std::vector<BankedParticle> CarterTracker::transport(
     ThreadLocalScores thread_scores;
 
 // Transport all particles in for thread
-#ifdef _OPENMP
+#ifdef ABEILLE_USE_OMP
 #pragma omp for schedule(static)
 #endif
     for (size_t n = 0; n < bank.size(); n++) {
@@ -237,11 +124,26 @@ std::vector<BankedParticle> CarterTracker::transport(
       // auto bound = trkr.boundary();
       while (p.is_alive()) {
         bool had_collision = false;
+        bool crossed_boundary = false;
         auto maj_indx = EGrid->get_lower_index(p.E());
         double Esample = Esmp->evaluate(p.E(), maj_indx) + mat.Ew(p.E(), noise);
         p.set_Esmp(Esample);  // Sampling XS saved for cancellation
         double d_coll = RNG::exponential(p.rng, Esample);
-        auto bound = trkr.boundary();
+        Boundary bound(INF, -1, BoundaryType::Normal);
+
+        // Try moving the distance to collision, and see if we land in a valid
+        // material.
+        trkr.move(d_coll);
+        trkr.get_current();
+
+        if (trkr.is_lost()) {
+          // We got lost. This means we probably flew through a boundary
+          // condition. We now go back, and actually find the B.C.
+          trkr.set_r(p.r());
+          trkr.get_current();
+          bound = trkr.get_boundary_condition();
+          crossed_boundary = true;
+        }
 
         // Score track length tally for boundary distance.
         // This is here because flux-like tallies are allowed with DT.
@@ -250,8 +152,7 @@ std::vector<BankedParticle> CarterTracker::transport(
         tallies->score_flight(p, std::min(d_coll, bound.distance), mat,
                               settings::converged);
 
-        if (bound.distance < d_coll ||
-            std::abs(bound.distance - d_coll) < 100. * SURFACE_COINCIDENT) {
+        if (crossed_boundary) {
           if (bound.boundary_type == BoundaryType::Vacuum) {
             p.kill();
             thread_scores.leakage_score += p.wgt();
@@ -276,28 +177,13 @@ std::vector<BankedParticle> CarterTracker::transport(
                    << ", u = " << trkr.u() << ".";
               fatal_error(mssg.str());
             }
-            bound = trkr.boundary();
+            bound = trkr.get_boundary_condition();
           } else {
             fatal_error("Help me, how did I get here ?");
           }
         } else {
           // Update Position
           p.move(d_coll);
-          trkr.move(d_coll);
-          trkr.get_current();
-          // Check if we are lost
-          if (trkr.is_lost()) {
-            std::stringstream mssg;
-            mssg << "Particle " << p.history_id() << ".";
-            mssg << p.secondary_id() << " has become lost.\n";
-            mssg << "Previous valid coordinates: r = " << p.previous_r();
-            mssg << ", u = " << p.previous_u() << ".\n";
-            mssg << "Attempted to fly a distance of " << d_coll << " cm.\n";
-            mssg << "Currently lost at r = " << trkr.r() << ", u = " << trkr.u()
-                 << ".";
-            fatal_error(mssg.str());
-          }
-          bound.distance -= d_coll;
           mat.set_material(trkr.material(), p.E());
 
           // Get true cross section here
@@ -324,7 +210,6 @@ std::vector<BankedParticle> CarterTracker::transport(
         if (p.is_alive() && had_collision) {  // real collision
           collision(p, mat, thread_scores, noise, noise_maker);
           trkr.set_u(p.u());
-          bound = trkr.boundary();
           p.set_previous_collision_real();
           if (settings::use_urr_ptables) mat.set_urr_rand_vals(p.rng);
         } else if (p.is_alive()) {
@@ -354,7 +239,7 @@ std::vector<BankedParticle> CarterTracker::transport(
               mssg << ", u = " << trkr.u() << ".";
               fatal_error(mssg.str());
             }
-            bound = trkr.boundary();
+            bound = trkr.get_boundary_condition();
             mat.set_material(trkr.material(), p.E());
             if (settings::use_urr_ptables) mat.set_urr_rand_vals(p.rng);
           } else if (settings::rng_stride_warnings) {

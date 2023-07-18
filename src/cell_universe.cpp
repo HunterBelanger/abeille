@@ -1,50 +1,57 @@
-/*=============================================================================*
- * Copyright (C) 2021-2022, Commissariat à l'Energie Atomique et aux Energies
+/*
+ * Abeille Monte Carlo Code
+ * Copyright 2019-2023, Hunter Belanger
+ * Copyright 2021-2022, Commissariat à l'Energie Atomique et aux Energies
  * Alternatives
  *
- * Contributeur : Hunter Belanger (hunter.belanger@cea.fr)
+ * hunter.belanger@gmail.com
  *
- * Ce logiciel est régi par la licence CeCILL soumise au droit français et
- * respectant les principes de diffusion des logiciels libres. Vous pouvez
- * utiliser, modifier et/ou redistribuer ce programme sous les conditions
- * de la licence CeCILL telle que diffusée par le CEA, le CNRS et l'INRIA
- * sur le site "http://www.cecill.info".
+ * This file is part of the Abeille Monte Carlo code (Abeille).
  *
- * En contrepartie de l'accessibilité au code source et des droits de copie,
- * de modification et de redistribution accordés par cette licence, il n'est
- * offert aux utilisateurs qu'une garantie limitée.  Pour les mêmes raisons,
- * seule une responsabilité restreinte pèse sur l'auteur du programme,  le
- * titulaire des droits patrimoniaux et les concédants successifs.
+ * Abeille is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- * A cet égard  l'attention de l'utilisateur est attirée sur les risques
- * associés au chargement,  à l'utilisation,  à la modification et/ou au
- * développement et à la reproduction du logiciel par l'utilisateur étant
- * donné sa spécificité de logiciel libre, qui peut le rendre complexe à
- * manipuler et qui le réserve donc à des développeurs et des professionnels
- * avertis possédant  des  connaissances  informatiques approfondies.  Les
- * utilisateurs sont donc invités à charger  et  tester  l'adéquation  du
- * logiciel à leurs besoins dans des conditions permettant d'assurer la
- * sécurité de leurs systèmes et ou de leurs données et, plus généralement,
- * à l'utiliser et l'exploiter dans les mêmes conditions de sécurité.
+ * Abeille is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
  *
- * Le fait que vous puissiez accéder à cet en-tête signifie que vous avez
- * pris connaissance de la licence CeCILL, et que vous en avez accepté les
- * termes.
- *============================================================================*/
+ * You should have received a copy of the GNU General Public License
+ * along with Abeille. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * */
+#include <geometry/boundary.hpp>
 #include <geometry/cell_universe.hpp>
 #include <geometry/geometry.hpp>
 #include <utils/error.hpp>
 
 CellUniverse::CellUniverse(std::vector<uint32_t> i_ind, uint32_t i_id,
                            std::string i_name)
-    : Universe{i_id, i_name}, cell_indicies{i_ind} {}
+    : Universe{i_id, i_name}, cell_indicies{i_ind} {
+  this->has_boundary_conditions_ = false;
+  for (auto& indx : cell_indicies) {
+    Cell* cell = geometry::cells[indx].get();
+    if (cell->vacuum_or_reflective()) {
+      this->has_boundary_conditions_ = true;
+      break;
+    }
+  }
+}
 
 Cell* CellUniverse::get_cell(Position r, Direction u, int32_t on_surf) const {
   // Go through each cell, and return the first one for which the
   // given position is inside the cell
   for (auto& indx : cell_indicies) {
-    if (geometry::cells[indx]->is_inside(r, u, on_surf))
-      return geometry::cells[indx].get();
+    if (geometry::cells[indx]->is_inside(r, u, on_surf)) {
+      Cell* cell = geometry::cells[indx].get();
+
+      if (cell->fill() == Cell::Fill::Material)
+        return geometry::cells[indx].get();
+
+      return cell->universe()->get_cell(r, u, on_surf);
+    }
   }
   // No cell found, particle is lost
   return nullptr;
@@ -65,15 +72,129 @@ Cell* CellUniverse::get_cell(std::vector<GeoLilyPad>& stack, Position r,
       stack.push_back(
           {GeoLilyPad::PadType::Cell, cell_id, r, {0, 0, 0}, false});
 
-      // Return cell
-      return geometry::cells[indx].get();
+      Cell* cell = geometry::cells[indx].get();
+
+      if (cell->fill() == Cell::Fill::Material)
+        return geometry::cells[indx].get();
+
+      return cell->universe()->get_cell(stack, r, u, on_surf);
     }
   }
   // No cell found, particle is lost
   return nullptr;
 }
 
-void make_cell_universe(YAML::Node uni_node) {
+Boundary CellUniverse::get_boundary_condition(const Position& r,
+                                              const Direction& u,
+                                              int32_t on_surf) const {
+  double dist = INF;
+  BoundaryType btype = BoundaryType::Vacuum;
+  int surface_index = -1;
+  int32_t token = 0;
+
+  // Go through each cell, and check for boundary condition
+  if (this->has_boundary_conditions()) {
+    for (auto& indx : cell_indicies) {
+      Cell* cell = geometry::cells[indx].get();
+
+      // Only look at vacuum or reflective boundary conditions
+      if (cell->vacuum_or_reflective() == false) continue;
+
+      auto d_t = cell->distance_to_boundary_condition(r, u, on_surf);
+      if (d_t.first < dist && std::abs(d_t.first - dist) > BOUNDRY_TOL) {
+        double tmp_dist = d_t.first;
+        int32_t tmp_token = std::abs(d_t.second);
+
+        if (tmp_token) {
+          token = tmp_token;
+          dist = tmp_dist;
+          surface_index = token - 1;
+        } else {
+          // Not an actuall surface
+          continue;
+        }
+
+        btype = geometry::surfaces[static_cast<std::size_t>(surface_index)]
+                    ->boundary();
+
+        if (geometry::surfaces[static_cast<std::size_t>(surface_index)]->sign(
+                r, u) < 0)
+          token *= -1;
+      }
+    }
+  }
+
+  Boundary ret_bound(dist, surface_index, btype);
+  ret_bound.token = token;
+  return ret_bound;
+}
+
+bool CellUniverse::contains_universe(uint32_t id) const {
+  for (auto& indx : cell_indicies) {
+    Cell* cell = geometry::cells[indx].get();
+
+    if (cell->fill() == Cell::Fill::Universe) {
+      if (cell->universe()->id() == id ||
+          cell->universe()->contains_universe(id))
+        return true;
+    }
+  }
+
+  return false;
+}
+
+Boundary CellUniverse::lost_get_boundary(const Position& r, const Direction& u,
+                                         int32_t on_surf) const {
+  double dist = INF;
+  BoundaryType btype = BoundaryType::Vacuum;
+  int surface_index = -1;
+  int32_t token = 0;
+
+  for (auto& indx : cell_indicies) {
+    Cell* cell = geometry::cells[indx].get();
+
+    // First check the boundary of the cell itself
+    auto d_t = cell->distance_to_boundary(r, u, on_surf);
+    if (d_t.first < dist && std::abs(d_t.first - dist) > BOUNDRY_TOL) {
+      double tmp_dist = d_t.first;
+      int32_t tmp_token = std::abs(d_t.second);
+
+      if (tmp_token) {
+        token = tmp_token;
+        dist = tmp_dist;
+        surface_index = token - 1;
+      } else {
+        // Not an actuall surface
+        continue;
+      }
+
+      btype = geometry::surfaces[static_cast<std::size_t>(surface_index)]
+                  ->boundary();
+
+      if (geometry::surfaces[static_cast<std::size_t>(surface_index)]->sign(
+              r, u) < 0)
+        token *= -1;
+    }
+
+    // Now check the universe in the cell, if there is one
+    if (cell->fill() == Cell::Fill::Universe) {
+      auto cell_uni_bound = cell->universe()->lost_get_boundary(r, u, on_surf);
+      if (cell_uni_bound.distance < dist &&
+          std::abs(cell_uni_bound.distance - dist) > BOUNDRY_TOL) {
+        dist = cell_uni_bound.distance;
+        surface_index = cell_uni_bound.surface_index;
+        token = cell_uni_bound.token;
+        btype = cell_uni_bound.boundary_type;
+      }
+    }
+  }
+
+  Boundary ret_bound(dist, surface_index, btype);
+  ret_bound.token = token;
+  return ret_bound;
+}
+
+void make_cell_universe(const YAML::Node& uni_node) {
   // Get id
   uint32_t id;
   if (uni_node["id"] && uni_node["id"].IsScalar()) {

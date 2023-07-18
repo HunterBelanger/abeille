@@ -1,36 +1,27 @@
-/*=============================================================================*
- * Copyright (C) 2021-2022, Commissariat à l'Energie Atomique et aux Energies
+/*
+ * Abeille Monte Carlo Code
+ * Copyright 2019-2023, Hunter Belanger
+ * Copyright 2021-2022, Commissariat à l'Energie Atomique et aux Energies
  * Alternatives
  *
- * Contributeur : Hunter Belanger (hunter.belanger@cea.fr)
+ * hunter.belanger@gmail.com
  *
- * Ce logiciel est régi par la licence CeCILL soumise au droit français et
- * respectant les principes de diffusion des logiciels libres. Vous pouvez
- * utiliser, modifier et/ou redistribuer ce programme sous les conditions
- * de la licence CeCILL telle que diffusée par le CEA, le CNRS et l'INRIA
- * sur le site "http://www.cecill.info".
+ * This file is part of the Abeille Monte Carlo code (Abeille).
  *
- * En contrepartie de l'accessibilité au code source et des droits de copie,
- * de modification et de redistribution accordés par cette licence, il n'est
- * offert aux utilisateurs qu'une garantie limitée.  Pour les mêmes raisons,
- * seule une responsabilité restreinte pèse sur l'auteur du programme,  le
- * titulaire des droits patrimoniaux et les concédants successifs.
+ * Abeille is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- * A cet égard  l'attention de l'utilisateur est attirée sur les risques
- * associés au chargement,  à l'utilisation,  à la modification et/ou au
- * développement et à la reproduction du logiciel par l'utilisateur étant
- * donné sa spécificité de logiciel libre, qui peut le rendre complexe à
- * manipuler et qui le réserve donc à des développeurs et des professionnels
- * avertis possédant  des  connaissances  informatiques approfondies.  Les
- * utilisateurs sont donc invités à charger  et  tester  l'adéquation  du
- * logiciel à leurs besoins dans des conditions permettant d'assurer la
- * sécurité de leurs systèmes et ou de leurs données et, plus généralement,
- * à l'utiliser et l'exploiter dans les mêmes conditions de sécurité.
+ * Abeille is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
  *
- * Le fait que vous puissiez accéder à cet en-tête signifie que vous avez
- * pris connaissance de la licence CeCILL, et que vous en avez accepté les
- * termes.
- *============================================================================*/
+ * You should have received a copy of the GNU General Public License
+ * along with Abeille. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * */
 #include <simulation/collision_mesh_tally.hpp>
 #include <simulation/mesh_tally.hpp>
 #include <simulation/track_length_mesh_tally.hpp>
@@ -38,6 +29,7 @@
 #include <utils/mpi.hpp>
 #include <utils/output.hpp>
 #include <utils/settings.hpp>
+
 #include <vector>
 
 MeshTally::MeshTally(Position low, Position hi, uint64_t nx, uint64_t ny,
@@ -52,6 +44,9 @@ MeshTally::MeshTally(Position low, Position hi, uint64_t nx, uint64_t ny,
       dx(),
       dy(),
       dz(),
+      dx_inv(),
+      dy_inv(),
+      dz_inv(),
       net_weight(1.),
       energy_bounds(ebounds),
       fname(fname),
@@ -61,6 +56,9 @@ MeshTally::MeshTally(Position low, Position hi, uint64_t nx, uint64_t ny,
   dx = (r_hi.x() - r_low.x()) / static_cast<double>(Nx);
   dy = (r_hi.y() - r_low.y()) / static_cast<double>(Ny);
   dz = (r_hi.z() - r_low.z()) / static_cast<double>(Nz);
+  dx_inv = 1. / dx;
+  dy_inv = 1. / dy;
+  dz_inv = 1. / dz;
 
   uint32_t Ne = static_cast<uint32_t>(energy_bounds.size() - 1);
 
@@ -94,7 +92,7 @@ void MeshTally::record_generation(double multiplier) {
   // Only try to update average and variance is we are master, as worker
   // processes don't have copies of this data, so it will seg-fault.
   if (mpi::rank == 0) {
-#ifdef _OPENMP
+#ifdef ABEILLE_USE_OMP
 #pragma omp parallel for schedule(static)
 #endif
     for (size_t i = 0; i < tally_gen.size(); i++) {
@@ -117,61 +115,54 @@ void MeshTally::clear_generation() { tally_gen.fill(0.); }
 void MeshTally::write_tally() {
   // Only master can write tallies, as only master has a copy
   // of the mean and variance.
-  if (mpi::rank == 0) {
-    std::string mssg = " Writing " + fname + " tally file...\n";
-    Output::instance()->write(mssg);
+  if (mpi::rank != 0) return;
 
-    std::ofstream file(fname + "_mesh.txt");
+  auto& h5 = Output::instance().h5();
 
-    // First write coordinates and number of groups
-    file << " X:";
-    for (uint64_t i = 0; i <= Nx; i++) {
-      double x = (static_cast<double>(i) * dx) + r_low.x();
-      file << x;
-      if (i != Nx)
-        file << ",";
-      else
-        file << "\n";
-    }
+  // Create the group for the tally
+  auto tally_grp = h5.createGroup("results/" + this->fname);
 
-    file << " Y:";
-    for (uint64_t i = 0; i <= Ny; i++) {
-      double y = (static_cast<double>(i) * dy) + r_low.y();
-      file << y;
-      if (i != Ny)
-        file << ",";
-      else
-        file << "\n";
-    }
-
-    file << " Z:";
-    for (uint64_t i = 0; i <= Nz; i++) {
-      double z = (static_cast<double>(i) * dz) + r_low.z();
-      file << z;
-      if (i != Nz)
-        file << ",";
-      else
-        file << "\n";
-    }
-
-    file << " ENERGY:";
-    for (std::size_t i = 0; i < energy_bounds.size(); i++) {
-      file << energy_bounds[i];
-      if (i != energy_bounds.size() - 1)
-        file << ",";
-      else
-        file << "\n";
-    }
-
-    file << " QUANTITY: " << this->quantity_str() << "\n";
-
-    file.close();
-
-    // Convert flux_var to the error on the mean
-    for (size_t l = 0; l < tally_var.size(); l++)
-      tally_var[l] = std::sqrt(tally_var[l] / static_cast<double>(g));
-
-    tally_avg.save(fname + "_avg.npy");
-    tally_var.save(fname + "_err.npy");
+  // First write coordinates and number of groups
+  std::vector<double> x_bounds(Nx + 1, 0.);
+  for (std::size_t i = 0; i <= Nx; i++) {
+    x_bounds[i] = (static_cast<double>(i) * dx) + r_low.x();
   }
+  tally_grp.createAttribute("x-bounds", x_bounds);
+
+  std::vector<double> y_bounds(Ny + 1, 0.);
+  for (std::size_t i = 0; i <= Ny; i++) {
+    y_bounds[i] = (static_cast<double>(i) * dy) + r_low.y();
+  }
+  tally_grp.createAttribute("y-bounds", y_bounds);
+
+  std::vector<double> z_bounds(Nz + 1, 0.);
+  for (std::size_t i = 0; i <= Nz; i++) {
+    z_bounds[i] = (static_cast<double>(i) * dz) + r_low.z();
+  }
+  tally_grp.createAttribute("z-bounds", z_bounds);
+
+  tally_grp.createAttribute("energy-bounds", energy_bounds);
+
+  // Save the quantity
+  tally_grp.createAttribute("quantity", this->quantity_str());
+
+  if (this->quantity_str() == "mt") {
+    tally_grp.createAttribute("mt", this->mt());
+  }
+
+  // Save the estimator
+  tally_grp.createAttribute("estimator", this->estimator_str());
+
+  // Convert flux_var to the error on the mean
+  for (size_t l = 0; l < tally_var.size(); l++)
+    tally_var[l] = std::sqrt(tally_var[l] / static_cast<double>(g));
+
+  // Add data sets for the average and the standard deviation
+  auto avg_dset =
+      tally_grp.createDataSet<double>("avg", H5::DataSpace(tally_avg.shape()));
+  avg_dset.write_raw(&tally_avg[0]);
+
+  auto std_dset =
+      tally_grp.createDataSet<double>("std", H5::DataSpace(tally_var.shape()));
+  std_dset.write_raw(&tally_var[0]);
 }

@@ -1,41 +1,35 @@
-/*=============================================================================*
- * Copyright (C) 2021-2022, Commissariat à l'Energie Atomique et aux Energies
+/*
+ * Abeille Monte Carlo Code
+ * Copyright 2019-2023, Hunter Belanger
+ * Copyright 2021-2022, Commissariat à l'Energie Atomique et aux Energies
  * Alternatives
  *
- * Contributeur : Hunter Belanger (hunter.belanger@cea.fr)
+ * hunter.belanger@gmail.com
  *
- * Ce logiciel est régi par la licence CeCILL soumise au droit français et
- * respectant les principes de diffusion des logiciels libres. Vous pouvez
- * utiliser, modifier et/ou redistribuer ce programme sous les conditions
- * de la licence CeCILL telle que diffusée par le CEA, le CNRS et l'INRIA
- * sur le site "http://www.cecill.info".
+ * This file is part of the Abeille Monte Carlo code (Abeille).
  *
- * En contrepartie de l'accessibilité au code source et des droits de copie,
- * de modification et de redistribution accordés par cette licence, il n'est
- * offert aux utilisateurs qu'une garantie limitée.  Pour les mêmes raisons,
- * seule une responsabilité restreinte pèse sur l'auteur du programme,  le
- * titulaire des droits patrimoniaux et les concédants successifs.
+ * Abeille is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- * A cet égard  l'attention de l'utilisateur est attirée sur les risques
- * associés au chargement,  à l'utilisation,  à la modification et/ou au
- * développement et à la reproduction du logiciel par l'utilisateur étant
- * donné sa spécificité de logiciel libre, qui peut le rendre complexe à
- * manipuler et qui le réserve donc à des développeurs et des professionnels
- * avertis possédant  des  connaissances  informatiques approfondies.  Les
- * utilisateurs sont donc invités à charger  et  tester  l'adéquation  du
- * logiciel à leurs besoins dans des conditions permettant d'assurer la
- * sécurité de leurs systèmes et ou de leurs données et, plus généralement,
- * à l'utiliser et l'exploiter dans les mêmes conditions de sécurité.
+ * Abeille is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
  *
- * Le fait que vous puissiez accéder à cet en-tête signifie que vous avez
- * pris connaissance de la licence CeCILL, et que vous en avez accepté les
- * termes.
- *============================================================================*/
-#include <exception>
+ * You should have received a copy of the GNU General Public License
+ * along with Abeille. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * */
 #include <simulation/tallies.hpp>
-#include <string>
 #include <utils/error.hpp>
 #include <utils/mpi.hpp>
+#include <utils/output.hpp>
+#include <utils/settings.hpp>
+
+#include <exception>
+#include <string>
 #include <vector>
 
 Tallies::Tallies(double tot_wgt)
@@ -46,6 +40,11 @@ Tallies::Tallies(double tot_wgt)
       leak_score(0.),
       k_tot_score(0.),
       mig_area_score(0.),
+      k_col_vec(),
+      k_abs_vec(),
+      k_trk_vec(),
+      leak_vec(),
+      mig_vec(),
       k_col(1.0),
       k_col_avg(0.),
       k_col_var(0.),
@@ -67,7 +66,13 @@ Tallies::Tallies(double tot_wgt)
       collision_mesh_tallies_(),
       track_length_mesh_tallies_(),
       source_mesh_tallies_(),
-      noise_source_mesh_tallies_() {}
+      noise_source_mesh_tallies_() {
+  k_col_vec.reserve(static_cast<std::size_t>(settings::ngenerations));
+  k_abs_vec.reserve(static_cast<std::size_t>(settings::ngenerations));
+  k_trk_vec.reserve(static_cast<std::size_t>(settings::ngenerations));
+  leak_vec.reserve(static_cast<std::size_t>(settings::ngenerations));
+  mig_vec.reserve(static_cast<std::size_t>(settings::ngenerations));
+}
 
 void Tallies::add_collision_mesh_tally(
     std::shared_ptr<CollisionMeshTally> cetally) {
@@ -93,42 +98,42 @@ void Tallies::add_noise_source_mesh_tally(
 }
 
 void Tallies::score_k_col(double scr) {
-#ifdef _OPENMP
+#ifdef ABEILLE_USE_OMP
 #pragma omp atomic
 #endif
   k_col_score += scr;
 }
 
 void Tallies::score_k_abs(double scr) {
-#ifdef _OPENMP
+#ifdef ABEILLE_USE_OMP
 #pragma omp atomic
 #endif
   k_abs_score += scr;
 }
 
 void Tallies::score_k_trk(double scr) {
-#ifdef _OPENMP
+#ifdef ABEILLE_USE_OMP
 #pragma omp atomic
 #endif
   k_trk_score += scr;
 }
 
 void Tallies::score_k_tot(double scr) {
-#ifdef _OPENMP
+#ifdef ABEILLE_USE_OMP
 #pragma omp atomic
 #endif
   k_tot_score += scr;
 }
 
 void Tallies::score_leak(double scr) {
-#ifdef _OPENMP
+#ifdef ABEILLE_USE_OMP
 #pragma omp atomic
 #endif
   leak_score += scr;
 }
 
 void Tallies::score_mig_area(double scr) {
-#ifdef _OPENMP
+#ifdef ABEILLE_USE_OMP
 #pragma omp atomic
 #endif
   mig_area_score += scr;
@@ -167,6 +172,12 @@ void Tallies::calc_gen_values() {
   leak = leak_score / total_weight;
   k_tot = k_tot_score / total_weight;
   mig = mig_area_score / total_weight;
+
+  k_col_vec.push_back(k_col);
+  k_abs_vec.push_back(k_abs);
+  k_trk_vec.push_back(k_trk);
+  leak_vec.push_back(leak);
+  mig_vec.push_back(mig);
 }
 
 void Tallies::record_generation(double multiplier) {
@@ -192,13 +203,66 @@ void Tallies::record_generation(double multiplier) {
 }
 
 void Tallies::write_tallies() {
-  for (auto& tally : collision_mesh_tallies_) tally->write_tally();
+  if (mpi::rank != 0) return;
 
-  for (auto& tally : track_length_mesh_tallies_) tally->write_tally();
+  auto& h5 = Output::instance().h5();
 
-  for (auto& tally : source_mesh_tallies_) tally->write_tally();
+  // Make results group
+  auto results = h5.createGroup("results");
 
-  for (auto& tally : noise_source_mesh_tallies_) tally->write_tally();
+  // Record the active number of generations
+  results.createAttribute("generations", gen);
+
+  // Write vectors to hdf5
+  if (settings::mode == settings::SimulationMode::K_EIGENVALUE ||
+      settings::mode == settings::SimulationMode::BRANCHLESS_K_EIGENVALUE) {
+    results.createDataSet("kcol", k_col_vec);
+    if (settings::tracking == settings::TrackingMode::SURFACE_TRACKING) {
+      // The TLE is no good if we aren't using surface tracking
+      results.createDataSet("ktrk", k_trk_vec);
+    }
+    if (settings::energy_mode == settings::EnergyMode::CE) {
+      // In MG mode, kcol = kabs, so don't wrie the same data twice.
+      results.createDataSet("kabs", k_abs_vec);
+    }
+
+    if (gen > 0) {
+      // Only write these if we started recording them
+      results.createAttribute("kcol-avg", kcol_avg());
+      results.createAttribute("kcol-std", kcol_err());
+
+      if (settings::tracking == settings::TrackingMode::SURFACE_TRACKING) {
+        // The TLE is no good if we aren't using surface tracking
+        results.createAttribute("ktrk-avg", ktrk_avg());
+        results.createAttribute("ktrk-std", ktrk_err());
+      }
+      if (settings::energy_mode == settings::EnergyMode::CE) {
+        // In MG mode, kcol = kabs, so don't wrie the same data twice.
+        results.createAttribute("kabs-avg", kabs_avg());
+        results.createAttribute("kabs-std", kabs_err());
+      }
+    }
+  }
+  results.createDataSet("leakage", leak_vec);
+  results.createDataSet("mig-area", mig_vec);
+  if (gen > 0) {
+    results.createAttribute("leakage-avg", leakage_avg());
+    results.createAttribute("leakage-str", leakage_err());
+
+    results.createAttribute("mig-area-avg", mig_area_avg());
+    results.createAttribute("mig-area-std", mig_area_err());
+  }
+
+  // Write all mesh tallies
+  if (gen > 0) {
+    for (auto& tally : collision_mesh_tallies_) tally->write_tally();
+
+    for (auto& tally : track_length_mesh_tallies_) tally->write_tally();
+
+    for (auto& tally : source_mesh_tallies_) tally->write_tally();
+
+    for (auto& tally : noise_source_mesh_tallies_) tally->write_tally();
+  }
 }
 
 void Tallies::update_avg_and_var(double x, double& x_avg, double& x_var) {

@@ -22,28 +22,21 @@
  * along with Abeille. If not, see <https://www.gnu.org/licenses/>.
  *
  * */
-#ifndef MONO_DIRECTIONAL_H
-#define MONO_DIRECTIONAL_H
+#ifndef BOUNDARY_H
+#define BOUNDARY_H
 
-#include <simulation/direction_distribution.hpp>
+#include <geometry/surfaces/surface.hpp>
 
-#include <yaml-cpp/yaml.h>
+//==========================================================================
+// Boundary struct to contain information about boundary crossings
+struct Boundary {
+  Boundary(double d, int index, BoundaryType bound)
+      : distance{d}, surface_index(index), boundary_type{bound}, token(0) {}
 
-#include <memory>
-
-class MonoDirectional : public DirectionDistribution {
- public:
-  MonoDirectional(Direction u) : direction_(u) {}
-
-  Direction sample(pcg32& /*rng*/) const override final { return direction_; }
-
-  Direction direction() const { return direction_; }
-
- private:
-  Direction direction_;
+  double distance;
+  int surface_index;
+  BoundaryType boundary_type;
+  int32_t token;
 };
-
-std::shared_ptr<MonoDirectional> make_mono_directional_distribution(
-    const YAML::Node& node);
 
 #endif

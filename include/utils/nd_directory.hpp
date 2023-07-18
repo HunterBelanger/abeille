@@ -1,19 +1,43 @@
+/*
+ * Abeille Monte Carlo Code
+ * Copyright 2019-2023, Hunter Belanger
+ *
+ * hunter.belanger@gmail.com
+ *
+ * This file is part of the Abeille Monte Carlo code (Abeille).
+ *
+ * Abeille is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Abeille is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Abeille. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * */
 #ifndef ABEILLE_ND_DIRECTORY_H
 #define ABEILLE_ND_DIRECTORY_H
+
+#include <materials/ce_nuclide.hpp>
+#include <utils/error.hpp>
+
+#include <PapillonNDL/st_neutron.hpp>
+#include <PapillonNDL/st_thermal_scattering_law.hpp>
 
 #include <yaml-cpp/node/node.h>
 #include <yaml-cpp/yaml.h>
 
-#include <PapillonNDL/st_neutron.hpp>
-#include <PapillonNDL/st_thermal_scattering_law.hpp>
 #include <algorithm>
 #include <filesystem>
 #include <map>
-#include <materials/ce_nuclide.hpp>
 #include <memory>
 #include <optional>
 #include <string>
-#include <utils/error.hpp>
 #include <variant>
 #include <vector>
 
@@ -65,6 +89,8 @@ class NDDirectory {
 
   void set_use_dbrc(bool dbrc) { use_dbrc_ = dbrc; }
 
+  void set_dbrc_nuclides(const std::vector<std::string>& dbrc_nucs);
+
  private:
   struct ACEEntry {
     std::filesystem::path fname;
@@ -95,6 +121,7 @@ class NDDirectory {
   struct NeutronACEList {
     std::vector<NeutronACE> neutron_ace_files;
     std::shared_ptr<pndl::STNeutron> first_loaded;
+    bool dbrc = false;
 
     NeutronACEList() {}
     NeutronACEList(const std::filesystem::path& basename,

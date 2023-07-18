@@ -1,49 +1,35 @@
-/*=============================================================================*
- * Copyright (C) 2021-2022, Commissariat à l'Energie Atomique et aux Energies
+/*
+ * Abeille Monte Carlo Code
+ * Copyright 2019-2023, Hunter Belanger
+ * Copyright 2021-2022, Commissariat à l'Energie Atomique et aux Energies
  * Alternatives
  *
- * Contributeur : Hunter Belanger (hunter.belanger@cea.fr)
+ * hunter.belanger@gmail.com
  *
- * Ce logiciel est régi par la licence CeCILL soumise au droit français et
- * respectant les principes de diffusion des logiciels libres. Vous pouvez
- * utiliser, modifier et/ou redistribuer ce programme sous les conditions
- * de la licence CeCILL telle que diffusée par le CEA, le CNRS et l'INRIA
- * sur le site "http://www.cecill.info".
+ * This file is part of the Abeille Monte Carlo code (Abeille).
  *
- * En contrepartie de l'accessibilité au code source et des droits de copie,
- * de modification et de redistribution accordés par cette licence, il n'est
- * offert aux utilisateurs qu'une garantie limitée.  Pour les mêmes raisons,
- * seule une responsabilité restreinte pèse sur l'auteur du programme,  le
- * titulaire des droits patrimoniaux et les concédants successifs.
+ * Abeille is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- * A cet égard  l'attention de l'utilisateur est attirée sur les risques
- * associés au chargement,  à l'utilisation,  à la modification et/ou au
- * développement et à la reproduction du logiciel par l'utilisateur étant
- * donné sa spécificité de logiciel libre, qui peut le rendre complexe à
- * manipuler et qui le réserve donc à des développeurs et des professionnels
- * avertis possédant  des  connaissances  informatiques approfondies.  Les
- * utilisateurs sont donc invités à charger  et  tester  l'adéquation  du
- * logiciel à leurs besoins dans des conditions permettant d'assurer la
- * sécurité de leurs systèmes et ou de leurs données et, plus généralement,
- * à l'utiliser et l'exploiter dans les mêmes conditions de sécurité.
+ * Abeille is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
  *
- * Le fait que vous puissiez accéder à cet en-tête signifie que vous avez
- * pris connaissance de la licence CeCILL, et que vous en avez accepté les
- * termes.
- *============================================================================*/
-#include <algorithm>
-#include <cstdlib>
-#include <filesystem>
+ * You should have received a copy of the GNU General Public License
+ * along with Abeille. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * */
 #include <geometry/cell_universe.hpp>
 #include <geometry/geometry.hpp>
 #include <geometry/hex_lattice.hpp>
+#include <geometry/lattice.hpp>
 #include <geometry/lattice_universe.hpp>
 #include <geometry/rect_lattice.hpp>
 #include <geometry/surfaces/all_surfaces.hpp>
-#include <iomanip>
-#include <ios>
 #include <materials/nuclide.hpp>
-#include <memory>
 #include <simulation/branchless_power_iterator.hpp>
 #include <simulation/carter_tracker.hpp>
 #include <simulation/delta_tracker.hpp>
@@ -55,14 +41,23 @@
 #include <simulation/noise.hpp>
 #include <simulation/power_iterator.hpp>
 #include <simulation/surface_tracker.hpp>
-#include <sstream>
-#include <string>
 #include <utils/error.hpp>
+#include <utils/mpi.hpp>
 #include <utils/nd_directory.hpp>
 #include <utils/output.hpp>
 #include <utils/parser.hpp>
 #include <utils/settings.hpp>
 #include <utils/timer.hpp>
+
+#include <algorithm>
+#include <cstdlib>
+#include <filesystem>
+#include <fstream>
+#include <iomanip>
+#include <ios>
+#include <memory>
+#include <sstream>
+#include <string>
 
 //===========================================================================
 // Initialize Maps from id to index
@@ -86,14 +81,28 @@ void parse_input_file(std::string fname) {
   Timer parsing_timer;
   parsing_timer.start();
 
-  Output::instance()->write(" Reading input file.\n");
+  Output::instance().write(" Reading input file.\n");
 
   // Open input file
   YAML::Node input = YAML::LoadFile(fname);
 
+  if (mpi::rank == 0) {
+    // Copy input file to the output file. Do this in its own scope so that
+    // the potentially large amount of memory is freed before we make things.
+    std::ifstream input_file_stream(fname);
+    std::stringstream input_file_buffer;
+    input_file_buffer << input_file_stream.rdbuf();
+    std::vector<std::string> input_file_str_vec = {input_file_buffer.str()};
+
+    auto h5 = Output::instance().h5();
+    auto ds = h5.createDataSet<std::string>(
+        "input", H5::DataSpace::From(input_file_str_vec));
+    ds.write(input_file_str_vec);
+  }
+
   make_settings(input);
 
-  Output::instance()->write(" Constructing simulation.\n");
+  Output::instance().write(" Constructing simulation.\n");
   make_materials(input);
 
   make_geometry(input);
@@ -119,12 +128,17 @@ void parse_input_file(std::string fname) {
 
   // End parsing timer
   parsing_timer.stop();
-  Output::instance()->write(
+  Output::instance().write(
       " Time to Parse Input : " + std::to_string(parsing_timer.elapsed_time()) +
       " seconds.\n");
+
+  if (mpi::rank == 0) {
+    Output::instance().h5().createAttribute("parse-time",
+                                            parsing_timer.elapsed_time());
+  }
 }
 
-void make_materials(YAML::Node input, bool plotting_mode) {
+void make_materials(const YAML::Node& input, bool plotting_mode) {
   // Parse materials
   if (input["materials"] && input["materials"].IsSequence()) {
     // Go through all materials
@@ -160,12 +174,10 @@ void make_materials(YAML::Node input, bool plotting_mode) {
        << settings::min_energy << " MeV.\n";
   mssg << " Max energy = " << settings::max_energy << " MeV.\n";
 
-  Output::instance()->write(mssg.str());
+  Output::instance().write(mssg.str());
 }
 
-void make_geometry(YAML::Node input) {
-  std::shared_ptr<Output> out = Output::instance();
-
+void make_geometry(const YAML::Node& input) {
   // Parse Surfaces
   if (input["surfaces"] && input["surfaces"].IsSequence()) {
     // Go through all surfaces
@@ -182,7 +194,7 @@ void make_geometry(YAML::Node input) {
   if (input["cells"] && input["cells"].IsSequence()) {
     // Go through all cells
     for (size_t c = 0; c < input["cells"].size(); c++) {
-      make_cell(input["cells"][c]);
+      make_cell(input["cells"][c], input);
     }
 
   } else {
@@ -202,6 +214,16 @@ void make_geometry(YAML::Node input) {
     fatal_error("No universes are provided in input file.");
   }
 
+  // Make sure no universe has a cyclic dependence on itself !
+  for (const auto& uni : geometry::universes) {
+    if (uni->contains_universe(uni->id())) {
+      std::stringstream mssg;
+      mssg << "Cyclical universe reference found for universe " << uni->id()
+           << ".";
+      fatal_error(mssg.str());
+    }
+  }
+
   // Parse root universe
   if (input["root-universe"] && input["root-universe"].IsScalar()) {
     uint32_t root_id = input["root-universe"].as<uint32_t>();
@@ -218,7 +240,7 @@ void make_geometry(YAML::Node input) {
   }
 }
 
-void make_surface(YAML::Node surface_node) {
+void make_surface(const YAML::Node& surface_node) {
   // Try to get type
   std::string surf_type;
   if (surface_node["type"] && surface_node["type"].IsScalar())
@@ -261,20 +283,14 @@ void make_surface(YAML::Node surface_node) {
     surface_id_to_indx[surf_pntr->id()] = geometry::surfaces.size();
     geometry::surfaces.push_back(surf_pntr);
   }
-
-  // Add index to boundaries vector, which contains indicies of surfaces
-  // which have critical boundary conditions
-  if (surf_pntr->boundary() != BoundaryType::Normal) {
-    geometry::boundaries.push_back(surface_id_to_indx[surf_pntr->id()]);
-  }
 }
 
-void make_universe(YAML::Node uni_node, YAML::Node input) {
+void make_universe(const YAML::Node& uni_node, const YAML::Node& input) {
   uint32_t id;
   if (uni_node["id"] && uni_node["id"].IsScalar()) {
     id = uni_node["id"].as<uint32_t>();
 
-    // Make sure cell can't be found
+    // Make sure universe can't be found
     if (universe_id_to_indx.find(id) == universe_id_to_indx.end()) {
       if (uni_node["cells"] && uni_node["cells"].IsSequence()) {
         make_cell_universe(uni_node);
@@ -290,7 +306,7 @@ void make_universe(YAML::Node uni_node, YAML::Node input) {
   }
 }
 
-void find_universe(YAML::Node input, uint32_t id) {
+void find_universe(const YAML::Node& input, uint32_t id) {
   // Iterate through universes
   if (universe_id_to_indx.find(id) == universe_id_to_indx.end()) {
     bool found = false;
@@ -316,7 +332,7 @@ void find_universe(YAML::Node input, uint32_t id) {
   }
 }
 
-void make_settings(YAML::Node input) {
+void make_settings(const YAML::Node& input) {
   if (input["settings"] && input["settings"].IsMap()) {
     const auto& settnode = input["settings"];
 
@@ -351,10 +367,10 @@ void make_settings(YAML::Node input) {
       }
 
       if (settings::branchless_splitting) {
-        Output::instance()->write(
+        Output::instance().write(
             " Using splitting during branchless collisions.\n");
       } else {
-        Output::instance()->write(
+        Output::instance().write(
             " No splitting during branchless collisions.\n");
       }
 
@@ -365,10 +381,10 @@ void make_settings(YAML::Node input) {
       }
 
       if (settings::branchless_combing) {
-        Output::instance()->write(
+        Output::instance().write(
             " Using combing between fission generations.\n");
       } else {
-        Output::instance()->write(" No combing between fission generations.\n");
+        Output::instance().write(" No combing between fission generations.\n");
       }
 
       // Branchless on Material or Isotope
@@ -378,10 +394,10 @@ void make_settings(YAML::Node input) {
       }
 
       if (settings::branchless_material) {
-        Output::instance()->write(
+        Output::instance().write(
             " Performing branchless collision on material.\n");
       } else {
-        Output::instance()->write(
+        Output::instance().write(
             " Performing branchless collision on isotope.\n");
       }
     }
@@ -401,14 +417,15 @@ void make_settings(YAML::Node input) {
         settings::tracking = settings::TrackingMode::CARTER_TRACKING;
 
         // Read the sampling-xs entry in the input file
-        if (!input["sampling-xs"] || !input["sampling-xs"].IsSequence()) {
+        if (!input["sampling-xs-ratio"] ||
+            !input["sampling-xs-ratio"].IsSequence()) {
           fatal_error(
-              "Must provide the \"sampling-xs\" vector to use Carter "
+              "Must provide the \"sampling-xs-ratio\" vector to use Carter "
               "Tracking.");
         }
 
         settings::sample_xs_ratio =
-            input["sampling-xs"].as<std::vector<double>>();
+            input["sampling-xs-ratio"].as<std::vector<double>>();
 
         // Make sure all ratios are positive
         for (const auto& v : settings::sample_xs_ratio) {
@@ -430,11 +447,11 @@ void make_settings(YAML::Node input) {
     if (settnode["energy-mode"] && settnode["energy-mode"].IsScalar()) {
       if (settnode["energy-mode"].as<std::string>() == "multi-group") {
         settings::energy_mode = settings::EnergyMode::MG;
-        Output::instance()->write(" Running in Multi-Group mode.\n");
+        Output::instance().write(" Running in Multi-Group mode.\n");
       } else if (settnode["energy-mode"].as<std::string>() ==
                  "continuous-energy") {
         settings::energy_mode = settings::EnergyMode::CE;
-        Output::instance()->write(" Running in Continuous-Energy mode.\n");
+        Output::instance().write(" Running in Continuous-Energy mode.\n");
       } else {
         std::string mssg = "Invalid energy mode ";
         mssg += settnode["energy-mode"].as<std::string>() + ".";
@@ -443,7 +460,7 @@ void make_settings(YAML::Node input) {
     } else {
       // CE by default
       settings::energy_mode = settings::EnergyMode::CE;
-      Output::instance()->write(" Running in Continuous-Energy mode.\n");
+      Output::instance().write(" Running in Continuous-Energy mode.\n");
     }
 
     // If we are in CE mode, we need to get the path to the nuclear data
@@ -476,15 +493,15 @@ void make_settings(YAML::Node input) {
       // Write temperature interpolation method
       switch (settings::temp_interpolation) {
         case TempInterpolation::Exact:
-          Output::instance()->write(" Temperature interpolation: Exact\n");
+          Output::instance().write(" Temperature interpolation: Exact\n");
           break;
 
         case TempInterpolation::Nearest:
-          Output::instance()->write(" Temperature interpolation: Nearest\n");
+          Output::instance().write(" Temperature interpolation: Nearest\n");
           break;
 
         case TempInterpolation::Linear:
-          Output::instance()->write(" Temperature interpolation: Linear\n");
+          Output::instance().write(" Temperature interpolation: Linear\n");
           break;
       }
 
@@ -506,7 +523,7 @@ void make_settings(YAML::Node input) {
         settings::nd_directory_fname = std::getenv("ABEILLE_ND_DIRECTORY");
       }
 
-      Output::instance()->write(
+      Output::instance().write(
           " Nuclear Data Directory: " + settings::nd_directory_fname + "\n");
 
       // Now we construct the global NDDirectory which lives in the settings
@@ -521,7 +538,19 @@ void make_settings(YAML::Node input) {
       }
       settings::nd_directory->set_use_dbrc(settings::use_dbrc);
       if (settings::use_dbrc == false) {
-        Output::instance()->write(" DBRC disabled in settings.\n");
+        Output::instance().write(" DBRC disabled in settings.\n");
+      }
+
+      // If using DBRC, check for the list of neutrons provided by the user
+      if (settings::use_dbrc) {
+        if (settnode["dbrc-nuclides"] &&
+            settnode["dbrc-nuclides"].IsSequence()) {
+          settings::dbrc_nuclides =
+              settnode["dbrc-nuclides"].as<std::vector<std::string>>();
+          settings::nd_directory->set_dbrc_nuclides(settings::dbrc_nuclides);
+        } else if (settnode["dbrc-nuclides"]) {
+          fatal_error("Invalid \"dbrc-nuclides\" entry in settings.");
+        }
       }
 
       // Get use of URR PTables option
@@ -532,9 +561,9 @@ void make_settings(YAML::Node input) {
         fatal_error("Invalid \"use-urr-ptables\" entry in settings.");
       }
       if (settings::use_urr_ptables) {
-        Output::instance()->write(" Using URR PTables.\n");
+        Output::instance().write(" Using URR PTables.\n");
       } else {
-        Output::instance()->write(" Not using URR PTables.\n");
+        Output::instance().write(" Not using URR PTables.\n");
       }
     }
 
@@ -621,11 +650,54 @@ void make_settings(YAML::Node input) {
       settings::nskip = settnode["nskip"].as<int>();
     }
 
+    // Get roulette settings
+    if (settnode["wgt-cutoff"] && settnode["wgt-cutoff"].IsScalar()) {
+      settings::wgt_cutoff = settnode["wgt-cutoff"].as<double>();
+
+      if (settings::wgt_cutoff <= 0.) {
+        fatal_error("Roulette cutoff (\"wgt-cutoff\") must be > 0.");
+      }
+    } else if (settnode["wgt-cutoff"]) {
+      fatal_error("Invalid \"wgt-cutoff\" entry in settings.");
+    }
+
+    if (settnode["wgt-survival"] && settnode["wgt-survival"].IsScalar()) {
+      settings::wgt_survival = settnode["wgt-survival"].as<double>();
+
+      if (settings::wgt_survival <= 0.) {
+        fatal_error("Roulette survival weight (\"wgt-survival\") must be > 0.");
+      }
+
+      if (settings::wgt_survival <= settings::wgt_cutoff) {
+        fatal_error(
+            "Roulette survival weight (\"wgt-survival\") must be > cutoff "
+            "weight (\"wgt-cutoff\").");
+      }
+    } else if (settnode["wgt-survival"]) {
+      fatal_error("Invalid \"wgt-survival\" entry in settings.");
+    }
+
+    if (settnode["wgt-split"] && settnode["wgt-split"].IsScalar()) {
+      settings::wgt_split = settnode["wgt-split"].as<double>();
+
+      if (settings::wgt_split <= 0.) {
+        fatal_error("Splitting weight (\"wgt-split\") must be > 0.");
+      }
+
+      if (settings::wgt_split <= settings::wgt_survival) {
+        fatal_error(
+            "Splitting weight (\"wgt-split\") must be > roulette survival "
+            "weight (\"wgt-survival\").");
+      }
+    } else if (settnode["wgt-split"]) {
+      fatal_error("Invalid \"wgt-split\" entry in settings.");
+    }
+
     // Get max run time
     if (settnode["max-run-time"] && settnode["max-run-time"].IsScalar()) {
       // Get runtime in minutes
       double max_time_in_mins = settnode["max-run-time"].as<double>();
-      Output::instance()->write(
+      Output::instance().write(
           " Max Run Time: " + std::to_string(max_time_in_mins) + " mins.\n");
 
       // Change minutes to seconds
@@ -645,7 +717,7 @@ void make_settings(YAML::Node input) {
       }
       settings::w_noise = settnode["noise-angular-frequency"].as<double>();
 
-      Output::instance()->write(
+      Output::instance().write(
           " Noise angular-frequency: " + std::to_string(settings::w_noise) +
           " radians / s.\n");
 
@@ -659,7 +731,7 @@ void make_settings(YAML::Node input) {
         fatal_error("Noise keff must be greater than zero.");
       }
 
-      Output::instance()->write(
+      Output::instance().write(
           " Noise keff: " + std::to_string(settings::keff) + "\n");
 
       // Get the inner_generations option
@@ -677,7 +749,7 @@ void make_settings(YAML::Node input) {
         settings::normalize_noise_source =
             settnode["normalize-noise-source"].as<bool>();
         if (settings::normalize_noise_source) {
-          Output::instance()->write(" Normalizing noise source\n");
+          Output::instance().write(" Normalizing noise source\n");
         }
       } else if (settnode["normalize-noise-source"]) {
         fatal_error(
@@ -693,12 +765,6 @@ void make_settings(YAML::Node input) {
     } else if (settnode["rng-stride-warnings"]) {
       fatal_error(
           "Invalid \"rng-stride-warnings\" entry provided in settings.");
-    }
-
-    // Get name of source out file
-    if (settnode["sourcefile"] && settnode["sourcefile"].IsScalar()) {
-      settings::source_file_name = settnode["sourcefile"].as<std::string>();
-      settings::save_source = true;
     }
 
     // Get name of source in file
@@ -719,14 +785,14 @@ void make_settings(YAML::Node input) {
     // Get seed for rng
     if (settnode["seed"] && settnode["seed"].IsScalar()) {
       settings::rng_seed = settnode["seed"].as<uint64_t>();
-      Output::instance()->write(
+      Output::instance().write(
           " RNG seed = " + std::to_string(settings::rng_seed) + " ...\n");
     }
 
     // Get stride for rng
     if (settnode["stride"] && settnode["stride"].IsScalar()) {
       settings::rng_stride = settnode["stride"].as<uint64_t>();
-      Output::instance()->write(
+      Output::instance().write(
           " RNG stride = " + std::to_string(settings::rng_seed) + " ...\n");
     }
 
@@ -738,7 +804,7 @@ void make_settings(YAML::Node input) {
       }
     }
     if (settings::regional_cancellation) {
-      Output::instance()->write(" Using regional cancellation.\n");
+      Output::instance().write(" Using regional cancellation.\n");
     }
 
     // Get number of noise generations to cancel
@@ -752,9 +818,9 @@ void make_settings(YAML::Node input) {
         settnode["noise-cancellation"].IsScalar()) {
       if (settnode["noise-cancellation"].as<bool>() == true) {
         settings::regional_cancellation_noise = true;
-        Output::instance()->write(
-            " Cancel noise gens : " +
-            std::to_string(settings::n_cancel_noise_gens) + " generations.\n");
+        Output::instance().write(" Cancel noise gens : " +
+                                 std::to_string(settings::n_cancel_noise_gens) +
+                                 " generations.\n");
       }
     }
 
@@ -789,9 +855,11 @@ void make_settings(YAML::Node input) {
   } else {
     fatal_error("Not settings specified in input file.");
   }
+
+  settings::write_settings_to_output();
 }
 
-void make_tallies(YAML::Node input) {
+void make_tallies(const YAML::Node& input) {
   // Make base tallies object which is required
   tallies =
       std::make_shared<Tallies>(static_cast<double>(settings::nparticles));
@@ -816,27 +884,27 @@ void make_transporter() {
   switch (settings::tracking) {
     case settings::TrackingMode::SURFACE_TRACKING:
       transporter = std::make_shared<SurfaceTracker>(tallies);
-      Output::instance()->write(" Using Surface-Tracking.\n");
+      Output::instance().write(" Using Surface-Tracking.\n");
       break;
 
     case settings::TrackingMode::DELTA_TRACKING:
       transporter = std::make_shared<DeltaTracker>(tallies);
-      Output::instance()->write(" Using Delta-Tracking.\n");
+      Output::instance().write(" Using Delta-Tracking.\n");
       break;
 
     case settings::TrackingMode::IMPLICIT_LEAKAGE_DELTA_TRACKING:
       transporter = std::make_shared<ImplicitLeakageDeltaTracker>(tallies);
-      Output::instance()->write(" Using Implicit-Leakage-Delta-Tracking.\n");
+      Output::instance().write(" Using Implicit-Leakage-Delta-Tracking.\n");
       break;
 
     case settings::TrackingMode::CARTER_TRACKING:
       transporter = std::make_shared<CarterTracker>(tallies);
-      Output::instance()->write(" Using Carter-Tracking.\n");
+      Output::instance().write(" Using Carter-Tracking.\n");
       break;
   }
 }
 
-void make_cancellation_bins(YAML::Node input) {
+void make_cancellation_bins(const YAML::Node& input) {
   if (!input["cancelator"] || !input["cancelator"].IsMap()) {
     fatal_error(
         "Regional cancelation is activated, but no cancelator entry is "
@@ -857,7 +925,7 @@ void make_cancellation_bins(YAML::Node input) {
   cancelator = make_cancelator(input["cancelator"]);
 }
 
-void make_sources(YAML::Node input) {
+void make_sources(const YAML::Node& input) {
   if (input["sources"] && input["sources"].IsSequence()) {
     // Do all sources
     for (size_t s = 0; s < input["sources"].size(); s++) {
@@ -870,7 +938,7 @@ void make_sources(YAML::Node input) {
   }
 }
 
-void make_noise_sources(YAML::Node input) {
+void make_noise_sources(const YAML::Node& input) {
   if (input["noise-sources"] && input["noise-sources"].IsSequence()) {
     // Do all sources
     for (size_t s = 0; s < input["noise-sources"].size(); s++) {
@@ -931,7 +999,7 @@ void make_simulation() {
   }
 }
 
-void make_entropy_mesh(YAML::Node entropy) {
+void make_entropy_mesh(const YAML::Node& entropy) {
   // Get lower corner
   std::vector<double> low;
   if (entropy["low"] && entropy["low"].IsSequence() &&

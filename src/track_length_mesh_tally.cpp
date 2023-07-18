@@ -1,43 +1,35 @@
-/*=============================================================================*
- * Copyright (C) 2021-2022, Commissariat à l'Energie Atomique et aux Energies
+/*
+ * Abeille Monte Carlo Code
+ * Copyright 2019-2023, Hunter Belanger
+ * Copyright 2021-2022, Commissariat à l'Energie Atomique et aux Energies
  * Alternatives
  *
- * Contributeur : Hunter Belanger (hunter.belanger@cea.fr)
+ * hunter.belanger@gmail.com
  *
- * Ce logiciel est régi par la licence CeCILL soumise au droit français et
- * respectant les principes de diffusion des logiciels libres. Vous pouvez
- * utiliser, modifier et/ou redistribuer ce programme sous les conditions
- * de la licence CeCILL telle que diffusée par le CEA, le CNRS et l'INRIA
- * sur le site "http://www.cecill.info".
+ * This file is part of the Abeille Monte Carlo code (Abeille).
  *
- * En contrepartie de l'accessibilité au code source et des droits de copie,
- * de modification et de redistribution accordés par cette licence, il n'est
- * offert aux utilisateurs qu'une garantie limitée.  Pour les mêmes raisons,
- * seule une responsabilité restreinte pèse sur l'auteur du programme,  le
- * titulaire des droits patrimoniaux et les concédants successifs.
+ * Abeille is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- * A cet égard  l'attention de l'utilisateur est attirée sur les risques
- * associés au chargement,  à l'utilisation,  à la modification et/ou au
- * développement et à la reproduction du logiciel par l'utilisateur étant
- * donné sa spécificité de logiciel libre, qui peut le rendre complexe à
- * manipuler et qui le réserve donc à des développeurs et des professionnels
- * avertis possédant  des  connaissances  informatiques approfondies.  Les
- * utilisateurs sont donc invités à charger  et  tester  l'adéquation  du
- * logiciel à leurs besoins dans des conditions permettant d'assurer la
- * sécurité de leurs systèmes et ou de leurs données et, plus généralement,
- * à l'utiliser et l'exploiter dans les mêmes conditions de sécurité.
+ * Abeille is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
  *
- * Le fait que vous puissiez accéder à cet en-tête signifie que vous avez
- * pris connaissance de la licence CeCILL, et que vous en avez accepté les
- * termes.
- *============================================================================*/
-#include <algorithm>
+ * You should have received a copy of the GNU General Public License
+ * along with Abeille. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * */
 #include <simulation/track_length_mesh_tally.hpp>
-#include <sstream>
 #include <utils/constants.hpp>
 #include <utils/error.hpp>
 #include <utils/output.hpp>
 #include <utils/position.hpp>
+
+#include <algorithm>
+#include <sstream>
 
 inline double TrackLengthMeshTally::get_base_score(const Particle& p,
                                                    MaterialHelper& mat) const {
@@ -67,7 +59,7 @@ inline double TrackLengthMeshTally::get_base_score(const Particle& p,
       break;
 
     case Quantity::MT:
-      base_score *= p.wgt() * mat.Emt(mt, p.E());
+      base_score *= p.wgt() * mat.Emt(mt_, p.E());
       break;
 
     case Quantity::RealFlux:
@@ -148,8 +140,8 @@ void TrackLengthMeshTally::score_flight(const Particle& p, double d,
 
     if (next_tile.first == INF) {
       // Something went wrong.... Don't score.
-      Output::instance()->save_warning("Problem encountered with mesh tally " +
-                                       fname + ".");
+      Output::instance().save_warning("Problem encountered with mesh tally " +
+                                      fname + ".");
       break;
     } else if (next_tile.first < 0.) {
       // Something went wrong.... Don't score.
@@ -164,7 +156,7 @@ void TrackLengthMeshTally::score_flight(const Particle& p, double d,
       uint64_t ui = static_cast<uint64_t>(i);
       uint64_t uj = static_cast<uint64_t>(j);
       uint64_t uk = static_cast<uint64_t>(k);
-#ifdef _OPENMP
+#ifdef ABEILLE_USE_OMP
 #pragma omp atomic
 #endif
       tally_gen(uE, ui, uj, uk) += d_tile * base_score;
@@ -189,15 +181,19 @@ void TrackLengthMeshTally::score_flight(const Particle& p, double d,
 
 bool TrackLengthMeshTally::find_entry_point(Position& r, const Direction& u,
                                             double& d_flight) const {
-  double d_min = (r_low.x() - r.x()) / u.x();
-  double d_max = (r_hi.x() - r.x()) / u.x();
+  const double ux_inv = 1. / u.x();
+  const double uy_inv = 1. / u.y();
+  const double uz_inv = 1. / u.z();
+
+  double d_min = (r_low.x() - r.x()) * ux_inv;
+  double d_max = (r_hi.x() - r.x()) * ux_inv;
 
   if (d_min > d_max) {
     std::swap(d_min, d_max);
   }
 
-  double d_y_min = (r_low.y() - r.y()) / u.y();
-  double d_y_max = (r_hi.y() - r.y()) / u.y();
+  double d_y_min = (r_low.y() - r.y()) * uy_inv;
+  double d_y_max = (r_hi.y() - r.y()) * uy_inv;
 
   if (d_y_min > d_y_max) {
     std::swap(d_y_min, d_y_max);
@@ -215,8 +211,8 @@ bool TrackLengthMeshTally::find_entry_point(Position& r, const Direction& u,
     d_max = d_y_max;
   }
 
-  double d_z_min = (r_low.z() - r.z()) / u.z();
-  double d_z_max = (r_hi.z() - r.z()) / u.z();
+  double d_z_min = (r_low.z() - r.z()) * uz_inv;
+  double d_z_max = (r_hi.z() - r.z()) * uz_inv;
 
   if (d_z_min > d_z_max) {
     std::swap(d_z_min, d_z_max);
@@ -261,9 +257,9 @@ void TrackLengthMeshTally::initialize_indices(const Position& r,
                                               const Direction& u, int& i,
                                               int& j, int& k,
                                               std::array<int, 3>& on) {
-  i = static_cast<int>(std::floor((r.x() - r_low.x()) / dx));
-  j = static_cast<int>(std::floor((r.y() - r_low.y()) / dy));
-  k = static_cast<int>(std::floor((r.z() - r_low.z()) / dz));
+  i = static_cast<int>(std::floor((r.x() - r_low.x()) * dx_inv));
+  j = static_cast<int>(std::floor((r.y() - r_low.y()) * dy_inv));
+  k = static_cast<int>(std::floor((r.z() - r_low.z()) * dz_inv));
   on.fill(0);
 
   // Must handle case of being on a tile boundary
@@ -345,19 +341,23 @@ std::pair<double, int> TrackLengthMeshTally::distance_to_next_index(
   int key = 0;
 
   // Check all six sides
-  double diff_xl = -dx * 0.5 - r_tile.x();
-  double diff_xh = dx * 0.5 - r_tile.x();
-  double diff_yl = -dy * 0.5 - r_tile.y();
-  double diff_yh = dy * 0.5 - r_tile.y();
-  double diff_zl = -dz * 0.5 - r_tile.z();
-  double diff_zh = dz * 0.5 - r_tile.z();
+  const double diff_xl = -dx * 0.5 - r_tile.x();
+  const double diff_xh = dx * 0.5 - r_tile.x();
+  const double diff_yl = -dy * 0.5 - r_tile.y();
+  const double diff_yh = dy * 0.5 - r_tile.y();
+  const double diff_zl = -dz * 0.5 - r_tile.z();
+  const double diff_zh = dz * 0.5 - r_tile.z();
 
-  double d_xl = diff_xl / u.x();
-  double d_xh = diff_xh / u.x();
-  double d_yl = diff_yl / u.y();
-  double d_yh = diff_yh / u.y();
-  double d_zl = diff_zl / u.z();
-  double d_zh = diff_zh / u.z();
+  const double ux_inv = 1. / u.x();
+  const double uy_inv = 1. / u.y();
+  const double uz_inv = 1. / u.z();
+
+  const double d_xl = diff_xl * ux_inv;
+  const double d_xh = diff_xh * ux_inv;
+  const double d_yl = diff_yl * uy_inv;
+  const double d_yh = diff_yh * uy_inv;
+  const double d_zl = diff_zl * uz_inv;
+  const double d_zh = diff_zh * uz_inv;
 
   if (d_xl > 0. && d_xl < dist && on[0] != -1) {
     dist = d_xl;
@@ -437,35 +437,35 @@ void TrackLengthMeshTally::update_indices(int key, int& i, int& j, int& k,
 std::string TrackLengthMeshTally::quantity_str() const {
   switch (quantity) {
     case Quantity::Flux:
-      return "Flux";
+      return "flux";
       break;
 
     case Quantity::Elastic:
-      return "Elastic";
+      return "elastic";
       break;
 
     case Quantity::Absorption:
-      return "Absorption";
+      return "absorption";
       break;
 
     case Quantity::Fission:
-      return "Fission\n";
+      return "fission\n";
       break;
 
     case Quantity::Total:
-      return "Total";
+      return "total";
       break;
 
     case Quantity::MT:
-      return "MT = " + std::to_string(mt);
+      return "mt";
       break;
 
     case Quantity::RealFlux:
-      return "RealFlux";
+      return "real-flux";
       break;
 
     case Quantity::ImgFlux:
-      return "ImgFlux";
+      return "imag-flux";
       break;
   }
 
@@ -585,7 +585,7 @@ std::shared_ptr<TrackLengthMeshTally> make_track_length_mesh_tally(
     mt = static_cast<uint32_t>(tmp_mt);
   } else if (quant_str == "real-flux") {
     quantity = Quantity::RealFlux;
-  } else if (quant_str == "img-flux") {
+  } else if (quant_str == "imag-flux") {
     quantity = Quantity::ImgFlux;
   } else {
     fatal_error("Unkown tally quantity \"" + quant_str + "\".");

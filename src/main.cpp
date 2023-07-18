@@ -1,53 +1,46 @@
-/*=============================================================================*
- * Copyright (C) 2021-2022, Commissariat à l'Energie Atomique et aux Energies
+/*
+ * Abeille Monte Carlo Code
+ * Copyright 2019-2023, Hunter Belanger
+ * Copyright 2021-2022, Commissariat à l'Energie Atomique et aux Energies
  * Alternatives
  *
- * Contributeur : Hunter Belanger (hunter.belanger@cea.fr)
+ * hunter.belanger@gmail.com
  *
- * Ce logiciel est régi par la licence CeCILL soumise au droit français et
- * respectant les principes de diffusion des logiciels libres. Vous pouvez
- * utiliser, modifier et/ou redistribuer ce programme sous les conditions
- * de la licence CeCILL telle que diffusée par le CEA, le CNRS et l'INRIA
- * sur le site "http://www.cecill.info".
+ * This file is part of the Abeille Monte Carlo code (Abeille).
  *
- * En contrepartie de l'accessibilité au code source et des droits de copie,
- * de modification et de redistribution accordés par cette licence, il n'est
- * offert aux utilisateurs qu'une garantie limitée.  Pour les mêmes raisons,
- * seule une responsabilité restreinte pèse sur l'auteur du programme,  le
- * titulaire des droits patrimoniaux et les concédants successifs.
+ * Abeille is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- * A cet égard  l'attention de l'utilisateur est attirée sur les risques
- * associés au chargement,  à l'utilisation,  à la modification et/ou au
- * développement et à la reproduction du logiciel par l'utilisateur étant
- * donné sa spécificité de logiciel libre, qui peut le rendre complexe à
- * manipuler et qui le réserve donc à des développeurs et des professionnels
- * avertis possédant  des  connaissances  informatiques approfondies.  Les
- * utilisateurs sont donc invités à charger  et  tester  l'adéquation  du
- * logiciel à leurs besoins dans des conditions permettant d'assurer la
- * sécurité de leurs systèmes et ou de leurs données et, plus généralement,
- * à l'utiliser et l'exploiter dans les mêmes conditions de sécurité.
+ * Abeille is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
  *
- * Le fait que vous puissiez accéder à cet en-tête signifie que vous avez
- * pris connaissance de la licence CeCILL, et que vous en avez accepté les
- * termes.
- *============================================================================*/
+ * You should have received a copy of the GNU General Public License
+ * along with Abeille. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * */
+#include <plotting/plotter.hpp>
+#include <utils/constants.hpp>
+#include <utils/header.hpp>
+#include <utils/mpi.hpp>
+#include <utils/output.hpp>
+#include <utils/parser.hpp>
+#include <utils/settings.hpp>
+#include <utils/timer.hpp>
+
 #include <docopt.h>
 
 #include <csignal>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
-#include <plotting/plotter.hpp>
 #include <stdexcept>
 #include <string>
-#include <utils/constants.hpp>
-#include <utils/header.hpp>
-#include <utils/mpi.hpp>
-#include <utils/output.hpp>
-#include <utils/parser.hpp>
-#include <utils/timer.hpp>
 
-#ifdef _OPENMP
+#ifdef ABEILLE_USE_OMP
 #include <omp.h>
 #endif
 
@@ -58,7 +51,7 @@ void signal_handler(int signal) {
     // current generation's particles have all been
     // transported as we can't break inside an
     // OpenMP loop.
-#ifdef _OPENMP
+#ifdef ABEILLE_USE_OMP
 #pragma omp critical
 #endif
     {
@@ -70,11 +63,11 @@ void signal_handler(int signal) {
     // wishes, and blow up everything, stoping the simulation imediately.
     // No tallies will be saved, and the program with exit with an error
     // code of 1.
-#ifdef _OPENMP
+#ifdef ABEILLE_USE_OMP
 #pragma omp critical
 #endif
     {
-      Output::instance()->write("\n !! >>> FORCE KILLED BY USER <<< !!\n");
+      Output::instance().write("\n !! >>> FORCE KILLED BY USER <<< !!\n");
       mpi::abort_mpi();
       std::exit(1);
     }
@@ -102,11 +95,10 @@ int main(int argc, char** argv) {
                      version_string + "\n" + info);
 
   std::string output_filename;
-  if (args["--output"])
+  if (args["--output"]) {
     output_filename = args["--output"].asString();
-  else
-    output_filename = "output.txt";
-  Output::set_output_filename(output_filename);
+    Output::set_output_filename(output_filename);
+  }
   mpi::synchronize();
 
 #ifdef ABEILLE_GUI_PLOT
@@ -115,7 +107,7 @@ int main(int argc, char** argv) {
   if (args["--plot"].asBool()) {
 #endif
     // If using OpenMP, get number of threads requested
-#ifdef _OPENMP
+#ifdef ABEILLE_USE_OMP
     int num_omp_threads;
     if (args["--threads"])
       num_omp_threads = std::stoi(args["--threads"].asString());
@@ -137,8 +129,11 @@ int main(int argc, char** argv) {
       input_fname = "input.yaml";
 
     if (input_fname.size() > 0) {
+      // Set plotting mode to true. This way we don't open an HDF5 output file.
+      settings::plotting_mode = true;
+
       print_header();
-      Output::instance()->write("\n");
+      Output::instance().write("\n");
 
       try {
         // Begin plotting system
@@ -153,7 +148,7 @@ int main(int argc, char** argv) {
 #endif
       } catch (const std::runtime_error& err) {
         std::string mssg = err.what();
-        Output::instance()->write(" FATAL ERROR: " + mssg + ".\n");
+        Output::instance().write(" FATAL ERROR: " + mssg + ".\n");
         std::exit(1);
       }
 
@@ -171,7 +166,7 @@ int main(int argc, char** argv) {
       input_filename = "input.txt";
 
       // If using OpenMP, get number of threads requested
-#ifdef _OPENMP
+#ifdef ABEILLE_USE_OMP
     int num_omp_threads;
     if (args["--threads"])
       num_omp_threads = std::stoi(args["--threads"].asString());
@@ -189,7 +184,7 @@ int main(int argc, char** argv) {
     // Print output header if rank 0
     mpi::synchronize();
     print_header();
-    Output::instance()->write("\n");
+    Output::instance().write("\n");
 
     // Parse input file
     bool parsed_file = false;
@@ -198,7 +193,7 @@ int main(int argc, char** argv) {
       parsed_file = true;
     } catch (const std::runtime_error& err) {
       std::string mssg = err.what();
-      Output::instance()->write(" FATAL ERROR: " + mssg + ".\n");
+      Output::instance().write(" FATAL ERROR: " + mssg + ".\n");
       parsed_file = false;
     }
 
@@ -219,17 +214,25 @@ int main(int argc, char** argv) {
 
 #ifdef ABEILLE_USE_MPI
   if (mpi::size > 1) {
-    Output::instance()->write(
+    Output::instance().write(
         " Total MPI time: " + std::to_string(mpi::timer.elapsed_time()) +
         " seconds.\n");
+
+    if (mpi::rank == 0)
+      Output::instance().h5().createAttribute("total-mpi-time",
+                                              mpi::timer.elapsed_time());
   }
 #endif
 
   settings::alpha_omega_timer.stop();
-  Output::instance()->write(
+  Output::instance().write(
       " Total Runtime: " +
       std::to_string(settings::alpha_omega_timer.elapsed_time()) +
       " seconds.\n");
+
+  if (mpi::rank == 0)
+    Output::instance().h5().createAttribute(
+        "total-run-time", settings::alpha_omega_timer.elapsed_time());
 
   return 0;
 }

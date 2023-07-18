@@ -1,39 +1,34 @@
-/*=============================================================================*
- * Copyright (C) 2021-2022, Commissariat à l'Energie Atomique et aux Energies
+/*
+ * Abeille Monte Carlo Code
+ * Copyright 2019-2023, Hunter Belanger
+ * Copyright 2021-2022, Commissariat à l'Energie Atomique et aux Energies
  * Alternatives
  *
- * Contributeur : Hunter Belanger (hunter.belanger@cea.fr)
+ * hunter.belanger@gmail.com
  *
- * Ce logiciel est régi par la licence CeCILL soumise au droit français et
- * respectant les principes de diffusion des logiciels libres. Vous pouvez
- * utiliser, modifier et/ou redistribuer ce programme sous les conditions
- * de la licence CeCILL telle que diffusée par le CEA, le CNRS et l'INRIA
- * sur le site "http://www.cecill.info".
+ * This file is part of the Abeille Monte Carlo code (Abeille).
  *
- * En contrepartie de l'accessibilité au code source et des droits de copie,
- * de modification et de redistribution accordés par cette licence, il n'est
- * offert aux utilisateurs qu'une garantie limitée.  Pour les mêmes raisons,
- * seule une responsabilité restreinte pèse sur l'auteur du programme,  le
- * titulaire des droits patrimoniaux et les concédants successifs.
+ * Abeille is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- * A cet égard  l'attention de l'utilisateur est attirée sur les risques
- * associés au chargement,  à l'utilisation,  à la modification et/ou au
- * développement et à la reproduction du logiciel par l'utilisateur étant
- * donné sa spécificité de logiciel libre, qui peut le rendre complexe à
- * manipuler et qui le réserve donc à des développeurs et des professionnels
- * avertis possédant  des  connaissances  informatiques approfondies.  Les
- * utilisateurs sont donc invités à charger  et  tester  l'adéquation  du
- * logiciel à leurs besoins dans des conditions permettant d'assurer la
- * sécurité de leurs systèmes et ou de leurs données et, plus généralement,
- * à l'utiliser et l'exploiter dans les mêmes conditions de sécurité.
+ * Abeille is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
  *
- * Le fait que vous puissiez accéder à cet en-tête signifie que vous avez
- * pris connaissance de la licence CeCILL, et que vous en avez accepté les
- * termes.
- *============================================================================*/
-#include <memory>
+ * You should have received a copy of the GNU General Public License
+ * along with Abeille. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * */
 #include <utils/constants.hpp>
+#include <utils/mpi.hpp>
+#include <utils/output.hpp>
 #include <utils/settings.hpp>
+
+#include <memory>
+#include <random>
 
 namespace settings {
 int nparticles = 100000;  // Number of particles per batch / generation
@@ -44,6 +39,8 @@ int nskip =
 
 uint32_t ngroups = 0;
 int n_cancel_noise_gens = INF_INT;
+
+bool plotting_mode = false;
 
 Timer alpha_omega_timer;
 double max_time = INF;
@@ -85,7 +82,6 @@ bool inner_generations = true;
 bool normalize_noise_source = true;
 bool rng_stride_warnings = false;
 
-bool save_source = false;
 bool load_source_file = false;
 
 bool branchless_splitting = false;
@@ -109,16 +105,157 @@ std::size_t group(double E) {
 std::vector<double> sample_xs_ratio{};
 
 std::string output_file_name = "output.txt";
-std::string source_file_name = "source.txt";
 std::string in_source_file_name = "";
 
 std::unique_ptr<NDDirectory> nd_directory = nullptr;
 std::string nd_directory_fname;
 bool use_dbrc = true;
+std::vector<std::string> dbrc_nuclides;
 TempInterpolation temp_interpolation = TempInterpolation::Linear;
 
 void initialize_global_rng() {
   rng.seed(rng_seed);
   rng.set_stream(2);
+}
+
+void write_settings_to_output() {
+  if (mpi::rank != 0) return;
+
+  // Get reference to HDF5 file
+  H5::File& h5 = Output::instance().h5();
+
+  // Simulation Mode
+  switch (mode) {
+    case SimulationMode::K_EIGENVALUE:
+      h5.createAttribute<std::string>("mode", "k-eigenvalue");
+      break;
+    case SimulationMode::BRANCHLESS_K_EIGENVALUE:
+      h5.createAttribute<std::string>("mode", "branchless-k-eigenvalue");
+      break;
+    case SimulationMode::FIXED_SOURCE:
+      h5.createAttribute<std::string>("mode", "fixed-source");
+      break;
+    case SimulationMode::MODIFIED_FIXED_SOURCE:
+      h5.createAttribute<std::string>("mode", "modified-fixed-source");
+      break;
+    case SimulationMode::NOISE:
+      h5.createAttribute<std::string>("mode", "noise");
+      break;
+  }
+
+  // Branchless specific things
+  if (mode == SimulationMode::BRANCHLESS_K_EIGENVALUE) {
+    h5.createAttribute<bool>("branchless-combing", branchless_combing);
+    h5.createAttribute<bool>("branchless-splitting", branchless_splitting);
+    h5.createAttribute<bool>("branchless-material", branchless_material);
+  }
+
+  // Noise specific things
+  if (mode == SimulationMode::NOISE) {
+    h5.createAttribute("nskip", nskip);
+
+    h5.createAttribute("noise-angular-frequency", w_noise);
+
+    h5.createAttribute("keff", keff);
+
+    h5.createAttribute<bool>("inner-generations", inner_generations);
+
+    h5.createAttribute<bool>("normalize-noise-source", normalize_noise_source);
+  }
+
+  // Energy Mode
+  switch (energy_mode) {
+    case EnergyMode::CE:
+      h5.createAttribute<std::string>("energy-mode", "continuous-energy");
+      break;
+    case EnergyMode::MG:
+      h5.createAttribute<std::string>("energy-mode", "multi-group");
+      break;
+  }
+
+  // Tracking Mode
+  switch (tracking) {
+    case TrackingMode::SURFACE_TRACKING:
+      h5.createAttribute<std::string>("transport", "surface-tracking");
+      break;
+    case TrackingMode::DELTA_TRACKING:
+      h5.createAttribute<std::string>("transport", "delta-tracking");
+      break;
+    case TrackingMode::IMPLICIT_LEAKAGE_DELTA_TRACKING:
+      h5.createAttribute<std::string>("transport",
+                                      "implicit-leakage-delta-tracking");
+      break;
+    case TrackingMode::CARTER_TRACKING:
+      h5.createAttribute<std::string>("transport", "carter-tracking");
+      break;
+  }
+
+  // MG CT specific
+  if (energy_mode == EnergyMode::MG) {
+    h5.createAttribute("ngroups", ngroups);
+
+    h5.createAttribute("energy-bounds", energy_bounds);
+
+    if (tracking == TrackingMode::CARTER_TRACKING) {
+      h5.createAttribute("sampling-xs-ratio", sample_xs_ratio);
+    }
+  }
+
+  if (energy_mode == EnergyMode::CE) {
+    switch (temp_interpolation) {
+      case TempInterpolation::Exact:
+        h5.createAttribute<std::string>("temperature-interpolation", "exact");
+        break;
+      case TempInterpolation::Nearest:
+        h5.createAttribute<std::string>("temperature-interpolation", "nearest");
+        break;
+      case TempInterpolation::Linear:
+        h5.createAttribute<std::string>("temperature-interpolation", "linear");
+        break;
+    }
+
+    h5.createAttribute<std::string>("nuclear-data", nd_directory_fname);
+
+    h5.createAttribute<bool>("use-dbrc", use_dbrc);
+
+    if (dbrc_nuclides.size() > 0) {
+      h5.createAttribute("dbrc-nuclides", dbrc_nuclides);
+    }
+
+    h5.createAttribute<bool>("use-urr-ptables", use_urr_ptables);
+  }
+
+  // Common bits
+  h5.createAttribute("nparticles", nparticles);
+
+  h5.createAttribute("ngenerations", ngenerations);
+
+  h5.createAttribute("nignored", nignored);
+
+  h5.createAttribute("max-run-time", max_time);
+
+  h5.createAttribute("rng-stride-warnings", rng_stride_warnings);
+
+  h5.createAttribute("seed", rng_seed);
+
+  h5.createAttribute("stride", rng_stride);
+
+  h5.createAttribute("wgt-cutoff", wgt_cutoff);
+
+  h5.createAttribute("wgt-survival", wgt_survival);
+
+  h5.createAttribute("wgt-split", wgt_split);
+
+  h5.createAttribute<bool>("cancellation", regional_cancellation);
+
+  h5.createAttribute<bool>("noise-cancellation", regional_cancellation_noise);
+
+  h5.createAttribute("cancel-noise-gens", n_cancel_noise_gens);
+
+  h5.createAttribute<bool>("pair-distance-sqrt", pair_distance_sqrd);
+
+  h5.createAttribute<bool>("families", families);
+
+  h5.createAttribute<bool>("empty-entropy-bins", empty_entropy_bins);
 }
 }  // namespace settings

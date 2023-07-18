@@ -1,10 +1,34 @@
-#include <PapillonNDL/elastic_dbrc.hpp>
-#include <algorithm>
-#include <memory>
-#include <sstream>
+/*
+ * Abeille Monte Carlo Code
+ * Copyright 2019-2023, Hunter Belanger
+ *
+ * hunter.belanger@gmail.com
+ *
+ * This file is part of the Abeille Monte Carlo code (Abeille).
+ *
+ * Abeille is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Abeille is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Abeille. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * */
 #include <utils/error.hpp>
 #include <utils/nd_directory.hpp>
 #include <utils/output.hpp>
+
+#include <PapillonNDL/elastic_dbrc.hpp>
+
+#include <algorithm>
+#include <memory>
+#include <sstream>
 
 const std::shared_ptr<pndl::STNeutron>& NDDirectory::NeutronACEList::get_temp(
     const std::string& key, double T) {
@@ -31,7 +55,7 @@ const std::shared_ptr<pndl::STNeutron>& NDDirectory::NeutronACEList::get_temp(
     std::stringstream mssg;
     mssg << " Reading Free-Gas Neutron data for " << key << " at "
          << neutron_ace_files[closest_tmp_indx].temperature() << " K.\n";
-    Output::instance()->write(mssg.str());
+    Output::instance().write(mssg.str());
 
     const std::string ace_fname =
         neutron_ace_files[closest_tmp_indx].ace_entry.fname.string();
@@ -83,7 +107,7 @@ NDDirectory::TSLACEList::get_temp(const std::string& key, double T) {
     std::stringstream mssg;
     mssg << " Reading Thermal Scattering Law data for " << key << " at "
          << tsl_ace_files[closest_tmp_indx].temperature() << " K.\n";
-    Output::instance()->write(mssg.str());
+    Output::instance().write(mssg.str());
 
     const std::string ace_fname =
         tsl_ace_files[closest_tmp_indx].ace_entry.fname.string();
@@ -157,13 +181,6 @@ NDDirectory::NuclideEntry::NuclideEntry(const YAML::Node& node)
     fatal_error("A Nuclide entry is missing a valid \"neutron\" entry.");
   }
   neutron = node["neutron"].as<std::string>();
-
-  // Now we get the dbrc, if present
-  if (node["dbrc"] && node["dbrc"].IsScalar()) {
-    dbrc = node["dbrc"].as<bool>();
-  } else if (node["dbrc"]) {
-    fatal_error("The dbrc entry of a Nuclide entry must be a boolean.");
-  }
 
   // Now we get the AWR
   if (!node["awr"] || !node["awr"].IsScalar()) {
@@ -629,4 +646,28 @@ NDDirectory::CENuclidePacket NDDirectory::load_nuclide(const std::string& key,
   }
 
   return out;
+}
+
+void NDDirectory::set_dbrc_nuclides(const std::vector<std::string>& dbrc_nucs) {
+  // First, go through all entries in the neutron_dir and turn off dbrc
+  for (auto& n : neutron_dir) {
+    n.second.dbrc = false;
+  }
+
+  // Now set all those in list to true
+  for (const auto& k : dbrc_nucs) {
+    auto it = neutron_dir.find(k);
+
+    if (it == neutron_dir.end()) {
+      // We couldn't find this nuclide. Warn users.
+      warning("Could not find neutron entry for DBRC nuclide key " + k + ".");
+    } else {
+      it->second.dbrc = true;
+    }
+  }
+
+  // Now that these are all set, we go through all nuclides to set dbrc false
+  for (auto& n : nuclides) {
+    n.second.dbrc = neutron_dir.at(n.second.neutron).dbrc;
+  }
 }

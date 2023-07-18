@@ -1,45 +1,37 @@
-/*=============================================================================*
- * Copyright (C) 2021-2022, Commissariat à l'Energie Atomique et aux Energies
+/*
+ * Abeille Monte Carlo Code
+ * Copyright 2019-2023, Hunter Belanger
+ * Copyright 2021-2022, Commissariat à l'Energie Atomique et aux Energies
  * Alternatives
  *
- * Contributeur : Hunter Belanger (hunter.belanger@cea.fr)
+ * hunter.belanger@gmail.com
  *
- * Ce logiciel est régi par la licence CeCILL soumise au droit français et
- * respectant les principes de diffusion des logiciels libres. Vous pouvez
- * utiliser, modifier et/ou redistribuer ce programme sous les conditions
- * de la licence CeCILL telle que diffusée par le CEA, le CNRS et l'INRIA
- * sur le site "http://www.cecill.info".
+ * This file is part of the Abeille Monte Carlo code (Abeille).
  *
- * En contrepartie de l'accessibilité au code source et des droits de copie,
- * de modification et de redistribution accordés par cette licence, il n'est
- * offert aux utilisateurs qu'une garantie limitée.  Pour les mêmes raisons,
- * seule une responsabilité restreinte pèse sur l'auteur du programme,  le
- * titulaire des droits patrimoniaux et les concédants successifs.
+ * Abeille is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- * A cet égard  l'attention de l'utilisateur est attirée sur les risques
- * associés au chargement,  à l'utilisation,  à la modification et/ou au
- * développement et à la reproduction du logiciel par l'utilisateur étant
- * donné sa spécificité de logiciel libre, qui peut le rendre complexe à
- * manipuler et qui le réserve donc à des développeurs et des professionnels
- * avertis possédant  des  connaissances  informatiques approfondies.  Les
- * utilisateurs sont donc invités à charger  et  tester  l'adéquation  du
- * logiciel à leurs besoins dans des conditions permettant d'assurer la
- * sécurité de leurs systèmes et ou de leurs données et, plus généralement,
- * à l'utiliser et l'exploiter dans les mêmes conditions de sécurité.
+ * Abeille is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
  *
- * Le fait que vous puissiez accéder à cet en-tête signifie que vous avez
- * pris connaissance de la licence CeCILL, et que vous en avez accepté les
- * termes.
- *============================================================================*/
-#include <iomanip>
-#include <numeric>
+ * You should have received a copy of the GNU General Public License
+ * along with Abeille. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * */
 #include <simulation/noise.hpp>
-#include <sstream>
 #include <utils/error.hpp>
 #include <utils/mpi.hpp>
 #include <utils/output.hpp>
 #include <utils/settings.hpp>
 #include <utils/timer.hpp>
+
+#include <iomanip>
+#include <numeric>
+#include <sstream>
 
 // Here, we sample a particle source exactly as we do for power iteration.
 void Noise::initialize() {
@@ -55,10 +47,22 @@ void Noise::initialize() {
 }
 
 void Noise::load_source_from_file() {
-  std::shared_ptr<Output> out = Output::instance();
-
   // Load source file
-  NDArray<double> source = NDArray<double>::load(settings::in_source_file_name);
+  auto h5s = H5::File(settings::in_source_file_name, H5::File::ReadOnly);
+
+  // Get the dataset and dimensions
+  auto source_ds = h5s.getDataSet("source");
+  std::vector<std::size_t> dimensions = source_ds.getSpace().getDimensions();
+
+  // Check dimensions
+  if (dimensions.size() != 2 || dimensions[1] != 9) {
+    fatal_error("Invalid source from file dimensions.");
+  }
+
+  // Read in array
+  NDArray<double> source = NDArray<double>(dimensions);
+  source_ds.read<double>(&source[0]);
+
   // Get number of particles
   std::size_t Nprt = source.shape()[0];
 
@@ -109,15 +113,14 @@ void Noise::load_source_from_file() {
 
   mpi::Allreduce_sum(tot_wgt);
 
-  out->write(" Total Weight of System: " + std::to_string(std::round(tot_wgt)) +
-             "\n");
+  Output::instance().write(
+      " Total Weight of System: " + std::to_string(std::round(tot_wgt)) + "\n");
   settings::nparticles = static_cast<int>(std::round(tot_wgt));
   tallies->set_total_weight(std::round(tot_wgt));
 }
 
 void Noise::sample_source_from_sources() {
-  std::shared_ptr<Output> out = Output::instance();
-  out->write(" Generating source particles...\n");
+  Output::instance().write(" Generating source particles...\n");
   // Calculate the base number of particles per node to run
   uint64_t base_particles_per_node =
       static_cast<uint64_t>(settings::nparticles / mpi::size);
@@ -150,9 +153,8 @@ void Noise::sample_source_from_sources() {
 }
 
 void Noise::print_header() const {
-  std::shared_ptr<Output> out = Output::instance();
-  out->write("\n");
   std::stringstream output;
+  output << "\n";
 
   // First get the number of columns required to print the max generation number
   int n_col_gen =
@@ -169,7 +171,7 @@ void Noise::print_header() const {
   // Add line underneath
   output << "\n " << std::string(output.str().size() - 3, '-') << "\n";
 
-  out->write(output.str());
+  Output::instance().write(output.str());
 }
 
 bool Noise::out_of_time(int gen) {
@@ -205,12 +207,12 @@ void Noise::check_time(int gen) {
 }
 
 void Noise::run() {
-  std::shared_ptr<Output> out = Output::instance();
-  out->write(" Running Noise Problem...\n");
-  out->write(" NPARTICLES: " + std::to_string(settings::nparticles) + ", ");
-  out->write(" NBATCHES: " + std::to_string(settings::ngenerations) + ",");
-  out->write(" NIGNORED: " + std::to_string(settings::nignored) + ",");
-  out->write(" NSKIP: " + std::to_string(settings::nskip) + "\n\n");
+  Output& out = Output::instance();
+  out.write(" Running Noise Problem...\n");
+  out.write(" NPARTICLES: " + std::to_string(settings::nparticles) + ", ");
+  out.write(" NBATCHES: " + std::to_string(settings::ngenerations) + ",");
+  out.write(" NIGNORED: " + std::to_string(settings::nignored) + ",");
+  out.write(" NSKIP: " + std::to_string(settings::nskip) + "\n\n");
   print_header();
 
   // Zero all entropy bins
@@ -279,22 +281,21 @@ void Noise::run() {
   simulation_timer.stop();
 
   // Write convergence time
-  out->write("\n Time spent converging         : " +
-             std::to_string(convergence_timer.elapsed_time()) + " seconds.");
+  out.write("\n Time spent converging         : " +
+            std::to_string(convergence_timer.elapsed_time()) + " seconds.");
   // Write power iteration time
-  out->write("\n Time spent in power iteration : " +
-             std::to_string(power_iteration_timer.elapsed_time()) +
-             " seconds.");
+  out.write("\n Time spent in power iteration : " +
+            std::to_string(power_iteration_timer.elapsed_time()) + " seconds.");
   // Write noise time
-  out->write("\n Time spent in noise transport : " +
-             std::to_string(noise_timer.elapsed_time()) + " seconds.");
+  out.write("\n Time spent in noise transport : " +
+            std::to_string(noise_timer.elapsed_time()) + " seconds.");
   // Write cancellation time
-  out->write("\n Time spent in cancellation    : " +
-             std::to_string(cancellation_timer.elapsed_time()) + " seconds.\n");
+  out.write("\n Time spent in cancellation    : " +
+            std::to_string(cancellation_timer.elapsed_time()) + " seconds.\n");
 
   // Total simulation time
-  out->write("\n Total Simulation Time: " +
-             std::to_string(simulation_timer.elapsed_time()) + " seconds.\n");
+  out.write("\n Total Simulation Time: " +
+            std::to_string(simulation_timer.elapsed_time()) + " seconds.\n");
 
   // Write flux file
   if (settings::converged && tallies->generations() > 0) {
@@ -428,8 +429,8 @@ void Noise::noise_simulation() {
   // Start ticking noise timer
   noise_timer.start();
 
-  std::shared_ptr<Output> out = Output::instance();
-  out->write("\n -----------------------------------------------\n");
+  Output& out = Output::instance();
+  out.write("\n -----------------------------------------------\n");
 
   // Need to keep copy of original so we can override garbage copy which
   // will be produced in this noise batch.
@@ -487,6 +488,7 @@ void Noise::noise_simulation() {
            << " particles \n";
 
     auto fission_bank = transporter->transport(nbank, true, nullptr, nullptr);
+    if (noise_gen == 1) transported_histories += bank.size();
     std::sort(fission_bank.begin(), fission_bank.end());
     mpi::synchronize();
 
@@ -523,7 +525,7 @@ void Noise::noise_simulation() {
         std::accumulate(mpi::node_nparticles_noise.begin(),
                         mpi::node_nparticles_noise.end(), 0));
 
-    out->write(output.str());
+    out.write(output.str());
 
     // Get the new N_noise_tot
     N_noise_tot = static_cast<std::uint64_t>(
@@ -550,13 +552,12 @@ void Noise::noise_simulation() {
   // of particles to make a fissions.
   tallies->set_kcol(original_kcol);
 
-  out->write(" -----------------------------------------------\n\n");
+  out.write(" -----------------------------------------------\n\n");
 
   noise_timer.stop();
 }
 
 void Noise::pi_generation_output() {
-  std::shared_ptr<Output> out = Output::instance();
   std::stringstream output;
 
   double kcol = tallies->kcol();
@@ -608,11 +609,10 @@ void Noise::pi_generation_output() {
   // Add line underneath
   output << "\n";
 
-  out->write(output.str());
+  Output::instance().write(output.str());
 }
 
 void Noise::noise_output() {
-  std::shared_ptr<Output> out = Output::instance();
   std::stringstream output;
 
   output << "\n";
@@ -623,7 +623,7 @@ void Noise::noise_output() {
 
   output << "\n";
 
-  out->write(output.str());
+  Output::instance().write(output.str());
 }
 
 void Noise::normalize_weights(std::vector<BankedParticle>& next_gen) {
@@ -673,7 +673,6 @@ void Noise::normalize_weights(std::vector<BankedParticle>& next_gen) {
 
 void Noise::premature_kill() {
   // See if the user really wants to kill the program
-  std::shared_ptr<Output> out = Output::instance();
   bool user_said_kill = false;
 
   if (mpi::rank == 0 && terminate == false) {
@@ -686,7 +685,8 @@ void Noise::premature_kill() {
   mpi::Bcast<bool>(user_said_kill, 0);
 
   if (user_said_kill || terminate) {
-    out->write("\n Simulation has been stopped by user. Cleaning up...");
+    Output::instance().write(
+        "\n Simulation has been stopped by user. Cleaning up...");
     // Looks like they really want to kill it.
 
     // Setting ngenerations to gen will cause us to exit the

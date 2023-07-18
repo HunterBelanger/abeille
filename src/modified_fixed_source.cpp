@@ -1,37 +1,27 @@
-/*=============================================================================*
- * Copyright (C) 2021-2022, Commissariat à l'Energie Atomique et aux Energies
+/*
+ * Abeille Monte Carlo Code
+ * Copyright 2019-2023, Hunter Belanger
+ * Copyright 2021-2022, Commissariat à l'Energie Atomique et aux Energies
  * Alternatives
  *
- * Contributeur : Hunter Belanger (hunter.belanger@cea.fr)
+ * hunter.belanger@gmail.com
  *
- * Ce logiciel est régi par la licence CeCILL soumise au droit français et
- * respectant les principes de diffusion des logiciels libres. Vous pouvez
- * utiliser, modifier et/ou redistribuer ce programme sous les conditions
- * de la licence CeCILL telle que diffusée par le CEA, le CNRS et l'INRIA
- * sur le site "http://www.cecill.info".
+ * This file is part of the Abeille Monte Carlo code (Abeille).
  *
- * En contrepartie de l'accessibilité au code source et des droits de copie,
- * de modification et de redistribution accordés par cette licence, il n'est
- * offert aux utilisateurs qu'une garantie limitée.  Pour les mêmes raisons,
- * seule une responsabilité restreinte pèse sur l'auteur du programme,  le
- * titulaire des droits patrimoniaux et les concédants successifs.
+ * Abeille is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- * A cet égard  l'attention de l'utilisateur est attirée sur les risques
- * associés au chargement,  à l'utilisation,  à la modification et/ou au
- * développement et à la reproduction du logiciel par l'utilisateur étant
- * donné sa spécificité de logiciel libre, qui peut le rendre complexe à
- * manipuler et qui le réserve donc à des développeurs et des professionnels
- * avertis possédant  des  connaissances  informatiques approfondies.  Les
- * utilisateurs sont donc invités à charger  et  tester  l'adéquation  du
- * logiciel à leurs besoins dans des conditions permettant d'assurer la
- * sécurité de leurs systèmes et ou de leurs données et, plus généralement,
- * à l'utiliser et l'exploiter dans les mêmes conditions de sécurité.
+ * Abeille is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
  *
- * Le fait que vous puissiez accéder à cet en-tête signifie que vous avez
- * pris connaissance de la licence CeCILL, et que vous en avez accepté les
- * termes.
- *============================================================================*/
-#include <iomanip>
+ * You should have received a copy of the GNU General Public License
+ * along with Abeille. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * */
 #include <simulation/modified_fixed_source.hpp>
 #include <utils/error.hpp>
 #include <utils/mpi.hpp>
@@ -39,21 +29,22 @@
 #include <utils/settings.hpp>
 #include <utils/timer.hpp>
 
+#include <iomanip>
+
 void ModifiedFixedSource::initialize() {}
 
 void ModifiedFixedSource::print_header() {
-  std::shared_ptr<Output> out = Output::instance();
+  Output& out = Output::instance();
 
   // Change the header for the output based on wether or not the entropy is
   // being calculated
-  out->write("\n");
-  out->write("  Gen   leakage   average +/- err\n");
-  out->write(" ------------------------------------\n");
+  out.write("\n");
+  out.write("  Gen   leakage   average +/- err\n");
+  out.write(" ------------------------------------\n");
   //           1120   1.23456   1.23456 +/- 0.00023
 }
 
 void ModifiedFixedSource::generation_output(int gen) {
-  std::shared_ptr<Output> out = Output::instance();
   std::stringstream output;
 
   if (gen == 0) print_header();
@@ -62,14 +53,14 @@ void ModifiedFixedSource::generation_output(int gen) {
          << std::setprecision(5) << tallies->leakage();
   output << "   " << tallies->leakage_avg() << " +/- " << tallies->leakage_err()
          << "\n";
-  out->write(output.str());
+  Output::instance().write(output.str());
 }
 
 void ModifiedFixedSource::run() {
-  std::shared_ptr<Output> out = Output::instance();
-  out->write(" Running Modified-Fixed-Source Problem...\n");
-  out->write(" NPARTICLES: " + std::to_string(settings::nparticles) + ", ");
-  out->write(" NGENERATIONS: " + std::to_string(settings::ngenerations) + "\n");
+  Output& out = Output::instance();
+  out.write(" Running Modified-Fixed-Source Problem...\n");
+  out.write(" NPARTICLES: " + std::to_string(settings::nparticles) + ", ");
+  out.write(" NGENERATIONS: " + std::to_string(settings::ngenerations) + "\n");
 
   // Make sure the settings is set to converged, as we dont need to
   // allow for source convergence in fixed source calculations.
@@ -90,6 +81,7 @@ void ModifiedFixedSource::run() {
 
     while (!bank.empty()) {
       auto fission_bank = transporter->transport(bank);
+      transported_histories += bank.size();
 
       // Cancellation may be performed on fission_bank here
 
@@ -129,22 +121,22 @@ void ModifiedFixedSource::run() {
 
   // Stop timer
   simulation_timer.stop();
-  out->write("\n Total Simulation Time: " +
-             std::to_string(simulation_timer.elapsed_time()) + " seconds.\n");
+  out.write("\n Total Simulation Time: " +
+            std::to_string(simulation_timer.elapsed_time()) + " seconds.\n");
 
   // Write the final results of all estimators
-  out->write("\n");
+  out.write("\n");
   std::stringstream output;
   output << std::fixed << std::setprecision(6);
   output << " leakage = " << tallies->leakage_avg() << " +/- "
          << tallies->leakage_err() << "\n";
-  out->write(output.str());
+  out.write(output.str());
 
   // Write saved warnings
-  out->write_saved_warnings();
+  out.write_saved_warnings();
 
   // Save other outputs
-  out->write("\n");
+  out.write("\n");
 
   // Write flux file
   tallies->write_tallies();
@@ -152,13 +144,13 @@ void ModifiedFixedSource::run() {
 
 void ModifiedFixedSource::premature_kill() {
   // See if the user really wants to kill the program
-  std::shared_ptr<Output> out = Output::instance();
   std::string response;
   std::cout << "\n Do you really want to stop the simulation ? (y/N) => ";
   std::cin >> response;
 
   if (response == "y" || response == "Y") {
-    out->write("\n Simulation has been stopped by user. Cleaning up...\n");
+    Output::instance().write(
+        "\n Simulation has been stopped by user. Cleaning up...\n");
     // Looks like they really want to kill it.
     // Save everthing for them, and abort.
 

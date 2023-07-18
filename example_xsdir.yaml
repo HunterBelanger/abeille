@@ -19,7 +19,6 @@ nuclides:
   U235:
     neutron: U235
     awr: 233.02478975
-    dbrc: True
     temperatures: [0., 293.6, 600., 900.]
 
 basename: "/home/hunter/Documents/nuclear_data/lib80x/ace"

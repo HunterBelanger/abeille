@@ -36,6 +36,9 @@ set(ABEILLE_SOURCE_FILES ${ABEILLE_SOURCE_FILES}
   src/cone.cpp
   src/energy_distribution.cpp
   src/mono_energetic.cpp
+  src/maxwellian.cpp
+  src/watt.cpp
+  src/tabulated_energy.cpp
   src/tallies.cpp
   src/mesh_tally.cpp
   src/source_mesh_tally.cpp
@@ -64,6 +67,8 @@ set(ABEILLE_SOURCE_FILES ${ABEILLE_SOURCE_FILES}
   src/yplane.cpp
   src/xplane.cpp
   src/surface.cpp
+  src/majorant.cpp
+  src/pctable.cpp
   src/error.cpp
   src/mpi.cpp
   src/settings.cpp

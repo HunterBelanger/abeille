@@ -1,8 +1,7 @@
 # Abeille - A Monte Carlo Transport Code
 
-Abeille is a 3D multi-group Monte Carlo transport code which solves the Boltzmann
-neutron transport equation for fixed-source, k-eigenvalue, and neutron noise
-problems. 
+Abeille is a 3D Monte Carlo transport code which solves the Boltzmann neutron
+transport equation for fixed-source, k-eigenvalue, and neutron noise problems. 
 
 All problem parameters such as geometry, materials, and simulation settings are
 controlled through a single YAML input file. Several examples of such files are
