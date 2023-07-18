@@ -419,7 +419,8 @@ if __name__ == "__main__":
   sources[0]["spatial"] = {"type": "box", "low": [-29.17, -29.17, 0.05],
                                            "hi": [29.17, 29.17, H-0.05]}
   sources[0]["direction"] = {"type": "isotropic"}
-  sources[0]["energy"] = {"type": "mono-energetic", "energy": 0.7}
+  sources[0]["energy"] = {"type": "watt", "a": 0.977, "b": 2.546} # U235 Watt spectrum from MCNP manual
+  sources[0]["fissile-only"] = True
   sources[0]["weight"] = 1.
 
   #=============================================================================

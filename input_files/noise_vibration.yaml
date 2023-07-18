@@ -152,7 +152,7 @@ tallies:
     shape: [50, 50, 1]
     energy-bounds: [0., 1., 2.]
     estimator: source
-    quantity: img-source
+    quantity: imag-source
     name: imag-noise-source
   
   - low: [-10.79, -10.79, -2.00]
@@ -167,7 +167,7 @@ tallies:
     hi: [10.79, 10.79, 2.00]
     shape: [138, 138, 1]
     energy-bounds: [0., 1., 2.]
-    quantity: img-flux
+    quantity: imag-flux
     estimator: track-length
     name: imag-flux
 
