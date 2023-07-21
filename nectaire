@@ -882,8 +882,10 @@ def main():
     # Make directory for the element symbol if it doesn't exist
     if not os.path.exists(os.path.join(data_dir, 'neutron_dir', element_symbol)):
       os.makedirs(os.path.join(data_dir, 'neutron_dir', element_symbol))
+    
     # Make directory for specific nuclide
     os.makedirs(os.path.join(data_dir, 'neutron_dir', element_symbol, nuclide))
+    
     # Save base temps to temperature list
     nuclides[nuclide]['temperatures'] = base_temps.copy()
   
@@ -934,7 +936,7 @@ def main():
     if element_symbol[-1].isdigit():
       element_symbol = element_symbol[0:1]
     nuc_args.append((data_dir, element_symbol, nuclide, nuclides[nuclide], lib))
-
+  
   with Pool(cpu_count()) as p:
     if args.free_gas_code == 'njoy':
       p.map(process_free_gas_pool_njoy, nuc_args)
@@ -985,9 +987,11 @@ def main():
       nuclide_dir[key]["temperatures"] = tsls[tsl]["temperatures"]
 
   # Now for each entry in "nuclides", get the awr
-  for nuc in nuclides.keys():
+  for nuc in nuclide_dir.keys():
+    # Get neutron key
+    neutron = nuclide_dir[nuc]['neutron']
     # Get first ace file
-    fname = nuclides[nuc]['ace-files'][0]['file']
+    fname = nuclides[neutron]['ace-files'][0]['file']
     # Open ace file
     ace = pndl.ACE(fname)
     # get and save awr
