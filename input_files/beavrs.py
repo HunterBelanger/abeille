@@ -64,7 +64,7 @@ materials.append({"name": "Fuel-1.6%",
                   "fractions": "atoms", 
                   "composition": [{"nuclide": "O16",  "fraction": 4.5897e-02},
                                   {"nuclide": "O17",  "fraction": 1.7436e-05},
-                                  {"nuclide": "O18",  "fraction": 1.7436e-05},
+                                  {"nuclide": "O18",  "fraction": 9.2032e-05},
                                   {"nuclide": "U234", "fraction": 3.0131e-06},
                                   {"nuclide": "U235", "fraction": 3.7503e-04},
                                   {"nuclide": "U238", "fraction": 2.2625e-02}
