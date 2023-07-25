@@ -116,6 +116,37 @@ acer /
 stop /
 """
 
+def test_ace_files():
+  neutron_dir = os.path.join("data", "neutron_dir")
+  tsl_dir = os.path.join("data", "tsl_dir")
+
+  bad_ace_files = []
+
+  elements = os.listdir(neutron_dir)
+  for elem in elements:
+    elem_dir = os.path.join(neutron_dir, elem)
+    if os.path.isdir(elem_dir):
+      isotopes = os.listdir(elem_dir)
+      for iso in isotopes:
+        iso_dir = os.path.join(elem_dir, iso)
+        if os.path.isdir(iso_dir):
+          ace_files = os.listdir(iso_dir)
+
+          for fl in ace_files:
+            ace_file = os.path.join(iso_dir, fl)
+
+            # Try to read with Papillon
+            try:
+              ace = pndl.ACE(ace_file)
+              nuc = pndl.STNeutron(ace)
+            except:
+              bad_ace_files.append(ace_file)
+
+  if len(bad_ace_files) > 0:
+    print("Bad ACE Files:")
+    for bad_file in bad_ace_files:
+      print(bad_file)
+
 
 # This method comes from the openmc-dev/data repo in utils.py (modified)
 def download(page, checksum=None, output_path=None):
