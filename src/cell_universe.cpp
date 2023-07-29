@@ -164,7 +164,7 @@ Boundary CellUniverse::lost_get_boundary(const Position& r, const Direction& u,
         dist = tmp_dist;
         surface_index = token - 1;
       } else {
-        // Not an actuall surface
+        // Not an actual surface
         continue;
       }
 

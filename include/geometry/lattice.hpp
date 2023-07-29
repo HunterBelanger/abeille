@@ -61,7 +61,7 @@ class Lattice {
   virtual std::array<int32_t, 3> get_tile(Position r, Direction u) const = 0;
 
   // Finds lattice element containing given position, transforms
-  // coordinated to that elements frame, then asks that universe
+  // coordinated to that element's frame, then asks that universe
   // for the cell of the local coordiante given.
   virtual Cell* get_cell(Position r, Direction u, int32_t on_surf) const = 0;
 

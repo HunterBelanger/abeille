@@ -78,15 +78,16 @@ Boundary LatticeUniverse::lost_get_boundary(const Position& r,
                                             int32_t on_surf) const {
   // Get lattice
   Lattice* lat = geometry::lattices[lattice_index].get();
-  if (lat->outer_universe()) {
-    // If there is a boundary condition here, we know there is an outer
-    // universe, so we are safe to dereference.
+
+  const bool is_inside = lat->is_inside(r,u);
+  if (lat->outer_universe() && is_inside == false) {
     return lat->outer_universe()->lost_get_boundary(r, u, on_surf);
   }
 
-  // No outer universe or no boundary conditions, so this goes out to infinity
-  Boundary ret_bound(INF, -1, BoundaryType::Vacuum);
+  std::array<int32_t, 3> tile = lat->get_tile(r, u);
+  Boundary ret_bound(lat->distance_to_tile_boundary(r, u, tile), -1, BoundaryType::Normal);
   ret_bound.token = 0;
+
   return ret_bound;
 }
 
