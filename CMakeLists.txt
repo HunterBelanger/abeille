@@ -1,9 +1,28 @@
 cmake_minimum_required(VERSION 3.11)
 project(abeille CXX)
 
+# These two are for LTO enforcement when used
+cmake_policy(SET CMP0069 NEW) 
+set(CMAKE_POLICY_DEFAULT_CMP0069 NEW)
+
 option(ABEILLE_USE_OMP "Compile Abeille with OpenMP for shared memory parallelism" ON)
+option(ABEILLE_USE_LTO "Compile with Link-Time Optimization for all components" ON)
 option(ABEILLE_USE_MPI "Compile Abeille with MPI for distributed memory parallelism" OFF)
 option(ABEILLE_GUI_PLOT "Compile Abeille with support for the GUI plotter" ON)
+
+# Check for using LTO
+if(ABEILLE_USE_LTO)
+  include(CheckIPOSupported)
+  check_ipo_supported(RESULT LTO_SUPPORTED OUTPUT LTO_ERROR)
+
+  if(LTO_SUPPORTED)
+    set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
+    message(STATUS "Using LTO for build")
+  else()
+    message(WARNING "LTO is not supported: ${LTO_ERROR}")
+    message(WARNING "Will continue build WITHOUT LTO")
+  endif()
+endif()
 
 # Get FetchContent for downloading dependencies
 include(FetchContent)
