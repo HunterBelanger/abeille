@@ -107,16 +107,18 @@ void BranchlessPowerIterator::load_source_from_file() {
   double tot_wgt = 0.;
   for (std::size_t i = 0;
        i < mpi::node_nparticles[static_cast<std::size_t>(mpi::rank)]; i++) {
-    double x = source[(file_start_loc + i) * 8 + 0];
-    double y = source[(file_start_loc + i) * 8 + 1];
-    double z = source[(file_start_loc + i) * 8 + 2];
-    double ux = source[(file_start_loc + i) * 8 + 3];
-    double uy = source[(file_start_loc + i) * 8 + 4];
-    double uz = source[(file_start_loc + i) * 8 + 5];
-    double E = source[(file_start_loc + i) * 8 + 6];
-    double w = source[(file_start_loc + i) * 8 + 7];
+    double x = source[(file_start_loc + i) * 9 + 0];
+    double y = source[(file_start_loc + i) * 9 + 1];
+    double z = source[(file_start_loc + i) * 9 + 2];
+    double ux = source[(file_start_loc + i) * 9 + 3];
+    double uy = source[(file_start_loc + i) * 9 + 4];
+    double uz = source[(file_start_loc + i) * 9 + 5];
+    double E = source[(file_start_loc + i) * 9 + 6];
+    double w = source[(file_start_loc + i) * 9 + 7];
+    double w2 = source[(file_start_loc + i) * 9 + 8];
 
     bank.push_back({{x, y, z}, {ux, uy, uz}, E, w, histories_counter++});
+    bank.back().set_weight2(w2);
     bank.back().initialize_rng(settings::rng_seed, settings::rng_stride);
     tot_wgt += w;
   }
@@ -341,7 +343,8 @@ void BranchlessPowerIterator::run() {
     // Get new keff
     tallies->calc_gen_values();
 
-    std::sort(next_gen.begin(), next_gen.end());
+    // std::sort(next_gen.begin(), next_gen.end()); // This shouldn't be
+    // necessary, as fission progeny should naturally be sorted
     mpi::synchronize();
 
     // Send all particles to master for cancellation and normalization/combing

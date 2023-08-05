@@ -116,7 +116,7 @@ void Simulation::particles_to_master(std::vector<BankedParticle>& bank) {
 
   // Now we sort the particles
   if (mpi::rank == 0) {
-    std::sort(bank.begin(), bank.end());
+    // std::sort(bank.begin(), bank.end()); // Shouldn't be necessary
   } else {
     bank.clear();
   }
@@ -156,15 +156,15 @@ void Simulation::write_source(std::vector<Particle>& bank) const {
     for (std::size_t i = 0; i < tmp_bank.size(); i++) {
       const auto& p = tmp_bank[i];
 
-      source[i * 8 + 0] = p.r.x();
-      source[i * 8 + 1] = p.r.y();
-      source[i * 8 + 2] = p.r.z();
-      source[i * 8 + 3] = p.u.x();
-      source[i * 8 + 4] = p.u.y();
-      source[i * 8 + 5] = p.u.z();
-      source[i * 8 + 6] = p.E;
-      source[i * 8 + 7] = p.wgt;
-      source[i * 8 + 8] = p.wgt2;
+      source[i * 9 + 0] = p.r.x();
+      source[i * 9 + 1] = p.r.y();
+      source[i * 9 + 2] = p.r.z();
+      source[i * 9 + 3] = p.u.x();
+      source[i * 9 + 4] = p.u.y();
+      source[i * 9 + 5] = p.u.z();
+      source[i * 9 + 6] = p.E;
+      source[i * 9 + 7] = p.wgt;
+      source[i * 9 + 8] = p.wgt2;
     }
 
     auto& h5 = Output::instance().h5();
