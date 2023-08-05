@@ -30,7 +30,33 @@
 #include <utils/output.hpp>
 #include <utils/settings.hpp>
 
+#include <set>
 #include <vector>
+
+const static std::set<std::string> disallowed_tally_names{
+    "families",
+    "pair-dist-sqrd",
+    "entropy",
+    "total-pre-cancel-entropy",
+    "neg-pre-cancel-entropy",
+    "pos-pre-cancel-entropy",
+    "total-post-cancel-entropy",
+    "neg-post-cancel-entropy",
+    "pos-post-cancel-entropy",
+    "empty-entropy-frac",
+    "Nnet",
+    "Ntot",
+    "Npos",
+    "Nneg",
+    "Wnet",
+    "Wtot",
+    "Wpos",
+    "Wneg",
+    "kcol",
+    "ktrk",
+    "kabs",
+    "leakage",
+    "mig-area"};
 
 MeshTally::MeshTally(Position low, Position hi, uint64_t nx, uint64_t ny,
                      uint64_t nz, const std::vector<double>& ebounds,
@@ -53,6 +79,11 @@ MeshTally::MeshTally(Position low, Position hi, uint64_t nx, uint64_t ny,
       tally_gen(),
       tally_avg(),
       tally_var() {
+  // Make sure the name is allowed.
+  if (disallowed_tally_names.contains(this->fname)) {
+    fatal_error("The tally name " + this->fname + " is reserved.");
+  }
+
   dx = (r_hi.x() - r_low.x()) / static_cast<double>(Nx);
   dy = (r_hi.y() - r_low.y()) / static_cast<double>(Ny);
   dz = (r_hi.z() - r_low.z()) / static_cast<double>(Nz);
