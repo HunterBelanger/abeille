@@ -49,7 +49,7 @@ std::vector<BankedParticle> SurfaceTracker::transport(
 
 // Transport all particles in for thread
 #ifdef ABEILLE_USE_OMP
-#pragma omp for schedule(static)
+#pragma omp for schedule(dynamic)
 #endif
     for (size_t n = 0; n < bank.size(); n++) {
       // Particle and its personal tracker
