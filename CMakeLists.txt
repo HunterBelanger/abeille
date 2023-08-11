@@ -28,12 +28,13 @@ endif()
 include(FetchContent)
 
 #===============================================================================
-# Get YAML-CPP version 0.7.0
-message(STATUS "Downloading yaml-cpp 0.7.0")
+# Get YAML-CPP version 0.8.0
+message(STATUS "Downloading yaml-cpp 0.8.0")
 FetchContent_Declare(yaml-cpp
   GIT_REPOSITORY https://github.com/jbeder/yaml-cpp.git
-  GIT_TAG        yaml-cpp-0.7.0
+  GIT_TAG        0.8.0
 )
+set(YAML_CPP_BUILD_SHARED_LIBS OFF CACHE BOOL "Build yaml-cpp shared library")
 set(YAML_CPP_BUILD_TESTS OFF CACHE BOOL "Enable testing")
 set(YAML_CPP_BUILD_TOOLS OFF CACHE BOOL "Enable parse tools")
 set(YAML_CPP_BUILD_CONTRIB OFF CACHE BOOL "Enable contrib stuff in library")
