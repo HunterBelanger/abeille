@@ -654,8 +654,8 @@ void make_settings(const YAML::Node& input) {
     if (settnode["wgt-cutoff"] && settnode["wgt-cutoff"].IsScalar()) {
       settings::wgt_cutoff = settnode["wgt-cutoff"].as<double>();
 
-      if (settings::wgt_cutoff <= 0.) {
-        fatal_error("Roulette cutoff (\"wgt-cutoff\") must be > 0.");
+      if (settings::wgt_cutoff < 0.) {
+        fatal_error("Roulette cutoff (\"wgt-cutoff\") must be >= 0.");
       }
     } else if (settnode["wgt-cutoff"]) {
       fatal_error("Invalid \"wgt-cutoff\" entry in settings.");
