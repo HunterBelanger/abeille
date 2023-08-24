@@ -266,6 +266,8 @@ void make_surface(const YAML::Node& surface_node) {
     surf_pntr = make_ycylinder(surface_node);
   } else if (surf_type == "zcylinder") {
     surf_pntr = make_zcylinder(surface_node);
+  } else if (surf_type == "cylinder") {
+    surf_pntr = make_cylinder(surface_node);
   } else if (surf_type == "sphere") {
     surf_pntr = make_sphere(surface_node);
   } else {

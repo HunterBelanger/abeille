@@ -27,6 +27,7 @@
 
 #include <geometry/surfaces/plane.hpp>
 #include <geometry/surfaces/sphere.hpp>
+#include <geometry/surfaces/cylinder.hpp>
 #include <geometry/surfaces/xcylinder.hpp>
 #include <geometry/surfaces/xplane.hpp>
 #include <geometry/surfaces/ycylinder.hpp>

@@ -59,6 +59,7 @@ set(ABEILLE_SOURCE_FILES ${ABEILLE_SOURCE_FILES}
   src/geometry.cpp
   src/cell.cpp
   src/sphere.cpp
+  src/cylinder.cpp
   src/zcylinder.cpp
   src/ycylinder.cpp
   src/xcylinder.cpp
