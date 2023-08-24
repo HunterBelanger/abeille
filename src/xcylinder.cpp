@@ -31,9 +31,9 @@ XCylinder::XCylinder(double y_, double z_, double r_, BoundaryType bound,
     : Surface{bound, i_id, i_name}, y0{y_}, z0{z_}, R{r_} {}
 
 int XCylinder::sign(const Position& r, const Direction& u) const {
-  double y = r.y() - y0;
-  double z = r.z() - z0;
-  double eval = y * y + z * z - R * R;
+  const double y = r.y() - y0;
+  const double z = r.z() - z0;
+  const double eval = y * y + z * z - R * R;
   if (eval > SURFACE_COINCIDENT)
     return 1;
   else if (eval < -SURFACE_COINCIDENT)
@@ -48,14 +48,14 @@ int XCylinder::sign(const Position& r, const Direction& u) const {
 
 double XCylinder::distance(const Position& r, const Direction& u,
                            bool on_surf) const {
-  double a = u.y() * u.y() + u.z() * u.z();
+  const double a = u.y() * u.y() + u.z() * u.z();
   if (a == 0.) return INF;
 
-  double y = r.y() - y0;
-  double z = r.z() - z0;
-  double k = y * u.y() + z * u.z();
-  double c = y * y + z * z - R * R;
-  double quad = k * k - a * c;
+  const double y = r.y() - y0;
+  const double z = r.z() - z0;
+  const double k = y * u.y() + z * u.z();
+  const double c = y * y + z * z - R * R;
+  const double quad = k * k - a * c;
 
   if (quad < 0.)
     return INF;
@@ -67,7 +67,7 @@ double XCylinder::distance(const Position& r, const Direction& u,
   } else if (c < 0.) {
     return (-k + std::sqrt(quad)) / a;
   } else {
-    double d = (-k - std::sqrt(quad)) / a;
+    const double d = (-k - std::sqrt(quad)) / a;
     if (d < 0.)
       return INF;
     else
@@ -76,9 +76,7 @@ double XCylinder::distance(const Position& r, const Direction& u,
 }
 
 Direction XCylinder::norm(const Position& r) const {
-  double y = r.y() - y0;
-  double z = r.z() - z0;
-  return {0., y, z};
+  return {0., r.y() - y0, r.z() - z0};
 }
 
 //===========================================================================

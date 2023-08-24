@@ -44,7 +44,7 @@ int YPlane::sign(const Position& r, const Direction& u) const {
 
 double YPlane::distance(const Position& r, const Direction& u,
                         bool on_surf) const {
-  double diff = y0 - r.y();
+  const double diff = y0 - r.y();
   if (on_surf || std::abs(diff) < SURFACE_COINCIDENT || u.y() == 0.)
     return INF;
   else if (diff / u.y() < 0.)

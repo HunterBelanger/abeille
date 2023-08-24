@@ -31,7 +31,7 @@ Plane::Plane(double A_, double B_, double C_, double D_, BoundaryType bound,
     : Surface{bound, i_id, i_name}, A{A_}, B{B_}, C{C_}, D{D_} {}
 
 int Plane::sign(const Position& r, const Direction& u) const {
-  double eval = A * r.x() + B * r.y() + C * r.z() - D;
+  const double eval = A * r.x() + B * r.y() + C * r.z() - D;
   if (eval > SURFACE_COINCIDENT)
     return 1;
   else if (eval < -SURFACE_COINCIDENT)
@@ -46,9 +46,9 @@ int Plane::sign(const Position& r, const Direction& u) const {
 
 double Plane::distance(const Position& r, const Direction& u,
                        bool on_surf) const {
-  double num = D - A * r.x() - B * r.y() - C * r.z();
-  double denom = A * u.x() + B * u.y() + C * u.z();
-  double d = num / denom;
+  const double num = D - A * r.x() - B * r.y() - C * r.z();
+  const double denom = A * u.x() + B * u.y() + C * u.z();
+  const double d = num / denom;
   if (on_surf || std::abs(d) < SURFACE_COINCIDENT || denom == 0.)
     return INF;
   else if (d < 0.)

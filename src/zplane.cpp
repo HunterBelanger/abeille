@@ -44,7 +44,7 @@ int ZPlane::sign(const Position& r, const Direction& u) const {
 
 double ZPlane::distance(const Position& r, const Direction& u,
                         bool on_surf) const {
-  double diff = z0 - r.z();
+  const double diff = z0 - r.z();
   if (on_surf || std::abs(diff) < SURFACE_COINCIDENT || u.z() == 0.)
     return INF;
   else if (diff / u.z() < 0.)

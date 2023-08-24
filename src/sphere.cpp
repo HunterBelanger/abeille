@@ -31,10 +31,10 @@ Sphere::Sphere(double x_, double y_, double z_, double r_, BoundaryType bound,
     : Surface{bound, i_id, i_name}, x0{x_}, y0{y_}, z0{z_}, R{r_} {}
 
 int Sphere::sign(const Position& r, const Direction& u) const {
-  double x = r.x() - x0;
-  double y = r.y() - y0;
-  double z = r.z() - z0;
-  double eval = (x * x) + (y * y) + (z * z) - R * R;
+  const double x = r.x() - x0;
+  const double y = r.y() - y0;
+  const double z = r.z() - z0;
+  const double eval = (x * x) + (y * y) + (z * z) - R * R;
   if (eval > SURFACE_COINCIDENT)
     return 1;
   else if (eval < -SURFACE_COINCIDENT)
@@ -49,12 +49,12 @@ int Sphere::sign(const Position& r, const Direction& u) const {
 
 double Sphere::distance(const Position& r, const Direction& u,
                         bool on_surf) const {
-  double x = r.x() - x0;
-  double y = r.y() - y0;
-  double z = r.z() - z0;
-  double k = x * u.x() + y * u.y() + z * u.z();
-  double c = x * x + y * y + z * z - R * R;
-  double quad = k * k - c;
+  const double x = r.x() - x0;
+  const double y = r.y() - y0;
+  const double z = r.z() - z0;
+  const double k = x * u.x() + y * u.y() + z * u.z();
+  const double c = x * x + y * y + z * z - R * R;
+  const double quad = k * k - c;
 
   if (quad < 0.) {
     return INF;
@@ -67,7 +67,7 @@ double Sphere::distance(const Position& r, const Direction& u,
   } else if (c < 0.) {
     return -k + std::sqrt(quad);
   } else {
-    double d = -k - std::sqrt(quad);
+    const double d = -k - std::sqrt(quad);
     if (d < 0.)
       return INF;
     else
@@ -76,10 +76,7 @@ double Sphere::distance(const Position& r, const Direction& u,
 }
 
 Direction Sphere::norm(const Position& r) const {
-  double x = r.x() - x0;
-  double y = r.y() - y0;
-  double z = r.z() - z0;
-  return {x, y, z};
+  return {r.x() - x0, r.y() - y0, r.z() - z0};
 }
 
 //===========================================================================

@@ -44,7 +44,7 @@ int XPlane::sign(const Position& r, const Direction& u) const {
 
 double XPlane::distance(const Position& r, const Direction& u,
                         bool on_surf) const {
-  double diff = x0 - r.x();
+  const double diff = x0 - r.x();
   if (on_surf || std::abs(diff) < SURFACE_COINCIDENT || u.x() == 0.)
     return INF;
   else if (diff / u.x() < 0.)
