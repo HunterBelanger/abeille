@@ -190,45 +190,12 @@ void Reduce_sum(std::vector<T>& vals, int root,
     check_error(err, loc);
 
     if (rank == root) {
-      for (std::size_t i = 0; i < vals.size(); i++) {
-        vals[i] = tmp_rcv[i];
-      }
+      vals.swap(tmp_rcv);
     }
     timer.stop();
   }
 #else
   (void)vals;
-  (void)root;
-  (void)loc;
-#endif
-}
-
-template <typename T>
-void Reduce_sum(T* vals, int count, int root,
-                std::source_location loc = std::source_location::current()) {
-#ifdef ABEILLE_USE_MPI
-  if (size > 1) {
-    timer.start();
-    std::vector<T> tmp_rcv;
-
-    if (rank == root) {
-      // Only allocate the receving array if we are the reciever
-      tmp_rcv.resize(static_cast<std::size_t>(count));
-    }
-
-    int err = MPI_Reduce(vals, &tmp_rcv[0], count, dtype<T>(), Sum, root, com);
-    check_error(err, loc);
-
-    if (rank == root) {
-      for (std::size_t i = 0; i < tmp_rcv.size(); i++) {
-        vals[i] = tmp_rcv[i];
-      }
-    }
-    timer.stop();
-  }
-#else
-  (void)vals;
-  (void)count;
   (void)root;
   (void)loc;
 #endif
@@ -273,7 +240,7 @@ void Gatherv(std::vector<T>& vals, int root,
     check_error(err, loc);
 
     if (rank == root) {
-      vals = tmp_rcv;
+      vals.swap(tmp_rcv);
     } else {
       vals.clear();
     }

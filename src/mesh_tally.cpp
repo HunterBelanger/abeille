@@ -117,8 +117,7 @@ void MeshTally::record_generation(double multiplier) {
   // All worker threads must send their generation score to the master.
   // Master must recieve all generations scores from workers and add
   // them to it's own generation score.
-
-  mpi::Reduce_sum(&tally_gen[0], static_cast<int>(tally_gen.size()), 0);
+  mpi::Reduce_sum(tally_gen.data_vector(), 0);
 
   // Only try to update average and variance is we are master, as worker
   // processes don't have copies of this data, so it will seg-fault.

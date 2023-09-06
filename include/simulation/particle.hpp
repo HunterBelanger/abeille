@@ -32,6 +32,9 @@
 
 #include <vector>
 
+// !!! IMPORTANT !!!
+// If you change BankedParticle you must also change
+// register_banked_particle_type in mpi.cpp !!!!
 struct BankedParticle {
   // Particle info
   Position r;
