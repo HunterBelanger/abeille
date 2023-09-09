@@ -109,13 +109,15 @@ FetchContent_MakeAvailable(Boost)
 
 #===============================================================================
 # Get HighFive
-message(STATUS "Downloading HighFive 2.7.1")
+message(STATUS "Downloading HighFive")
 set(HIGHFIVE_USE_BOOST OFF)
 set(HIGHFIVE_EXAMPLES OFF)
 set(HIGHFIVE_BUILD_DOCS OFF)
+set(HIGHFIVE_STATIC_HDF5 ON)
+set(HighFive_FIND_QUIETLY ON)
 FetchContent_Declare(HighFive
-  GIT_REPOSITORY https://github.com/BlueBrain/HighFive.git
-  GIT_TAG        v2.7.1
+  GIT_REPOSITORY https://github.com/HunterBelanger/HighFive.git
+  GIT_TAG        feature/hdf5_options
 )
 FetchContent_MakeAvailable(HighFive)
 
