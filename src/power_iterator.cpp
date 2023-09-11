@@ -347,16 +347,17 @@ void PowerIterator::run() {
     // necessary, as fission progeny should naturally be sorted
     mpi::synchronize();
 
-    // Send all particles to master for cancellation and normalization/combing
-    particles_to_master(next_gen);
+    // Synchronize particles across nodes
+    sync_banks(mpi::node_nparticles, next_gen);
 
     // Do weight cancelation
     if (settings::regional_cancellation && cancelator && mpi::rank == 0) {
       perform_regional_cancellation(next_gen);
+      sync_banks(mpi::node_nparticles, next_gen);
     }
 
     // Calculate net positive and negative weight
-    if (mpi::rank == 0) normalize_weights(next_gen);
+    normalize_weights(next_gen);
 
     // Compute pair distance squared
     if (settings::pair_distance_sqrd && mpi::rank == 0) {
@@ -364,10 +365,6 @@ void PowerIterator::run() {
       r_sqrd_vec.push_back(r_sqrd);
     }
     mpi::Bcast(r_sqrd, 0);
-
-    // Send particles back to nodes
-    mpi::synchronize();
-    distribute_particles(mpi::node_nparticles, next_gen);
 
     // Score the source
     if (settings::converged) {
@@ -552,6 +549,12 @@ void PowerIterator::normalize_weights(std::vector<BankedParticle>& next_gen) {
       Nneg++;
     }
   }
+
+  // Get totals across all nodes
+  mpi::Allreduce_sum(W_pos);
+  mpi::Allreduce_sum(W_neg);
+  mpi::Allreduce_sum(Npos);
+  mpi::Allreduce_sum(Nneg);
 
   W = W_pos - W_neg;
   Ntot = Npos + Nneg;

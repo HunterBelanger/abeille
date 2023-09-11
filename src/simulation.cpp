@@ -83,55 +83,16 @@ void Simulation::sync_signaled() {
 
 void Simulation::sync_banks(std::vector<uint64_t>& nums,
                             std::vector<BankedParticle>& bank) {
-  uint64_t pre_Ntot = bank.size();
-  mpi::Allreduce_sum(pre_Ntot);
-
   // First, we send all particles to the master
   mpi::Gatherv(bank, 0);
-
-  // Now we sort the particles
-  if (mpi::rank == 0) {
-    std::sort(bank.begin(), bank.end());
-  }
 
   // Now we redistribute particles
   mpi::Scatterv(bank, 0);
 
-  uint64_t post_Ntot = bank.size();
-  mpi::Allreduce_sum(post_Ntot);
-
-  if (pre_Ntot != post_Ntot)
-    Output::instance().write("\n post_Ntot != pre_Ntot\n");
-
   // Make sure each node know how many particles the other has
-  nums[static_cast<std::size_t>(mpi::rank)] = bank.size();
-  for (int n = 0; n < mpi::size; n++) {
-    mpi::Bcast<uint64_t>(nums[static_cast<std::size_t>(n)], n);
-  }
-}
-
-void Simulation::particles_to_master(std::vector<BankedParticle>& bank) {
-  // First, we send all particles to the master
-  mpi::Gatherv(bank, 0);
-
-  // Now we sort the particles
-  if (mpi::rank == 0) {
-    // std::sort(bank.begin(), bank.end()); // Shouldn't be necessary
-  } else {
-    bank.clear();
-  }
-}
-
-void Simulation::distribute_particles(std::vector<uint64_t>& nums,
-                                      std::vector<BankedParticle>& bank) {
-  // Now we redistribute particles
-  mpi::Scatterv(bank, 0);
-
-  // Make sure each node know how many particles the other has
-  nums[static_cast<std::size_t>(mpi::rank)] = bank.size();
-  for (int n = 0; n < mpi::size; n++) {
-    mpi::Bcast<uint64_t>(nums[static_cast<std::size_t>(n)], n);
-  }
+  std::fill(nums.begin(), nums.end(), 0);
+  nums[mpi::rank] = bank.size();
+  mpi::Allreduce_sum(nums);
 }
 
 void Simulation::write_source(std::vector<Particle>& bank) const {
