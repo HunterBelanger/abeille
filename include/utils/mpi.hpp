@@ -138,6 +138,23 @@ void Allreduce_sum(T& val,
 }
 
 template <typename T>
+void Allreduce_sum(std::vector<T>& vals,
+                   std::source_location loc = std::source_location::current()) {
+#ifdef ABEILLE_USE_MPI
+  if (size > 1) {
+    timer.start();
+    std::vector<T> tmp_send = vals;
+    int err = MPI_Allreduce(&tmp_send[0], &vals[0], static_cast<int>(vals.size()), dtype<T>(), Sum, com);
+    check_error(err, loc);
+    timer.stop();
+  }
+#else
+  (void)val;
+  (void)loc;
+#endif
+}
+
+template <typename T>
 void Allreduce_or(T& val,
                   std::source_location loc = std::source_location::current()) {
 #ifdef ABEILLE_USE_MPI
