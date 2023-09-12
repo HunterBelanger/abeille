@@ -121,6 +121,82 @@ void Bcast(T& val, int root,
 }
 
 template <typename T>
+void Send(T& val, int dest, int tag = 0, std::source_location loc = std::source_location::current())
+{ 
+#ifdef ABEILLE_USE_MPI
+  if (size > 1) {
+    timer.start();
+    int err = MPI_Send(&val, 1, dtype<T>(), dest, tag, com);
+    check_error(err, loc);
+    timer.stop();
+  }
+#else
+  (void)val;
+  (void)dest;
+  (void)loc;
+#endif
+}
+
+template <typename T>
+void Send(std::vector<T>& vals, int dest, int tag = 0, std::source_location loc = std::source_location::current())
+{
+#ifdef ABEILLE_USE_MPI
+  if (size > 1) {
+
+    timer.start();
+    std::size_t count = vals.size();
+    Send(count, dest, tag++);
+
+    int err = MPI_Send(&vals[0],static_cast<int>(count) , dtype<T>(), dest, tag, com);
+    check_error(err, loc);
+    timer.stop();
+  }
+#else
+  (void)vals;
+  (void)dest;
+  (void)loc;
+#endif
+}
+
+template <typename T>
+void Recv(T& val, int src, int tag = 0, std::source_location loc = std::source_location::current())
+{
+#ifdef ABEILLE_USE_MPI
+  if (size > 1) {
+    timer.start();
+    int err = MPI_Recv(&val, 1, dtype<T>(), src, tag, com, MPI_STATUS_IGNORE);
+    check_error(err, loc);
+    timer.stop();
+  }
+#else
+  (void)val;
+  (void)root;
+  (void)loc;
+#endif
+}
+template <typename T>
+void Recv(std::vector<T>& vals, int src, int tag = 0, std::source_location loc = std::source_location::current())
+{
+#ifdef ABEILLE_USE_MPI
+  if (size > 1) {
+    timer.start();
+    std::size_t count = 0;
+    Recv(count, src, tag++);
+
+    vals.resize(count);
+
+    int err = MPI_Recv(&vals[0], static_cast<int>(count), dtype<T>(), src, tag, com, MPI_STATUS_IGNORE);
+    check_error(err, loc); 
+    timer.stop();
+  }
+#else
+  (void)vals;
+  (void)root;
+  (void)loc;
+#endif
+}
+
+template <typename T>
 void Allreduce_sum(T& val,
                    std::source_location loc = std::source_location::current()) {
 #ifdef ABEILLE_USE_MPI
