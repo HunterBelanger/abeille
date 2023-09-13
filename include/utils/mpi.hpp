@@ -133,6 +133,7 @@ void Send(T& val, int dest, int tag = 0, std::source_location loc = std::source_
 #else
   (void)val;
   (void)dest;
+  (void)tag;
   (void)loc;
 #endif
 }
@@ -142,7 +143,6 @@ void Send(std::vector<T>& vals, int dest, int tag = 0, std::source_location loc 
 {
 #ifdef ABEILLE_USE_MPI
   if (size > 1) {
-
     timer.start();
     std::size_t count = vals.size();
     Send(count, dest, tag++);
@@ -154,6 +154,7 @@ void Send(std::vector<T>& vals, int dest, int tag = 0, std::source_location loc 
 #else
   (void)vals;
   (void)dest;
+  (void)tag;
   (void)loc;
 #endif
 }
@@ -170,10 +171,12 @@ void Recv(T& val, int src, int tag = 0, std::source_location loc = std::source_l
   }
 #else
   (void)val;
-  (void)root;
+  (void)src;
+  (void)tag;
   (void)loc;
 #endif
 }
+
 template <typename T>
 void Recv(std::vector<T>& vals, int src, int tag = 0, std::source_location loc = std::source_location::current())
 {
@@ -191,7 +194,8 @@ void Recv(std::vector<T>& vals, int src, int tag = 0, std::source_location loc =
   }
 #else
   (void)vals;
-  (void)root;
+  (void)src;
+  (void)tag;
   (void)loc;
 #endif
 }
