@@ -26,6 +26,7 @@
 #define MPI_H
 
 #include <utils/timer.hpp>
+#include <utils/error.hpp>
 
 #include <cstdint>
 #include <source_location>
