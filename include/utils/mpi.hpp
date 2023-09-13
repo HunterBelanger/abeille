@@ -121,8 +121,8 @@ void Bcast(T& val, int root,
 }
 
 template <typename T>
-void Send(T& val, int dest, int tag = 0, std::source_location loc = std::source_location::current())
-{ 
+void Send(T& val, int dest, int tag = 0,
+          std::source_location loc = std::source_location::current()) {
 #ifdef ABEILLE_USE_MPI
   if (size > 1) {
     timer.start();
@@ -139,15 +139,16 @@ void Send(T& val, int dest, int tag = 0, std::source_location loc = std::source_
 }
 
 template <typename T>
-void Send(std::vector<T>& vals, int dest, int tag = 0, std::source_location loc = std::source_location::current())
-{
+void Send(std::vector<T>& vals, int dest, int tag = 0,
+          std::source_location loc = std::source_location::current()) {
 #ifdef ABEILLE_USE_MPI
   if (size > 1) {
     timer.start();
     std::size_t count = vals.size();
     Send(count, dest, tag++);
 
-    int err = MPI_Send(&vals[0],static_cast<int>(count) , dtype<T>(), dest, tag, com);
+    int err =
+        MPI_Send(&vals[0], static_cast<int>(count), dtype<T>(), dest, tag, com);
     check_error(err, loc);
     timer.stop();
   }
@@ -160,8 +161,8 @@ void Send(std::vector<T>& vals, int dest, int tag = 0, std::source_location loc 
 }
 
 template <typename T>
-void Recv(T& val, int src, int tag = 0, std::source_location loc = std::source_location::current())
-{
+void Recv(T& val, int src, int tag = 0,
+          std::source_location loc = std::source_location::current()) {
 #ifdef ABEILLE_USE_MPI
   if (size > 1) {
     timer.start();
@@ -178,8 +179,8 @@ void Recv(T& val, int src, int tag = 0, std::source_location loc = std::source_l
 }
 
 template <typename T>
-void Recv(std::vector<T>& vals, int src, int tag = 0, std::source_location loc = std::source_location::current())
-{
+void Recv(std::vector<T>& vals, int src, int tag = 0,
+          std::source_location loc = std::source_location::current()) {
 #ifdef ABEILLE_USE_MPI
   if (size > 1) {
     timer.start();
@@ -188,8 +189,9 @@ void Recv(std::vector<T>& vals, int src, int tag = 0, std::source_location loc =
 
     vals.resize(count);
 
-    int err = MPI_Recv(&vals[0], static_cast<int>(count), dtype<T>(), src, tag, com, MPI_STATUS_IGNORE);
-    check_error(err, loc); 
+    int err = MPI_Recv(&vals[0], static_cast<int>(count), dtype<T>(), src, tag,
+                       com, MPI_STATUS_IGNORE);
+    check_error(err, loc);
     timer.stop();
   }
 #else
