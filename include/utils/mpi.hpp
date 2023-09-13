@@ -130,6 +130,8 @@ void Send(T& val, int dest, int tag = 0,
     check_error(err, loc);
     timer.stop();
   }
+  else
+    fatal_error("MPI_Send cannot be called with mpi::size less than 2");
 #else
   (void)val;
   (void)dest;
@@ -152,6 +154,8 @@ void Send(std::vector<T>& vals, int dest, int tag = 0,
     check_error(err, loc);
     timer.stop();
   }
+  else
+    fatal_error("MPI_Send cannot be called with mpi::size less than 2");
 #else
   (void)vals;
   (void)dest;
@@ -170,6 +174,8 @@ void Recv(T& val, int src, int tag = 0,
     check_error(err, loc);
     timer.stop();
   }
+  else
+    fatal_error("MPI_Recv cannot be called with mpi::size less than 2");
 #else
   (void)val;
   (void)src;
@@ -194,6 +200,8 @@ void Recv(std::vector<T>& vals, int src, int tag = 0,
     check_error(err, loc);
     timer.stop();
   }
+  else
+    fatal_error("MPI_Recv cannot be called with mpi::size less than 2");
 #else
   (void)vals;
   (void)src;
