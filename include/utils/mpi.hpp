@@ -231,7 +231,9 @@ void Allreduce_sum(std::vector<T>& vals,
   if (size > 1) {
     timer.start();
     std::vector<T> tmp_send = vals;
-    int err = MPI_Allreduce(&tmp_send[0], &vals[0], static_cast<int>(vals.size()), dtype<T>(), Sum, com);
+    int err =
+        MPI_Allreduce(&tmp_send[0], &vals[0], static_cast<int>(vals.size()),
+                      dtype<T>(), Sum, com);
     check_error(err, loc);
     timer.stop();
   }
