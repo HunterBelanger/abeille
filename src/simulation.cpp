@@ -26,6 +26,7 @@
 #include <utils/mpi.hpp>
 #include <utils/output.hpp>
 #include <utils/settings.hpp>
+#include <functional>
 
 #include <ndarray.hpp>
 
@@ -83,16 +84,79 @@ void Simulation::sync_signaled() {
 
 void Simulation::sync_banks(std::vector<uint64_t>& nums,
                             std::vector<BankedParticle>& bank) {
-  // First, we send all particles to the master
-  mpi::Gatherv(bank, 0);
 
-  // Now we redistribute particles
-  mpi::Scatterv(bank, 0);
+    nums[static_cast<std::size_t>(mpi::rank)] = bank.size();
+    for (int n = 0; n < mpi::size; n++) {
+    mpi::Bcast<uint64_t>(nums[static_cast<std::size_t>(n)], n);
+  }
 
-  // Make sure each node know how many particles the other has
-  std::fill(nums.begin(), nums.end(), 0);
-  nums[mpi::rank] = bank.size();
-  mpi::Allreduce_sum(nums);
+  uint64_t Ntot = std::accumulate(nums.begin(),nums.end(),0);
+  //std::cout << " NTOT IS : " << Ntot;
+  //std::cout << mpi::rank << " has " << bank.size() << " particles.\n";
+ const int base = static_cast<int>(Ntot) / mpi::size;
+ //std::cout << " BASE IS " << base << "\n";
+  const int remainder = static_cast<int>(Ntot) - (mpi::size * base);
+ //std::cout << " remainder IS " << remainder << "\n";
+  auto SendLeft = [&bank, & nums,base](int R, int nts) {
+    std::vector<BankedParticle> sendBank;
+ 	if (mpi::rank == R) {
+    sendBank = {bank.begin(), bank.begin() + nts};
+    bank.erase(bank.begin(), bank.begin() + nts);
+    mpi::Send(sendBank,R-1);
+	} else if (mpi::rank == (R-1)) {
+    mpi::Recv(sendBank,R);
+    bank.insert(bank.end(),sendBank.begin(),sendBank.end());
+	}
+  };
+  auto SendRight = [&bank, &nums,base](int L, int nts) {
+  std::vector<BankedParticle> sendBank;
+ 	if (mpi::rank == L) {
+	  sendBank = {bank.begin() + base, bank.begin() + base + nts};
+    bank.erase(bank.begin() + base, bank.begin() + base + nts);
+    mpi::Send(sendBank,L+1);
+	} else if (mpi::rank == (L+1)) {
+	  mpi::Recv(sendBank,L);
+    bank.insert(bank.begin(),sendBank.begin(),sendBank.end());
+	}
+  };
+  std::function<void(int,int)> DoMagic = [&nums, SendRight, SendLeft, base, remainder, &DoMagic](int i, int ntr_left){
+
+	const int nums_i = static_cast<int>(nums[i]);
+	const int nums_i1 = static_cast<int>(nums[i+1]);
+	const int ntr = ntr_left + base + (i < remainder ? 1 : 0) - nums_i; 
+  //  std::cout << "ntr calculation: " << ntr_left <<  " + " << base << " + " << remainder << " - " << nums_i << "\n";
+
+  //std::cout << "base: " << base;
+  //for(int i = 0 ; i  < mpi::size ; i ++)
+   // if(mpi::rank == i)
+     // std::cout << i << " size: " << nums_i << " ntr is "<< ntr <<  "\n";
+ 	if (ntr > 0 && ntr > nums_i1) {
+    //std::cout << " am i here\n";
+	  DoMagic(i+1, ntr);
+	} else if (ntr > 0 && ntr <= nums_i1)  {
+		SendLeft(i+1, ntr);	
+    nums[i+1] -= ntr;
+    nums[i] += ntr;
+	} 
+  //When in the recursive case, if for example the right node does not have enough elements and you went to the one after
+  // when the nodes get sent around your ntr < 0 but you want to send left if the right one has enough elements
+ /* else if (ntr < 0 && nums_i1 >= base)
+  {
+    SendLeft(i, -ntr);	
+    nums[i] -= -ntr;
+    nums[i-1] +=  -ntr;
+  }*/
+  else if (ntr < 0) {
+		SendRight(i, -ntr);	
+    nums[i] -= -ntr;
+    nums[i+1] += -ntr;
+	}
+  };
+
+  for (int i = 0; i < mpi::size - 1; i++)
+	  DoMagic(i,0);
+
+   // std::cout << mpi::rank << " has " << bank.size() << " particles.\n";
 }
 
 void Simulation::write_source(std::vector<Particle>& bank) const {
