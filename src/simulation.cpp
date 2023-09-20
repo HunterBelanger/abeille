@@ -29,6 +29,8 @@
 
 #include <ndarray.hpp>
 
+#include <functional>
+
 Simulation::Simulation(std::shared_ptr<Tallies> i_t,
                        std::shared_ptr<Transporter> i_tr,
                        std::vector<std::shared_ptr<Source>> srcs)
@@ -83,16 +85,90 @@ void Simulation::sync_signaled() {
 
 void Simulation::sync_banks(std::vector<uint64_t>& nums,
                             std::vector<BankedParticle>& bank) {
-  // First, we send all particles to the master
-  mpi::Gatherv(bank, 0);
-
-  // Now we redistribute particles
-  mpi::Scatterv(bank, 0);
-
-  // Make sure each node know how many particles the other has
+  // Make sure all ranks know how many particles all other nodes have
   std::fill(nums.begin(), nums.end(), 0);
-  nums[mpi::rank] = bank.size();
+  nums[static_cast<std::size_t>(mpi::rank)] = bank.size();
   mpi::Allreduce_sum(nums);
+
+  // These are constants used for determining how many particles should be on
+  // each rank. Ntot is the total number of particles across all ranks, base is
+  // the minimum number of particles that all ranks should have. Remainder is
+  // the number of particles which are left if each rank has base particles. If
+  // rank < remainder, then that rank gets one extra particle.
+  const int Ntot = std::accumulate(nums.begin(), nums.end(), 0);
+  const int base = static_cast<int>(Ntot) / mpi::size;
+  const int remainder = static_cast<int>(Ntot) - (mpi::size * base);
+
+  // This lambda sends nts particles to the LEFT from rank R to rank R-1.
+  // It also updates nums for each rank.
+  auto SendLeft = [&bank, &nums](const int R, const int nts) {
+    // nts is Number to send
+    std::vector<BankedParticle> sendBank;
+    if (mpi::rank == R) {
+      sendBank = {bank.begin(), bank.begin() + nts};
+      bank.erase(bank.begin(), bank.begin() + nts);
+      mpi::Send(sendBank, R - 1);
+    } else if (mpi::rank == (R - 1)) {
+      mpi::Recv(sendBank, R);
+      bank.insert(bank.end(), sendBank.begin(), sendBank.end());
+    } 
+    nums[R] -= nts;
+    nums[R - 1] += nts;
+  };
+  
+  // This lambda sends nts particles to the RIGHT from rank L to rank L+1.
+  // It also updates nums for each rank.
+  auto SendRight = [&bank, &nums](const int L, const int nts) {
+    // nts is Number to send
+    std::vector<BankedParticle> sendBank;
+    if (mpi::rank == L) {
+      sendBank = {bank.end() - nts, bank.end()};
+      bank.erase(bank.end() - nts, bank.end());
+      mpi::Send(sendBank, L + 1);
+    } else if (mpi::rank == (L + 1)) {
+      mpi::Recv(sendBank, L);
+      bank.insert(bank.begin(), sendBank.begin(), sendBank.end());
+    }
+    nums[L] -= nts;
+    nums[L + 1] += nts;
+  };
+
+  std::function<void(int, int)> SendParticles =
+      [&nums, base, remainder, SendRight, SendLeft, &SendParticles](
+          const int i, const int ntr_left) {
+        // Number of particles on ranks i and i+1
+        int nums_i = static_cast<int>(nums[i]);
+        int nums_i1 = static_cast<int>(nums[i + 1]);
+
+        // ntr is of particles that rank i needs to receive. This includes the
+        // particles i needs, in addition to any particles previous ranks might
+        // need (ntr_left).
+        int ntr = ntr_left + base + (i < remainder ? 1 : 0) - nums_i;
+
+        if (ntr > 0 && ntr > nums_i1) {
+          SendParticles(i + 1, ntr);
+
+          // Update Nums after recursive call
+          nums_i = static_cast<int>(nums[i]);
+          nums_i1 = static_cast<int>(nums[i + 1]);
+          ntr = ntr_left + base + (i < remainder ? 1 : 0) - nums_i;
+        } 
+
+        if (ntr > 0) {
+          // Needs particles ! Get ntr particles from the next rank.
+          SendLeft(i + 1, ntr);
+        } else if (ntr < 0) {
+          // Too many particles ! Send abs(ntr) particles to next rank.
+          SendRight(i, -ntr);
+        }
+      };
+
+  // Call SendParticles for all but the last rank. Since we move from rank 0 up
+  // to the last rank, if all ranks but the last have the correct number of
+  // particles, then the last rank must also have the correct number.
+  for (int i = 0; i < mpi::size - 1; i++) {
+    SendParticles(i, 0);
+  }
 }
 
 void Simulation::write_source(std::vector<Particle>& bank) const {
