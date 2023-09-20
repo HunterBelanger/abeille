@@ -111,7 +111,7 @@ void Simulation::sync_banks(std::vector<uint64_t>& nums,
     } else if (mpi::rank == (R - 1)) {
       mpi::Recv(sendBank, R);
       bank.insert(bank.end(), sendBank.begin(), sendBank.end());
-    }
+    } 
     nums[R] -= nts;
     nums[R - 1] += nts;
   };
