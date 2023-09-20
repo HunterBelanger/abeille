@@ -333,7 +333,7 @@ void BranchlessPowerIterator::run() {
     std::vector<BankedParticle> next_gen = transporter->transport(bank);
     transported_histories += bank.size();
 
-    if (next_gen.size() == 0) {
+    if (next_gen.empty()) {
       fatal_error("No fission neutrons were produced.");
     }
 
@@ -343,8 +343,6 @@ void BranchlessPowerIterator::run() {
     // Get new keff
     tallies->calc_gen_values();
 
-    // std::sort(next_gen.begin(), next_gen.end()); // This shouldn't be
-    // necessary, as fission progeny should naturally be sorted
     mpi::synchronize();
 
     // Synchronize particles across nodes
@@ -364,19 +362,13 @@ void BranchlessPowerIterator::run() {
       comb_particles(next_gen);
 
     // Compute pair distance squared
-    if (settings::pair_distance_sqrd && mpi::rank == 0) {
-      r_sqrd = compute_pair_dist_sqrd(next_gen);
-      r_sqrd_vec.push_back(r_sqrd);
-    }
-    mpi::Bcast(r_sqrd, 0);
+    if (settings::pair_distance_sqrd) compute_pair_dist_sqrd(next_gen);
 
-    // Score the source
+    // Score the source and gen if passed ignored
     if (settings::converged) {
       tallies->score_source(next_gen, settings::converged);
+      tallies->record_generation();
     }
-
-    // Store gen if passed ignored
-    if (settings::converged) tallies->record_generation();
 
     // Zero tallies for next generation
     tallies->clear_generation();
@@ -702,7 +694,7 @@ void BranchlessPowerIterator::compute_post_cancellation_entropy(
   }
 }
 
-double BranchlessPowerIterator::compute_pair_dist_sqrd(
+void BranchlessPowerIterator::compute_pair_dist_sqrd(
     const std::vector<BankedParticle>& next_gen) {
   double Ntot = 0.;
   double r_sqr = 0.;
@@ -724,9 +716,21 @@ double BranchlessPowerIterator::compute_pair_dist_sqrd(
     }
   }
 
+  // This is the pair distance squared for the rank.
   r_sqr /= 2. * Ntot * Ntot;
 
-  return r_sqr;
+  // We now get the average pair distance squared across all ranks.
+  // This of course leads to a different result with differen parallelization
+  // topologies, but is the best that can be done here. This is not a common
+  // quantity anyway.
+  r_sqr /= static_cast<double>(mpi::size);
+  mpi::Allreduce_sum(r_sqr);
+
+  // Save the average pair distance squared for the generation to the variable
+  // for this gen in the class, and in the list of all pair distances over the
+  // generations.
+  r_sqrd = r_sqr;
+  r_sqrd_vec.push_back(r_sqrd);
 }
 
 void BranchlessPowerIterator::zero_entropy() {
