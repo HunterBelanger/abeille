@@ -360,12 +360,11 @@ void PowerIterator::run() {
     // Compute pair distance squared
     if (settings::pair_distance_sqrd) compute_pair_dist_sqrd(next_gen);
 
-    // Score the source
-    if (settings::converged)
+    // Score the source and gen if passed ignored
+    if (settings::converged) {
       tallies->score_source(next_gen, settings::converged);
-
-    // Store gen if passed ignored
-    if (settings::converged) tallies->record_generation();
+      tallies->record_generation();
+    }
 
     // Zero tallies for next generation
     tallies->clear_generation();
