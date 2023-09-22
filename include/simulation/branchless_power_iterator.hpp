@@ -83,7 +83,7 @@ class BranchlessPowerIterator : public Simulation {
   void zero_entropy();
 
   // Pair-distance sqrd calculation
-  double compute_pair_dist_sqrd(const std::vector<BankedParticle>& next_gen);
+  void compute_pair_dist_sqrd(const std::vector<BankedParticle>& next_gen);
 
   void print_header();
 

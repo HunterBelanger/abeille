@@ -238,7 +238,7 @@ void Allreduce_sum(std::vector<T>& vals,
     timer.stop();
   }
 #else
-  (void)val;
+  (void)vals;
   (void)loc;
 #endif
 }
