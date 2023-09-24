@@ -8,7 +8,15 @@ set(CMAKE_POLICY_DEFAULT_CMP0069 NEW)
 option(ABEILLE_USE_OMP "Compile Abeille with OpenMP for shared memory parallelism" ON)
 option(ABEILLE_USE_LTO "Compile with Link-Time Optimization for all components" ON)
 option(ABEILLE_USE_MPI "Compile Abeille with MPI for distributed memory parallelism" OFF)
-option(ABEILLE_GUI_PLOT "Compile Abeille with support for the GUI plotter" ON)
+
+# If building Abeille on Windows, the default setting is to build with the GUI
+# plotter, as no other dependencies are necessary. On Linux, additional libraries
+# are required to build the GUI, so we default this to OFF.
+if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+  option(ABEILLE_GUI_PLOT "Compile Abeille with support for the GUI plotter" ON)
+else()
+  option(ABEILLE_GUI_PLOT "Compile Abeille with support for the GUI plotter" OFF)
+endif()
 
 # Check for using LTO
 if(ABEILLE_USE_LTO)
