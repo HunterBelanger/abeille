@@ -116,8 +116,8 @@ set(HIGHFIVE_BUILD_DOCS OFF)
 set(HIGHFIVE_STATIC_HDF5 ON)
 set(HighFive_FIND_QUIETLY ON)
 FetchContent_Declare(HighFive
-  GIT_REPOSITORY https://github.com/HunterBelanger/HighFive.git
-  GIT_TAG        feature/hdf5_options
+  GIT_REPOSITORY https://github.com/BlueBrain/HighFive.git
+  GIT_TAG        master
 )
 FetchContent_MakeAvailable(HighFive)
 
