@@ -142,7 +142,96 @@ bool ApproximateMeshCancelator::add_particle(BankedParticle& p) {
 
   return true;
 }
+/*TODO
+Make 2 different algorithms:
 
+First for both, create vector<int> keys
+this represents the keys which are in the sparse matrix that have bins with 1 or more particles in them across all nodes
+we do this by going through all nodes and sending to master every bin id that has a particle in it. Afterward, send keys vector to all nodes.
+
+Algo 1:
+Loop through each key which is a bin with particles in it on at least one node
+
+ReduceAllSum NumberOfPositiveParticles N+
+ReduceAllSum NumberOfPositiveParticles N-
+
+ReduceAllSum NumberOfPositiveParticles N2+
+ReduceAllSum NumberOfPositiveParticles N2-
+
+ReduceAllSum the total weight of the bin
+ReduceAllSum the total weight 2 of the bin
+
+
+Algo 2:
+Vector<double> wgts;
+vector<double> wgts2;
+vector<uint16> N+;
+vector<uint16> N-;
+vector<uin16> N2+;  
+vector<uint16> N2-;
+
+All these vectors should have the same size which is keys.size()
+
+NDArray<double> wgts (2,Nkeys)
+NDArray<double> Ns (4,Nkeys)
+
+ReduceAllSum these two arrays using data_vector
+
+
+*/
+
+
+  void ApproximateMeshCancelator::setAllKeys(std::vector<int>& keys)
+{
+  for (auto& key_bin_pair : bins) 
+    {
+      keys.push_back(key_bin_pair.first);
+    }
+    std::set<int> key_set;
+    if(mpi::rank == 0)
+    {
+      std::copy(keys.begin(),keys.end(),std::inserter(key_set,key_set.end()));
+      keys.clear();
+      keys.shrink_to_fit();
+    }
+    for(int i = 1; i < mpi::size;i++)
+    {
+      if(mpi::rank == i)
+      {
+        mpi::Send(keys,0);
+      }
+      else if (mpi::rank == 0)
+      {
+        mpi::Recv(keys,i);
+        std::copy(keys.begin(),keys.end(),std::inserter(key_set,key_set.end()));
+      }
+    }
+    if(mpi::rank == 0)
+    {
+      keys.clear();
+      keys.assign(key_set.begin(),key_set.end());
+    }
+    for(int i = 1; i < mpi::size;i++)
+    {
+      if(mpi::rank == 0)
+      {
+        mpi::Send(keys,i);
+      }
+      else if (mpi::rank == i)
+      {
+        mpi::Recv(keys,0);
+      }
+    }
+}
+
+
+void ApproximateMeshCancelator::perform_cancellation_loop(pcg32& /*rng*/) {
+
+  std::vector<int> keys;
+  keys.reserve(bins.size());
+  setAllKeys(keys);
+    
+}
 void ApproximateMeshCancelator::perform_cancellation(pcg32& /*rng*/) {
   // Go through all bins in the mesh
   for (auto& key_bin_pair : bins) {
