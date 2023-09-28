@@ -181,7 +181,7 @@ ReduceAllSum these two arrays using data_vector
 */
 
 
-  void ApproximateMeshCancelator::setAllKeys(std::vector<int>& keys)
+  void ApproximateMeshCancelator::sync_keys(std::vector<int>& keys)
 {
   for (auto& key_bin_pair : bins) 
     {
@@ -192,13 +192,15 @@ ReduceAllSum these two arrays using data_vector
     {
       std::copy(keys.begin(),keys.end(),std::inserter(key_set,key_set.end()));
       keys.clear();
-      keys.shrink_to_fit();
+      keys.shrink_to_fit(); 
     }
+    
     for(int i = 1; i < mpi::size;i++)
     {
       if(mpi::rank == i)
       {
         mpi::Send(keys,0);
+        keys.clear();
       }
       else if (mpi::rank == 0)
       {
@@ -210,6 +212,7 @@ ReduceAllSum these two arrays using data_vector
     {
       keys.clear();
       keys.assign(key_set.begin(),key_set.end());
+       
     }
     for(int i = 1; i < mpi::size;i++)
     {
@@ -220,6 +223,8 @@ ReduceAllSum these two arrays using data_vector
       else if (mpi::rank == i)
       {
         mpi::Recv(keys,0);
+        sleep(i + 1);
+       
       }
     }
 }
@@ -229,7 +234,7 @@ void ApproximateMeshCancelator::perform_cancellation_loop(pcg32& /*rng*/) {
 
   std::vector<int> keys;
   keys.reserve(bins.size());
-  setAllKeys(keys);
+  sync_keys(keys);
     
 }
 void ApproximateMeshCancelator::perform_cancellation(pcg32& /*rng*/) {
