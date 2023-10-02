@@ -183,8 +183,7 @@ ReduceAllSum these two arrays using data_vector
 */
 
 void ApproximateMeshCancelator::sync_keys(std::vector<int>& keys) {
-
-  // Each node collects all keys 
+  // Each node collects all keys
   for (auto& key_bin_pair : bins) {
     keys.push_back(key_bin_pair.first);
   }
@@ -232,10 +231,8 @@ void ApproximateMeshCancelator::perform_cancellation_loop(pcg32& /*rng*/) {
   std::vector<int> keys;
   keys.reserve(bins.size());
   sync_keys(keys);
-  for(int i = 0; i < keys.size();i++)
-  {
-   if (bins[i].size() > 1)
-   {
+  for (int i = 0; i < keys.size(); i++) {
+    if (bins[i].size() > 1) {
       bool has_pos_w1 = false;
       bool has_neg_w1 = false;
       bool has_pos_w2 = false;
@@ -249,25 +246,19 @@ void ApproximateMeshCancelator::perform_cancellation_loop(pcg32& /*rng*/) {
 
       // Go through all particles in the bin
       for (const auto& p : bins[i]) {
-        if (p->wgt > 0.)
-        {
+        if (p->wgt > 0.) {
           has_pos_w1 = true;
           pos_n++;
-        }
-        else if (p->wgt < 0.)
-        {
+        } else if (p->wgt < 0.) {
           has_neg_w1 = true;
           neg_n++;
         }
         sum_wgt += p->wgt;
 
-        if (p->wgt2 > 0.)
-        {
+        if (p->wgt2 > 0.) {
           has_pos_w2 = true;
           pos_n2++;
-        }
-        else if (p->wgt2 < 0.)
-        {
+        } else if (p->wgt2 < 0.) {
           has_neg_w2 = true;
           neg_n2++;
         }
@@ -279,8 +270,6 @@ void ApproximateMeshCancelator::perform_cancellation_loop(pcg32& /*rng*/) {
       double avg_wgt = sum_wgt / N;
       double avg_wgt2 = sum_wgt2 / N;
 
-
-      
       mpi::Allreduce_sum(pos_n);
       mpi::Allreduce_sum(neg_n);
 
@@ -289,13 +278,13 @@ void ApproximateMeshCancelator::perform_cancellation_loop(pcg32& /*rng*/) {
 
       mpi::Allreduce_sum(avg_wgt);
       mpi::Allreduce_sum(avg_wgt2);
-      
+
       for (auto& p : bins[i]) {
         if (has_pos_w1 && has_neg_w1) p->wgt = avg_wgt;
         if (has_pos_w2 && has_neg_w2) p->wgt2 = avg_wgt2;
       }
-   }
-  bins[i].clear();
+    }
+    bins[i].clear();
   }
   keys.clear();
 }
@@ -308,13 +297,11 @@ void ApproximateMeshCancelator::perform_cancellation_vector(pcg32& /*rng*/) {
   std::vector<double> all_wgts2;
   std::vector<uint16_t> all_pos_n;
   std::vector<uint16_t> all_neg_n;
-  std::vector<uint16_t> all_pos_n2;  
+  std::vector<uint16_t> all_pos_n2;
   std::vector<uint16_t> all_neg_n2;
 
-  for(int i = 0; i < keys.size();i++)
-  {
-   if (bins[i].size() > 1)
-   {
+  for (int i = 0; i < keys.size(); i++) {
+    if (bins[i].size() > 1) {
       bool has_pos_w1 = false;
       bool has_neg_w1 = false;
       bool has_pos_w2 = false;
@@ -328,25 +315,19 @@ void ApproximateMeshCancelator::perform_cancellation_vector(pcg32& /*rng*/) {
 
       // Go through all particles in the bin
       for (const auto& p : bins[i]) {
-        if (p->wgt > 0.)
-        {
+        if (p->wgt > 0.) {
           has_pos_w1 = true;
           pos_n++;
-        }
-        else if (p->wgt < 0.)
-        {
+        } else if (p->wgt < 0.) {
           has_neg_w1 = true;
           neg_n++;
         }
         sum_wgt += p->wgt;
 
-        if (p->wgt2 > 0.)
-        {
+        if (p->wgt2 > 0.) {
           has_pos_w2 = true;
           pos_n2++;
-        }
-        else if (p->wgt2 < 0.)
-        {
+        } else if (p->wgt2 < 0.) {
           has_neg_w2 = true;
           neg_n2++;
         }
@@ -358,29 +339,26 @@ void ApproximateMeshCancelator::perform_cancellation_vector(pcg32& /*rng*/) {
       double avg_wgt = sum_wgt / N;
       double avg_wgt2 = sum_wgt2 / N;
 
-
       all_pos_n.push_back(pos_n);
       all_neg_n.push_back(neg_n);
       all_pos_n2.push_back(pos_n2);
       all_neg_n2.push_back(neg_n2);
       all_wgts.push_back(avg_wgt);
       all_wgts2.push_back(avg_wgt2);
-   }
-   else if(bins[i].size() == 1)
-   {
-    if (bins[i][0]->wgt > 0.)
+    } else if (bins[i].size() == 1) {
+      if (bins[i][0]->wgt > 0.)
         all_pos_n.push_back(1);
-    else if (bins[i][0]->wgt < 0.)
-      all_neg_n.push_back(1);
-    if (bins[i][0]->wgt2 > 0.)
-      all_pos_n2.push_back(1);
-    else if (bins[i][0]->wgt2 < 0.)
-      all_neg_n2.push_back(1);
+      else if (bins[i][0]->wgt < 0.)
+        all_neg_n.push_back(1);
+      if (bins[i][0]->wgt2 > 0.)
+        all_pos_n2.push_back(1);
+      else if (bins[i][0]->wgt2 < 0.)
+        all_neg_n2.push_back(1);
 
-     all_wgts.push_back(bins[i][0]->wgt);
-     all_wgts.push_back(bins[i][0]->wgt2);
-  }
-  bins[i].clear();
+      all_wgts.push_back(bins[i][0]->wgt);
+      all_wgts.push_back(bins[i][0]->wgt2);
+    }
+    bins[i].clear();
   }
   mpi::Allreduce_sum(all_pos_n);
   mpi::Allreduce_sum(all_neg_n);
