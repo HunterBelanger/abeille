@@ -321,7 +321,6 @@ void ApproximateMeshCancelator::perform_cancellation_vector(pcg32& /*rng*/) {
       all_wgts.push_back(sum_wgt);
       all_wgts2.push_back(sum_wgt2);
 
-    bins[key].clear();
   }
   mpi::Allreduce_sum(all_pos_n);
   mpi::Allreduce_sum(all_neg_n);
@@ -346,6 +345,7 @@ void ApproximateMeshCancelator::perform_cancellation_vector(pcg32& /*rng*/) {
         if (avg_wgt != -1) p->wgt = avg_wgt;
         if (avg_wgt2 != -1) p->wgt2 = avg_wgt2;
       }
+      bins[key].clear();
     }
   keys.clear();
 }
