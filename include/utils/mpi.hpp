@@ -122,6 +122,26 @@ void Bcast(T& val, int root,
 }
 
 template <typename T>
+void Bcast(std::vector<T>& vals, int root,
+           std::source_location loc = std::source_location::current()) {
+#ifdef ABEILLE_USE_MPI
+  if (size > 1) {
+    timer.start();
+    std::size_t count = vals.size();
+    Bcast(count, root);
+    vals.resize(count);
+    int err = MPI_Bcast(&vals[0], static_cast<int>(vals.size()), dtype<T>(), root, com);
+    check_error(err, loc);
+    timer.stop();
+  }
+#else
+  (void)vals;
+  (void)root;
+  (void)loc;
+#endif
+}
+
+template <typename T>
 void Send(T& val, int dest, int tag = 0,
           std::source_location loc = std::source_location::current()) {
   if (size < 2) {
