@@ -31,6 +31,12 @@
 #include <utils/settings.hpp>
 #include <utils/timer.hpp>
 
+//remove later
+#include <simulation/approximate_mesh_cancelator.hpp>
+#include <utils/position.hpp>
+#include <unordered_map>
+
+
 #include <docopt.h>
 
 #include <csignal>
@@ -85,7 +91,101 @@ int main(int argc, char** argv) {
   mpi::initialize_mpi(&argc, &argv);
 
   std::atexit(mpi::finalize_mpi);
+  
+  
+  Position start(0,0,0);
+  Position end(2,1,1);
+  ApproximateMeshCancelator cancelator(start,end,4,2,2);
+    std::vector<BankedParticle*> v;
 
+  std::cout << " made cancelator" << "\n";
+    if(mpi::rank == 0)
+    {
+      BankedParticle bp1;
+      bp1.wgt = 1; 
+      bp1.wgt2 = 1;
+       std::cout << " added bp1 " << "\n";
+      v.push_back(&bp1);
+      std::cout << " pushed back bp1 " << "\n";
+      BankedParticle bp2;
+      bp2.wgt = -0.5;
+      bp2.wgt2 = -0.5;
+      v.push_back(&bp2);
+      cancelator.bins[0] = v;
+    }
+    else if(mpi::rank == 1)
+    {
+     BankedParticle bp1;
+      bp1.wgt = -1; 
+      bp1.wgt2 = 1;
+      v.push_back(&bp1);
+      BankedParticle bp2;
+      bp2.wgt = -0.5;
+      bp2.wgt2 = 0.5;
+      v.push_back(&bp2);
+      cancelator.bins[0] = v;
+    }
+    else if(mpi::rank == 2)
+    {
+     BankedParticle bp1;
+      bp1.wgt = 1; 
+      bp1.wgt2 = 1;
+      v.push_back(&bp1);
+      BankedParticle bp2;
+      bp2.wgt = -0.5;
+      bp2.wgt2 = -0.5;
+      v.push_back(&bp2);
+      cancelator.bins[2] = v;
+    }
+    else if(mpi::rank == 3)
+    {
+     BankedParticle bp1;
+      bp1.wgt = 1; 
+      bp1.wgt2 = 1;
+      v.push_back(&bp1);
+      BankedParticle bp2;
+      bp2.wgt = -0.5;
+      bp2.wgt2 = -0.5;
+      v.push_back(&bp2);
+      cancelator.bins[3] = v;
+    }
+  std::cout << " cancelating" << "\n";
+  cancelator.perform_cancellation_loop(settings::rng);
+  std::cout << " cancelated" << "\n";
+
+  if(mpi::rank == 0)
+  {
+        sleep(3);
+    std::cout << " my rank is " << mpi::rank <<  " cancelator " << cancelator.bins[0][0]->wgt<< " \n";
+    std::cout << " my rank is " << mpi::rank <<  " cancelator " << cancelator.bins[0][1]->wgt2<< " \n";
+    std::cout << " done " << "\n";
+  }
+if(mpi::rank == 1)
+  {
+    sleep(8);
+      std::cout << " my rank is " << mpi::rank <<  " cancelator " << cancelator.bins[0][0]->wgt<< " \n";
+    std::cout << " my rank is " << mpi::rank <<  " cancelator " << cancelator.bins[0][1]->wgt2<< " \n";
+          std::cout << " done " << "\n";
+
+  }
+if(mpi::rank == 2)
+  {
+        sleep(13);
+      std::cout << " my rank is " << mpi::rank <<  " cancelator " << cancelator.bins[2][0]->wgt<< " \n";
+    std::cout << " my rank is " << mpi::rank <<  " cancelator " << cancelator.bins[2][1]->wgt2<< " \n";
+          std::cout << " done " << "\n";
+
+  }
+if(mpi::rank == 3)
+  {
+        sleep(18);
+    std::cout << " my rank is " << mpi::rank <<  " cancelator " << cancelator.bins[3][0]->wgt<< " \n";
+    std::cout << " my rank is " << mpi::rank <<  " cancelator " << cancelator.bins[3][1]->wgt2<< " \n";
+          std::cout << " done " << "\n";
+  }
+
+
+  /*
   // Make help message string for docopt
   std::string help_message = version_string + "\n" + info + "\n" + help;
 
@@ -235,4 +335,5 @@ int main(int argc, char** argv) {
         "total-run-time", settings::alpha_omega_timer.elapsed_time());
 
   return 0;
+  */
 }

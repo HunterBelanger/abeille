@@ -284,10 +284,11 @@ void ApproximateMeshCancelator::perform_cancellation_vector(pcg32& /*rng*/) {
   
   std::vector<double> all_wgts;
   std::vector<double> all_wgts2;
-  std::vector<uint16_t> all_pos_n;
-  std::vector<uint16_t> all_neg_n;
-  std::vector<uint16_t> all_pos_n2;
-  std::vector<uint16_t> all_neg_n2;
+  //change to uint16
+  std::vector<int> all_pos_n;
+  std::vector<int> all_neg_n;
+  std::vector<int> all_pos_n2;
+  std::vector<int> all_neg_n2;
 
   for (const auto key : keys) {
       int pos_n = 0;
