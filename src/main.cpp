@@ -35,7 +35,7 @@
 #include <simulation/approximate_mesh_cancelator.hpp>
 #include <utils/position.hpp>
 #include <unordered_map>
-
+#include <ndarray.hpp>
 
 #include <docopt.h>
 
@@ -85,14 +85,24 @@ bool exists(std::string fname) {
   return file.good();
 }
 
+
+/*
+TODO:
+
+1. mpi.hpp add the short type so that vector version can use it
+2. turn the vectors into NDArray
+3. Revert things to how they were before testing 
+4. Add the option for loop or vector
+
+
+*/
 int main(int argc, char** argv) {
   settings::alpha_omega_timer.start();
 
   mpi::initialize_mpi(&argc, &argv);
 
   std::atexit(mpi::finalize_mpi);
-  
-  
+
   Position start(0,0,0);
   Position end(2,1,1);
   ApproximateMeshCancelator cancelator(start,end,4,2,2);
@@ -101,35 +111,39 @@ int main(int argc, char** argv) {
   std::cout << " made cancelator" << "\n";
     if(mpi::rank == 0)
     {
+      //wgt should be averaged as (1 + 0.5 + 0.8 -0.5) / 4 = 1.8 / 4 = 0.45
+      //wgt2 is positive in both ranks for bin 0 so it should not be averaged out
       BankedParticle bp1;
       bp1.wgt = 1; 
       bp1.wgt2 = 1;
-       std::cout << " added bp1 " << "\n";
       v.push_back(&bp1);
-      std::cout << " pushed back bp1 " << "\n";
-      BankedParticle bp2;
-      bp2.wgt = -0.5;
-      bp2.wgt2 = -0.5;
-      v.push_back(&bp2);
-      cancelator.bins[0] = v;
+       BankedParticle bp1;
+      bp1.wgt = 0.5; 
+      bp1.wgt2 = 1;
+      v.push_back(&bp1);
+      //affects bin 0
+      cancelator.bins[0] = v; 
     }
     else if(mpi::rank == 1)
     {
      BankedParticle bp1;
-      bp1.wgt = -1; 
-      bp1.wgt2 = 1;
+      bp1.wgt = 0.8; 
+      bp1.wgt2 = 0.8;
       v.push_back(&bp1);
       BankedParticle bp2;
       bp2.wgt = -0.5;
       bp2.wgt2 = 0.5;
       v.push_back(&bp2);
+      //affects bin 0
       cancelator.bins[0] = v;
     }
     else if(mpi::rank == 2)
     {
+      //wgt = (1 - 0.5) / 2 = 0.5 / 2 = 0.25
+      //wgt2 = weights are both neg so no cancellation happens
      BankedParticle bp1;
       bp1.wgt = 1; 
-      bp1.wgt2 = 1;
+      bp1.wgt2 = -1;
       v.push_back(&bp1);
       BankedParticle bp2;
       bp2.wgt = -0.5;
@@ -139,9 +153,11 @@ int main(int argc, char** argv) {
     }
     else if(mpi::rank == 3)
     {
+      //wgt = (1 - 0.5) / 2 = 0.5 / 2 = 0.25
+      //wgt2 = (0.1 - 0.5) / 2= -0.4 / 2 = -0.2
      BankedParticle bp1;
       bp1.wgt = 1; 
-      bp1.wgt2 = 1;
+      bp1.wgt2 = 0.1;
       v.push_back(&bp1);
       BankedParticle bp2;
       bp2.wgt = -0.5;
@@ -150,7 +166,118 @@ int main(int argc, char** argv) {
       cancelator.bins[3] = v;
     }
   std::cout << " cancelating" << "\n";
+  //cancelator.perform_cancellation_vector(settings::rng);
   cancelator.perform_cancellation_loop(settings::rng);
+  std::cout << " cancelated" << "\n";
+
+  if(mpi::rank == 0)
+  {
+    sleep(3);
+    std::cout << " my rank is " << mpi::rank <<  " cancelator wgt: " << cancelator.bins[0][0]->wgt<< " \n";
+    std::cout << " my rank is " << mpi::rank <<  " cancelator wgt2: " << cancelator.bins[0][0]->wgt2<< " \n";
+    std::cout << " my rank is " << mpi::rank <<  " cancelator wgt: " << cancelator.bins[0][1]->wgt<< " \n";
+    std::cout << " my rank is " << mpi::rank <<  " cancelator wgt2: " << cancelator.bins[0][1]->wgt2<< " \n";
+    std::cout << " done " << "\n";
+  }
+if(mpi::rank == 1)
+  {
+    sleep(8);
+    std::cout << " my rank is " << mpi::rank <<  " cancelator wgt: " << cancelator.bins[0][0]->wgt<< " \n";
+    std::cout << " my rank is " << mpi::rank <<  " cancelator wgt2: " << cancelator.bins[0][0]->wgt2<< " \n";
+    std::cout << " my rank is " << mpi::rank <<  " cancelator wgt: " << cancelator.bins[0][1]->wgt<< " \n";
+    std::cout << " my rank is " << mpi::rank <<  " cancelator wgt2: " << cancelator.bins[0][1]->wgt2<< " \n";
+    std::cout << " done " << "\n";
+
+  }
+if(mpi::rank == 2)
+  {
+    sleep(13);
+    std::cout << " my rank is " << mpi::rank <<  " cancelator wgt: " << cancelator.bins[2][0]->wgt<< " \n";
+    std::cout << " my rank is " << mpi::rank <<  " cancelator wgt2: " << cancelator.bins[2][0]->wgt2<< " \n";
+    std::cout << " my rank is " << mpi::rank <<  " cancelator wgt: " << cancelator.bins[2][1]->wgt<< " \n";
+    std::cout << " my rank is " << mpi::rank <<  " cancelator wgt2: " << cancelator.bins[2][1]->wgt2<< " \n";
+    std::cout << " done " << "\n";
+
+  }
+if(mpi::rank == 3)
+  {
+    sleep(18);
+    std::cout << " my rank is " << mpi::rank <<  " cancelator wgt: " << cancelator.bins[3][0]->wgt<< " \n";
+    std::cout << " my rank is " << mpi::rank <<  " cancelator wgt2: " << cancelator.bins[3][0]->wgt2<< " \n";
+    std::cout << " my rank is " << mpi::rank <<  " cancelator wgt: " << cancelator.bins[3][1]->wgt<< " \n";
+    std::cout << " my rank is " << mpi::rank <<  " cancelator wgt2: " << cancelator.bins[3][1]->wgt2<< " \n";
+    std::cout << " done " << "\n";
+  }
+  /*
+  Position start(0,0,0);
+  Position end(2,1,1);
+  ApproximateMeshCancelator cancelator(start,end,4,2,2);
+
+  std::cout << " made cancelator" << "\n";
+    if(mpi::rank == 0)
+    {
+      for(double j = 0; j < 50;j++)
+      {
+        std::vector<BankedParticle*> v;
+        for(double i = 0; i < 100;i++)
+        {
+          BankedParticle bp1;
+          bp1.wgt = (i/100) * (j/50) * 4 ;
+          bp1.wgt2 = (i/100) * 4;
+          v.push_back(&bp1);
+        }
+        cancelator.bins[j*4] = v; 
+      }
+     
+     
+    }
+    else if(mpi::rank == 1)
+    {
+     for(double j = 0; j < 50;j++)
+      {
+        std::vector<BankedParticle*> v;
+        for(double i = 0; i < 100;i++)
+        {
+          BankedParticle bp1;
+          bp1.wgt = (i/100) * (j/50) * mpi::rank ;
+          bp1.wgt2 = (i/100) * mpi::rank;
+          v.push_back(&bp1);
+        }
+        cancelator.bins[j*mpi::rank] = v; 
+    }
+    }
+    else if(mpi::rank == 2) 
+    {
+      for(double j = 0; j < 50;j++)
+      {
+        std::vector<BankedParticle*> v;
+        for(double i = 0; i < 100;i++)
+        {
+          BankedParticle bp1;
+          bp1.wgt = (i/100) * (j/50) * mpi::rank ;
+          bp1.wgt2 = (i/100) * mpi::rank;
+          v.push_back(&bp1);
+        }
+        cancelator.bins[j*mpi::rank] = v; 
+    }
+    }
+    else if(mpi::rank == 3)
+    {
+   for(double j = 0; j < 50;j++)
+      {
+        std::vector<BankedParticle*> v;
+        for(double i = 0; i < 100;i++)
+        {
+          BankedParticle bp1;
+          bp1.wgt = (i/100) * (j/50) * mpi::rank ;
+          bp1.wgt2 = (i/100) * mpi::rank;
+          v.push_back(&bp1);
+        }
+        cancelator.bins[j*mpi::rank] = v; 
+    }
+    }
+  std::cout << " cancelating" << "\n";
+  cancelator.perform_cancellation_vector(settings::rng);
   std::cout << " cancelated" << "\n";
 
   if(mpi::rank == 0)
@@ -184,7 +311,7 @@ if(mpi::rank == 3)
           std::cout << " done " << "\n";
   }
 
-
+*/
   /*
   // Make help message string for docopt
   std::string help_message = version_string + "\n" + info + "\n" + help;
@@ -333,7 +460,7 @@ if(mpi::rank == 3)
   if (mpi::rank == 0)
     Output::instance().h5().createAttribute(
         "total-run-time", settings::alpha_omega_timer.elapsed_time());
-
+*/
   return 0;
-  */
+  
 }
