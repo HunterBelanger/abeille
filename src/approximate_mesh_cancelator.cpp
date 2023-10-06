@@ -227,29 +227,16 @@ void ApproximateMeshCancelator::perform_cancellation_loop(pcg32& /*rng*/) {
   std::vector<int> keys = sync_keys();
 
   for (const auto key : keys) {
-    int pos_n = 0;
-    int neg_n = 0;
-    int pos_n2 = 0;
-    int neg_n2 = 0;
+    int n_total = 0;
     double sum_wgt = 0.;
     double sum_wgt2 = 0.;
 
     // Go through all particles in the bin and add up positives and negatives
     // and get total sum
     auto& bin = bins[key];
-    for (const auto& p : bins[key]) {
-      if (p->wgt > 0.)
-        pos_n++;
-      else if (p->wgt <= 0.)
-        neg_n++;
-
+    for (const auto& p : bin) {
+      n_total++;
       sum_wgt += p->wgt;
-
-      if (p->wgt2 > 0.)
-        pos_n2++;
-      else if (p->wgt2 <= 0.)
-        neg_n2++;
-
       sum_wgt2 += p->wgt2;
     }
     // Sum weights of all particles in each bin across all nodes
@@ -257,21 +244,17 @@ void ApproximateMeshCancelator::perform_cancellation_loop(pcg32& /*rng*/) {
     mpi::Allreduce_sum(sum_wgt2);
 
     // Sum total number of positive and negative particles across all nodes
-    mpi::Allreduce_sum(pos_n);
-    mpi::Allreduce_sum(neg_n);
-
-    mpi::Allreduce_sum(pos_n2);
-    mpi::Allreduce_sum(neg_n2);
+    mpi::Allreduce_sum(n_total);
 
     // Set the avg weights
-    double avg_wgt = sum_wgt / (pos_n + neg_n);
-    double avg_wgt2 = sum_wgt2 / (pos_n2 + neg_n2);
+    double avg_wgt = sum_wgt / n_total;
+    double avg_wgt2 = sum_wgt2 / n_total;
 
     // Loop through particles in the bin once again and perform cancellation if
     // necessary
-    for (const auto& p : bins[key]) {
-      if (pos_n > 0 && neg_n > 0) p->wgt = avg_wgt;
-      if (pos_n2 > 0 && neg_n2 > 0) p->wgt2 = avg_wgt2;
+    for (const auto& p : bin) {
+       p->wgt = avg_wgt;
+       p->wgt2 = avg_wgt2;
     }
     bins[key].clear();
   }
@@ -284,11 +267,12 @@ void ApproximateMeshCancelator::perform_cancellation_vector(pcg32& /*rng*/) {
   std::vector<double> all_wgts;
   std::vector<double> all_wgts2;
   // change to uint16
-  std::vector<int> all_pos_n;
-  std::vector<int> all_neg_n;
-  std::vector<int> all_pos_n2;
-  std::vector<int> all_neg_n2;
-  
+ // NDArray<uint16_t> source = NDArray<uint16_t>();
+  std::vector<uint16_t> all_pos_n;
+  std::vector<uint16_t> all_neg_n;
+  std::vector<uint16_t> all_pos_n2;
+  std::vector<uint16_t> all_neg_n2;
+
   for (const auto key : keys) {
     int pos_n = 0;
     int neg_n = 0;
@@ -338,19 +322,15 @@ void ApproximateMeshCancelator::perform_cancellation_vector(pcg32& /*rng*/) {
   // since they should match to keys
   for (const auto key : keys) {
     // Set the avg weights
-    double avg_wgt = sum_wgt / (pos_n + neg_n);
-    double avg_wgt2 = sum_wgt2 / (pos_n2 + neg_n2);
-    // Only set the avg weights if cancellation can be done
-    if (all_pos_n[x] > 0 && all_neg_n[x] > 0)
-      avg_wgt = all_wgts[x] / (all_pos_n[x] + all_neg_n[x]);
-    if (all_pos_n2[x] > 0 && all_neg_n2[x] > 0)
-      avg_wgt2 = all_wgts2[x] / (all_pos_n2[x] + all_neg_n2[x]);
+    double avg_wgt = all_wgts[x] / (all_pos_n[x] + all_neg_n[x]);
+    double avg_wgt2 = all_wgts2[x] / (all_pos_n2[x] + all_neg_n2[x]);
 
     for (auto& p : bins[key]) {
       if (all_pos_n[x] > 0 && all_neg_n[x] > 0) p->wgt = avg_wgt;
       if (all_pos_n2[x] > 0 && all_neg_n2[x] > 0) p->wgt2 = avg_wgt2;
     }
     bins[key].clear();
+    x++;
   }
   keys.clear();
 }
@@ -398,7 +378,6 @@ void ApproximateMeshCancelator::perform_cancellation(pcg32& /*rng*/) {
         if (has_pos_w2 && has_neg_w2) p->wgt2 = avg_wgt2;
       }
     }
-
     bin.clear();
   }
 }

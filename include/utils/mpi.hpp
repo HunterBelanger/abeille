@@ -50,7 +50,7 @@ using OpType = MPI_Op;
 
 extern const Com com;
 extern const DType Bool;
-//extern const DType Short;
+extern const DType UInt16;
 extern const DType Int;
 extern const DType Double;
 extern const DType UInt64;
@@ -70,12 +70,12 @@ inline DType dtype<bool>() {
   return Bool;
 }
 
-/*
+
 template <>
-inline DType dtype<short>() {
-  return Short;
+inline DType dtype<uint16_t>() {
+  return UInt16;
 }
-*/
+
 template <>
 inline DType dtype<int>() {
   return Int;
