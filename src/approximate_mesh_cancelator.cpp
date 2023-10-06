@@ -264,73 +264,49 @@ void ApproximateMeshCancelator::perform_cancellation_vector(pcg32& /*rng*/) {
   // Get keys of all non empty bins
   std::vector<int> keys = sync_keys();
 
-  std::vector<double> all_wgts;
-  std::vector<double> all_wgts2;
   // change to uint16
- // NDArray<uint16_t> source = NDArray<uint16_t>();
-  std::vector<uint16_t> all_pos_n;
-  std::vector<uint16_t> all_neg_n;
-  std::vector<uint16_t> all_pos_n2;
-  std::vector<uint16_t> all_neg_n2;
-
-  for (const auto key : keys) {
-    int pos_n = 0;
-    int neg_n = 0;
-    int pos_n2 = 0;
-    int neg_n2 = 0;
+  std::vector<size_t> dims;
+  dims.push_back(2);
+  dims.push_back(keys.size());
+  NDArray<double> wgts(dims);
+  std::vector<uint16_t> all_n;
+  
+  for (int i = 0; i < keys.size();i++) {
+    auto key = keys[i];
+    int n_total = 0;
     double sum_wgt = 0.;
     double sum_wgt2 = 0.;
 
     // Go through all particles in the bin and add up positives and negatives
     // and get total sum
     for (const auto& p : bins[key]) {
-      if (p->wgt > 0.) {
-        pos_n++;
-      } else if (p->wgt < 0.) {
-        neg_n++;
-      }
+      n_total++;
       sum_wgt += p->wgt;
-
-      if (p->wgt2 > 0.) {
-        pos_n2++;
-      } else if (p->wgt2 < 0.) {
-        neg_n2++;
-      }
       sum_wgt2 += p->wgt2;
     }
     // Push the counts to the vectors
-    all_pos_n.push_back(pos_n);
-    all_neg_n.push_back(neg_n);
-    all_pos_n2.push_back(pos_n2);
-    all_neg_n2.push_back(neg_n2);
-    all_wgts.push_back(sum_wgt);
-    all_wgts2.push_back(sum_wgt2);
+    all_n.push_back(n_total);
+    wgts(0, i) = sum_wgt;
+    wgts(1, i) = sum_wgt2;
   }
 
   // Sum the vectors across all nodes
-  mpi::Allreduce_sum(all_pos_n);
-  mpi::Allreduce_sum(all_neg_n);
+  mpi::Allreduce_sum(wgts.data_vector());
+  mpi::Allreduce_sum(all_n);
 
-  mpi::Allreduce_sum(all_pos_n2);
-  mpi::Allreduce_sum(all_neg_n2);
-
-  mpi::Allreduce_sum(all_wgts);
-  mpi::Allreduce_sum(all_wgts2);
-
-  int x = 0;
   // all the vectors have size keys.size() so we use variable x to index them
   // since they should match to keys
-  for (const auto key : keys) {
+  for (int i = 0; i < keys.size();i++) {
+    auto key = keys[i];
     // Set the avg weights
-    double avg_wgt = all_wgts[x] / (all_pos_n[x] + all_neg_n[x]);
-    double avg_wgt2 = all_wgts2[x] / (all_pos_n2[x] + all_neg_n2[x]);
+    double avg_wgt = wgts(0,i) / all_n[i];
+    double avg_wgt2 = wgts(1,i) / all_n[i];
 
     for (auto& p : bins[key]) {
-      if (all_pos_n[x] > 0 && all_neg_n[x] > 0) p->wgt = avg_wgt;
-      if (all_pos_n2[x] > 0 && all_neg_n2[x] > 0) p->wgt2 = avg_wgt2;
+       p->wgt = avg_wgt;
+       p->wgt2 = avg_wgt2;
     }
     bins[key].clear();
-    x++;
   }
   keys.clear();
 }
