@@ -22,12 +22,14 @@
  * along with Abeille. If not, see <https://www.gnu.org/licenses/>.
  *
  * */
-#include <algorithm>
-#include <cmath>
-#include <ndarray.hpp>
 #include <simulation/approximate_mesh_cancelator.hpp>
 #include <utils/error.hpp>
 #include <utils/output.hpp>
+
+#include <ndarray.hpp>
+
+#include <algorithm>
+#include <cmath>
 
 ApproximateMeshCancelator::ApproximateMeshCancelator(Position low, Position hi,
                                                      uint32_t Nx, uint32_t Ny,
@@ -142,45 +144,6 @@ bool ApproximateMeshCancelator::add_particle(BankedParticle& p) {
 
   return true;
 }
-/*TODO
-Make 2 different algorithms:
-
-First for both, create vector<int> keys
-this represents the keys which are in the sparse matrix that have bins with 1 or
-more particles in them across all nodes we do this by going through all nodes
-and sending to master every bin id that has a particle in it. Afterward, send
-keys vector to all nodes.
-
-Algo 1:
-Loop through each key which is a bin with particles in it on at least one node
-
-ReduceAllSum NumberOfPositiveParticles N+
-ReduceAllSum NumberOfPositiveParticles N-
-
-ReduceAllSum NumberOfPositiveParticles N2+
-ReduceAllSum NumberOfPositiveParticles N2-
-
-ReduceAllSum the total weight of the bin
-ReduceAllSum the total weight 2 of the bin
-
-
-Algo 2:
-Vector<double> wgts;
-vector<double> wgts2;
-vector<uint16> N+;
-vector<uint16> N-;
-vector<uin16> N2+;
-vector<uint16> N2-;
-
-All these vectors should have the same size which is keys.size()
-
-NDArray<double> wgts (2,Nkeys)
-NDArray<double> Ns (4,Nkeys)
-
-ReduceAllSum these two arrays using data_vector
-
-
-*/
 
 std::vector<int> ApproximateMeshCancelator::sync_keys() {
   // Each node collects all keys
@@ -227,7 +190,7 @@ void ApproximateMeshCancelator::perform_cancellation_loop(pcg32& /*rng*/) {
   std::vector<int> keys = sync_keys();
 
   for (const auto key : keys) {
-    int n_total = 0;
+    std::uint64_t n_total = 0;
     double sum_wgt = 0.;
     double sum_wgt2 = 0.;
 
@@ -247,8 +210,8 @@ void ApproximateMeshCancelator::perform_cancellation_loop(pcg32& /*rng*/) {
     mpi::Allreduce_sum(n_total);
 
     // Set the avg weights
-    double avg_wgt = sum_wgt / n_total;
-    double avg_wgt2 = sum_wgt2 / n_total;
+    const double avg_wgt = sum_wgt / n_total;
+    const double avg_wgt2 = sum_wgt2 / n_total;
 
     // Loop through particles in the bin once again and perform cancellation if
     // necessary
@@ -265,15 +228,12 @@ void ApproximateMeshCancelator::perform_cancellation_vector(pcg32& /*rng*/) {
   std::vector<int> keys = sync_keys();
 
   // change to uint16
-  std::vector<size_t> dims;
-  dims.push_back(2);
-  dims.push_back(keys.size());
-  NDArray<double> wgts(dims);
-  std::vector<uint16_t> all_n;
+  NDArray<double> wgts({2, keys.size()});
+  std::vector<uint16_t> n_totals(keys.size(), 0);
   
-  for (int i = 0; i < keys.size();i++) {
-    auto key = keys[i];
-    int n_total = 0;
+  for (std::size_t i = 0; i < keys.size(); i++) {
+    const auto key = keys[i];
+    std::uint64_t n_total = 0;
     double sum_wgt = 0.;
     double sum_wgt2 = 0.;
 
@@ -284,30 +244,35 @@ void ApproximateMeshCancelator::perform_cancellation_vector(pcg32& /*rng*/) {
       sum_wgt += p->wgt;
       sum_wgt2 += p->wgt2;
     }
+
     // Push the counts to the vectors
-    all_n.push_back(n_total);
+    n_totals[i] = n_total;
     wgts(0, i) = sum_wgt;
     wgts(1, i) = sum_wgt2;
   }
 
   // Sum the vectors across all nodes
   mpi::Allreduce_sum(wgts.data_vector());
-  mpi::Allreduce_sum(all_n);
+  mpi::Allreduce_sum(n_totals);
 
   // all the vectors have size keys.size() so we use variable x to index them
   // since they should match to keys
-  for (int i = 0; i < keys.size();i++) {
-    auto key = keys[i];
+  for (std::size_t i = 0; i < keys.size();i++) {
+    const auto key = keys[i];
+
     // Set the avg weights
-    double avg_wgt = wgts(0,i) / all_n[i];
-    double avg_wgt2 = wgts(1,i) / all_n[i];
+    const double n = static_cast<double>(n_totals[i]);
+    const double avg_wgt = wgts(0,i) / n;
+    const double avg_wgt2 = wgts(1,i) / n;
 
     for (auto& p : bins[key]) {
        p->wgt = avg_wgt;
        p->wgt2 = avg_wgt2;
     }
+
     bins[key].clear();
   }
+
   keys.clear();
 }
 
@@ -332,14 +297,12 @@ void ApproximateMeshCancelator::perform_cancellation(pcg32& /*rng*/) {
           has_pos_w1 = true;
         else if (p->wgt < 0.)
           has_neg_w1 = true;
-
         sum_wgt += p->wgt;
 
         if (p->wgt2 > 0.)
           has_pos_w2 = true;
         else if (p->wgt2 < 0.)
           has_neg_w2 = true;
-
         sum_wgt2 += p->wgt2;
       }
 
@@ -354,6 +317,7 @@ void ApproximateMeshCancelator::perform_cancellation(pcg32& /*rng*/) {
         if (has_pos_w2 && has_neg_w2) p->wgt2 = avg_wgt2;
       }
     }
+
     bin.clear();
   }
 }

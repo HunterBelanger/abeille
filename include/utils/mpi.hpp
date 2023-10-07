@@ -70,7 +70,6 @@ inline DType dtype<bool>() {
   return Bool;
 }
 
-
 template <>
 inline DType dtype<uint16_t>() {
   return UInt16;
