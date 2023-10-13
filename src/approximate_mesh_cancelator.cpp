@@ -210,8 +210,9 @@ void ApproximateMeshCancelator::perform_cancellation_loop(pcg32& /*rng*/) {
     mpi::Allreduce_sum(n_total);
 
     // Set the avg weights
-    const double avg_wgt = sum_wgt / static_cast<double>(n_total);
-    const double avg_wgt2 = sum_wgt2 / static_cast<double>(n_total);
+    const double inv_n = 1. / static_cast<double>(n_total);
+    const double avg_wgt = sum_wgt * inv_n;
+    const double avg_wgt2 = sum_wgt2 * inv_n;
 
     // Loop through particles in the bin once again and perform cancellation if
     // necessary
@@ -261,9 +262,9 @@ void ApproximateMeshCancelator::perform_cancellation_vector(pcg32& /*rng*/) {
     const auto key = keys[i];
 
     // Set the avg weights
-    const double n = static_cast<double>(n_totals[i]);
-    const double avg_wgt = wgts(0,i) / n;
-    const double avg_wgt2 = wgts(1,i) / n;
+    const double inv_n = 1. / static_cast<double>(n_totals[i]);
+    const double avg_wgt = wgts(0,i) * inv_n;
+    const double avg_wgt2 = wgts(1,i) * inv_n;
 
     for (auto& p : bins[key]) {
        p->wgt = avg_wgt;
