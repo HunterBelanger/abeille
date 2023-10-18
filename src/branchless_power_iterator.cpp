@@ -358,8 +358,7 @@ void BranchlessPowerIterator::run() {
     normalize_weights(next_gen);
 
     // Comb particles
-    if (settings::branchless_combing && mpi::rank == 0)
-      comb_particles(next_gen);
+    if (settings::branchless_combing) comb_particles(next_gen);
 
     // Compute pair distance squared
     if (settings::pair_distance_sqrd) compute_pair_dist_sqrd(next_gen);
@@ -590,31 +589,58 @@ void BranchlessPowerIterator::comb_particles(
   std::vector<BankedParticle> negative_particles;
   positive_particles.reserve(next_gen.size());
   negative_particles.reserve(next_gen.size() / 3);
-  double Wpos = 0.;
-  double Wneg = 0.;
-
+  double Wpos_node = 0.;
+  double Wneg_node = 0.;
+  
   // Sort positive and negative particles into different buffers
   for (std::size_t i = 0; i < next_gen.size(); i++) {
     if (next_gen[i].wgt > 0.) {
-      Wpos += next_gen[i].wgt;
+      Wpos_node += next_gen[i].wgt;
       positive_particles.push_back(next_gen[i]);
     } else {
-      Wneg += next_gen[i].wgt;
+      Wneg_node += next_gen[i].wgt;
       negative_particles.push_back(next_gen[i]);
     }
   }
   next_gen.clear();
 
+
+  std::vector<double> Wpos_each_node(mpi::size,0);
+  Wpos_each_node[mpi::rank] = Wpos_node;
+  mpi::Allreduce_sum(Wpos_each_node);
+  const double Wpos = std::accumulate(Wpos_each_node.begin(),Wpos_each_node.end(),0);
+
+  std::vector<double> Wneg_each_node(mpi::size,0);
+  Wneg_each_node[mpi::rank] = Wneg_node;
+  mpi::Allreduce_sum(Wneg_each_node);
+  const double Wneg = std::accumulate(Wneg_each_node.begin(),Wneg_each_node.end(),0);
+
   // Determine how many positive and negative
-  std::size_t Npos = static_cast<std::size_t>(std::ceil(Wpos));
-  std::size_t Nneg = static_cast<std::size_t>(std::ceil(std::abs(Wneg)));
-  next_gen.reserve(Npos + Nneg);
+  const std::size_t Npos_node = static_cast<std::size_t>(std::ceil(Wpos_node));
+  const std::size_t Nneg_node = static_cast<std::size_t>(std::ceil(std::abs(Wneg_node)));
+
+  const std::size_t Npos = static_cast<std::size_t>(std::ceil(Wpos));
+  const std::size_t Nneg = static_cast<std::size_t>(std::ceil(std::abs(Wneg)));
+
+  // The + 2 is to account for rounding in the ceil operations between global array vs just the node
+  next_gen.reserve(Npos_node + Nneg_node + 2);
 
   // Comb Positive particles
-  std::shuffle(positive_particles.begin(), positive_particles.end(),
-               settings::rng);
-  double avg_pos_wgt = Wpos / static_cast<double>(Npos);
-  double comb_pos = RNG::rand(settings::rng) * avg_pos_wgt;
+  const double avg_pos_wgt = Wpos / static_cast<double>(Npos); 
+  double comb_pos = 0;
+  if(mpi::rank == 0) {
+    comb_pos = RNG::rand(settings::rng) * avg_pos_wgt;
+    std::cout << "\n >>> Master comb_pos = " << comb_pos << "\n";
+  }
+  mpi::Bcast(comb_pos,0);
+  
+  // Find Comb Position for this Node
+  double U = std::accumulate(Wpos_each_node.begin(),Wpos_each_node.begin()+ mpi::rank,0.);
+  double beta = std::floor(U / avg_pos_wgt); 
+  comb_pos = beta * avg_pos_wgt + comb_pos - U;
+  if(comb_pos > avg_pos_wgt)
+    comb_pos -= avg_pos_wgt;       
+
   double current_particle = 0.;
   for (std::size_t i = 0; i < positive_particles.size(); i++) {
     current_particle += positive_particles[i].wgt;
@@ -626,10 +652,18 @@ void BranchlessPowerIterator::comb_particles(
   }
 
   // Comb Negative Particles
-  std::shuffle(negative_particles.begin(), negative_particles.end(),
-               settings::rng);
-  double avg_neg_wgt = std::abs(Wneg) / static_cast<double>(Npos);
-  comb_pos = RNG::rand(settings::rng) * avg_neg_wgt;
+  const double avg_neg_wgt = std::abs(Wneg) / static_cast<double>(Nneg);
+  if(mpi::rank == 0)
+    comb_pos = RNG::rand(settings::rng) * avg_neg_wgt;
+  mpi::Bcast(comb_pos,0);
+
+  // Find Comb Position for this Node
+  U = std::abs(std::accumulate(Wneg_each_node.begin(),Wneg_each_node.begin()+ mpi::rank,0.));
+  beta = std::floor(U / avg_neg_wgt); 
+  comb_pos = beta * avg_neg_wgt + comb_pos - U;
+  if(comb_pos > avg_neg_wgt)
+    comb_pos -= avg_neg_wgt;   
+
   current_particle = 0.;
   for (std::size_t i = 0; i < negative_particles.size(); i++) {
     current_particle -= negative_particles[i].wgt;
@@ -639,9 +673,6 @@ void BranchlessPowerIterator::comb_particles(
       comb_pos += avg_neg_wgt;
     }
   }
-
-  // Reshuffle full buffer
-  std::shuffle(next_gen.begin(), next_gen.end(), settings::rng);
 }
 
 void BranchlessPowerIterator::compute_pre_cancellation_entropy(

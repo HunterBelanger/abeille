@@ -86,16 +86,6 @@ bool exists(std::string fname) {
 }
 
 
-/*
-TODO:
-
-1. mpi.hpp add the short type so that vector version can use it
-2. turn the vectors into NDArray
-3. Revert things to how they were before testing 
-4. Add the option for loop or vector
-
-
-*/
 int main(int argc, char** argv) {
   
   settings::alpha_omega_timer.start();
@@ -104,127 +94,6 @@ int main(int argc, char** argv) {
 
   std::atexit(mpi::finalize_mpi);
 
-  Position start(-1.,-1.,-1.);
-  Position end(1.,1.,1.);
-  ApproximateMeshCancelator cancelator(start,end,2,1,1);
-  std::vector<BankedParticle> v;
-  std::cout << " made cancelator" << "\n";
-    if(mpi::rank == 0)
-    {
-      v.emplace_back();
-      v.back().r = Position(-0.5,0,0);
-      v.back().wgt = 0.5;
-      v.back().wgt2 = 0.5;
-      v.emplace_back();
-      v.back().r = Position(-0.3,0,0);
-      v.back().wgt = 0.6;
-      v.back().wgt2 = 0.5;
-      v.emplace_back();
-      v.back().r = Position(-0.4,0,0);
-      v.back().wgt = 0.7;
-      v.back().wgt2 = 0.5;
-      v.emplace_back();
-      v.back().r = Position(0.4,0,0);
-      v.back().wgt = 0.6;
-      v.back().wgt2 = 0.5;
-      v.emplace_back();
-      v.back().r = Position(0.3,0,0);
-      v.back().wgt = 0.7;
-      v.back().wgt2 = 0.5;
-      v.emplace_back();
-      v.back().r = Position(0.5,0,0);
-      v.back().wgt = 0.8;
-      v.back().wgt2 = -0.2;
-
-      for(auto &p : v)
-        cancelator.add_particle(p);
-    }
-    else if(mpi::rank == 1)
-    {
-      v.emplace_back();
-      v.back().r = Position(-0.5,0,0);
-      v.back().wgt = -0.3;
-      v.back().wgt2 = -0.9;
-      v.emplace_back();
-      v.back().r = Position(-0.3,0,0);
-      v.back().wgt = -0.3;
-      v.back().wgt2 = -0.2;
-      v.emplace_back();
-      v.back().r = Position(-0.4,0,0);
-      v.back().wgt = -0.1;
-      v.back().wgt2 = -0.2;
-      v.emplace_back();
-      v.back().r = Position(0.4,0,0);
-      v.back().wgt = -0.4;
-      v.back().wgt2 = -0.5;
-      v.emplace_back();
-      v.back().r = Position(0.3,0,0);
-      v.back().wgt = -0.9;
-      v.back().wgt2 = -0.9;
-      v.emplace_back();
-      v.back().r = Position(0.5,0,0);
-      v.back().wgt = -0.2;
-      v.back().wgt2 = -0.1;
-      
-      for(auto &p : v)
-        cancelator.add_particle(p);
-    }
-    /*
-    else if(mpi::rank == 2)
-    {
-     
-    }
-    else if(mpi::rank == 3)
-    {
-     
-    }
-    */
-  std::cout << " cancelating" << "\n";
-  //cancelator.perform_cancellation_vector(settings::rng);
-  cancelator.perform_cancellation_vector(settings::rng);
-  std::cout << " cancelated" << "\n";
-
-  if(mpi::rank == 0)
-  {
-    sleep(3);
-    std::cout << " my rank is " << mpi::rank <<  " cancelator wgt: " << cancelator.bins[0][0]->wgt<< " \n";
-    std::cout << " my rank is " << mpi::rank <<  " cancelator wgt2: " << cancelator.bins[0][0]->wgt2<< " \n";
-    std::cout << " my rank is " << mpi::rank <<  " cancelator wgt: " << cancelator.bins[1][0]->wgt<< " \n";
-    std::cout << " my rank is " << mpi::rank <<  " cancelator wgt2: " << cancelator.bins[1][0]->wgt2<< " \n";
-    std::cout << " done " << "\n";
-  }
-if(mpi::rank == 1)
-  {
-    sleep(8);
-    std::cout << " my rank is " << mpi::rank <<  " cancelator wgt: " << cancelator.bins[0][0]->wgt<< " \n";
-    std::cout << " my rank is " << mpi::rank <<  " cancelator wgt2: " << cancelator.bins[0][0]->wgt2<< " \n";
-    std::cout << " my rank is " << mpi::rank <<  " cancelator wgt: " << cancelator.bins[1][0  ]->wgt<< " \n";
-    std::cout << " my rank is " << mpi::rank <<  " cancelator wgt2: " << cancelator.bins[1][0]->wgt2<< " \n";
-    std::cout << " done " << "\n";
-  }
-  /*
-if(mpi::rank == 2)
-  {
-    sleep(13);
-    std::cout << " my rank is " << mpi::rank <<  " cancelator wgt: " << cancelator.bins[2][0]->wgt<< " \n";
-    std::cout << " my rank is " << mpi::rank <<  " cancelator wgt2: " << cancelator.bins[2][0]->wgt2<< " \n";
-    std::cout << " my rank is " << mpi::rank <<  " cancelator wgt: " << cancelator.bins[2][1]->wgt<< " \n";
-    std::cout << " my rank is " << mpi::rank <<  " cancelator wgt2: " << cancelator.bins[2][1]->wgt2<< " \n";
-    std::cout << " done " << "\n";
-
-  }
-if(mpi::rank == 3)
-  {
-    sleep(18);
-    std::cout << " my rank is " << mpi::rank <<  " cancelator wgt: " << cancelator.bins[3][0]->wgt<< " \n";
-    std::cout << " my rank is " << mpi::rank <<  " cancelator wgt2: " << cancelator.bins[3][0]->wgt2<< " \n";
-    std::cout << " my rank is " << mpi::rank <<  " cancelator wgt: " << cancelator.bins[3][1]->wgt<< " \n";
-    std::cout << " my rank is " << mpi::rank <<  " cancelator wgt2: " << cancelator.bins[3][1]->wgt2<< " \n";
-    std::cout << " done " << "\n";
-  }
-  */
-  
-  /*
   // Make help message string for docopt
   std::string help_message = version_string + "\n" + info + "\n" + help;
 
@@ -374,5 +243,4 @@ if(mpi::rank == 3)
         "total-run-time", settings::alpha_omega_timer.elapsed_time());
 
   return 0;
-  */
 }

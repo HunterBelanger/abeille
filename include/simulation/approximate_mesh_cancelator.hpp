@@ -31,8 +31,7 @@
 
 class ApproximateMeshCancelator : public Cancelator {
  public:
-  std::unordered_map<int, std::vector<BankedParticle*>>
-      bins;  // MAKE PRIVATE LATER
+  
 
   ApproximateMeshCancelator(Position low, Position hi, uint32_t Nx, uint32_t Ny,
                             uint32_t Nz);
@@ -51,7 +50,7 @@ class ApproximateMeshCancelator : public Cancelator {
   std::vector<double> energy_edges;
   std::array<uint32_t, 4> shape;
   double dx, dy, dz;
-
+  std::unordered_map<int, std::vector<BankedParticle*> bins;
   std::vector<int> sync_keys();
 };
 
