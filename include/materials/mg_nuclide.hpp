@@ -121,7 +121,6 @@ class MGNuclide : public Nuclide {
   std::vector<double> delayed_group_decay_constants;
   bool fissile_ = false;
 
-  void verify() const;
   void make_scatter_xs();
   void normalize_chi();
   void check_sizes() const;
