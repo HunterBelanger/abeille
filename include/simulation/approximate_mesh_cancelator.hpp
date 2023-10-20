@@ -50,7 +50,7 @@ class ApproximateMeshCancelator : public Cancelator {
   std::vector<double> energy_edges;
   std::array<uint32_t, 4> shape;
   double dx, dy, dz;
-  std::unordered_map<int, std::vector<BankedParticle*> bins;
+  std::unordered_map<int, std::vector<BankedParticle*>> bins;
   std::vector<int> sync_keys();
 };
 
