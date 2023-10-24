@@ -277,7 +277,9 @@ void ApproximateMeshCancelator::perform_cancellation_vector(pcg32& /*rng*/) {
   keys.clear();
 }
 
-void ApproximateMeshCancelator::perform_cancellation(pcg32& /*rng*/) {
+void ApproximateMeshCancelator::perform_cancellation(pcg32& rng) {
+  this->perform_cancellation_vector(rng);
+  /*
   // Go through all bins in the mesh
   for (auto& key_bin_pair : bins) {
     auto& bin = key_bin_pair.second;
@@ -321,6 +323,7 @@ void ApproximateMeshCancelator::perform_cancellation(pcg32& /*rng*/) {
 
     bin.clear();
   }
+  */
 }
 
 std::vector<BankedParticle> ApproximateMeshCancelator::get_new_particles(

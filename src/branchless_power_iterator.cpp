@@ -346,9 +346,8 @@ void BranchlessPowerIterator::run() {
     mpi::synchronize();
 
     // Do weight cancelation
-    if (settings::regional_cancellation && cancelator && mpi::rank == 0) {
+    if (settings::regional_cancellation && cancelator) {
       perform_regional_cancellation(next_gen);
-      sync_banks(mpi::node_nparticles, next_gen);
     }
 
     // Calculate net positive and negative weight
@@ -661,12 +660,9 @@ void BranchlessPowerIterator::comb_particles(
 
   // Find Comb Position for this Node
   U = std::abs(std::accumulate(Wneg_each_node.begin(),Wneg_each_node.begin() + mpi::rank,0.));
-  if (avg_neg_wgt != 0)
-    beta = std::floor((U - comb_pos) / avg_neg_wgt); 
-  else
-    beta = 0;
+  beta = std::floor((U - comb_pos) / avg_neg_wgt); 
   if (mpi::rank != 0) {
-    comb_pos = ((beta + 1.) * avg_pos_wgt) + comb_pos - U;
+    comb_pos = ((beta + 1.) * avg_neg_wgt) + comb_pos - U;
     if(comb_pos > avg_neg_wgt) comb_pos -= avg_neg_wgt;  
   }
 
@@ -878,7 +874,6 @@ void BranchlessPowerIterator::perform_regional_cancellation(
   // Now we can get the uniform particles
   auto tmp = cancelator->get_new_particles(settings::rng);
   next_gen.insert(next_gen.end(), tmp.begin(), tmp.end());
-  mpi::node_nparticles[0] += tmp.size();
 
   // All done ! Clear cancelator for next run
   cancelator->clear();

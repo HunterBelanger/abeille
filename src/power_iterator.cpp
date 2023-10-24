@@ -345,14 +345,13 @@ void PowerIterator::run() {
 
     mpi::synchronize();
 
+    // Do weight cancelation
+    if (settings::regional_cancellation && cancelator) {
+      perform_regional_cancellation(next_gen);
+    }
+
     // Synchronize particles across nodes
     sync_banks(mpi::node_nparticles, next_gen);
-
-    // Do weight cancelation
-    if (settings::regional_cancellation && cancelator && mpi::rank == 0) {
-      perform_regional_cancellation(next_gen);
-      sync_banks(mpi::node_nparticles, next_gen);
-    }
 
     // Calculate net positive and negative weight
     normalize_weights(next_gen);
@@ -777,7 +776,6 @@ void PowerIterator::perform_regional_cancellation(
   // Now we can get the uniform particles
   auto tmp = cancelator->get_new_particles(settings::rng);
   next_gen.insert(next_gen.end(), tmp.begin(), tmp.end());
-  mpi::node_nparticles[0] += tmp.size();
 
   // All done ! Clear cancelator for next run
   cancelator->clear();
