@@ -34,7 +34,7 @@
 
 #ifdef ABEILLE_USE_MPI
 #include <mpi.h>
-
+#include <simulation/exact_mg_cancelator.hpp>
 #include <simulation/particle.hpp>
 #endif
 
@@ -55,6 +55,8 @@ extern const DType Int;
 extern const DType Double;
 extern const DType UInt64;
 extern DType BParticle;
+extern DType KeyType;
+extern DType PairType;
 
 extern const OpType Sum;
 extern const OpType And;
@@ -94,11 +96,19 @@ template <>
 inline DType dtype<BankedParticle>() {
   return BParticle;
 }
+template <>
+inline DType dtype<ExactMGCancelator::Key>() {
+  return KeyType;
+} 
+
+template <>
+inline DType dtype<std::pair<ExactMGCancelator::Key,uint64_t>>() {
+  return PairType;
+} 
 #endif
 
 extern std::vector<uint64_t> node_nparticles;
 extern std::vector<uint64_t> node_nparticles_noise;
-
 extern int size;
 extern int rank;
 

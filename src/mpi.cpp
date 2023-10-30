@@ -25,9 +25,9 @@
 #include <simulation/particle.hpp>
 #include <utils/error.hpp>
 #include <utils/mpi.hpp>
-
+#include <simulation/exact_mg_cancelator.hpp>
 #include <type_traits>
-
+#include <utility>  
 #ifdef ABEILLE_USE_MPI
 #include <mpi.h>
 #endif
@@ -44,6 +44,8 @@ const DType Int = MPI_INT;
 const DType Double = MPI_DOUBLE;
 const DType UInt64 = MPI_UINT64_T;
 DType BParticle;
+DType KeyType;
+DType PairType;
 
 const OpType Sum = MPI_SUM;
 const OpType And = MPI_LAND;
@@ -55,6 +57,77 @@ std::vector<uint64_t> node_nparticles_noise;
 
 int size = 1;
 int rank = 0;
+
+void register_key_type() {
+#ifdef ABEILLE_USE_MPI
+  // Ensure that BankedParticle is standard layout ! This is
+  // required by MPI.
+  static_assert(std::is_standard_layout<ExactMGCancelator::Key>::value);
+
+  ExactMGCancelator::Key k(0,0,0,0);
+  int err = 0;
+  constexpr std::size_t KEY_NUM_MEMBERS = 4;
+  int sizes[KEY_NUM_MEMBERS]{1, 1, 1, 1};
+  DType dtypes[KEY_NUM_MEMBERS]{UInt64, UInt64, UInt64, UInt64};
+  MPI_Aint disps[KEY_NUM_MEMBERS];
+  MPI_Get_address(&k.i, &disps[0]);
+  MPI_Get_address(&k.j, &disps[1]);
+  MPI_Get_address(&k.k, &disps[2]);
+  MPI_Get_address(&k.e, &disps[3]);
+  for (int i = KEY_NUM_MEMBERS - 1; i >= 0; --i) {
+    disps[i] -= disps[0];
+  }
+
+  DType tmp_key;
+  err = MPI_Type_create_struct(KEY_NUM_MEMBERS, sizes, disps, dtypes,
+                               &tmp_key);
+  check_error(err, std::source_location::current());
+
+  MPI_Aint lb, extnt;
+  err = MPI_Type_get_extent(tmp_key, &lb, &extnt);
+  check_error(err, std::source_location::current());
+
+  err = MPI_Type_create_resized(tmp_key, lb, extnt, &KeyType);
+  check_error(err, std::source_location::current());
+
+  err = MPI_Type_commit(&KeyType);
+  check_error(err, std::source_location::current());
+#endif
+}
+
+void register_pair_type() {
+#ifdef ABEILLE_USE_MPI
+  // Ensure that BankedParticle is standard layout ! This is
+  // required by MPI.
+  static_assert(std::is_standard_layout<std::pair<ExactMGCancelator::Key,uint64_t>>::value);
+  std::pair<ExactMGCancelator::Key,uint64_t> p;
+  int err = 0;
+  constexpr std::size_t PAIR_NUM_MEMBERS = 2;
+  int sizes[PAIR_NUM_MEMBERS]{4,1};
+  DType dtypes[PAIR_NUM_MEMBERS]{KeyType, UInt64};
+  MPI_Aint disps[PAIR_NUM_MEMBERS];
+  MPI_Get_address(&p.first, &disps[0]);
+  MPI_Get_address(&p.second, &disps[1]);
+  for (int i = PAIR_NUM_MEMBERS - 1; i >= 0; --i) {
+    disps[i] -= disps[0];
+  }
+
+  DType tmp_pair;
+  err = MPI_Type_create_struct(PAIR_NUM_MEMBERS, sizes, disps, dtypes,
+                               &tmp_pair);
+  check_error(err, std::source_location::current());
+
+  MPI_Aint lb, extnt;
+  err = MPI_Type_get_extent(tmp_pair, &lb, &extnt);
+  check_error(err, std::source_location::current());
+
+  err = MPI_Type_create_resized(tmp_pair, lb, extnt, &PairType);
+  check_error(err, std::source_location::current());
+
+  err = MPI_Type_commit(&PairType);
+  check_error(err, std::source_location::current());
+#endif
+}
 
 void register_banked_particle_type() {
 #ifdef ABEILLE_USE_MPI

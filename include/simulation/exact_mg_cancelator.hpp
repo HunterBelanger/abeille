@@ -28,7 +28,6 @@
 #include <materials/material.hpp>
 #include <materials/mg_nuclide.hpp>
 #include <simulation/cancelator.hpp>
-
 #include <array>
 #include <cstdint>
 #include <optional>
@@ -48,33 +47,14 @@ class ExactMGCancelator : public Cancelator {
   std::vector<BankedParticle> get_new_particles(pcg32& rng) override final;
   void clear() override final;
 
- private:
-  //==========================================================================
-  // Objects
-  struct CancelBin {
-    struct Averages {
-      double f = 0.;
-      double f_inv = 0.;
-    };
-
-    double uniform_wgt = 0.;
-    double uniform_wgt2 = 0.;
-    double W = 0.;
-    double W2 = 0.;
-    double sum_c = 0.;
-    double sum_c_wgt = 0.;
-    double sum_c_wgt2 = 0.;
-    bool can_cancel = true;
-    std::vector<BankedParticle*> particles;
-    std::vector<Averages> averages;
-  };
-
-  // Key which represents a unique cancellation bin for a
+// Key which represents a unique cancellation bin for a
   // given position and energy group.
+  // Key is public for MPI use
   struct Key {
     Key(std::size_t i, std::size_t j, std::size_t k, std::size_t e)
         : i(i), j(j), k(k), e(e) {}
 
+    Key() {}
     std::size_t i, j, k, e;
 
     std::size_t hash_key() const {
@@ -104,7 +84,28 @@ class ExactMGCancelator : public Cancelator {
 
     static Position r_low, r_hi;
   };
+ private:
+  //==========================================================================
+  // Objects
+  struct CancelBin {
+    struct Averages {
+      double f = 0.;
+      double f_inv = 0.;
+    };
 
+    double uniform_wgt = 0.;
+    double uniform_wgt2 = 0.;
+    double W = 0.;
+    double W2 = 0.;
+    double sum_c = 0.;
+    double sum_c_wgt = 0.;
+    double sum_c_wgt2 = 0.;
+    bool can_cancel = true;
+    std::vector<BankedParticle*> particles;
+    std::vector<Averages> averages;
+  };
+
+  
   struct KeyHash {
     std::size_t operator()(const Key& key) const { return key.hash_key(); }
   };
