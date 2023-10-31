@@ -194,21 +194,22 @@ bool ExactMGCancelator::add_particle(BankedParticle& p) {
 
   // If the bin doesn't exist yet, initalize it
   if (bins.find(key) == bins.end()) {
-    bins[key] = std::unordered_map<Material*, CancelBin>();
+    bins[key] = std::unordered_map<uint32_t, CancelBin>();
   }
 
   // Get the pointer to the material where the particle is
   Material* mat = get_material(p.r);
+  uint32_t mat_id = mat->id();
 
   // Check if a bin exists for that material
-  if (bins[key].find(mat) == bins[key].end()) {
-    bins[key][mat] = CancelBin();
+  if (bins[key].find(mat_id) == bins[key].end()) {
+    bins[key][mat_id] = CancelBin();
   }
 
   // Add particle and data
-  bins[key][mat].particles.push_back(&p);
-  bins[key][mat].W += p.wgt;
-  bins[key][mat].W2 += p.wgt2;
+  bins[key][mat_id].particles.push_back(&p);
+  bins[key][mat_id].W += p.wgt;
+  bins[key][mat_id].W2 += p.wgt2;
 
   return true;
 }
@@ -454,23 +455,24 @@ void ExactMGCancelator::perform_cancellation(pcg32&) {
   if (bins.size() == 0) return;
 
   // Get vector of keys to do cancellation in parallel
-  std::vector<std::pair<Key, Material*>> key_mat_pairs;
-  key_mat_pairs.reserve(bins.size());
+  std::vector<std::pair<Key, uint32_t>> key_matid_pairs;
+  key_matid_pairs.reserve(bins.size());
   for (const auto& key_matbin_pair : bins) {
     const auto& key = key_matbin_pair.first;
-    const auto& matbin = key_matbin_pair.second;
-    for (const auto& mat_bin_pair : matbin)
-      key_mat_pairs.emplace_back(key, mat_bin_pair.first);
+    const auto& matbins = key_matbin_pair.second;
+    for (const auto& mat_bin_pair : matbins)
+      key_matid_pairs.emplace_back(key, mat_bin_pair.first);
   }
 
   // Go through all bins
 #ifdef ABEILLE_USE_OMP
 #pragma omp parallel for
 #endif
-  for (std::size_t i = 0; i < key_mat_pairs.size(); i++) {
-    Key key = key_mat_pairs[i].first;
-    Material* mat = key_mat_pairs[i].second;
-    CancelBin& bin = bins[key][mat];
+  for (std::size_t i = 0; i < key_matid_pairs.size(); i++) {
+    Key key = key_matid_pairs[i].first;
+    uint32_t mat_id = key_matid_pairs[i].second;
+    Material* mat = materials[mat_id].get();
+    CancelBin& bin = bins[key][mat_id];
 
     // For cancellation to be eact in the most general MG case,
     // need access to all scattering PDFs, and to the Chi matrix,
@@ -564,7 +566,8 @@ std::vector<BankedParticle> ExactMGCancelator::get_new_particles(pcg32& rng) {
     auto& material_bins = key_bin_pair.second;
 
     for (auto& mat_bin_pair : material_bins) {
-      Material* mat = mat_bin_pair.first;
+      uint32_t mat_id = mat_bin_pair.first;
+      Material* mat = materials[mat_id].get();
       CancelBin& bin = mat_bin_pair.second;
 
       // Determine number of new particles to add

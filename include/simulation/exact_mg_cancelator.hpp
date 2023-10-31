@@ -116,7 +116,7 @@ class ExactMGCancelator : public Cancelator {
   // Data Members
 
   // All cancellation bins, organized first by Key has, then by material.
-  std::unordered_map<Key, std::unordered_map<Material*, CancelBin>, KeyHash>
+  std::unordered_map<Key, std::unordered_map<uint32_t, CancelBin>, KeyHash>
       bins;
 
   // False if we only have MG materials with a chi vector.
