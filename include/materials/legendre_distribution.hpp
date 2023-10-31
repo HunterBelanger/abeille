@@ -72,8 +72,8 @@ class LegendreDistribution {
 
   double pdf(double mu) const {
     double p = 0;
-    for (unsigned int l = 0; l < a_.size(); l++) {
-      p += a_[l] * std::legendre(l, mu);
+    for (unsigned l = 0; l < a_.size(); l++) {
+      p += a_[l] * legendre(l, mu);
     }
     return p;
   }
@@ -154,6 +154,48 @@ class LegendreDistribution {
     const double b = -2.;
     const double c = (4. * xi) - 3.;
     return (-b - std::sqrt(b * b - (4. * a * c))) / (2. * a);
+  }
+
+  // Copied from PNDL legendre.cpp
+  double legendre(unsigned n, double x) const {
+    switch (n) {
+      case 0:
+        return 1.;
+        break;
+      case 1:
+        return x;
+        break;
+      case 2:
+        return 0.5 * (3. * x * x - 1.);
+        break;
+      case 3:
+        return 0.5 * (5. * x * x * x - 3. * x);
+        break;
+      case 4: {
+        const double x_2 = x * x;
+        return 0.125 * (35. * x_2 * x_2 - 30. * x_2 + 3.);
+        break;
+      }
+      default: {
+        // n >= 5, so start get getting p3 and p4
+        const double x_2 = x * x;
+        const double x_3 = x_2 * x;
+        const double x_4 = x_3 * x;
+        double p3 = 0.5 * (5. * x_3 - 3. * x);
+        double p4 = 0.125 * (35. * x_4 - 30. * x_2 + 3.);
+
+        // Iterate up to the desired Legendre order.
+        unsigned l = 4;
+        while (l < n) {
+          std::swap(p3, p4);
+          p4 = ((2. * l + 1.) * x * p3 - l * p4) / (l + 1.);
+          l++;
+        }
+        return p4;
+
+        break;
+      }
+    }
   }
 
   void initialize_values();
