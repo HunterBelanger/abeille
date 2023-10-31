@@ -103,6 +103,8 @@ class ExactMGCancelator : public Cancelator {
     bool can_cancel = true;
     std::vector<BankedParticle*> particles;
     std::vector<Averages> averages;
+
+
   };
 
   
@@ -133,6 +135,8 @@ class ExactMGCancelator : public Cancelator {
   // Private Methods
 
   std::optional<Key> get_key(const Position& r, std::size_t g);
+  
+  std::vector<std::pair<ExactMGCancelator::Key,uint64_t>> sync_keys();
 
   // Get's a pointer to the material at r
   Material* get_material(const Position& r) const;
@@ -156,6 +160,8 @@ class ExactMGCancelator : public Cancelator {
                         CancelBin& bin);
 
   void cancel_bin(CancelBin& bin, MGNuclide* nuclide, bool first_wgt);
+
+
 };
 
 std::shared_ptr<ExactMGCancelator> make_exact_mg_cancelator(

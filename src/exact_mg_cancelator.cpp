@@ -27,6 +27,7 @@
 #include <utils/error.hpp>
 #include <utils/output.hpp>
 #include <utils/settings.hpp>
+#include <unordered_set>
 
 #include <sobol/sobol.hpp>
 
@@ -400,6 +401,53 @@ void ExactMGCancelator::cancel_bin(CancelBin& bin, MGNuclide* nuclide,
   }
 }
 
+
+std::vector<std::pair<ExactMGCancelator::Key,uint64_t>> ExactMGCancelator::sync_keys() {
+  // Each node collects all keys
+  //if (bins.size() == 0) return;
+
+  // Get vector of keys to do cancellation in parallel
+  std::vector<std::pair<Key, uint64_t>> key_mat_pairs;
+  key_mat_pairs.reserve(bins.size());
+  for (const auto& key_matbin_pair : bins) {
+    const auto& key = key_matbin_pair.first;
+    const auto& matbin = key_matbin_pair.second;
+    for (const auto& mat_bin_pair : matbin)
+      key_mat_pairs.emplace_back(key, mat_bin_pair.first->id());
+  }
+  std::set<std::pair<Key,uint64_t>> key_set;
+ // std::unordered_set<std::pair<Key,uint64_t>> unordered_key_set();
+  // Put master keys into the keyset
+  if (mpi::rank == 0) {
+    std::copy(key_mat_pairs.begin(), key_mat_pairs.end(), std::inserter(key_set, key_set.end()));
+    key_mat_pairs.clear();
+  }
+
+  // For every Node starting at 1, send its keys to master and add to key_set
+  for (int i = 1; i < mpi::size; i++) {
+    if (mpi::rank == i) {
+      mpi::Send(key_mat_pairs, 0);
+      key_mat_pairs.clear();
+    } else if (mpi::rank == 0) {
+      mpi::Recv(key_mat_pairs, i);
+      std::copy(key_mat_pairs.begin(), key_mat_pairs.end(),
+                std::inserter(key_set, key_set.end()));unordered_key_set
+    }
+  }
+
+  // Move keys from key_set back to keys in master
+  if (mpi::rank == 0) {
+    key_mat_pairs.clear();
+    key_mat_pairs.assign(key_set.begin(), key_set.end());
+    key_set.clear();
+  }
+
+  // Send keys to all nodes from Master
+  mpi::Bcast(key_mat_pairs, 0);
+
+  return key_mat_pairs;
+}
+
 void ExactMGCancelator::perform_cancellation(pcg32&) {
   // If we have no bins (meaning no particles), then
   // we can't do any cancellation.
@@ -453,7 +501,7 @@ void ExactMGCancelator::perform_cancellation(pcg32&) {
 
         if (has_pos_w1 && has_neg_w1 && has_pos_w2 && has_neg_w2) break;
       }
-
+        
       // If we are doing cancellation and the beta_mode requires it, get the
       // average value of the fission density and 1 / fission density for each
       // particle in the bin.
