@@ -623,30 +623,31 @@ void BranchlessPowerIterator::comb_particles(
   // Variables for combing positive particles
   const double avg_pos_wgt = Wpos / static_cast<double>(Npos);
   double comb_position_pos = 0.;
+  const double avg_neg_wgt = std::abs(Wneg) / static_cast<double>(Nneg);
+  double comb_position_neg = 0.;
   if (mpi::rank == 0) {
     comb_position_pos = RNG::rand(settings::rng) * avg_pos_wgt;
+    comb_position_neg = RNG::rand(settings::rng) * avg_neg_wgt;
   }
   mpi::Bcast(comb_position_pos, 0);
+  mpi::Bcast(comb_position_neg, 0);
 
   // Find Comb Position for this Node
   const double U_pos = std::accumulate(Wpos_each_node.begin(),
                                        Wpos_each_node.begin() + mpi::rank, 0.);
   const double beta_pos = std::floor((U_pos - comb_position_pos) / avg_pos_wgt);
-  if (mpi::rank != 0) {
-    comb_position_pos = ((beta_pos + 1.) * avg_pos_wgt) + comb_position_pos - U_pos;
-    if (comb_position_pos > avg_pos_wgt) comb_position_pos -= avg_pos_wgt;
-  }
 
-  // Variables for combing negative particles
-  const double avg_neg_wgt = std::abs(Wneg) / static_cast<double>(Nneg);
-  double comb_position_neg = 0.;
-  if (mpi::rank == 0) comb_position_neg = RNG::rand(settings::rng) * avg_neg_wgt;
-  mpi::Bcast(comb_position_neg, 0);
-
-  const double U_neg = std::abs(std::accumulate(Wneg_each_node.begin(), Wneg_each_node.begin() + mpi::rank, 0.));
+  const double U_neg = std::abs(std::accumulate(
+      Wneg_each_node.begin(), Wneg_each_node.begin() + mpi::rank, 0.));
   const double beta_neg = std::floor((U_neg - comb_position_neg) / avg_neg_wgt);
+
   if (mpi::rank != 0) {
-    comb_position_neg = ((beta_neg + 1.) * avg_neg_wgt) + comb_position_neg - U_neg;
+    comb_position_pos =
+        ((beta_pos + 1.) * avg_pos_wgt) + comb_position_pos - U_pos;
+    if (comb_position_pos > avg_pos_wgt) comb_position_pos -= avg_pos_wgt;
+
+    comb_position_neg =
+        ((beta_neg + 1.) * avg_neg_wgt) + comb_position_neg - U_neg;
     if (comb_position_neg > avg_neg_wgt) comb_position_neg -= avg_neg_wgt;
   }
 
