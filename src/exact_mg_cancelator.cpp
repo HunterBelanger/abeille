@@ -417,7 +417,7 @@ std::vector<std::pair<ExactMGCancelator::Key,uint32_t>> ExactMGCancelator::sync_
       key_matid_pairs.emplace_back(key, mat_bin_pair.first);
   }
   std::set<std::pair<Key,uint32_t>> key_set;
- // std::unordered_set<std::pair<Key,uint64_t>> unordered_key_set();
+
   // Put master keys into the keyset
   if (mpi::rank == 0) {
     std::copy(key_matid_pairs.begin(), key_matid_pairs.end(), std::inserter(key_set, key_set.end()));
@@ -455,7 +455,7 @@ void ExactMGCancelator::perform_cancellation(pcg32&) {
   if (bins.size() == 0) return;
   
   // Get vector of keys to do cancellation in parallel
-  sync_keys();
+  std::vector<std::pair<Key,uint32_t>> key_matid_pairs = sync_keys();
   std::vector<double> uniform_wgts;
   std::vector<double> uniform_wgts2;
 
@@ -537,7 +537,6 @@ void ExactMGCancelator::perform_cancellation(pcg32&) {
     bin.uniform_wgt = uniform_wgts[i];
     bin.uniform_wgt2 = uniform_wgts2[i];
  }
-
 }
 
 std::optional<Position> ExactMGCancelator::sample_position(const Key& key,
