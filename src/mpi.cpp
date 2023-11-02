@@ -42,10 +42,11 @@ const DType Bool = MPI_C_BOOL;
 const DType UInt16 = MPI_UINT16_T;
 const DType Int = MPI_INT;
 const DType Double = MPI_DOUBLE;
+const DType UInt32 = MPI_UINT32_T;
 const DType UInt64 = MPI_UINT64_T;
 DType BParticle;
 DType KeyType;
-DType PairType;
+DType KeyUInt32Pair;
 
 const OpType Sum = MPI_SUM;
 const OpType And = MPI_LAND;
@@ -95,16 +96,16 @@ void register_key_type() {
 #endif
 }
 
-void register_pair_type() {
+void register_key_uint32_pair() {
 #ifdef ABEILLE_USE_MPI
   // Ensure that BankedParticle is standard layout ! This is
   // required by MPI.
-  static_assert(std::is_standard_layout<std::pair<ExactMGCancelator::Key,uint64_t>>::value);
-  std::pair<ExactMGCancelator::Key,uint64_t> p;
+  static_assert(std::is_standard_layout<std::pair<ExactMGCancelator::Key,uint32_t>>::value);
+  std::pair<ExactMGCancelator::Key,uint32_t> p;
   int err = 0;
   constexpr std::size_t PAIR_NUM_MEMBERS = 2;
   int sizes[PAIR_NUM_MEMBERS]{4,1};
-  DType dtypes[PAIR_NUM_MEMBERS]{KeyType, UInt64};
+  DType dtypes[PAIR_NUM_MEMBERS]{KeyType, UInt32};
   MPI_Aint disps[PAIR_NUM_MEMBERS];
   MPI_Get_address(&p.first, &disps[0]);
   MPI_Get_address(&p.second, &disps[1]);
@@ -121,10 +122,10 @@ void register_pair_type() {
   err = MPI_Type_get_extent(tmp_pair, &lb, &extnt);
   check_error(err, std::source_location::current());
 
-  err = MPI_Type_create_resized(tmp_pair, lb, extnt, &PairType);
+  err = MPI_Type_create_resized(tmp_pair, lb, extnt, &KeyUInt32Pair);
   check_error(err, std::source_location::current());
 
-  err = MPI_Type_commit(&PairType);
+  err = MPI_Type_commit(&KeyUInt32Pair);
   check_error(err, std::source_location::current());
 #endif
 }
@@ -197,6 +198,9 @@ void initialize_mpi(int* argc, char*** argv) {
 
   // Register baked particle type
   register_banked_particle_type();
+
+  register_key_type();
+  register_key_uint32_pair();
 #else
   (void)argc;
   (void)argv;

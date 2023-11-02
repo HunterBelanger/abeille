@@ -403,56 +403,9 @@ void ExactMGCancelator::cancel_bin(CancelBin& bin, MGNuclide* nuclide,
 }
 
 
-std::vector<std::pair<ExactMGCancelator::Key,uint64_t>> ExactMGCancelator::sync_keys() {
+std::vector<std::pair<ExactMGCancelator::Key,uint32_t>> ExactMGCancelator::sync_keys() {
   // Each node collects all keys
   //if (bins.size() == 0) return;
-
-  // Get vector of keys to do cancellation in parallel
-  std::vector<std::pair<Key, uint64_t>> key_mat_pairs;
-  key_mat_pairs.reserve(bins.size());
-  for (const auto& key_matbin_pair : bins) {
-    const auto& key = key_matbin_pair.first;
-    const auto& matbin = key_matbin_pair.second;
-    for (const auto& mat_bin_pair : matbin)
-      key_mat_pairs.emplace_back(key, mat_bin_pair.first->id());
-  }
-  std::set<std::pair<Key,uint64_t>> key_set;
- // std::unordered_set<std::pair<Key,uint64_t>> unordered_key_set();
-  // Put master keys into the keyset
-  if (mpi::rank == 0) {
-    std::copy(key_mat_pairs.begin(), key_mat_pairs.end(), std::inserter(key_set, key_set.end()));
-    key_mat_pairs.clear();
-  }
-
-  // For every Node starting at 1, send its keys to master and add to key_set
-  for (int i = 1; i < mpi::size; i++) {
-    if (mpi::rank == i) {
-      mpi::Send(key_mat_pairs, 0);
-      key_mat_pairs.clear();
-    } else if (mpi::rank == 0) {
-      mpi::Recv(key_mat_pairs, i);
-      std::copy(key_mat_pairs.begin(), key_mat_pairs.end(),
-                std::inserter(key_set, key_set.end()));unordered_key_set
-    }
-  }
-
-  // Move keys from key_set back to keys in master
-  if (mpi::rank == 0) {
-    key_mat_pairs.clear();
-    key_mat_pairs.assign(key_set.begin(), key_set.end());
-    key_set.clear();
-  }
-
-  // Send keys to all nodes from Master
-  mpi::Bcast(key_mat_pairs, 0);
-
-  return key_mat_pairs;
-}
-
-void ExactMGCancelator::perform_cancellation(pcg32&) {
-  // If we have no bins (meaning no particles), then
-  // we can't do any cancellation.
-  if (bins.size() == 0) return;
 
   // Get vector of keys to do cancellation in parallel
   std::vector<std::pair<Key, uint32_t>> key_matid_pairs;
@@ -463,11 +416,57 @@ void ExactMGCancelator::perform_cancellation(pcg32&) {
     for (const auto& mat_bin_pair : matbins)
       key_matid_pairs.emplace_back(key, mat_bin_pair.first);
   }
+  std::set<std::pair<Key,uint32_t>> key_set;
+ // std::unordered_set<std::pair<Key,uint64_t>> unordered_key_set();
+  // Put master keys into the keyset
+  if (mpi::rank == 0) {
+    std::copy(key_matid_pairs.begin(), key_matid_pairs.end(), std::inserter(key_set, key_set.end()));
+    key_matid_pairs.clear();
+  }
+
+  // For every Node starting at 1, send its keys to master and add to key_set
+  for (int i = 1; i < mpi::size; i++) {
+    if (mpi::rank == i) {
+      mpi::Send(key_matid_pairs, 0);
+      key_matid_pairs.clear();
+    } else if (mpi::rank == 0) {
+      mpi::Recv(key_matid_pairs, i);
+      std::copy(key_matid_pairs.begin(), key_matid_pairs.end(),
+                std::inserter(key_set, key_set.end()));
+    }
+  }
+
+  // Move keys from key_set back to keys in master
+  if (mpi::rank == 0) {
+    key_matid_pairs.clear();
+    key_matid_pairs.assign(key_set.begin(), key_set.end());
+    key_set.clear();
+  }
+
+  // Send keys to all nodes from Master
+  mpi::Bcast(key_matid_pairs, 0);
+
+  return key_matid_pairs;
+}
+
+void ExactMGCancelator::perform_cancellation(pcg32&) {
+  // If we have no bins (meaning no particles), then
+  // we can't do any cancellation.
+  if (bins.size() == 0) return;
+  
+  // Get vector of keys to do cancellation in parallel
+  sync_keys();
+  std::vector<double> uniform_wgts;
+  std::vector<double> uniform_wgts2;
+
+  uniform_wgts.reserve(key_matid_pairs.size());
+  uniform_wgts2.reserve(key_matid_pairs.size());
 
   // Go through all bins
 #ifdef ABEILLE_USE_OMP
 #pragma omp parallel for
 #endif
+  
   for (std::size_t i = 0; i < key_matid_pairs.size(); i++) {
     Key key = key_matid_pairs[i].first;
     uint32_t mat_id = key_matid_pairs[i].second;
@@ -521,8 +520,24 @@ void ExactMGCancelator::perform_cancellation(pcg32&) {
       bin.sum_c = 0.;
       bin.sum_c_wgt = 0.;
       bin.sum_c_wgt2 = 0.;
+      // [key] or [i]
+      uniform_wgts[i] = bin.uniform_wgt;
+      uniform_wgts2[i] = bin.uniform_wgt2;
+
     }
   }
+
+    mpi::Allreduce_sum(uniform_wgts);
+    mpi::Allreduce_sum(uniform_wgts2);
+
+ for (std::size_t i = 0; i < key_matid_pairs.size(); i++) {
+    Key key = key_matid_pairs[i].first;
+    uint32_t mat_id = key_matid_pairs[i].second;
+    CancelBin& bin = bins[key][mat_id];
+    bin.uniform_wgt = uniform_wgts[i];
+    bin.uniform_wgt2 = uniform_wgts2[i];
+ }
+
 }
 
 std::optional<Position> ExactMGCancelator::sample_position(const Key& key,

@@ -66,6 +66,8 @@ class ExactMGCancelator : public Cancelator {
               (e == other.e));
     }
 
+    auto operator<=>(const Key&) const = default;
+
     // Contains the shape of the cancellation region mesh.
     // shape[0] Number of regions in x
     // shape[1] Number of regions in y
@@ -135,8 +137,8 @@ class ExactMGCancelator : public Cancelator {
   // Private Methods
 
   std::optional<Key> get_key(const Position& r, std::size_t g);
-  
-  std::vector<std::pair<ExactMGCancelator::Key,uint64_t>> sync_keys();
+
+  std::vector<std::pair<ExactMGCancelator::Key,uint32_t>> sync_keys();
 
   // Get's a pointer to the material at r
   Material* get_material(const Position& r) const;

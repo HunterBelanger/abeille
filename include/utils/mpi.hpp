@@ -53,10 +53,11 @@ extern const DType Bool;
 extern const DType UInt16;
 extern const DType Int;
 extern const DType Double;
+extern const DType UInt32;
 extern const DType UInt64;
 extern DType BParticle;
 extern DType KeyType;
-extern DType PairType;
+extern DType KeyUInt32Pair;
 
 extern const OpType Sum;
 extern const OpType And;
@@ -88,6 +89,11 @@ inline DType dtype<double>() {
 }
 
 template <>
+inline DType dtype<uint32_t>() {
+  return UInt32;
+}
+
+template <>
 inline DType dtype<uint64_t>() {
   return UInt64;
 }
@@ -102,8 +108,8 @@ inline DType dtype<ExactMGCancelator::Key>() {
 } 
 
 template <>
-inline DType dtype<std::pair<ExactMGCancelator::Key,uint64_t>>() {
-  return PairType;
+inline DType dtype<std::pair<ExactMGCancelator::Key,uint32_t>>() {
+  return KeyUInt32Pair;
 } 
 #endif
 
