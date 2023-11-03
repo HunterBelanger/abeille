@@ -25,6 +25,7 @@
 #include <geometry/geometry.hpp>
 #include <simulation/branchless_power_iterator.hpp>
 #include <utils/error.hpp>
+#include <utils/kahan.hpp>
 #include <utils/mpi.hpp>
 #include <utils/output.hpp>
 #include <utils/rng.hpp>
@@ -584,29 +585,34 @@ void BranchlessPowerIterator::normalize_weights(
 }
 void BranchlessPowerIterator::comb_particles(
     std::vector<BankedParticle>& next_gen) {
-  // Sort positive and negative particles into different buffers
-  std::vector<BankedParticle> new_next_gen;
+  // Get sum of total positive and negative weights using Kahan Summation
   double Wpos_node = 0.;
   double Wneg_node = 0.;
+  double c_pos = 0., c_neg = 0.;
   for (std::size_t i = 0; i < next_gen.size(); i++) {
-    if (next_gen[i].wgt > 0.)
-      Wpos_node += next_gen[i].wgt;
-    else
-      Wneg_node += next_gen[i].wgt;
+    if (next_gen[i].wgt > 0.) {
+      double y = next_gen[i].wgt - c_pos;
+      double t = Wpos_node + y;
+      c_pos = (t - Wpos_node) - y;
+      Wpos_node = t;
+    } else {
+      double y = next_gen[i].wgt - c_neg;
+      double t = Wneg_node + y;
+      c_neg = (t - Wneg_node) - y;
+      Wneg_node = t;
+    }
   }
 
   // Get total weights for all nodes
   std::vector<double> Wpos_each_node(mpi::size, 0.);
   Wpos_each_node[mpi::rank] = Wpos_node;
   mpi::Allreduce_sum(Wpos_each_node);
-  const double Wpos =
-      std::accumulate(Wpos_each_node.begin(), Wpos_each_node.end(), 0.);
+  const double Wpos = kahan(Wpos_each_node.begin(), Wpos_each_node.end(), 0.);
 
   std::vector<double> Wneg_each_node(mpi::size, 0.);
   Wneg_each_node[mpi::rank] = Wneg_node;
   mpi::Allreduce_sum(Wneg_each_node);
-  const double Wneg =
-      std::accumulate(Wneg_each_node.begin(), Wneg_each_node.end(), 0.);
+  const double Wneg = kahan(Wneg_each_node.begin(), Wneg_each_node.end(), 0.);
 
   // Determine how many positive and negative on node and globaly
   const std::size_t Npos_node = static_cast<std::size_t>(std::round(Wpos_node));
@@ -618,6 +624,7 @@ void BranchlessPowerIterator::comb_particles(
 
   // The + 2 is to account for rounding in the ceil operations between global
   // array vs just the node
+  std::vector<BankedParticle> new_next_gen;
   new_next_gen.reserve(Npos_node + Nneg_node + 2);
 
   // Variables for combing particles
