@@ -512,8 +512,8 @@ void ExactMGCancelator::perform_cancellation(pcg32&) {
       bin.sum_c_wgt = 0.;
       bin.sum_c_wgt2 = 0.;
 
-      uniform_wgt(0,i) = bin.uniform_wgt;
-      uniform_wgt(1,i) = bin.uniform_wgt2;
+      uniform_wgts(0,i) = bin.uniform_wgt;
+      uniform_wgts(1,i) = bin.uniform_wgt2;
     }
   }
 
