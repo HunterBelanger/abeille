@@ -517,16 +517,23 @@ void ExactMGCancelator::perform_cancellation(pcg32&) {
     }
   }
 
-  // Make sure the uniform weights are distributed across all nodes
-  mpi::Allreduce_sum(uniform_wgts.data_vector());
+  // Get total uniform weights on ONLY master node. Only the master will
+  // sample uniform particles
+  mpi::Reduce_sum(uniform_wgts.data_vector(), 0);
 
   // Reasign the CancelBin values for the uniform weights from the vectors
   for (std::size_t i = 0; i < key_matid_pairs.size(); i++) {
     Key key = key_matid_pairs[i].first;
     uint32_t mat_id = key_matid_pairs[i].second;
     CancelBin& bin = bins[key][mat_id];
-    bin.uniform_wgt = uniform_wgts(0, i);
-    bin.uniform_wgt2 = uniform_wgts(1, i);
+
+    if (mpi::rank == 0) {
+      bin.uniform_wgt = uniform_wgts(0, i);
+      bin.uniform_wgt2 = uniform_wgts(1, i);
+    } else {
+      bin.uniform_wgt = 0.;
+      bin.uniform_wgt2 = 0.;
+    }
   }
 }
 
@@ -564,6 +571,11 @@ std::optional<Position> ExactMGCancelator::sample_position(const Key& key,
 }
 
 std::vector<BankedParticle> ExactMGCancelator::get_new_particles(pcg32& rng) {
+  // Only master should have non-zero uniform weights
+  if (mpi::rank != 0) {
+    return {};
+  }
+
   std::vector<BankedParticle> uniform_particles;
 
   for (auto& key_bin_pair : bins) {
