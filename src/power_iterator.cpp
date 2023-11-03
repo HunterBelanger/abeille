@@ -775,7 +775,8 @@ void PowerIterator::perform_regional_cancellation(
   // now have modified weights.
   // Now we can get the uniform particles
   auto tmp = cancelator->get_new_particles(settings::rng);
-  next_gen.insert(next_gen.end(), tmp.begin(), tmp.end());
+
+  if (tmp.size() > 0) next_gen.insert(next_gen.begin(), tmp.begin(), tmp.end());
 
   // All done ! Clear cancelator for next run
   cancelator->clear();
