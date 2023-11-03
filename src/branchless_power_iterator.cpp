@@ -585,7 +585,7 @@ void BranchlessPowerIterator::normalize_weights(
 void BranchlessPowerIterator::comb_particles(
     std::vector<BankedParticle>& next_gen) {
   // Sort positive and negative particles into different buffers
-  std::vector<BankedParticle> new_gen;
+  std::vector<BankedParticle> new_next_gen;
   double Wpos_node = 0.;
   double Wneg_node = 0.;
   for (std::size_t i = 0; i < next_gen.size(); i++) {
@@ -618,12 +618,12 @@ void BranchlessPowerIterator::comb_particles(
 
   // The + 2 is to account for rounding in the ceil operations between global
   // array vs just the node
-  new_gen.reserve(Npos_node + Nneg_node + 2);
+  new_next_gen.reserve(Npos_node + Nneg_node + 2);
 
-  // Variables for combing positive particles
+  // Variables for combing particles
   const double avg_pos_wgt = Wpos / static_cast<double>(Npos);
-  double comb_position_pos = 0.;
   const double avg_neg_wgt = std::abs(Wneg) / static_cast<double>(Nneg);
+  double comb_position_pos = 0.;
   double comb_position_neg = 0.;
   if (mpi::rank == 0) {
     comb_position_pos = RNG::rand(settings::rng) * avg_pos_wgt;
@@ -658,20 +658,21 @@ void BranchlessPowerIterator::comb_particles(
     if (next_gen[i].wgt > 0.) {
       current_particle_pos += next_gen[i].wgt;
       while (comb_position_pos < current_particle_pos) {
-        new_gen.push_back(next_gen[i]);
-        new_gen.back().wgt = avg_pos_wgt;
+        new_next_gen.push_back(next_gen[i]);
+        new_next_gen.back().wgt = avg_pos_wgt;
         comb_position_pos += avg_pos_wgt;
       }
     } else {
       current_particle_neg -= next_gen[i].wgt;
       while (comb_position_neg < current_particle_neg) {
-        new_gen.push_back(next_gen[i]);
-        new_gen.back().wgt = -avg_neg_wgt;
+        new_next_gen.push_back(next_gen[i]);
+        new_next_gen.back().wgt = -avg_neg_wgt;
         comb_position_neg += avg_neg_wgt;
       }
     }
   }
-  next_gen = new_gen;
+
+  next_gen.swap(new_next_gen);
 }
 
 void BranchlessPowerIterator::compute_pre_cancellation_entropy(

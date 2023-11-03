@@ -31,8 +31,6 @@
 
 class ApproximateMeshCancelator : public Cancelator {
  public:
-  
-
   ApproximateMeshCancelator(Position low, Position hi, uint32_t Nx, uint32_t Ny,
                             uint32_t Nz);
   ApproximateMeshCancelator(Position low, Position hi, uint32_t Nx, uint32_t Ny,
@@ -40,8 +38,6 @@ class ApproximateMeshCancelator : public Cancelator {
 
   bool add_particle(BankedParticle& p) override final;
   void perform_cancellation(pcg32& rng) override final;
-  void perform_cancellation_loop(pcg32& rng);
-  void perform_cancellation_vector(pcg32& rng);
   std::vector<BankedParticle> get_new_particles(pcg32& rng) override final;
   void clear() override final;
 
@@ -52,6 +48,9 @@ class ApproximateMeshCancelator : public Cancelator {
   double dx, dy, dz;
   std::unordered_map<int, std::vector<BankedParticle*>> bins;
   std::vector<int> sync_keys();
+
+  void perform_cancellation_loop(pcg32& rng);
+  void perform_cancellation_vector(pcg32& rng);
 };
 
 std::shared_ptr<ApproximateMeshCancelator> make_approximate_mesh_cancelator(

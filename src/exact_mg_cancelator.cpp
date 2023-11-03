@@ -27,12 +27,13 @@
 #include <utils/error.hpp>
 #include <utils/output.hpp>
 #include <utils/settings.hpp>
-#include <unordered_set>
 
+#include <ndarray.hpp>
 #include <sobol/sobol.hpp>
 
 #include <cmath>
 #include <set>
+#include <unordered_set>
 
 Position ExactMGCancelator::Key::r_low, ExactMGCancelator::Key::r_hi;
 std::array<std::size_t, 4> ExactMGCancelator::Key::shape;
@@ -402,11 +403,7 @@ void ExactMGCancelator::cancel_bin(CancelBin& bin, MGNuclide* nuclide,
   }
 }
 
-
 std::vector<std::pair<ExactMGCancelator::Key,uint32_t>> ExactMGCancelator::sync_keys() {
-  // Each node collects all keys
-  //if (bins.size() == 0) return;
-
   // Get vector of keys to do cancellation in parallel
   std::vector<std::pair<Key, uint32_t>> key_matid_pairs;
   key_matid_pairs.reserve(bins.size());
@@ -450,17 +447,11 @@ std::vector<std::pair<ExactMGCancelator::Key,uint32_t>> ExactMGCancelator::sync_
 }
 
 void ExactMGCancelator::perform_cancellation(pcg32&) {
-  // If we have no bins (meaning no particles), then
-  // we can't do any cancellation.
-  if (bins.size() == 0) return;
-  
   // Get vector of keys to do cancellation in parallel
   std::vector<std::pair<Key,uint32_t>> key_matid_pairs = sync_keys();
-  std::vector<double> uniform_wgts;
-  std::vector<double> uniform_wgts2;
 
-  uniform_wgts.reserve(key_matid_pairs.size());
-  uniform_wgts2.reserve(key_matid_pairs.size());
+  // Initialize array for transfer of uniform weights which will happen later
+  NDArray<double> uniform_wgts({2, key_matid_pairs.size()});
 
   // Go through all bins
 #ifdef ABEILLE_USE_OMP
@@ -520,23 +511,23 @@ void ExactMGCancelator::perform_cancellation(pcg32&) {
       bin.sum_c = 0.;
       bin.sum_c_wgt = 0.;
       bin.sum_c_wgt2 = 0.;
-      // [key] or [i]
-      uniform_wgts[i] = bin.uniform_wgt;
-      uniform_wgts2[i] = bin.uniform_wgt2;
 
+      uniform_wgt(0,i) = bin.uniform_wgt;
+      uniform_wgt(1,i) = bin.uniform_wgt2;
     }
   }
 
-    mpi::Allreduce_sum(uniform_wgts);
-    mpi::Allreduce_sum(uniform_wgts2);
+  // Make sure the uniform weights are distributed across all nodes
+  mpi::Allreduce_sum(uniform_wgts.data_vector());
 
- for (std::size_t i = 0; i < key_matid_pairs.size(); i++) {
+  // Reasign the CancelBin values for the uniform weights from the vectors
+  for (std::size_t i = 0; i < key_matid_pairs.size(); i++) {
     Key key = key_matid_pairs[i].first;
     uint32_t mat_id = key_matid_pairs[i].second;
     CancelBin& bin = bins[key][mat_id];
-    bin.uniform_wgt = uniform_wgts[i];
-    bin.uniform_wgt2 = uniform_wgts2[i];
- }
+    bin.uniform_wgt = uniform_wgts(0, i);
+    bin.uniform_wgt2 = uniform_wgts(1, i);
+  }
 }
 
 std::optional<Position> ExactMGCancelator::sample_position(const Key& key,

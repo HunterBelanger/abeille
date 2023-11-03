@@ -31,12 +31,6 @@
 #include <utils/settings.hpp>
 #include <utils/timer.hpp>
 
-//remove later
-#include <simulation/approximate_mesh_cancelator.hpp>
-#include <utils/position.hpp>
-#include <unordered_map>
-#include <ndarray.hpp>
-
 #include <docopt.h>
 
 #include <csignal>
@@ -85,9 +79,7 @@ bool exists(std::string fname) {
   return file.good();
 }
 
-
 int main(int argc, char** argv) {
-  
   settings::alpha_omega_timer.start();
 
   mpi::initialize_mpi(&argc, &argv);

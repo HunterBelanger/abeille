@@ -22,12 +22,14 @@
  * along with Abeille. If not, see <https://www.gnu.org/licenses/>.
  *
  * */
+#include <simulation/exact_mg_cancelator.hpp>
 #include <simulation/particle.hpp>
 #include <utils/error.hpp>
 #include <utils/mpi.hpp>
-#include <simulation/exact_mg_cancelator.hpp>
+
 #include <type_traits>
 #include <utility>  
+
 #ifdef ABEILLE_USE_MPI
 #include <mpi.h>
 #endif
@@ -39,9 +41,9 @@ Timer timer;
 #ifdef ABEILLE_USE_MPI
 const Com com = MPI_COMM_WORLD;
 const DType Bool = MPI_C_BOOL;
-const DType UInt16 = MPI_UINT16_T;
 const DType Int = MPI_INT;
 const DType Double = MPI_DOUBLE;
+const DType UInt16 = MPI_UINT16_T;
 const DType UInt32 = MPI_UINT32_T;
 const DType UInt64 = MPI_UINT64_T;
 DType BParticle;
@@ -61,7 +63,7 @@ int rank = 0;
 
 void register_key_type() {
 #ifdef ABEILLE_USE_MPI
-  // Ensure that BankedParticle is standard layout ! This is
+  // Ensure that ExactMGCancelator::Key is standard layout ! This is
   // required by MPI.
   static_assert(std::is_standard_layout<ExactMGCancelator::Key>::value);
 
@@ -98,9 +100,10 @@ void register_key_type() {
 
 void register_key_uint32_pair() {
 #ifdef ABEILLE_USE_MPI
-  // Ensure that BankedParticle is standard layout ! This is
+  // Ensure that std::pair<Key,uint32_t> is standard layout ! This is
   // required by MPI.
   static_assert(std::is_standard_layout<std::pair<ExactMGCancelator::Key,uint32_t>>::value);
+
   std::pair<ExactMGCancelator::Key,uint32_t> p;
   int err = 0;
   constexpr std::size_t PAIR_NUM_MEMBERS = 2;
@@ -196,9 +199,9 @@ void initialize_mpi(int* argc, char*** argv) {
   err = MPI_Comm_rank(com, &rank);
   check_error(err, std::source_location::current());
 
-  // Register baked particle type
+  // Register required custom types.
+  // !!! MUST BE DONE IN CERTAIN ORDER !!!
   register_banked_particle_type();
-
   register_key_type();
   register_key_uint32_pair();
 #else

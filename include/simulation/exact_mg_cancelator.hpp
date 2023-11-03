@@ -28,6 +28,7 @@
 #include <materials/material.hpp>
 #include <materials/mg_nuclide.hpp>
 #include <simulation/cancelator.hpp>
+
 #include <array>
 #include <cstdint>
 #include <optional>
@@ -47,14 +48,14 @@ class ExactMGCancelator : public Cancelator {
   std::vector<BankedParticle> get_new_particles(pcg32& rng) override final;
   void clear() override final;
 
-// Key which represents a unique cancellation bin for a
+  // Key which represents a unique cancellation bin for a
   // given position and energy group.
   // Key is public for MPI use
   struct Key {
     Key(std::size_t i, std::size_t j, std::size_t k, std::size_t e)
         : i(i), j(j), k(k), e(e) {}
 
-    Key() {}
+    Key(): i(0), j(0), k(0), e(0) {}
     std::size_t i, j, k, e;
 
     std::size_t hash_key() const {
@@ -86,6 +87,7 @@ class ExactMGCancelator : public Cancelator {
 
     static Position r_low, r_hi;
   };
+
  private:
   //==========================================================================
   // Objects
@@ -162,8 +164,6 @@ class ExactMGCancelator : public Cancelator {
                         CancelBin& bin);
 
   void cancel_bin(CancelBin& bin, MGNuclide* nuclide, bool first_wgt);
-
-
 };
 
 std::shared_ptr<ExactMGCancelator> make_exact_mg_cancelator(
