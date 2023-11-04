@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Optional, List, Tuple, Iterable, TYPE_CHECKING
+from typing import Optional, List, Tuple, Iterable, Dict, TYPE_CHECKING
 from abc import ABC, abstractmethod
 import numpy as np
 
@@ -90,8 +90,8 @@ class Region(ABC):
     def to_string(self) -> str:
         return ""
 
-    def get_surfaces(self) -> dict:
-        return {}
+    def add_surfaces(self, surfs: Dict[int, Surface]) -> None:
+        pass
 
 
 class Halfspace(Region):
@@ -106,8 +106,9 @@ class Halfspace(Region):
             s = '-'
         return "{:}{:}".format(s, self.surface.id)
 
-    def get_surfaces(self) -> dict:
-        return {self.surface.id: self.surface}
+    def add_surfaces(self, surfs: Dict[int, Surface]) -> None:
+        if not self.surface.id in surfs:
+            surfs[self.surface.id] = self.surface
 
 
 class Intersection(Region):
@@ -118,13 +119,9 @@ class Intersection(Region):
     def to_string(self) -> str:
         return "{:} & {:}".format(self.left.to_string(), self.right.to_string())
 
-    def get_surfaces(self) -> dict:
-        surfs = self.left.get_surfaces()
-        rsurfs = self.right.get_surfaces()
-        for key in rsurfs.keys():
-            if key not in surfs:
-                surfs[key] = rsurfs[key]
-        return surfs
+    def add_surfaces(self, surfs: Dict[int, Surface]) -> None:
+        self.left.add_surfaces(surfs)
+        self.right.add_surfaces(surfs)
 
 
 class Union(Region):
@@ -135,13 +132,9 @@ class Union(Region):
     def to_string(self) -> str:
         return "{:} U {:}".format(self.left.to_string(), self.right.to_string())
 
-    def get_surfaces(self) -> dict:
-        surfs = self.left.get_surfaces()
-        rsurfs = self.right.get_surfaces()
-        for key in rsurfs.keys():
-            if key not in surfs:
-                surfs[key] = rsurfs[key]
-        return surfs
+    def add_surfaces(self, surfs: Dict[int, Surface]) -> None:
+        self.left.add_surfaces(surfs)
+        self.right.add_surfaces(surfs)
 
 
 class Complement(Region):
@@ -151,8 +144,8 @@ class Complement(Region):
     def to_string(self) -> str:
         return "~({:})".format(self.region.to_string())
 
-    def get_surfaces(self) -> dict:
-        return self.region.get_surfaces()
+    def add_surfaces(self, surfs: Dict[int, Surface]) -> None:
+        self.region.add_surfaces(surfs)
 
 
 class Surface(ABC):
@@ -324,6 +317,23 @@ class Cell:
             out += ", name: {:}".format(self.name)
         return "  - {"+out+"}"
 
+    def add_surfaces(self, surfs: Dict[int, Surface]) -> None:
+        self.region.add_surfaces(surfs)
+
+    def add_cells(self, cells: Dict[int, Cell]) -> None:
+        if isinstance(self.fill, Universe):
+            self.fill.add_cells(cells)
+
+    def add_universes(self, unis: Dict[int, Universe]) -> None:
+        if isinstance(self.fill, Universe):
+            if self.fill.id not in unis:
+                unis[self.fill.id] = self.fill
+                self.fill.add_universes(unis)
+
+    def add_lattices(self, lats: Dict[int, Lattice]) -> None:
+        if isinstance(self.fill, Universe):
+            self.fill.add_lattices(lats)
+
 
 class Universe(ABC):
     _id_counter = 1
@@ -336,27 +346,21 @@ class Universe(ABC):
     @abstractmethod
     def to_string(self) -> str:
         pass
-
+    
     @abstractmethod
-    def get_cells(self) -> dict:
+    def add_surfaces(self, surfs: Dict[int, Surface]) -> None:
         pass
 
-    def get_surfaces(self) -> dict:
-        surfs = {}
-        cells = self.get_cells()
-        for cell_id in cells.keys():
-            cell_surfs = cells[cell_id].region.get_surfaces()
-            for key in cell_surfs.keys():
-                if key not in surfs:
-                    surfs[key] = cell_surfs[key]
-        return surfs
+    @abstractmethod
+    def add_cells(self, cells: Dict[int, Cell]) -> None:
+        pass
 
     @abstractmethod 
-    def get_lattices(self) -> dict:
+    def add_lattices(self, lats: Dict[int, Lattice]) -> None:
         pass
     
     @abstractmethod
-    def get_universes(self) -> dict:
+    def add_universes(self, unis: Dict[int, Universe]) -> None:
         pass
 
 
@@ -375,6 +379,22 @@ class Lattice(ABC):
     def to_string(self) -> str:
         pass
 
+    @abstractmethod
+    def add_surfaces(self, surfs: Dict[int, Surface]) -> None:
+        pass
+
+    @abstractmethod
+    def add_cells(self, cells: Dict[int, Cell]) -> None:
+        pass
+
+    @abstractmethod 
+    def add_lattices(self, lats: Dict[int, Lattice]) -> None:
+        pass
+    
+    @abstractmethod
+    def add_universes(self, unis: Dict[int, Universe]) -> None:
+        pass
+
 
 class CellUniverse(Universe):
     def __init__(self, cells: List[Cell], name: Optional[str] = None):
@@ -391,50 +411,24 @@ class CellUniverse(Universe):
         if self.name is not None:
             out += ", name: {:}".format(self.name)
         return "  - {"+out+"}"
+    
+    def add_surfaces(self, surfs: Dict[int, Surface]) -> None:
+        for cell in self.cells:
+            cell.add_surfaces(surfs)
 
-    def get_cells(self) -> dict:
-        cells = {}
+    def add_cells(self, cells: Dict[int, Cell]) -> None:
         for cell in self.cells:
             if cell.id not in cells:
                 cells[cell.id] = cell
-        return cells
+                cell.add_cells(cells)
 
-    def get_lattices(self) -> dict:
-        latts = {}
+    def add_lattices(self, lats: Dict[int, Lattice]) -> None:
         for cell in self.cells:
-            if isinstance(cell.fill, Universe):
-                cell_uni_latts = cell.fill.get_lattices()
-
-                for lat_id in cell_uni_latts:
-                    if lat_id not in latts:
-                        latts[lat_id] = cell_uni_latts[lat_id]
-
-        return latts
-
-    def get_universes(self) -> dict:
-        unis = {}
-
+            cell.add_lattices(lats)
+    
+    def add_universes(self, unis: Dict[int, Universe]) -> None:
         for cell in self.cells:
-            if isinstance(cell.fill, Universe):
-                # Check if the ID is our own ID. If so, we have a cyclical
-                # reference, and this is bad and shouldn't happen
-                if cell.fill.id == self.id:
-                    self_label = cell.fill.id
-                    if self.name is not None:
-                        self_label = self.name
-                    raise RuntimeError("Cyclical reference found in universe {:}.".format(self_label))
-
-                # First, add the filling universe
-                if cell.fill.id not in unis:
-                    unis[cell.fill.id] = cell.fill
-
-                # Now add any universes in the filling universe
-                cell_uni_unis = cell.fill.get_universes()
-                for uni_id in cell_uni_unis:
-                    if uni_id not in unis:
-                        unis[uni_id] = cell_uni_unis[uni_id]
-
-        return unis
+            cell.add_universes(unis)
 
 
 class LatticeUniverse(Universe):
@@ -448,58 +442,19 @@ class LatticeUniverse(Universe):
             out += ", name: {:}".format(self.name)
         return "  - {"+out+"}"
 
-    def get_cells(self) -> dict:
-        cells = {}
-        for uni in self.lattice.universes:
-            if uni is None:
-                continue
-            
-            uni_cells = uni.get_cells()
-            for cell_id in uni_cells:
-                if cell_id not in cells:
-                    cells[cell_id] = uni_cells[cell_id]
+    def add_surfaces(self, surfs: Dict[int, Surface]) -> None:
+        self.lattice.add_surfaces(surfs)
 
-        return cells
+    def add_cells(self, cells: Dict[int, Cell]) -> None:
+        self.lattice.add_cells(cells)
 
-    def get_lattices(self) -> dict:
-        latts = {self.lattice.id: self.lattice}
-        for uni in self.lattice.universes:
-            if uni is None:
-                continue
-
-            uni_lats = uni.get_lattices()
-            for lat_id in uni_lats:
-                if lat_id not in latts:
-                    latts[lat_id] = uni_lats[lat_id]
-
-        return latts
-
-    def get_universes(self) -> dict:
-        unis = {}
-        
-        for uni in self.lattice.universes:
-            if uni is None:
-                continue
-
-            # Check if the ID is our own ID. If so, we have a cyclical
-            # reference, and this is bad and shouldn't happen
-            if uni.id == self.id:
-                self_label = uni.id
-                if self.name is not None:
-                    self_label = self.name
-                raise RuntimeError("Cyclical reference found in universe {:}.".format(self_label))
-
-            # Add universe
-            if uni.id not in unis:
-                unis[uni.id] = uni
-
-            # Now add sub universes
-            uni_unis = uni.get_universes()
-            for uni_id in uni_unis:
-                if uni_id not in unis:
-                    unis[uni_id] = uni_unis[uni_id]
-        
-        return unis
+    def add_lattices(self, lats: Dict[int, Lattice]) -> None:
+        if self.lattice.id not in lats:
+            lats[self.lattice.id] = self.lattice
+            self.lattice.add_lattices(lats)
+    
+    def add_universes(self, unis: Dict[int, Universe]) -> None:
+        self.lattice.add_universes(unis)
 
 
 class RectLattice(Lattice):
@@ -528,6 +483,8 @@ class RectLattice(Lattice):
         out += "    shape: [{:}, {:}, {:}]\n".format(self.shape[0], self.shape[1], self.shape[2])
         out += "    pitch: [{:}, {:}, {:}]\n".format(self.pitch[0], self.pitch[1], self.pitch[2])
         out += "    origin: [{:}, {:}, {:}]\n".format(self.origin[0], self.origin[1], self.origin[2])
+        if self.outer_universe is not None:
+            out += "    outer: {:}\n".format(self.outer_universe.id)
         out += "    universes: ["
         indx = 0
         for z in range(self.shape[2]):
@@ -552,6 +509,42 @@ class RectLattice(Lattice):
                 out += "\n                "
 
         return out
+
+    def add_surfaces(self, surfs: Dict[int, Surface]) -> None:
+        if self.outer_universe is not None:
+            self.outer_universe.add_surfaces(surfs)
+        
+        for uni in self.universes:
+            if uni is not None:
+                uni.add_surfaces(surfs)
+
+    def add_cells(self, cells: Dict[int, Cell]) -> None:
+        if self.outer_universe is not None:
+            self.outer_universe.add_cells(cells)
+        
+        for uni in self.universes:
+            if uni is not None:
+                uni.add_cells(cells)
+
+    def add_lattices(self, lats: Dict[int, Lattice]) -> None:
+        if self.outer_universe is not None:
+            self.outer_universe.add_lattices(lats)
+        
+        for uni in self.universes:
+            if uni is not None:
+                uni.add_lattices(lats)
+    
+    def add_universes(self, unis: Dict[int, Universe]) -> None:
+        if self.outer_universe is not None:
+            if self.outer_universe.id not in unis:
+                unis[self.outer_universe.id] = self.outer_universe
+                self.outer_universe.add_universes(unis)
+        
+        for uni in self.universes:
+            if uni is not None:
+                if uni.id not in unis:
+                    unis[uni.id] = uni
+                    uni.add_universes(unis)
 
 
 """
@@ -929,11 +922,19 @@ class Input:
 
     def to_file(self, fname: str):
         # Get everything we need for the input
-        surfaces = self.root_universe.get_surfaces()
-        cells = self.root_universe.get_cells()
-        universes = self.root_universe.get_universes()
+        surfaces = {}
+        self.root_universe.add_surfaces(surfaces)
+
+        cells = {}
+        self.root_universe.add_cells(cells)
+
+        lattices = {}
+        self.root_universe.add_lattices(lattices)
+
+        universes = {}
+        self.root_universe.add_universes(universes)
         universes[self.root_universe.id] = self.root_universe
-        lattices = self.root_universe.get_lattices()
+
         materials = {}
         for cell_id in cells:
             if isinstance(cells[cell_id].fill, Material):
@@ -946,8 +947,7 @@ class Input:
             raise RuntimeError("No materials present in root universe.")
         input_str += "materials:\n"
         for mat_id in sorted(materials.keys()):
-            input_str += "{:}\n".format(materials[mat_id].to_string())
-        input_str += "\n"
+            input_str += "{:}\n\n".format(materials[mat_id].to_string())
 
         # Now we do surfaces
         if len(surfaces) == 0:
