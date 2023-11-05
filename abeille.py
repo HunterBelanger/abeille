@@ -726,7 +726,7 @@ class Entropy:
         out = 'entropy:\n'
         out += '  low: [{}, {}, {}]\n'.format(self.low.x, self.low.y, self.low.z)
         out += '  hi: [{}, {}, {}]\n'.format(self.hi.x, self.hi.y, self.hi.z)
-        out += '  shape: [{}, {}, {}]\n'.format(self.shape[0], self.shape[1], self.shape[2])
+        out += '  shape: [{}, {}, {}]\n\n'.format(self.shape[0], self.shape[1], self.shape[2])
 
         return out
 
