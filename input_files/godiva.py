@@ -30,5 +30,5 @@ settings.nignored = 100
 settings.use_dbrc = False
 
 # Write input file
-inpt = Input(root_uni, sources, settings, entropy=entrpy, tallies=tallies)
+inpt = Input(root_uni, sources, settings)
 inpt.to_file('godiva.yaml')
