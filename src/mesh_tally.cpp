@@ -30,7 +30,6 @@
 #include <utils/output.hpp>
 #include <utils/settings.hpp>
 
-#include <set>
 #include <vector>
 
 const static std::set<std::string> disallowed_tally_names{
@@ -58,6 +57,8 @@ const static std::set<std::string> disallowed_tally_names{
     "leakage",
     "mig-area"};
 
+std::set<std::string> MeshTally::used_tally_names;
+
 MeshTally::MeshTally(Position low, Position hi, uint64_t nx, uint64_t ny,
                      uint64_t nz, const std::vector<double>& ebounds,
                      std::string fname)
@@ -81,7 +82,15 @@ MeshTally::MeshTally(Position low, Position hi, uint64_t nx, uint64_t ny,
       tally_var() {
   // Make sure the name is allowed.
   if (disallowed_tally_names.contains(this->fname)) {
-    fatal_error("The tally name " + this->fname + " is reserved.");
+    fatal_error("The tally name \"" + this->fname + "\" is reserved.");
+  }
+
+  // Make sure name isn't already taken
+  if (used_tally_names.contains(this->fname)) {
+    fatal_error("The tally name \"" + this->fname +
+                "\" is used multiple times.");
+  } else {
+    used_tally_names.insert(this->fname);
   }
 
   dx = (r_hi.x() - r_low.x()) / static_cast<double>(Nx);

@@ -33,6 +33,8 @@
 #include <ndarray.hpp>
 
 #include <memory>
+#include <set>
+#include <string>
 
 class MeshTally {
  public:
@@ -77,6 +79,8 @@ class MeshTally {
   NDArray<double> tally_gen;
   NDArray<double> tally_avg;
   NDArray<double> tally_var;
+
+  static std::set<std::string> used_tally_names;
 };
 
 #endif
