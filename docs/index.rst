@@ -23,6 +23,7 @@ are written to and HDF5 file at the end of the simulation.
    :caption: Contents:
    
    install
+   nuclear_data
 
 Indices and tables
 ==================
