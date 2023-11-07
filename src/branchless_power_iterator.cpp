@@ -607,12 +607,12 @@ void BranchlessPowerIterator::comb_particles(
   std::vector<double> Wpos_each_node(mpi::size, 0.);
   Wpos_each_node[mpi::rank] = Wpos_node;
   mpi::Allreduce_sum(Wpos_each_node);
-  const double Wpos = kahan(Wpos_each_node.begin(), Wpos_each_node.end(), 0.);
+  const double Wpos = std::accumulate(Wpos_each_node.begin(), Wpos_each_node.end(), 0.);
 
   std::vector<double> Wneg_each_node(mpi::size, 0.);
   Wneg_each_node[mpi::rank] = Wneg_node;
   mpi::Allreduce_sum(Wneg_each_node);
-  const double Wneg = kahan(Wneg_each_node.begin(), Wneg_each_node.end(), 0.);
+  const double Wneg = std::accumulate(Wneg_each_node.begin(), Wneg_each_node.end(), 0.);
 
   // Determine how many positive and negative on node and globaly
   const std::size_t Npos_node = static_cast<std::size_t>(std::round(Wpos_node));
