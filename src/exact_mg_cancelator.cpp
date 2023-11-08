@@ -366,8 +366,7 @@ void ExactMGCancelator::compute_averages(const Key& key, Material* mat,
   bin.sum_c_wgt2 = sum_c_wgt2;
 }
 
-void ExactMGCancelator::cancel_bin(CancelBin& bin, MGNuclide* nuclide,
-                                   bool first_wgt) {
+void ExactMGCancelator::cancel_bin(CancelBin& bin, MGNuclide* nuclide) {
   // Go through all particles in bin
   for (std::size_t i = 0; i < bin.particles.size(); i++) {
     const Position& r1 = bin.particles[i]->parents_previous_position;
@@ -380,25 +379,29 @@ void ExactMGCancelator::cancel_bin(CancelBin& bin, MGNuclide* nuclide,
     const Position& r4 = bin.particles[i]->r;
     const double Esmp = bin.particles[i]->Esmp_parent;
 
-    const double B = get_beta(bin, i, first_wgt);
+    const double B1 = get_beta(bin, i, true);
+    const double B2 = get_beta(bin, i, false);
     const double f = get_f(r1, u1, g1, g3, r4, g4, Esmp, nuclide);
 
-    const double P_p = (f - B) / f;
-    const double P_u = B / f;
+    const double P_p1 = (f - B1) / f;
+    const double P_u1 = B1 / f;
+
+    const double P_p2 = (f - B2) / f;
+    const double P_u2 = B2 / f;
 
     // If either P_p or P_u is Inf or NaN, we can't do cancellation.
     // This usually happens when the weight in question is zero, which
     // occurs durring noise transport.
-    if (std::isinf(P_u) || std::isinf(P_p) || std::isnan(P_u) ||
-        std::isnan(P_p))
-      return;
+    if ((std::isinf(P_u1) == false) && (std::isinf(P_p1) == false) &&
+        (std::isnan(P_u1) == false) && (std::isnan(P_p1) == false)) {
+      bin.uniform_wgt += bin.particles[i]->wgt * P_u1;
+      bin.particles[i]->wgt *= P_p1;
+    }
 
-    if (first_wgt) {
-      bin.uniform_wgt += bin.particles[i]->wgt * P_u;
-      bin.particles[i]->wgt *= P_p;
-    } else {
-      bin.uniform_wgt2 += bin.particles[i]->wgt2 * P_u;
-      bin.particles[i]->wgt2 *= P_p;
+    if ((std::isinf(P_u2) == false) && (std::isinf(P_p2) == false) &&
+        (std::isnan(P_u2) == false) && (std::isnan(P_p2) == false)) {
+      bin.uniform_wgt2 += bin.particles[i]->wgt2 * P_u2;
+      bin.particles[i]->wgt2 *= P_p2;
     }
   }
 }
@@ -473,48 +476,23 @@ void ExactMGCancelator::perform_cancellation(pcg32&) {
     MGNuclide* nuclide =
         static_cast<MGNuclide*>(mat->components()[0].nuclide.get());
 
-    // Only atempt cancelation if we have two or more particles
-    if (bin.particles.size() > 1) {
-      // Go through all particles and see if we have mixed signes
-      bool has_pos_w1 = false;
-      bool has_neg_w1 = false;
-      bool has_pos_w2 = false;
-      bool has_neg_w2 = false;
-      for (const auto& p : bin.particles) {
-        if (p->wgt > 0.)
-          has_pos_w1 = true;
-        else if (p->wgt < 0.)
-          has_neg_w1 = true;
-
-        if (p->wgt2 > 0.)
-          has_pos_w2 = true;
-        else if (p->wgt2 < 0.)
-          has_neg_w2 = true;
-
-        if (has_pos_w1 && has_neg_w1 && has_pos_w2 && has_neg_w2) break;
-      }
         
-      // If we are doing cancellation and the beta_mode requires it, get the
-      // average value of the fission density and 1 / fission density for each
-      // particle in the bin.
-      if ((has_pos_w1 && has_neg_w1) || (has_pos_w2 && has_neg_w2)) {
-        compute_averages(key, mat, nuclide, bin);
-      }
+    // Get the average value of the fission density and 1 / fission density
+    // for each particle in the bin.
+    compute_averages(key, mat, nuclide, bin);
 
-      // If determined necessary, carry out the cancellations for each weight
-      if (has_pos_w1 && has_neg_w1) cancel_bin(bin, nuclide, true);
-      if (has_pos_w2 && has_neg_w2) cancel_bin(bin, nuclide, false);
+    // Carry out the cancellations
+    cancel_bin(bin, nuclide);
 
-      // Cancellation has now occured. We should clear the bin of particles
-      bin.particles.clear();
-      bin.averages.clear();
-      bin.sum_c = 0.;
-      bin.sum_c_wgt = 0.;
-      bin.sum_c_wgt2 = 0.;
+    // Cancellation has now occured. We should clear the bin of particles
+    bin.particles.clear();
+    bin.averages.clear();
+    bin.sum_c = 0.;
+    bin.sum_c_wgt = 0.;
+    bin.sum_c_wgt2 = 0.;
 
-      uniform_wgts(0,i) = bin.uniform_wgt;
-      uniform_wgts(1,i) = bin.uniform_wgt2;
-    }
+    uniform_wgts(0,i) = bin.uniform_wgt;
+    uniform_wgts(1,i) = bin.uniform_wgt2;
   }
 
   // Get total uniform weights on ONLY master node. Only the master will
