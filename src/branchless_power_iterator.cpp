@@ -534,18 +534,12 @@ void BranchlessPowerIterator::normalize_weights(
   double W_pos = 0.;
   Nnet = 0;
   Ntot = 0;
-  Npos = 0;
-  Nneg = 0;
-  for (size_t i = 0; i < next_gen.size(); i++) {
-    if (next_gen[i].wgt > 0.) {
-      W_pos += next_gen[i].wgt;
-      Npos++;
-    } else {
-      W_neg -= next_gen[i].wgt;
-      Nneg++;
-    }
-  }
+  std::tuple<double,double,int,int> tup = kahanBabushkaTuple(next_gen.begin(),next_gen.end());
 
+  W_pos = get<0>(tup);
+  W_neg = get<1>(tup);
+  Npos = get<2>(tup);
+  Nneg = get<3>(tup);
   // Get totals across all nodes
   mpi::Allreduce_sum(W_pos);
   mpi::Allreduce_sum(W_neg);
@@ -586,33 +580,22 @@ void BranchlessPowerIterator::normalize_weights(
 void BranchlessPowerIterator::comb_particles(
     std::vector<BankedParticle>& next_gen) {
   // Get sum of total positive and negative weights using Kahan Summation
-  double Wpos_node = 0.;
-  double Wneg_node = 0.;
-  double c_pos = 0., c_neg = 0.;
-  for (std::size_t i = 0; i < next_gen.size(); i++) {
-    if (next_gen[i].wgt > 0.) {
-      double y = next_gen[i].wgt - c_pos;
-      double t = Wpos_node + y;
-      c_pos = (t - Wpos_node) - y;
-      Wpos_node = t;
-    } else {
-      double y = next_gen[i].wgt - c_neg;
-      double t = Wneg_node + y;
-      c_neg = (t - Wneg_node) - y;
-      Wneg_node = t;
-    }
-  }
+
+  std::tuple<double,double,int,int> tup = kahanBabushkaTuple(next_gen.begin(),next_gen.end());
+  double Wpos_node = get<0>(tup);
+  double Wneg_node = get<1>(tup);
+  
 
   // Get total weights for all nodes
   std::vector<double> Wpos_each_node(mpi::size, 0.);
   Wpos_each_node[mpi::rank] = Wpos_node;
   mpi::Allreduce_sum(Wpos_each_node);
-  const double Wpos = std::accumulate(Wpos_each_node.begin(), Wpos_each_node.end(), 0.);
+  const double Wpos = kahanBabushka(Wpos_each_node.begin(), Wpos_each_node.end(), 0.);
 
   std::vector<double> Wneg_each_node(mpi::size, 0.);
   Wneg_each_node[mpi::rank] = Wneg_node;
   mpi::Allreduce_sum(Wneg_each_node);
-  const double Wneg = std::accumulate(Wneg_each_node.begin(), Wneg_each_node.end(), 0.);
+  const double Wneg = kahanBabushka(Wneg_each_node.begin(), Wneg_each_node.end(), 0.);
 
   // Determine how many positive and negative on node and globaly
   const std::size_t Npos_node = static_cast<std::size_t>(std::round(Wpos_node));
