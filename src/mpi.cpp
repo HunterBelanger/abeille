@@ -107,7 +107,7 @@ void register_key_uint32_pair() {
   std::pair<ExactMGCancelator::Key,uint32_t> p;
   int err = 0;
   constexpr std::size_t PAIR_NUM_MEMBERS = 2;
-  int sizes[PAIR_NUM_MEMBERS]{4,1};
+  int sizes[PAIR_NUM_MEMBERS]{1,1};
   DType dtypes[PAIR_NUM_MEMBERS]{KeyType, UInt32};
   MPI_Aint disps[PAIR_NUM_MEMBERS];
   MPI_Get_address(&p.first, &disps[0]);
