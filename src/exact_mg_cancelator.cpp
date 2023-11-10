@@ -465,6 +465,29 @@ void ExactMGCancelator::perform_cancellation(pcg32&) {
     Key key = key_matid_pairs[i].first;
     uint32_t mat_id = key_matid_pairs[i].second;
     Material* mat = materials[mat_id].get();
+
+    if (bins.find(key) == bins.end() ||
+        bins[key].find(mat_id) == bins[key].end()) {
+      if (mpi::rank == 0) {
+        // Make an empty bin. We need this on master for sampling uniform portions.
+        // If the bin doesn't exist yet, initalize it
+        if (bins.find(key) == bins.end()) {
+          bins[key] = std::unordered_map<uint32_t, CancelBin>();
+        }
+
+        // Check if a bin exists for that material
+        if (bins[key].find(mat_id) == bins[key].end()) {
+          bins[key][mat_id] = CancelBin();
+        }
+
+        continue;
+      } else {
+        uniform_wgts(0,i) = 0.;
+        uniform_wgts(1,i) = 0.;
+        continue;
+      }
+    }
+
     CancelBin& bin = bins[key][mat_id];
 
     // For cancellation to be eact in the most general MG case,
@@ -500,17 +523,21 @@ void ExactMGCancelator::perform_cancellation(pcg32&) {
   mpi::Reduce_sum(uniform_wgts.data_vector(), 0);
 
   // Reasign the CancelBin values for the uniform weights from the vectors
-  for (std::size_t i = 0; i < key_matid_pairs.size(); i++) {
-    Key key = key_matid_pairs[i].first;
-    uint32_t mat_id = key_matid_pairs[i].second;
-    CancelBin& bin = bins[key][mat_id];
+  if (mpi::rank == 0) {
+    for (std::size_t i = 0; i < key_matid_pairs.size(); i++) {
+      Key key = key_matid_pairs[i].first;
+      uint32_t mat_id = key_matid_pairs[i].second;
+      CancelBin& bin = bins[key][mat_id];
 
-    if (mpi::rank == 0) {
       bin.uniform_wgt = uniform_wgts(0, i);
       bin.uniform_wgt2 = uniform_wgts(1, i);
-    } else {
-      bin.uniform_wgt = 0.;
-      bin.uniform_wgt2 = 0.;
+    }
+  } else {
+    for (auto& key_matbin_pair : bins) {
+      for (auto& matid_bin_pair : key_matbin_pair.second) {
+        matid_bin_pair.second.uniform_wgt = 0.;
+        matid_bin_pair.second.uniform_wgt2 = 0.;
+      }
     }
   }
 }
@@ -671,10 +698,10 @@ std::shared_ptr<ExactMGCancelator> make_exact_mg_cancelator(
     fatal_error("No valid shape entry for basic exact MG cancelator.");
   }
 
-  uint32_t Nx = node["shape"][0].as<uint32_t>();
-  uint32_t Ny = node["shape"][1].as<uint32_t>();
-  uint32_t Nz = node["shape"][2].as<uint32_t>();
-  uint32_t Ne = 0;
+  uint64_t Nx = node["shape"][0].as<uint32_t>();
+  uint64_t Ny = node["shape"][1].as<uint32_t>();
+  uint64_t Nz = node["shape"][2].as<uint32_t>();
+  uint64_t Ne = 0;
 
   std::vector<std::vector<std::size_t>> group_bins;
   if (node["group-bins"] && node["group-bins"].IsSequence()) {
@@ -684,9 +711,9 @@ std::shared_ptr<ExactMGCancelator> make_exact_mg_cancelator(
         "No group-bins are provided to ExactMGCancelator, but fission spectra "
         "are provided with a matrix.\nCancellation cannot be exact.");
   }
-  Ne = static_cast<uint32_t>(group_bins.size());
+  Ne = static_cast<uint64_t>(group_bins.size());
 
-  std::array<std::size_t, 4> shape{Nx, Ny, Nz, Ne};
+  std::array<uint64_t, 4> shape{Nx, Ny, Nz, Ne};
 
   std::set<std::size_t> bined_groups;
   for (const auto& bin : group_bins) {
