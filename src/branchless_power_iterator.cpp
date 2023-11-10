@@ -529,13 +529,13 @@ void BranchlessPowerIterator::write_entropy_families_etc_to_results() const {
 
 void BranchlessPowerIterator::normalize_weights(
     std::vector<BankedParticle>& next_gen) {
-  Nnet = 0;
-  Ntot = 0;
   double W = 0;
   double W_pos = 0.;
   double W_neg = 0.;
 
-  std::tie(W_pos,W_neg,Npos,Nneg) = kahan_bank(next_gen.begin(),next_gen.end());
+  std::tie(W_pos, W_neg, Npos, Nneg) = kahan_bank(next_gen.begin(),next_gen.end());
+  W_neg = std::abs(W_neg);
+
   // Get totals across all nodes
   mpi::Allreduce_sum(W_pos);
   mpi::Allreduce_sum(W_neg);
@@ -578,10 +578,8 @@ void BranchlessPowerIterator::comb_particles(
 
   double Wpos_node = 0.;
   double Wneg_node = 0.;
-  int Npos_node = 0;
-  int Nneg_node = 0;
   // Get sum of total positive and negative weights using Kahan Summation
-  std::tie(Wpos_node,Wneg_node,Npos_node,Nneg_node) = kahan_bank(next_gen.begin(),next_gen.end());
+  std::tie(Wpos_node, Wneg_node, std::ignore, std::ignore) = kahan_bank(next_gen.begin(),next_gen.end());
 
   // Get total weights for all nodes
   std::vector<double> Wpos_each_node(mpi::size, 0.);
@@ -595,7 +593,8 @@ void BranchlessPowerIterator::comb_particles(
   const double Wneg = kahan(Wneg_each_node.begin(), Wneg_each_node.end(), 0.);
 
 
-  // Determine how many positive and negative on node and globaly
+  // Determine how many positive and negative particles we want to have after
+  // combing on this node and globaly as well
   const std::size_t Npos_node = static_cast<std::size_t>(std::round(Wpos_node));
   const std::size_t Nneg_node =
       static_cast<std::size_t>(std::round(std::abs(Wneg_node)));
