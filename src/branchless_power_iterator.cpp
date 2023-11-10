@@ -594,22 +594,14 @@ void BranchlessPowerIterator::comb_particles(
   mpi::Allreduce_sum(Wneg_each_node);
   const double Wneg = kahan(Wneg_each_node.begin(), Wneg_each_node.end(), 0.);
 
-  std::vector<double> Npos_each_node(mpi::size, 0.);
-  Npos_each_node[mpi::rank] = Npos_node;
-  mpi::Allreduce_sum(Npos_each_node);
-  const std::size_t Npos = static_cast<std::size_t>(kahan(Npos_each_node.begin(), Npos_each_node.end(), 0.));
-
-  std::vector<double> Nneg_each_node(mpi::size, 0.);
-  Nneg_each_node[mpi::rank] = Nneg_node;
-  mpi::Allreduce_sum(Nneg_each_node);
-  const std::size_t Nneg = static_cast<std::size_t>(std::abs(kahan(Nneg_each_node.begin(), Nneg_each_node.end(), 0.)));
 
   // Determine how many positive and negative on node and globaly
-  //const std::size_t Npos_node = static_cast<std::size_t>(std::round(Wpos_node));
-  //const std::size_t Nneg_node = static_cast<std::size_t>(std::round(std::abs(Wneg_node)));
-    
-  //const std::size_t Npos = static_cast<std::size_t>(std::round(Wpos));
-  //const std::size_t Nneg = static_cast<std::size_t>(std::round(std::abs(Wneg)));
+  const std::size_t Npos_node = static_cast<std::size_t>(std::round(Wpos_node));
+  const std::size_t Nneg_node =
+      static_cast<std::size_t>(std::round(std::abs(Wneg_node)));
+
+  const std::size_t Npos = static_cast<std::size_t>(std::round(Wpos));
+  const std::size_t Nneg = static_cast<std::size_t>(std::round(std::abs(Wneg)));
 
   // The + 2 is to account for rounding in the ceil operations between global
   // array vs just the node
@@ -619,7 +611,6 @@ void BranchlessPowerIterator::comb_particles(
   // Variables for combing particles
   const double avg_pos_wgt = Wpos / static_cast<double>(Npos);
   const double avg_neg_wgt = std::abs(Wneg) / static_cast<double>(Nneg);
-
   double comb_position_pos = 0.;
   double comb_position_neg = 0.;
   if (mpi::rank == 0) {
