@@ -31,7 +31,7 @@
     This is actually the Kahan-Babushka Summation Algorithm
 */
 template<class InputIt, class T>
-T kahan(InputIt first, InputIt last, T init) {
+inline T kahan(InputIt first, InputIt last, T init) {
     T sum = init;
     T cs = 0.;
     T ccs = 0.;
@@ -61,8 +61,7 @@ T kahan(InputIt first, InputIt last, T init) {
 // Returns tuple which contains two doubles and two ints
 // doubles are positive and negative sum of banked particle weights in a vector 
 // ints are the total counts of positive particles and negative particles
-std::tuple<double,double,int,int> kahan_bank(std::vector<BankedParticle>::iterator first, std::vector<BankedParticle>::iterator last) {
-
+inline std::tuple<double,double,int,int> kahan_bank(std::vector<BankedParticle>::iterator first, std::vector<BankedParticle>::iterator last) {
     double sum_pos = 0.;
     double sum_neg = 0.;
 
