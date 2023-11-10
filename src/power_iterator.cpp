@@ -25,6 +25,7 @@
 #include <geometry/geometry.hpp>
 #include <simulation/power_iterator.hpp>
 #include <utils/error.hpp>
+#include <utils/kahan.hpp>
 #include <utils/mpi.hpp>
 #include <utils/output.hpp>
 #include <utils/rng.hpp>
@@ -527,19 +528,9 @@ void PowerIterator::normalize_weights(std::vector<BankedParticle>& next_gen) {
   double W = 0.;
   double W_neg = 0.;
   double W_pos = 0.;
-  Nnet = 0;
-  Ntot = 0;
-  Npos = 0;
-  Nneg = 0;
-  for (size_t i = 0; i < next_gen.size(); i++) {
-    if (next_gen[i].wgt > 0.) {
-      W_pos += next_gen[i].wgt;
-      Npos++;
-    } else {
-      W_neg -= next_gen[i].wgt;
-      Nneg++;
-    }
-  }
+
+  std::tie(W_pos, W_neg, Npos, Nneg) = kahan_bank(next_gen.begin(),next_gen.end());
+  W_neg = std::abs(W_neg);
 
   // Get totals across all nodes
   mpi::Allreduce_sum(W_pos);
