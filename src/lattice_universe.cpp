@@ -115,33 +115,6 @@ bool LatticeUniverse::contains_universe(uint32_t id) const {
   return false;
 }
 
-uint64_t LatticeUniverse::number_of_cell_instances(uint32_t id) const 
-{
-   uint64_t instances = 0;
-  for(auto u : geometry::universes)
-  {
-    if(contains_universe(u->id()))
-    {
-     uint64_t sub_instances = number_of_cell_instances(id);
-     instances += sub_instances;
-    }
-  }
-  return instances;
-}
-  
-std::set<uint32_t> LatticeUniverse::get_all_contained_cells() const 
-{
-  std::set<uint32_t> contained_cells;
-  for(auto u : geometry::universes)
-  {
-    if(contains_universe(u->id()))
-    {
-      std::set<uint32_t> s = u->get_all_contained_cells();
-      contained_cells.insert(s.begin(),s.end());
-    }
-  }
-  return contained_cells;
-}
 void make_lattice_universe(const YAML::Node& uni_node,
                            const YAML::Node& input) {
   // Get id

@@ -63,10 +63,6 @@ class LatticeUniverse : public Universe {
 
   bool contains_universe(uint32_t id) const override;
 
-  uint64_t number_of_cell_instances(uint32_t id) const override;
-  
-  std::set<uint32_t> get_all_contained_cells() const override;
-
  private:
   uint32_t lattice_index;
 
