@@ -41,7 +41,7 @@ MGAngleDistribution::MGAngleDistribution(const std::vector<double>& mu,
     fatal_error("Angle limit less than -1.");
   }
 
-  if (mu_.front() > 1.) {
+  if (mu_.back() > 1.) {
     fatal_error("Angle limit greater than 1.");
   }
 
