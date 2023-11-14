@@ -414,23 +414,32 @@ std::vector<std::pair<ExactMGCancelator::Key,uint32_t>> ExactMGCancelator::sync_
     const auto& key = key_matbin_pair.first;
     const auto& matbins = key_matbin_pair.second;
     for (const auto& mat_bin_pair : matbins)
+    {
       key_matid_pairs.emplace_back(key, mat_bin_pair.first);
+    }
   }
+
   std::set<std::pair<Key,uint32_t>> key_set;
 
   // Put master keys into the keyset
   if (mpi::rank == 0) {
     std::copy(key_matid_pairs.begin(), key_matid_pairs.end(), std::inserter(key_set, key_set.end()));
     key_matid_pairs.clear();
-  }
+  } 
 
   // For every Node starting at 1, send its keys to master and add to key_set
   for (int i = 1; i < mpi::size; i++) {
     if (mpi::rank == i) {
+      std::cout << "Size before send  : " << key_matid_pairs.size() << "\n";
+     //  for (auto p : key_matid_pairs)
+       // std::cout << "i: " << p.first.i << "\tj: " << p.first.j << "\tk: " << p.first.k << "\te: " << p.first.e << "\tmatid: " << p.second << "\n";
       mpi::Send(key_matid_pairs, 0);
       key_matid_pairs.clear();
     } else if (mpi::rank == 0) {
       mpi::Recv(key_matid_pairs, i);
+      std::cout << "Size after receive : " << key_matid_pairs.size() << "\n";
+      for (auto p : key_matid_pairs)
+         std::cout << "i: " << p.first.i << "\tj: " << p.first.j << "\tk: " << p.first.k << "\te: " << p.first.e << "\tmatid: " << p.second << "\n";
       std::copy(key_matid_pairs.begin(), key_matid_pairs.end(),
                 std::inserter(key_set, key_set.end()));
     }
@@ -465,7 +474,7 @@ void ExactMGCancelator::perform_cancellation(pcg32&) {
     Key key = key_matid_pairs[i].first;
     uint32_t mat_id = key_matid_pairs[i].second;
     Material* mat = materials[mat_id].get();
-
+    
     if (bins.find(key) == bins.end() ||
         bins[key].find(mat_id) == bins[key].end()) {
       if (mpi::rank == 0) {
@@ -486,7 +495,7 @@ void ExactMGCancelator::perform_cancellation(pcg32&) {
         uniform_wgts(1,i) = 0.;
         continue;
       }
-    }
+    } 
 
     CancelBin& bin = bins[key][mat_id];
 
