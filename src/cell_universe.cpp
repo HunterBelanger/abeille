@@ -129,6 +129,7 @@ Boundary CellUniverse::get_boundary_condition(const Position& r,
   return ret_bound;
 }
 
+
 bool CellUniverse::contains_universe(uint32_t id) const {
   for (auto& indx : cell_indicies) {
     Cell* cell = geometry::cells[indx].get();
@@ -192,6 +193,50 @@ Boundary CellUniverse::lost_get_boundary(const Position& r, const Direction& u,
   Boundary ret_bound(dist, surface_index, btype);
   ret_bound.token = token;
   return ret_bound;
+}
+
+
+// Get all contained cells in a universe
+std::set<uint32_t> CellUniverse::get_all_contained_cells() const
+{
+
+  //How do i access the cells in this universe?
+  //look through all cells and check if their universe is this one
+  // look through all universes and check if contains_universe(universe)
+  // add those cells
+  std::set<uint32_t> contained_cells(cell_indicies.begin(),cell_indicies.end());
+  for(auto u : geometry::universes)
+  {
+    if(contains_universe(u->id()))
+    {
+      std::set<uint32_t> s = u->get_all_contained_cells();
+      contained_cells.insert(s.begin(),s.end());
+    }
+  }
+  //contained_cells.inse
+  //for(auto c : geometry::cells)
+  //{
+   // if (c->universe()->id() == id() )
+  //}
+
+  return contained_cells;
+}
+
+uint64_t CellUniverse::number_of_cell_instances(uint32_t id) const
+{
+  uint64_t instances = 0;
+  if(std::find(cell_indicies.begin(),cell_indicies.end(), id) != cell_indicies.end())
+    instances++;
+
+  for(auto u : geometry::universes)
+  {
+    if(contains_universe(u->id()))
+    {
+     uint64_t sub_instances = number_of_cell_instances(id);
+     instances += sub_instances;
+    }
+  }
+  return instances;
 }
 
 void make_cell_universe(const YAML::Node& uni_node) {

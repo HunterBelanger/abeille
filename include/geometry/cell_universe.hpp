@@ -61,7 +61,12 @@ class CellUniverse : public Universe {
   Boundary lost_get_boundary(const Position& r, const Direction& u,
                              int32_t on_surf) const override final;
 
+
   bool contains_universe(uint32_t id) const override;
+
+  uint64_t number_of_cell_instances(uint32_t id) const override;
+
+  std::set<uint32_t> get_all_contained_cells() const override; 
 
  private:
   std::vector<uint32_t> cell_indicies;

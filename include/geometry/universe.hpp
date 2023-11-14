@@ -47,6 +47,10 @@ class Universe {
   virtual Boundary get_boundary_condition(const Position& r, const Direction& u,
                                           int32_t on_surf) const = 0;
 
+  virtual uint64_t number_of_cell_instances(uint32_t id) const = 0;
+  
+  virtual std::set<uint32_t> get_all_contained_cells() const = 0;
+
   virtual bool contains_universe(uint32_t id) const = 0;
 
   bool has_boundary_conditions() const { return has_boundary_conditions_; }
