@@ -81,16 +81,7 @@ void register_key_type() {
     disps[i] -= disps[0];
   }
 
-  DType tmp_key;
-  err = MPI_Type_create_struct(KEY_NUM_MEMBERS, sizes, disps, dtypes,
-                               &tmp_key);
-  check_error(err, std::source_location::current());
-
-  MPI_Aint lb, extnt;
-  err = MPI_Type_get_extent(tmp_key, &lb, &extnt);
-  check_error(err, std::source_location::current());
-
-  err = MPI_Type_create_resized(tmp_key, lb, extnt, &KeyType);
+  err = MPI_Type_create_struct(KEY_NUM_MEMBERS, sizes, disps, dtypes, &KeyType);
   check_error(err, std::source_location::current());
 
   err = MPI_Type_commit(&KeyType);
@@ -116,16 +107,7 @@ void register_key_uint32_pair() {
     disps[i] -= disps[0];
   }
 
-  DType tmp_pair;
-  err = MPI_Type_create_struct(PAIR_NUM_MEMBERS, sizes, disps, dtypes,
-                               &tmp_pair);
-  check_error(err, std::source_location::current());
-
-  MPI_Aint lb, extnt;
-  err = MPI_Type_get_extent(tmp_pair, &lb, &extnt);
-  check_error(err, std::source_location::current());
-
-  err = MPI_Type_create_resized(tmp_pair, lb, extnt, &KeyUInt32Pair);
+  err = MPI_Type_create_struct(PAIR_NUM_MEMBERS, sizes, disps, dtypes, &KeyUInt32Pair);
   check_error(err, std::source_location::current());
 
   err = MPI_Type_commit(&KeyUInt32Pair);
@@ -165,16 +147,7 @@ void register_banked_particle_type() {
     disps[i] -= disps[0];
   }
 
-  DType tmp_BParticle;
-  err = MPI_Type_create_struct(BP_NUM_MEMBERS, sizes, disps, dtypes,
-                               &tmp_BParticle);
-  check_error(err, std::source_location::current());
-
-  MPI_Aint lb, extnt;
-  err = MPI_Type_get_extent(tmp_BParticle, &lb, &extnt);
-  check_error(err, std::source_location::current());
-
-  err = MPI_Type_create_resized(tmp_BParticle, lb, extnt, &BParticle);
+  err = MPI_Type_create_struct(BP_NUM_MEMBERS, sizes, disps, dtypes, &BParticle);
   check_error(err, std::source_location::current());
 
   err = MPI_Type_commit(&BParticle);
