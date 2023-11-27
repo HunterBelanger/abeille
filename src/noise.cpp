@@ -186,9 +186,9 @@ bool Noise::out_of_time(int gen) {
   // See how much time we have left
   double T_remaining = settings::max_time - T_used;
 
-  // If the remaining time is less than 2*T_avg, than we just kill it
+  // If the remaining time is less than 3*T_avg, than we just kill it
   // it here, so that we are sure we don't run over.
-  if (T_remaining < 2. * T_avg) {
+  if (T_remaining < 3. * T_avg) {
     return true;
   }
 
