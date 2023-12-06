@@ -83,6 +83,8 @@ class Lattice {
 
   const Universe* get_universe(std::size_t ind) const;
 
+  Universe* get_universe(std::size_t ind);
+
   uint32_t id() const;
 
   std::string name() const;

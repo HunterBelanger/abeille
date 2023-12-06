@@ -26,6 +26,7 @@
 #include <geometry/cell_universe.hpp>
 #include <geometry/geometry.hpp>
 #include <utils/error.hpp>
+#include <map>
 
 CellUniverse::CellUniverse(std::vector<uint32_t> i_ind, uint32_t i_id,
                            std::string i_name)
@@ -194,6 +195,86 @@ Boundary CellUniverse::lost_get_boundary(const Position& r, const Direction& u,
   return ret_bound;
 }
 
+
+std::map<uint32_t,uint32_t> CellUniverse::get_all_contained_cells() const 
+{
+  std::map<uint32_t,uint32_t> cell_id_offsets;
+  for (auto& indx : cell_indicies) {
+    Cell* cell = geometry::cells[indx].get();
+    //if the cell has a universe in it
+    if (cell->fill() == Cell::Fill::Universe) {
+      std::map<uint32_t,uint32_t> m = cell->universe()->get_all_contained_cells();
+      
+      std::map<uint32_t, uint32_t>::iterator it;
+
+      for (it = m.begin(); it != m.end(); it++)
+      {
+        //if the map does not contain the cell_id
+        if(cell_id_offsets.find(it->first) == cell_id_offsets.end())
+          cell_id_offsets.insert(it->first,it->second);
+        // if the map contains the cell_id 
+        else
+          cell_id_offsets[it->first] += it->second;
+      }
+    }
+    else
+    {
+      if(cell_id_offsets.find(cell->id()) == cell_id_offsets.end())
+          cell_id_offsets.insert({cell->id(),static_cast<uint32_t>(1)});
+      else
+          cell_id_offsets[cell->id()] += 1;
+    }
+  }
+  return cell_id_offsets;
+}
+
+std::set<uint32_t> CellUniverse::get_all_mat_cells() const
+{
+  std::set<uint32_t> mat_cells;
+  for (auto& indx : cell_indicies) {
+    Cell* cell = geometry::cells[indx].get(); 
+    if(cell->fill() == Cell::Fill::Material)
+      mat_cells.insert(cell->id());
+  }
+  return mat_cells;
+}
+
+uint32_t CellUniverse::get_num_cell_instances(uint32_t cell_id) const 
+{
+   uint64_t instances = 0;
+   // go through all cells
+  for (auto& indx : cell_indicies) {
+    Cell* cell = geometry::cells[indx].get();
+    if (cell->id() == cell_id)
+      instances++;
+      //check further universes
+    else if (cell->fill() == Cell::Fill::Universe) 
+      instances += cell->universe()->get_num_cell_instances(cell_id);
+  }
+  return instances;
+}
+
+
+void CellUniverse::get_all_contained_cells()  
+{
+  for (auto& indx : cell_indicies) {
+    Cell* cell = geometry::cells[indx].get();
+    //if the cell has a universe in it
+    if (cell->fill() == Cell::Fill::Universe) 
+       cell->universe()->get_all_contained_cells();
+    else
+    {
+      if(cell_id_offsets.find(cell->id()) == cell_id_offsets.end())
+      {
+        uint32_t cell_id = cell->id();
+        cell_id_offsets.insert({cell_id , 1});
+      }
+      else
+          cell_id_offsets[cell->id()] += 1;
+    }
+  }
+}
+
 void make_cell_universe(const YAML::Node& uni_node) {
   // Get id
   uint32_t id;
@@ -211,11 +292,11 @@ void make_cell_universe(const YAML::Node& uni_node) {
 
   // Get cells
   std::vector<uint32_t> cells;
+  std::map<uint32_t,int> instances;
   if (uni_node["cells"] && uni_node["cells"].IsSequence()) {
     // Go through and check all cells
     for (size_t c = 0; c < uni_node["cells"].size(); c++) {
       uint32_t cell_id = uni_node["cells"][c].as<uint32_t>();
-
       // Get index for id
       uint32_t cell_indx = 0;
       if (cell_id_to_indx.find(cell_id) == cell_id_to_indx.end()) {
@@ -226,6 +307,11 @@ void make_cell_universe(const YAML::Node& uni_node) {
         cell_indx = static_cast<uint32_t>(cell_id_to_indx[cell_id]);
       }
       cells.push_back(cell_indx);
+      //if the index exists
+      if(instances.find(cell_indx) != instances.end())
+        instances[cell_indx]++;
+      else
+        instances.insert({cell_indx,0});
     }
 
   } else {

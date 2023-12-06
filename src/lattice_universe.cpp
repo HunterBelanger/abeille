@@ -115,6 +115,17 @@ bool LatticeUniverse::contains_universe(uint32_t id) const {
   return false;
 }
 
+void LatticeUniverse::get_all_contained_cells()  
+{
+  Lattice* lat = geometry::lattices[lattice_index].get();
+  for (std::size_t ind = 0; ind < lat->size(); ind++) {
+     Universe* uni = lat->get_universe(ind);
+    //if the cell has a universe in it
+    if(uni)
+      uni->get_all_contained_cells();
+  }
+}
+
 void make_lattice_universe(const YAML::Node& uni_node,
                            const YAML::Node& input) {
   // Get id

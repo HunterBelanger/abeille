@@ -49,6 +49,14 @@ const Universe* Lattice::get_universe(std::size_t ind) const {
   return geometry::universes[uni_indx].get();
 }
 
+ Universe* Lattice::get_universe(std::size_t ind)  {
+  if (lattice_universes[ind] < 0) return nullptr;
+
+  std::size_t uni_indx = static_cast<std::size_t>(lattice_universes[ind]);
+
+  return geometry::universes[uni_indx].get();
+}
+
 uint32_t Lattice::id() const { return id_; }
 
 std::string Lattice::name() const { return name_; }

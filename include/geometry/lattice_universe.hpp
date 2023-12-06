@@ -61,11 +61,14 @@ class LatticeUniverse : public Universe {
   Boundary lost_get_boundary(const Position& r, const Direction& u,
                              int32_t on_surf) const override final;
 
+  void get_all_contained_cells(); 
+
   bool contains_universe(uint32_t id) const override;
+
 
  private:
   uint32_t lattice_index;
-
+  
 };  // LatticeUniverse
 
 //===========================================================================

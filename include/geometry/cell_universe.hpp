@@ -26,7 +26,6 @@
 #define CELL_UNIVERSE_H
 
 #include <geometry/universe.hpp>
-
 #include <yaml-cpp/yaml.h>
 
 #include <map>
@@ -61,11 +60,20 @@ class CellUniverse : public Universe {
   Boundary lost_get_boundary(const Position& r, const Direction& u,
                              int32_t on_surf) const override final;
 
-  bool contains_universe(uint32_t id) const override;
+
+  void get_all_contained_cells() override final;
+  
+  //get all material cells in universe
+  std::set<uint32_t> get_all_mat_cells() const override final;
+
+  // get number of cell instances across all universes
+  uint32_t get_num_cell_instances(uint32_t cell_id) const override final;
+
+  bool contains_universe(uint32_t id) const override final;
 
  private:
   std::vector<uint32_t> cell_indicies;
-
+  std::vector<std::map<const uint32_t, uint32_t>> cell_id_offsets;
 };  // CellUniverse
 
 //===========================================================================
