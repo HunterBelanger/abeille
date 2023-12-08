@@ -120,6 +120,11 @@ class Cell {
   Universe* universe_raw_;
 };  // Cell
 
+struct UniqueCell {
+  Cell* cell;
+  uint32_t instance;
+};
+
 //===========================================================================
 // Non-Member Functions
 std::vector<int32_t> infix_to_rpn(const std::vector<int32_t>& infix);
