@@ -228,44 +228,71 @@ std::map<uint32_t,uint32_t> CellUniverse::get_all_contained_cells() const
   return cell_id_offsets;
 }
 */
-std::set<uint32_t> CellUniverse::get_all_mat_cells() const
-{
+std::set<uint32_t> CellUniverse::get_all_mat_cells() const {
   std::set<uint32_t> mat_cells;
+
   for (auto& indx : cell_indicies) {
     Cell* cell = geometry::cells[indx].get(); 
-    if(cell->fill() == Cell::Fill::Material)
+
+    if(cell->fill() == Cell::Fill::Material) {
+      // Add the material cell to the set
       mat_cells.insert(cell->id());
+    } else {
+      // Get all material cells from the universe
+      auto nested_mat_cells = cell->universe()->get_all_mat_cells();
+      mat_cells.insert(nested_mat_cells.begin(), nested_mat_cells.end());
+    }
   }
+
   return mat_cells;
 }
 
-uint32_t CellUniverse::get_num_cell_instances(uint32_t cell_id) const 
-{
+uint32_t CellUniverse::get_num_cell_instances(uint32_t cell_id) const {
    uint32_t instances = 0;
+
    // go through all cells
   for (auto& indx : cell_indicies) {
     Cell* cell = geometry::cells[indx].get();
-    if (cell->id() == cell_id)
+
+    if (cell->id() == cell_id) {
       instances++;
+    }
+    
+    if (cell->fill() == Cell::Fill::Universe) {
       //check further universes
-    else if (cell->fill() == Cell::Fill::Universe) 
       instances += cell->universe()->get_num_cell_instances(cell_id);
+    }
   }
+
   return instances; 
 }
 
-std::vector<std::map<const uint32_t, uint32_t>> CellUniverse::get_offset_map() const
-{
+std::vector<std::map<const uint32_t, uint32_t>> CellUniverse::get_offset_map() const {
   std::vector<std::map<const uint32_t, uint32_t>> cell_id_offsets;
+  cell_id_offsets.resize(cell_indicies.size());
 
-  std::set<uint32_t> mat_cell_ids = get_all_mat_cells();
-  for(uint32_t mat_cell_id : mat_cell_ids)
-  {
-    uint32_t num_instances = get_num_cell_instances(mat_cell_id);
+  // Set of all material cells contained in this universe
+  std::set<uint32_t> mat_cell_ids = this->get_all_mat_cells();
 
-    auto ind = cell_id_to_indx[mat_cell_id];
-    cell_id_offsets[ind][mat_cell_id] = num_instances;
+  // Set offsets to all be zero initially
+  for (auto& map : cell_id_offsets) {
+    for (uint32_t mat_cell_id : mat_cell_ids) {
+      map[mat_cell_id] = 0;
+    }
   }
+
+  // Now go through and build all offsets
+  for (std::size_t i = 1; i < cell_indicies.size(); i++) {
+    for(uint32_t mat_cell_id : mat_cell_ids) {
+      cell_id_offsets[i][mat_cell_id] = cell_id_offsets[i-1][mat_cell_id];
+
+      Cell* cell = geometry::cells[i-1].get();
+      if (cell->fill() == Cell::Fill::Universe) {
+        cell_id_offsets[i][mat_cell_id] += cell->universe()->get_num_cell_instances(mat_cell_id);
+      }
+    }
+  }
+
   return cell_id_offsets;
 }
 

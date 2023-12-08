@@ -61,14 +61,14 @@ class LatticeUniverse : public Universe {
   Boundary lost_get_boundary(const Position& r, const Direction& u,
                              int32_t on_surf) const override final;
 
- //get all material cells in universe
+  //get all material cells in universe
   //std::set<uint32_t> get_all_mat_cells() const override final;
   std::set<uint32_t> get_all_mat_cells() const override final;
 
   // get number of cell instances across all universes
   uint32_t get_num_cell_instances(uint32_t cell_id) const override final;
 
-std::vector<std::map<const uint32_t, uint32_t>> get_offset_map() const override final;
+  std::vector<std::map<const uint32_t, uint32_t>> get_offset_map() const override final;
 
   bool contains_universe(uint32_t id) const override;
 

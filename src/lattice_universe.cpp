@@ -114,54 +114,89 @@ bool LatticeUniverse::contains_universe(uint32_t id) const {
 
   return false;
 }
-/*
-void LatticeUniverse::get_all_contained_cells()  
-{
-  Lattice* lat = geometry::lattices[lattice_index].get();
-  for (std::size_t ind = 0; ind < lat->size(); ind++) {
-     Universe* uni = lat->get_universe(ind);
-    //if the cell has a universe in it
-    if(uni)
-      uni->get_all_contained_cells();
-  }
-}
-*/
 
-uint32_t LatticeUniverse::get_num_cell_instances(uint32_t cell_id) const
-{
-   uint64_t instances = 0;
-   // go through all cells
+uint32_t LatticeUniverse::get_num_cell_instances(uint32_t cell_id) const {
+   uint32_t instances = 0;
+
+  // go through all tiles/universes
   Lattice* lat = geometry::lattices[lattice_index].get();
   for (std::size_t ind = 0; ind < lat->size(); ind++) {
-     Universe* uni = lat->get_universe(ind);    
-     if(uni)
+     const Universe* uni = lat->get_universe(ind);    
+     if(uni) {
       instances += uni->get_num_cell_instances(cell_id);
-      //check further universes
+     }
   }
+
+  if (lat->outer_universe()) {
+    instances += lat->outer_universe()->get_num_cell_instances(cell_id);
+  }
+
   return instances; 
 }
 
-std::set<uint32_t> LatticeUniverse::get_all_mat_cells() const
-{
+std::set<uint32_t> LatticeUniverse::get_all_mat_cells() const {
   std::set<uint32_t> mat_cells;
+
+  // go through all tiles/universes
+  Lattice* lat = geometry::lattices[lattice_index].get();
+  for (std::size_t ind = 0; ind < lat->size(); ind++) {
+    const Universe* uni = lat->get_universe(ind);    
+    if (uni) {
+      auto uni_mat_cells = uni->get_all_mat_cells(); 
+      mat_cells.insert(uni_mat_cells.begin(), uni_mat_cells.end());
+    }
+  }
+
+  if (lat->outer_universe()) {
+      auto outer_mat_cells = lat->outer_universe()->get_all_mat_cells(); 
+      mat_cells.insert(outer_mat_cells.begin(), outer_mat_cells.end());
+  }
+
   return mat_cells;
 }
 
-std::vector<std::map<const uint32_t, uint32_t>> LatticeUniverse::get_offset_map() const
-{
-  std::vector<std::map<const uint32_t, uint32_t>> cell_id_offsets;
-
+std::vector<std::map<const uint32_t, uint32_t>> LatticeUniverse::get_offset_map() const {
   Lattice* lat = geometry::lattices[lattice_index].get();
-  for (std::size_t ind = 0; ind < lat->size(); ind++) {
-    Universe* uni = lat->get_universe(ind);    
+  
+  std::vector<std::map<const uint32_t, uint32_t>> tile_id_offsets;
+  tile_id_offsets.resize(lat->size() + (lat->outer_universe() ? 1 : 0));
 
-    auto uni_offset_map = uni->get_offset_map();
-    //There are no cell_indecies, should I just pushback?
-    for(auto& cell_id_offset : uni_offset_map)
-      cell_id_offsets.push_back(cell_id_offset);
+  // Set of all material cells contained in this universe
+  std::set<uint32_t> mat_cell_ids = this->get_all_mat_cells();
+
+  // Set all offsets to be zero
+  for (auto& map : tile_id_offsets) {
+    for (uint32_t mat_cell_id : mat_cell_ids) {
+      map[mat_cell_id] = 0;
+    }
   }
-  return cell_id_offsets;
+
+  // Now go through and build all offsets
+  for (std::size_t i = 1; i < lat->size(); i++) {
+    Universe* uni = lat->get_universe(i-1);
+
+    for(uint32_t mat_cell_id : mat_cell_ids) {
+      tile_id_offsets[i][mat_cell_id] = tile_id_offsets[i-1][mat_cell_id];
+
+      if (uni) {
+        tile_id_offsets[i][mat_cell_id] += uni->get_num_cell_instances(mat_cell_id);
+      }
+    }
+  }
+
+  // Also get offsets for outer universe
+  if (lat->outer_universe()) {
+    auto uni = lat->outer_universe();
+    const std::size_t i = tile_id_offsets.size() - 1;
+
+    for(uint32_t mat_cell_id : mat_cell_ids) {
+      tile_id_offsets[i][mat_cell_id] = tile_id_offsets[i-1][mat_cell_id] + uni->get_num_cell_instances(mat_cell_id);
+    }
+  }
+
+  return tile_id_offsets;
 }
+
 void make_lattice_universe(const YAML::Node& uni_node,
                            const YAML::Node& input) {
   // Get id
