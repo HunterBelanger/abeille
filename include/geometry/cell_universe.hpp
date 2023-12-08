@@ -61,7 +61,7 @@ class CellUniverse : public Universe {
                              int32_t on_surf) const override final;
 
 
-  void get_all_contained_cells() override final;
+  //void get_all_contained_cells() override final;
   
   //get all material cells in universe
   std::set<uint32_t> get_all_mat_cells() const override final;
@@ -71,9 +71,10 @@ class CellUniverse : public Universe {
 
   bool contains_universe(uint32_t id) const override final;
 
+  std::vector<std::map<const uint32_t, uint32_t>> get_offset_map() const override final;
+
  private:
   std::vector<uint32_t> cell_indicies;
-  std::vector<std::map<const uint32_t, uint32_t>> cell_id_offsets;
 };  // CellUniverse
 
 //===========================================================================

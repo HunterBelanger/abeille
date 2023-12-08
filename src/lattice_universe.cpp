@@ -114,7 +114,7 @@ bool LatticeUniverse::contains_universe(uint32_t id) const {
 
   return false;
 }
-
+/*
 void LatticeUniverse::get_all_contained_cells()  
 {
   Lattice* lat = geometry::lattices[lattice_index].get();
@@ -125,7 +125,43 @@ void LatticeUniverse::get_all_contained_cells()
       uni->get_all_contained_cells();
   }
 }
+*/
 
+uint32_t LatticeUniverse::get_num_cell_instances(uint32_t cell_id) const
+{
+   uint64_t instances = 0;
+   // go through all cells
+  Lattice* lat = geometry::lattices[lattice_index].get();
+  for (std::size_t ind = 0; ind < lat->size(); ind++) {
+     Universe* uni = lat->get_universe(ind);    
+     if(uni)
+      instances += uni->get_num_cell_instances(cell_id);
+      //check further universes
+  }
+  return instances; 
+}
+
+std::set<uint32_t> LatticeUniverse::get_all_mat_cells() const
+{
+  std::set<uint32_t> mat_cells;
+  return mat_cells;
+}
+
+std::vector<std::map<const uint32_t, uint32_t>> LatticeUniverse::get_offset_map() const
+{
+  std::vector<std::map<const uint32_t, uint32_t>> cell_id_offsets;
+
+  Lattice* lat = geometry::lattices[lattice_index].get();
+  for (std::size_t ind = 0; ind < lat->size(); ind++) {
+    Universe* uni = lat->get_universe(ind);    
+
+    auto uni_offset_map = uni->get_offset_map();
+    //There are no cell_indecies, should I just pushback?
+    for(auto& cell_id_offset : uni_offset_map)
+      cell_id_offsets.push_back(cell_id_offset);
+  }
+  return cell_id_offsets;
+}
 void make_lattice_universe(const YAML::Node& uni_node,
                            const YAML::Node& input) {
   // Get id
