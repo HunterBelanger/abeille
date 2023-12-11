@@ -46,13 +46,14 @@ extern std::vector<std::shared_ptr<Universe>> universes;
 // Externals from parser
 extern std::map<uint32_t, size_t> universe_id_to_indx;
 extern std::map<uint32_t, size_t> lattice_id_to_indx;
+
 extern void find_universe(const YAML::Node& input, uint32_t id);
 
-class Lattice {
+class Lattice : public Universe {
  public:
   Lattice(uint32_t i_id, std::string i_name);
-  virtual ~Lattice() = default;
-
+  //virtual ~Lattice() = default;
+  ~Lattice() = default;
   // Returns ture if position is inside a true lattice element
   // (not nullptr element), and false if it is outside or in a
   // dummy lattice element
@@ -85,9 +86,22 @@ class Lattice {
 
   Universe* get_universe(std::size_t ind);
 
-  uint32_t id() const;
+  Boundary get_boundary_condition(const Position& r, const Direction& u,
+                                  int32_t on_surf) const override final;
 
-  std::string name() const;
+  Boundary lost_get_boundary(const Position& r, const Direction& u,
+                             int32_t on_surf) const override final;
+
+  //get all material cells in universe
+  //std::set<uint32_t> get_all_mat_cells() const override final;
+  std::set<uint32_t> get_all_mat_cells() const override final;
+
+  // get number of cell instances across all universes
+  uint32_t get_num_cell_instances(uint32_t cell_id) const override final;
+
+  std::vector<std::map<const uint32_t, uint32_t>> get_offset_map() const override final;
+
+  bool contains_universe(uint32_t id) const override;
 
  protected:
   // Any lattice element that is negative gets directed to the
@@ -95,9 +109,10 @@ class Lattice {
   // the particle is considered to be lost.
   std::vector<int32_t> lattice_universes;
   int32_t outer_universe_index;
-  uint32_t id_;
-  std::string name_;
 
 };  // Lattice
+
+void make_lattice_universe(const YAML::Node& uni_node, const YAML::Node& input);
+
 
 #endif
