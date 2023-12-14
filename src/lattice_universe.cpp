@@ -97,10 +97,8 @@ bool LatticeUniverse::contains_universe(uint32_t id) const {
   Lattice* lat = geometry::lattices[lattice_index].get();
 
   // First check outer
-  if (lat->outer_universe()) {
-    if (lat->outer_universe()->id() == id ||
-        lat->outer_universe()->contains_universe(id))
-      return true;
+  if (lat->outer_universe() && (lat->outer_universe()->id() == id || lat->outer_universe()->contains_universe(id))) {
+    return true;
   }
 
   // Now go through all other universes in lattice

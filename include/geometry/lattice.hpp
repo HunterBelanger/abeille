@@ -52,8 +52,8 @@ extern void find_universe(const YAML::Node& input, uint32_t id);
 class Lattice : public Universe {
  public:
   Lattice(uint32_t i_id, std::string i_name);
-  //virtual ~Lattice() = default;
-  ~Lattice() = default;
+  virtual ~Lattice() = default;
+
   // Returns ture if position is inside a true lattice element
   // (not nullptr element), and false if it is outside or in a
   // dummy lattice element
@@ -111,8 +111,6 @@ class Lattice : public Universe {
   int32_t outer_universe_index;
 
 };  // Lattice
-
-void make_lattice_universe(const YAML::Node& uni_node, const YAML::Node& input);
 
 
 #endif

@@ -60,7 +60,13 @@ const Universe* Lattice::get_universe(std::size_t ind) const {
   return geometry::universes[uni_indx].get();
 }
 
+Universe* Lattice::get_universe(std::size_t ind) {
+  if (lattice_universes[ind] < 0) return nullptr;
 
+  std::size_t uni_indx = static_cast<std::size_t>(lattice_universes[ind]);
+
+  return geometry::universes[uni_indx].get();
+}
 
 Boundary Lattice::get_boundary_condition(const Position& r,
                                                  const Direction& u,
@@ -118,18 +124,6 @@ bool Lattice::contains_universe(uint32_t id) const {
 
   return false;
 }
-/*
-void LatticeUniverse::get_all_contained_cells()  
-{
-  Lattice* lat = geometry::lattices[lattice_index].get();
-  for (std::size_t ind = 0; ind < lat->size(); ind++) {
-     Universe* uni = lat->get_universe(ind);
-    //if the cell has a universe in it
-    if(uni)
-      uni->get_all_contained_cells();
-  }
-}
-*/
 
 uint32_t Lattice::get_num_cell_instances(uint32_t cell_id) const {
    uint32_t instances = 0;
@@ -208,85 +202,4 @@ std::vector<std::map<const uint32_t, uint32_t>> Lattice::get_offset_map() const 
   }
 
   return tile_id_offsets;
-}
-
-void make_lattice_universe(const YAML::Node& uni_node,
-                           const YAML::Node& input) {
-  // Get id
-  uint32_t id = 0;
-  if (uni_node["id"] && uni_node["id"].IsScalar()) {
-    id = uni_node["id"].as<uint32_t>();
-  } else {
-    fatal_error("Universe must have a valid id.");
-  }
-
-  // Get name if present
-  std::string name = "";
-  if (uni_node["name"] && uni_node["name"].IsScalar()) {
-    name = uni_node["name"].as<std::string>();
-  }
-
-  // Get lattice
-  uint32_t lat_id = 0;
-  if (uni_node["lattice"] && uni_node["lattice"].IsScalar()) {
-    lat_id = uni_node["lattice"].as<uint32_t>();
-  } else {
-    fatal_error("Lattice universe must have a valid lattice id.");
-  }
-
-  // See if lattice exists yet or not
-  if (lattice_id_to_indx.find(lat_id) == lattice_id_to_indx.end()) {
-    bool lattice_found = false;
-
-    // Find lattice in input
-    if (input["lattices"] && input["lattices"].IsSequence()) {
-      // Iterate through lattices
-      for (size_t l = 0; l < input["lattices"].size(); l++) {
-        if (input["lattices"][l]["id"] &&
-            input["lattices"][l]["id"].IsScalar()) {
-          if (input["lattices"][l]["id"].as<uint32_t>() == lat_id) {
-            // Lattice is a match, get type and then read it
-            std::string type;
-            if (input["lattices"][l]["type"] &&
-                input["lattices"][l]["type"].IsScalar()) {
-              type = input["lattices"][l]["type"].as<std::string>();
-              if (type == "rectlinear") {
-                make_rect_lattice(input["lattices"][l], input);
-              } else if (type == "hexagonal") {
-                make_hex_lattice(input["lattices"][l], input);
-              } else {
-                fatal_error("Unknown lattice type " + type + ".");
-              }
-            } else {
-              fatal_error("Lattice instances must have a valid type.");
-            }
-            lattice_found = true;
-            break;
-          }
-        } else {
-          fatal_error("Lattice instances must have a valid id.");
-        }
-      }
-      // If still not found, error
-      if (lattice_found == false) {
-        std::stringstream mssg;
-        mssg << "Lattice with id " << lat_id << " could not be found.";
-        fatal_error(mssg.str());
-      }
-    } else {
-      fatal_error("Must have lattices in order to use a lattice universe.");
-    }
-  }
-
-  // Make sure id isn't take
-  if (lattice_id_to_indx.find(id) != lattice_id_to_indx.end()) {
-    std::stringstream mssg;
-    mssg << "Lattice id " << id << " appears multiple times.";
-    fatal_error(mssg.str());
-  }
-
-  // Make lattice
-  lattice_id_to_indx[id] = geometry::lattices.size();
-  geometry::lattices.push_back(
-      std::make_shared<Lattice>(id, name));
 }
