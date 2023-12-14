@@ -504,10 +504,10 @@ void make_hex_lattice(const YAML::Node& latt_node, const YAML::Node& input) {
     fatal_error("Lattice instance must have a valid universes definition.");
   }
 
-  // Make sure lattice id not taken
-  if (lattice_id_to_indx.find(id) != lattice_id_to_indx.end()) {
+  // Make sure id not taken
+  if (universe_id_to_indx.find(id) != universe_id_to_indx.end()) {
     std::stringstream mssg;
-    mssg << "Lattice id " << id << " appears multiple times.";
+    mssg << "Universe id " << id << " appears multiple times.";
     fatal_error(mssg.str());
   }
 
@@ -551,6 +551,6 @@ void make_hex_lattice(const YAML::Node& latt_node, const YAML::Node& input) {
   }
 
   // Set lattice
-  lattice_id_to_indx[id] = geometry::lattices.size();
-  geometry::lattices.push_back(lat);
+  universe_id_to_indx[id] = geometry::universes.size();
+  geometry::universes.push_back(lat);
 }

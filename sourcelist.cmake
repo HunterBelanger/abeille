@@ -52,7 +52,6 @@ set(ABEILLE_SOURCE_FILES ${ABEILLE_SOURCE_FILES}
   src/hex_lattice.cpp
   src/rect_lattice.cpp
   src/lattice.cpp
-  src/lattice_universe.cpp
   src/cell_universe.cpp
   src/universe.cpp
   src/output.cpp

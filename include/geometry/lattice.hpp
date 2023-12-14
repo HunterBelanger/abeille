@@ -38,14 +38,12 @@ class Lattice;
 //===========================================================================
 // Externals from geometry
 namespace geometry {
-extern std::vector<std::shared_ptr<Lattice>> lattices;
 extern std::vector<std::shared_ptr<Universe>> universes;
 }  // namespace geometry
 
 //===========================================================================
 // Externals from parser
 extern std::map<uint32_t, size_t> universe_id_to_indx;
-extern std::map<uint32_t, size_t> lattice_id_to_indx;
 
 extern void find_universe(const YAML::Node& input, uint32_t id);
 
@@ -112,5 +110,8 @@ class Lattice : public Universe {
 
 };  // Lattice
 
+//===========================================================================
+// Non-Member functions
+void make_lattice(const YAML::Node& uni_node, const YAML::Node& input);
 
 #endif

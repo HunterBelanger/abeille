@@ -29,6 +29,7 @@
 #include <geometry/rect_lattice.hpp>
 #include <geometry/surfaces/surface.hpp>
 #include <utils/error.hpp>
+
 #include <cstdint>
 
 Lattice::Lattice(uint32_t i_id, std::string i_name)
@@ -43,6 +44,10 @@ Lattice::Lattice(uint32_t i_id, std::string i_name)
 
 void Lattice::set_outisde_universe(int32_t univ) {
   outer_universe_index = univ;
+  
+  if (this->outer_universe()) {
+    this->has_boundary_conditions_ = this->outer_universe()->has_boundary_conditions();
+  }
 }
 
 Universe* Lattice::outer_universe() const {
@@ -202,4 +207,20 @@ std::vector<std::map<const uint32_t, uint32_t>> Lattice::get_offset_map() const 
   }
 
   return tile_id_offsets;
+}
+
+void make_lattice(const YAML::Node& uni_node, const YAML::Node& input) {
+  if (!uni_node["type"] || !uni_node["type"].IsScalar()) {
+    fatal_error("Lattice instances must have a valid type.");
+  }
+
+  std::string type = uni_node["type"].as<std::string>();
+
+  if (type == "rectlinear") {
+    make_rect_lattice(uni_node, input);
+  } else if (type == "hexagonal") {
+    make_hex_lattice(uni_node, input);
+  } else {
+    fatal_error("Unknown lattice type " + type + ".");
+  }
 }

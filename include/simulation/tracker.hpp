@@ -63,10 +63,14 @@ class Tracker {
   void restart_get_current() {
     tree.clear();
     current_cell = geometry::get_cell(tree, r_, u_, surface_token_);
-    if (current_cell)
+    if (current_cell) {
+      if (current_cell->fill() == Cell::Fill::Universe) {
+        fatal_error("Did not find a cell with a material.");
+      }
       current_mat = current_cell->material();
-    else
+    } else {
       current_mat = nullptr;
+    }
   }
 
   void move(double d) {
@@ -124,7 +128,7 @@ class Tracker {
                     ->sign(pad.r_local, u_) < 0)
               token *= -1;
           }
-        } else if (pad.type == GeoLilyPad::PadType::Universe) {
+        } else if (pad.type != GeoLilyPad::PadType::Cell) {
           auto uni_indx = universe_id_to_indx[pad.id];
           Universe* uni = geometry::universes[uni_indx].get();
           if (uni->has_boundary_conditions()) {
@@ -170,9 +174,9 @@ class Tracker {
       // Go up the entire tree
       for (const auto& pad : tree) {
         if (pad.type == GeoLilyPad::PadType::Lattice) {
-          auto lat_id = lattice_id_to_indx[pad.id];
-          double d = geometry::lattices[lat_id]->distance_to_tile_boundary(
-              pad.r_local, u_, pad.tile);
+          auto lat_indx = universe_id_to_indx[pad.id];
+          const Lattice* lat = static_cast<Lattice*>(geometry::universes[lat_indx].get());
+          double d = lat->distance_to_tile_boundary(pad.r_local, u_, pad.tile);
           if (d < dist && std::abs(d - dist) > BOUNDRY_TOL) {
             dist = d;
             btype = BoundaryType::Normal;
@@ -254,8 +258,8 @@ class Tracker {
           break;
         }
       } else if (it->type == GeoLilyPad::PadType::Lattice) {
-        auto lat_indx = lattice_id_to_indx[it->id];
-        const auto& lat = geometry::lattices[lat_indx];
+        auto lat_indx = universe_id_to_indx[it->id];
+        const Lattice* lat = static_cast<Lattice*>(geometry::universes[lat_indx].get());
         auto tile = lat->get_tile(it->r_local, u_);
         // Check if tile has changed
         if (it->tile[0] != tile[0] || it->tile[1] != tile[1] ||
@@ -273,13 +277,12 @@ class Tracker {
       // the size of the number of good elements.
       auto size =
           static_cast<std::size_t>(std::distance(tree.begin(), first_bad));
+      if (size == 0) return this->restart_get_current();
       tree.resize(size);
 
       // Now start at the last element, and get the new position.
-      // Since only a Cell or Lattice can invalidate the tree, that means the
-      // last entry in the tree will always be a Universe. We can get the info
-      // for that universe, and then call get_cell from that Universe to desend
-      // the geometry tree.
+      // We can get the info for the last universe, and then call get_cell from
+      // that Universe to descend the geometry tree.
       auto uni_indx = universe_id_to_indx[tree.back().id];
       const auto& uni = geometry::universes[uni_indx];
       Position r_local = tree.back().r_local;
@@ -322,7 +325,7 @@ class Tracker {
     // Get new Position object to temporarily contain the current position
     Position r_pre_refs = p.r();
 
-    // In the event a reflection occurs imediately after another, we must
+    // In the event a reflection occurs immediately after another, we must
     // ensure that we use r to be the previous position, or the position before
     // the first reflection, as that is our previous true position which
     // resulted from a sampled collision

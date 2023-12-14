@@ -36,7 +36,6 @@ std::vector<std::shared_ptr<Surface>> surfaces;
 std::vector<std::shared_ptr<Cell>> cells;
 std::shared_ptr<Universe> root_universe;
 std::vector<std::shared_ptr<Universe>> universes;
-std::vector<std::shared_ptr<Lattice>> lattices;
 
 //==========================================================================
 // Function Definitions
