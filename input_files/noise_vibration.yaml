@@ -60,10 +60,8 @@ universes:
   - {id: 1, cells: [1, 2]} # Pin Cell
   - {id: 2, cells: [3]} # Wate hole
   - {id: 3, cells: [4]} # Outer water
-  - {id: 4, lattice: 1} # Assembly
 
-lattices:
-  - id: 1
+  - id: 4 # Assembly
     type: rectlinear
     shape: [17, 17, 1]
     pitch: [1.26, 1.26, 4.]

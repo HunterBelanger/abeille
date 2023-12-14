@@ -46,6 +46,16 @@ class Universe {
 
   virtual Boundary get_boundary_condition(const Position& r, const Direction& u,
                                           int32_t on_surf) const = 0;
+  
+  //============================================================================
+  // Lattice Methods
+  virtual std::array<int32_t, 3> get_tile(Position r, Direction u) const; 
+  
+  // Given the position in the frame of the lattice (NOT THE FRAME OF THE
+  // TILE!), the distance to the edge of the provided tile is returned.
+  virtual double distance_to_tile_boundary(
+      Position r_local, Direction u, std::array<int32_t, 3> tile) const;
+  //============================================================================
 
   virtual std::set<uint32_t> get_all_mat_cells() const = 0;
 

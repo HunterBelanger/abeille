@@ -57,8 +57,6 @@ class Lattice : public Universe {
   // dummy lattice element
   virtual bool is_inside(Position r, Direction u) const = 0;
 
-  virtual std::array<int32_t, 3> get_tile(Position r, Direction u) const = 0;
-
   // Finds lattice element containing given position, transforms
   // coordinated to that element's frame, then asks that universe
   // for the cell of the local coordiante given.
@@ -66,11 +64,6 @@ class Lattice : public Universe {
 
   virtual Cell* get_cell(std::vector<GeoLilyPad>& stack, Position r,
                          Direction u, int32_t on_surf) const = 0;
-
-  // Given the position in the frame of the lattice (NOT THE FRAME OF THE
-  // TILE!), the distance to the edge of the provided tile is returned.
-  virtual double distance_to_tile_boundary(
-      Position r_local, Direction u, std::array<int32_t, 3> tile) const = 0;
 
   virtual void set_elements(std::vector<int32_t> univs) = 0;
 

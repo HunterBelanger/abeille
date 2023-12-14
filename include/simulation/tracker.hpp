@@ -175,7 +175,7 @@ class Tracker {
       for (const auto& pad : tree) {
         if (pad.type == GeoLilyPad::PadType::Lattice) {
           auto lat_indx = universe_id_to_indx[pad.id];
-          const Lattice* lat = static_cast<Lattice*>(geometry::universes[lat_indx].get());
+          const auto& lat = geometry::universes[lat_indx];
           double d = lat->distance_to_tile_boundary(pad.r_local, u_, pad.tile);
           if (d < dist && std::abs(d - dist) > BOUNDRY_TOL) {
             dist = d;
@@ -259,7 +259,7 @@ class Tracker {
         }
       } else if (it->type == GeoLilyPad::PadType::Lattice) {
         auto lat_indx = universe_id_to_indx[it->id];
-        const Lattice* lat = static_cast<Lattice*>(geometry::universes[lat_indx].get());
+        const auto& lat = geometry::universes[lat_indx];
         auto tile = lat->get_tile(it->r_local, u_);
         // Check if tile has changed
         if (it->tile[0] != tile[0] || it->tile[1] != tile[1] ||
