@@ -52,15 +52,16 @@ UniqueCell CellUniverse::get_cell(Position r, Direction u, int32_t on_surf) cons
       if (cell->fill() == Cell::Fill::Material)
       {
         ucell.cell = geometry::cells[indx].get();
-        auto map = cell_id_offsets[indx];
-        ucell.instance = map[ucell.cell->id()];
+        const auto& map = cell_id_offsets[indx];
+        ucell.instance = map.at(ucell.cell->id());
         return ucell;
       }
-      return cell->universe()->get_cell(r, u, on_surf);
+      UniqueCell return_cell = cell->universe()->get_cell(r, u, on_surf);
+      return_cell.instance += cell_id_offsets[indx].at(return_cell.cell->id());
+      return return_cell;
     }
   }
   // No cell found, particle is lost
-  ucell.cell = nullptr;
   return ucell;
 }
 
@@ -85,16 +86,16 @@ UniqueCell CellUniverse::get_cell(std::vector<GeoLilyPad>& stack, Position r,
       if (cell->fill() == Cell::Fill::Material)
       {
         ucell.cell = geometry::cells[indx].get();
-        auto map = cell_id_offsets[indx];
-        ucell.instance = map[ucell.cell->id()];
+        const auto& map = cell_id_offsets[indx];
+        ucell.instance = map.at(ucell.cell->id());
         return ucell;
       }
-
-      return cell->universe()->get_cell(stack, r, u, on_surf);
+      UniqueCell return_cell = cell->universe()->get_cell(r, u, on_surf);
+      return_cell.instance += cell_id_offsets[indx].at(return_cell.cell->id());
+      return return_cell;
     }
   }
   // No cell found, particle is lost
-  ucell.cell = nullptr;
   return ucell;
 }
 

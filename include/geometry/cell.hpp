@@ -122,7 +122,7 @@ class Cell {
 
 struct UniqueCell {
   Cell* cell = nullptr;
-  uint32_t instance;
+  uint32_t instance = 0;
 };
 
 //===========================================================================

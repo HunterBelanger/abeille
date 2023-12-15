@@ -94,22 +94,22 @@ UniqueCell HexLattice::get_cell(Position r, Direction u, int32_t on_surf) const 
   if (ring >= Nrings) {
     // Invalid ring
     if (outer_universe_index == -1) {
-      ucell.cell = nullptr;
       return ucell;
     } else {
-      return geometry::universes[static_cast<uint32_t>(outer_universe_index)]
-          ->get_cell(r, u, on_surf);
+      UniqueCell return_cell = geometry::universes[static_cast<std::size_t>(outer_universe_index)]->get_cell(r, u, on_surf);
+      return_cell.instance += cell_id_offsets[outer_universe_index].at(return_cell.cell->id());
+      return return_cell;
     }
   }
 
   // Check z bin now
   if (qrz[2] < 0 || qrz[2] >= static_cast<int32_t>(Nz)) {
     if (outer_universe_index == -1) {
-      ucell.cell = nullptr;
       return ucell;
     } else {
-      return geometry::universes[static_cast<uint32_t>(outer_universe_index)]
-          ->get_cell(r, u, on_surf);
+      UniqueCell return_cell = geometry::universes[static_cast<std::size_t>(outer_universe_index)]->get_cell(r, u, on_surf);
+      return_cell.instance += cell_id_offsets[outer_universe_index].at(return_cell.cell->id());
+      return return_cell;
     }
   }
 
@@ -119,19 +119,21 @@ UniqueCell HexLattice::get_cell(Position r, Direction u, int32_t on_surf) const 
   // If -1, send to outside universe
   if (lattice_universes[indx] == -1) {
     if (outer_universe_index == -1) {
-      ucell.cell = nullptr;
       return ucell;
     } else {
-      return geometry::universes[static_cast<uint32_t>(outer_universe_index)]
-          ->get_cell(r, u, on_surf);
+      UniqueCell return_cell = geometry::universes[static_cast<std::size_t>(outer_universe_index)]->get_cell(r, u, on_surf);
+      return_cell.instance += cell_id_offsets[outer_universe_index].at(return_cell.cell->id());
+      return return_cell;
     }
   }
 
   // Move coordinates to tile center
   Position center = tile_center(qrz[0], qrz[1], qrz[2]);
   Position r_tile = r_o - center;
-  return geometry::universes[static_cast<uint32_t>(lattice_universes[indx])]
-      ->get_cell(r_tile, u, on_surf);
+
+  UniqueCell return_cell = geometry::universes[static_cast<uint32_t>(lattice_universes[indx])]->get_cell(r_tile, u, on_surf);
+  return_cell.instance += cell_id_offsets[indx].at(return_cell.cell->id());
+  return return_cell;
 }
 
 UniqueCell HexLattice::get_cell(std::vector<GeoLilyPad>& stack, Position r,
@@ -153,13 +155,13 @@ UniqueCell HexLattice::get_cell(std::vector<GeoLilyPad>& stack, Position r,
     if (outer_universe_index == -1) {
       // Save info to stack
       stack.push_back({GeoLilyPad::PadType::Lattice, id_, r, qrz, false});
-      ucell.cell = nullptr;
       return ucell;
     } else {
       // Save info to stack
       stack.push_back({GeoLilyPad::PadType::Lattice, id_, r, qrz, true});
-      return geometry::universes[static_cast<uint32_t>(outer_universe_index)]
-          ->get_cell(stack, r, u, on_surf);
+      UniqueCell return_cell = geometry::universes[static_cast<std::size_t>(outer_universe_index)]->get_cell(r, u, on_surf);
+      return_cell.instance += cell_id_offsets[outer_universe_index].at(return_cell.cell->id());
+      return return_cell;
     }
   }
 
@@ -168,13 +170,13 @@ UniqueCell HexLattice::get_cell(std::vector<GeoLilyPad>& stack, Position r,
     if (outer_universe_index == -1) {
       // Save info to stack
       stack.push_back({GeoLilyPad::PadType::Lattice, id_, r, qrz, false});
-      ucell.cell = nullptr;
       return ucell;
     } else {
       // Save info to stack
       stack.push_back({GeoLilyPad::PadType::Lattice, id_, r, qrz, true});
-      return geometry::universes[static_cast<uint32_t>(outer_universe_index)]
-          ->get_cell(stack, r, u, on_surf);
+      UniqueCell return_cell = geometry::universes[static_cast<std::size_t>(outer_universe_index)]->get_cell(r, u, on_surf);
+      return_cell.instance += cell_id_offsets[outer_universe_index].at(return_cell.cell->id());
+      return return_cell;
     }
   }
 
@@ -186,13 +188,13 @@ UniqueCell HexLattice::get_cell(std::vector<GeoLilyPad>& stack, Position r,
     if (outer_universe_index == -1) {
       // Save info to stack
       stack.push_back({GeoLilyPad::PadType::Lattice, id_, r, qrz, false});
-      ucell.cell = nullptr;
       return ucell;
     } else {
       // Save info to stack
       stack.push_back({GeoLilyPad::PadType::Lattice, id_, r, qrz, true});
-      return geometry::universes[static_cast<uint32_t>(outer_universe_index)]
-          ->get_cell(stack, r, u, on_surf);
+      UniqueCell return_cell = geometry::universes[static_cast<std::size_t>(outer_universe_index)]->get_cell(r, u, on_surf);
+      return_cell.instance += cell_id_offsets[outer_universe_index].at(return_cell.cell->id());
+      return return_cell;
     }
   }
 
@@ -201,8 +203,9 @@ UniqueCell HexLattice::get_cell(std::vector<GeoLilyPad>& stack, Position r,
   Position r_tile = r_o - center;
   // Save info to stack
   stack.push_back({GeoLilyPad::PadType::Lattice, id_, r, qrz, false});
-  return geometry::universes[static_cast<uint32_t>(lattice_universes[indx])]
-      ->get_cell(stack, r_tile, u, on_surf);
+  UniqueCell return_cell = geometry::universes[static_cast<uint32_t>(lattice_universes[indx])]->get_cell(r_tile, u, on_surf);
+  return_cell.instance += cell_id_offsets[indx].at(return_cell.cell->id());
+  return return_cell;
 }
 
 void HexLattice::set_elements(std::vector<int32_t> univs) {

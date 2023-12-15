@@ -87,11 +87,11 @@ UniqueCell RectLattice::get_cell(Position r, Direction u, int32_t on_surf) const
       (nz < 0 || nz >= static_cast<int>(Nz))) {
     // Index is outside of lattice, if outside_universe, try outer_universe
     if (outer_universe_index >= 0) {
-      return geometry::universes[static_cast<std::size_t>(outer_universe_index)]
-          ->get_cell(r, u, on_surf);
+     UniqueCell return_cell = geometry::universes[static_cast<std::size_t>(outer_universe_index)]->get_cell(r, u, on_surf);
+      return_cell.instance += cell_id_offsets[outer_universe_index].at(return_cell.cell->id());
+      return return_cell;
     } else {
       // Location can not be found, return nullptr
-      ucell.cell = nullptr;
       return ucell;
     }
   } else {
@@ -104,18 +104,18 @@ UniqueCell RectLattice::get_cell(Position r, Direction u, int32_t on_surf) const
       int32_t univ_indx = lattice_universes[linear_index(
           static_cast<uint32_t>(nx), static_cast<uint32_t>(ny),
           static_cast<uint32_t>(nz))];
-      return geometry::universes[static_cast<std::size_t>(univ_indx)]->get_cell(
-          r_local, u, on_surf);
+      UniqueCell return_cell = geometry::universes[static_cast<std::size_t>(univ_indx)]->get_cell(r_local, u, on_surf);
+      return_cell.instance += cell_id_offsets[univ_indx].at(return_cell.cell->id());
+      return return_cell;
     } else {
       // Element is a dummy, try outer_universe
       if (outer_universe_index >= 0) {
         // outer_universe is give, get cell from that
-        return geometry::universes[static_cast<std::size_t>(
-                                       outer_universe_index)]
-            ->get_cell(r, u, on_surf);
+      UniqueCell return_cell = geometry::universes[static_cast<std::size_t>(outer_universe_index)]->get_cell(r, u, on_surf);
+      return_cell.instance += cell_id_offsets[outer_universe_index].at(return_cell.cell->id());
+      return return_cell;
       } else {
         // No outer_universe provided, return nullptr
-        ucell.cell = nullptr;
         return ucell;
       }
     }
@@ -141,15 +141,15 @@ UniqueCell RectLattice::get_cell(std::vector<GeoLilyPad>& stack, Position r,
           {GeoLilyPad::PadType::Lattice, id_, r, {nx, ny, nz}, true});
 
       // Go to outside universe
-      return geometry::universes[static_cast<std::size_t>(outer_universe_index)]
-          ->get_cell(stack, r, u, on_surf);
+      UniqueCell return_cell = geometry::universes[static_cast<std::size_t>(outer_universe_index)]->get_cell(r, u, on_surf);
+      return_cell.instance += cell_id_offsets[outer_universe_index].at(return_cell.cell->id());
+      return return_cell;
     } else {
       // Save lattice info to stack
       stack.push_back(
           {GeoLilyPad::PadType::Lattice, id_, r, {nx, ny, nz}, false});
 
       // Location can not be found, return nullptr
-      ucell.cell = nullptr;
       return ucell;
     }
   } else {
@@ -167,8 +167,9 @@ UniqueCell RectLattice::get_cell(std::vector<GeoLilyPad>& stack, Position r,
       stack.push_back(
           {GeoLilyPad::PadType::Lattice, id_, r, {nx, ny, nz}, false});
 
-      return geometry::universes[static_cast<std::size_t>(univ_indx)]->get_cell(
-          stack, r_local, u, on_surf);
+      UniqueCell return_cell = geometry::universes[static_cast<std::size_t>(univ_indx)]->get_cell(r_local, u, on_surf);
+      return_cell.instance += cell_id_offsets[univ_indx].at(return_cell.cell->id());
+      return return_cell;
     } else {
       // Element is a dummy, try outer_universe
       if (outer_universe_index >= 0) {
@@ -177,16 +178,15 @@ UniqueCell RectLattice::get_cell(std::vector<GeoLilyPad>& stack, Position r,
             {GeoLilyPad::PadType::Lattice, id_, r, {nx, ny, nz}, true});
 
         // outer_universe is give, get cell from that
-        return geometry::universes[static_cast<std::size_t>(
-                                       outer_universe_index)]
-            ->get_cell(stack, r, u, on_surf);
+      UniqueCell return_cell = geometry::universes[static_cast<std::size_t>(outer_universe_index)]->get_cell(r, u, on_surf);
+      return_cell.instance += cell_id_offsets[outer_universe_index].at(return_cell.cell->id());
+      return return_cell;
       } else {
         // Save lattice info to stack
         stack.push_back(
             {GeoLilyPad::PadType::Lattice, id_, r, {nx, ny, nz}, false});
 
         // No outer_universe provided, return nullptr
-        ucell.cell = nullptr;
         return ucell;
       }
     }
