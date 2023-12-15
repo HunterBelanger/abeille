@@ -170,14 +170,12 @@ std::set<uint32_t> Lattice::get_all_mat_cells() const {
 
 void Lattice::make_offset_map() {
   
-  std::vector<std::map<const uint32_t, uint32_t>> tile_id_offsets;
-  tile_id_offsets.resize(this->size() + (this->outer_universe() ? 1 : 0));
-
+  cell_id_offsets.resize(this->size() + (this->outer_universe() ? 1 : 0));
   // Set of all material cells contained in this universe
   std::set<uint32_t> mat_cell_ids = this->get_all_mat_cells();
 
   // Set all offsets to be zero
-  for (auto& map : tile_id_offsets) {
+  for (auto& map : cell_id_offsets) {
     for (uint32_t mat_cell_id : mat_cell_ids) {
       map[mat_cell_id] = 0;
     }
@@ -188,10 +186,10 @@ void Lattice::make_offset_map() {
     const Universe* uni = this->get_universe(i-1);
 
     for(uint32_t mat_cell_id : mat_cell_ids) {
-      tile_id_offsets[i][mat_cell_id] = tile_id_offsets[i-1][mat_cell_id];
+      cell_id_offsets[i][mat_cell_id] = cell_id_offsets[i-1][mat_cell_id];
 
       if (uni) {
-        tile_id_offsets[i][mat_cell_id] += uni->get_num_cell_instances(mat_cell_id);
+        cell_id_offsets[i][mat_cell_id] += uni->get_num_cell_instances(mat_cell_id);
       }
     }
   }
@@ -199,10 +197,10 @@ void Lattice::make_offset_map() {
   // Also get offsets for outer universe
   if (this->outer_universe()) {
     auto uni = this->outer_universe();
-    const std::size_t i = tile_id_offsets.size() - 1;
+    const std::size_t i = cell_id_offsets.size() - 1;
 
     for(uint32_t mat_cell_id : mat_cell_ids) {
-      tile_id_offsets[i][mat_cell_id] = tile_id_offsets[i-1][mat_cell_id] + uni->get_num_cell_instances(mat_cell_id);
+      cell_id_offsets[i][mat_cell_id] = cell_id_offsets[i-1][mat_cell_id] + uni->get_num_cell_instances(mat_cell_id);
     }
   }
 }
