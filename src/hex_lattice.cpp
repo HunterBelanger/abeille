@@ -78,7 +78,9 @@ bool HexLattice::is_inside(Position r, Direction /*u*/) const {
   return true;
 }
 
-Cell* HexLattice::get_cell(Position r, Direction u, int32_t on_surf) const {
+UniqueCell HexLattice::get_cell(Position r, Direction u, int32_t on_surf) const {
+
+  UniqueCell ucell;
   // Get coordinates in frame of center tile
   Position r_o{r.x() - X_o, r.y() - Y_o, r.z() - Z_o};
 
@@ -92,7 +94,8 @@ Cell* HexLattice::get_cell(Position r, Direction u, int32_t on_surf) const {
   if (ring >= Nrings) {
     // Invalid ring
     if (outer_universe_index == -1) {
-      return nullptr;
+      ucell.cell = nullptr;
+      return ucell;
     } else {
       return geometry::universes[static_cast<uint32_t>(outer_universe_index)]
           ->get_cell(r, u, on_surf);
@@ -102,7 +105,8 @@ Cell* HexLattice::get_cell(Position r, Direction u, int32_t on_surf) const {
   // Check z bin now
   if (qrz[2] < 0 || qrz[2] >= static_cast<int32_t>(Nz)) {
     if (outer_universe_index == -1) {
-      return nullptr;
+      ucell.cell = nullptr;
+      return ucell;
     } else {
       return geometry::universes[static_cast<uint32_t>(outer_universe_index)]
           ->get_cell(r, u, on_surf);
@@ -115,7 +119,8 @@ Cell* HexLattice::get_cell(Position r, Direction u, int32_t on_surf) const {
   // If -1, send to outside universe
   if (lattice_universes[indx] == -1) {
     if (outer_universe_index == -1) {
-      return nullptr;
+      ucell.cell = nullptr;
+      return ucell;
     } else {
       return geometry::universes[static_cast<uint32_t>(outer_universe_index)]
           ->get_cell(r, u, on_surf);
@@ -129,8 +134,10 @@ Cell* HexLattice::get_cell(Position r, Direction u, int32_t on_surf) const {
       ->get_cell(r_tile, u, on_surf);
 }
 
-Cell* HexLattice::get_cell(std::vector<GeoLilyPad>& stack, Position r,
+UniqueCell HexLattice::get_cell(std::vector<GeoLilyPad>& stack, Position r,
                            Direction u, int32_t on_surf) const {
+
+  UniqueCell ucell;
   // Get coordinates in frame of center tile
   Position r_o{r.x() - X_o, r.y() - Y_o, r.z() - Z_o};
 
@@ -146,7 +153,8 @@ Cell* HexLattice::get_cell(std::vector<GeoLilyPad>& stack, Position r,
     if (outer_universe_index == -1) {
       // Save info to stack
       stack.push_back({GeoLilyPad::PadType::Lattice, id_, r, qrz, false});
-      return nullptr;
+      ucell.cell = nullptr;
+      return ucell;
     } else {
       // Save info to stack
       stack.push_back({GeoLilyPad::PadType::Lattice, id_, r, qrz, true});
@@ -160,7 +168,8 @@ Cell* HexLattice::get_cell(std::vector<GeoLilyPad>& stack, Position r,
     if (outer_universe_index == -1) {
       // Save info to stack
       stack.push_back({GeoLilyPad::PadType::Lattice, id_, r, qrz, false});
-      return nullptr;
+      ucell.cell = nullptr;
+      return ucell;
     } else {
       // Save info to stack
       stack.push_back({GeoLilyPad::PadType::Lattice, id_, r, qrz, true});
@@ -177,7 +186,8 @@ Cell* HexLattice::get_cell(std::vector<GeoLilyPad>& stack, Position r,
     if (outer_universe_index == -1) {
       // Save info to stack
       stack.push_back({GeoLilyPad::PadType::Lattice, id_, r, qrz, false});
-      return nullptr;
+      ucell.cell = nullptr;
+      return ucell;
     } else {
       // Save info to stack
       stack.push_back({GeoLilyPad::PadType::Lattice, id_, r, qrz, true});

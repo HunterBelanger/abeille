@@ -152,13 +152,13 @@ std::optional<ExactMGCancelator::Key> ExactMGCancelator::get_key(
 }
 
 Material* ExactMGCancelator::get_material(const Position& r) const {
-  Cell* cell = geometry::get_cell(r, {1., 0., 0.});
+  UniqueCell ucell = geometry::get_cell(r, {1., 0., 0.});
 
-  if (!cell) {
+  if (!ucell.cell) {
     return nullptr;
   }
 
-  Material* mat = cell->material();
+  Material* mat = ucell.cell->material();
 
   if (!mat) {
     std::stringstream mssg;

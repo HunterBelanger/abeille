@@ -49,9 +49,9 @@ class CellUniverse : public Universe {
   CellUniverse(std::vector<uint32_t> i_ind, uint32_t i_id, std::string i_name);
   ~CellUniverse() = default;
 
-  Cell* get_cell(Position r, Direction u, int32_t on_surf) const override;
+  UniqueCell get_cell(Position r, Direction u, int32_t on_surf) const override;
 
-  Cell* get_cell(std::vector<GeoLilyPad>& stack, Position r, Direction u,
+  UniqueCell get_cell(std::vector<GeoLilyPad>& stack, Position r, Direction u,
                  int32_t on_surf) const override;
 
   Boundary get_boundary_condition(const Position& r, const Direction& u,
@@ -71,10 +71,11 @@ class CellUniverse : public Universe {
 
   bool contains_universe(uint32_t id) const override final;
 
-  std::vector<std::map<const uint32_t, uint32_t>> get_offset_map() const override final;
+  void make_offset_map() override;
 
  private:
   std::vector<uint32_t> cell_indicies;
+
 };  // CellUniverse
 
 //===========================================================================

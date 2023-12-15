@@ -46,7 +46,7 @@ class Tracker {
     tree.reserve(10);
 
     current_cell = geometry::get_cell(tree, r_, u_, surface_token_);
-    if (current_cell) current_mat = current_cell->material();
+    if (current_cell.cell) current_mat = current_cell.cell->material();
   };
 
   ~Tracker() = default;
@@ -63,11 +63,11 @@ class Tracker {
   void restart_get_current() {
     tree.clear();
     current_cell = geometry::get_cell(tree, r_, u_, surface_token_);
-    if (current_cell) {
-      if (current_cell->fill() == Cell::Fill::Universe) {
+    if (current_cell.cell) {
+      if (current_cell.cell->fill() == Cell::Fill::Universe) {
         fatal_error("Did not find a cell with a material.");
       }
-      current_mat = current_cell->material();
+      current_mat = current_cell.cell->material();
     } else {
       current_mat = nullptr;
     }
@@ -88,7 +88,7 @@ class Tracker {
   void set_surface_token(int32_t st) { surface_token_ = st; }
 
   Material* material() { return current_mat; }
-  Cell* cell() { return current_cell; }
+  Cell* cell() { return current_cell.cell; }
 
   Boundary get_boundary_condition() const {
     if (!this->is_lost()) {
@@ -229,7 +229,7 @@ class Tracker {
     surface_token_ = -d_t.token;
   }
 
-  bool is_lost() const { return !current_cell; }
+  bool is_lost() const { return !current_cell.cell; }
 
   void get_current() {
     // Iterator pointing to the highest leaf in the tree
@@ -291,15 +291,15 @@ class Tracker {
 
       // If we couldn't get a cell, we need to call in the big guns, and
       // re-start from scratch.
-      if (!current_cell) restart_get_current();
+      if (!current_cell.cell) restart_get_current();
 
       // If we have a valid cell, we must now also fill the material.
-      if (current_cell) {
-        if (current_cell->fill() == Cell::Fill::Universe) {
+      if (current_cell.cell) {
+        if (current_cell.cell->fill() == Cell::Fill::Universe) {
           fatal_error("Did not find a cell with a material.");
         }
 
-        current_mat = current_cell->material();
+        current_mat = current_cell.cell->material();
       }
     }
   }
@@ -362,7 +362,7 @@ class Tracker {
   Direction u_;
   std::vector<GeoLilyPad> tree;
   Material* current_mat = nullptr;
-  Cell* current_cell = nullptr;
+  UniqueCell current_cell;
   // Token for current surface which particle is on. The index for the
   // surface in the surface vector is std::abs(token) - 1. Token is NOT
   // the surface id !!

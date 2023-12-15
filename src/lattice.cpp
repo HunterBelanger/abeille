@@ -168,7 +168,7 @@ std::set<uint32_t> Lattice::get_all_mat_cells() const {
   return mat_cells;
 }
 
-std::vector<std::map<const uint32_t, uint32_t>> Lattice::get_offset_map() const {
+void Lattice::make_offset_map() {
   
   std::vector<std::map<const uint32_t, uint32_t>> tile_id_offsets;
   tile_id_offsets.resize(this->size() + (this->outer_universe() ? 1 : 0));
@@ -205,8 +205,6 @@ std::vector<std::map<const uint32_t, uint32_t>> Lattice::get_offset_map() const 
       tile_id_offsets[i][mat_cell_id] = tile_id_offsets[i-1][mat_cell_id] + uni->get_num_cell_instances(mat_cell_id);
     }
   }
-
-  return tile_id_offsets;
 }
 
 void make_lattice(const YAML::Node& uni_node, const YAML::Node& input) {

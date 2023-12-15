@@ -121,7 +121,7 @@ class Cell {
 };  // Cell
 
 struct UniqueCell {
-  Cell* cell;
+  Cell* cell = nullptr;
   uint32_t instance;
 };
 

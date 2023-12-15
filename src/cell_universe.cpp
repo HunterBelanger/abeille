@@ -41,28 +41,35 @@ CellUniverse::CellUniverse(std::vector<uint32_t> i_ind, uint32_t i_id,
   }
 }
 
-Cell* CellUniverse::get_cell(Position r, Direction u, int32_t on_surf) const {
+UniqueCell CellUniverse::get_cell(Position r, Direction u, int32_t on_surf) const {
   // Go through each cell, and return the first one for which the
   // given position is inside the cell
+  UniqueCell ucell;
   for (auto& indx : cell_indicies) {
     if (geometry::cells[indx]->is_inside(r, u, on_surf)) {
       Cell* cell = geometry::cells[indx].get();
 
       if (cell->fill() == Cell::Fill::Material)
-        return geometry::cells[indx].get();
-
+      {
+        ucell.cell = geometry::cells[indx].get();
+        auto map = cell_id_offsets[indx];
+        ucell.instance = map[ucell.cell->id()];
+        return ucell;
+      }
       return cell->universe()->get_cell(r, u, on_surf);
     }
   }
   // No cell found, particle is lost
-  return nullptr;
+  ucell.cell = nullptr;
+  return ucell;
 }
 
-Cell* CellUniverse::get_cell(std::vector<GeoLilyPad>& stack, Position r,
+UniqueCell CellUniverse::get_cell(std::vector<GeoLilyPad>& stack, Position r,
                              Direction u, int32_t on_surf) const {
   // First push universe info onto the stack
   stack.push_back({GeoLilyPad::PadType::Universe, id_, r, {0, 0, 0}, false});
 
+  UniqueCell ucell;
   // Go through each cell, and return the first one for which the
   // given position is inside the cell
   for (auto& indx : cell_indicies) {
@@ -76,13 +83,19 @@ Cell* CellUniverse::get_cell(std::vector<GeoLilyPad>& stack, Position r,
       Cell* cell = geometry::cells[indx].get();
 
       if (cell->fill() == Cell::Fill::Material)
-        return geometry::cells[indx].get();
+      {
+        ucell.cell = geometry::cells[indx].get();
+        auto map = cell_id_offsets[indx];
+        ucell.instance = map[ucell.cell->id()];
+        return ucell;
+      }
 
       return cell->universe()->get_cell(stack, r, u, on_surf);
     }
   }
   // No cell found, particle is lost
-  return nullptr;
+  ucell.cell = nullptr;
+  return ucell;
 }
 
 Boundary CellUniverse::get_boundary_condition(const Position& r,
@@ -195,39 +208,6 @@ Boundary CellUniverse::lost_get_boundary(const Position& r, const Direction& u,
   return ret_bound;
 }
 
-/*
-std::map<uint32_t,uint32_t> CellUniverse::get_all_contained_cells() const 
-{
-  std::map<uint32_t,uint32_t> cell_id_offsets;
-  for (auto& indx : cell_indicies) {
-    Cell* cell = geometry::cells[indx].get();
-    //if the cell has a universe in it
-    if (cell->fill() == Cell::Fill::Universe) {
-      std::map<uint32_t,uint32_t> m = cell->universe()->get_all_contained_cells();
-      
-      std::map<uint32_t, uint32_t>::iterator it;
-
-      for (it = m.begin(); it != m.end(); it++)
-      {
-        //if the map does not contain the cell_id
-        if(cell_id_offsets.find(it->first) == cell_id_offsets.end())
-          cell_id_offsets.insert(it->first,it->second);
-        // if the map contains the cell_id 
-        else
-          cell_id_offsets[it->first] += it->second;
-      }
-    }
-    else
-    {
-      if(cell_id_offsets.find(cell->id()) == cell_id_offsets.end())
-          cell_id_offsets.insert({cell->id(),static_cast<uint32_t>(1)});
-      else
-          cell_id_offsets[cell->id()] += 1;
-    }
-  }
-  return cell_id_offsets;
-}
-*/
 std::set<uint32_t> CellUniverse::get_all_mat_cells() const {
   std::set<uint32_t> mat_cells;
 
@@ -267,10 +247,8 @@ uint32_t CellUniverse::get_num_cell_instances(uint32_t cell_id) const {
   return instances; 
 }
 
-std::vector<std::map<const uint32_t, uint32_t>> CellUniverse::get_offset_map() const {
-  std::vector<std::map<const uint32_t, uint32_t>> cell_id_offsets;
+void CellUniverse::make_offset_map() {
   cell_id_offsets.resize(cell_indicies.size());
-
   // Set of all material cells contained in this universe
   std::set<uint32_t> mat_cell_ids = this->get_all_mat_cells();
 
@@ -292,8 +270,6 @@ std::vector<std::map<const uint32_t, uint32_t>> CellUniverse::get_offset_map() c
       }
     }
   }
-
-  return cell_id_offsets;
 }
 
 void make_cell_universe(const YAML::Node& uni_node) {

@@ -60,9 +60,9 @@ class Lattice : public Universe {
   // Finds lattice element containing given position, transforms
   // coordinated to that element's frame, then asks that universe
   // for the cell of the local coordiante given.
-  virtual Cell* get_cell(Position r, Direction u, int32_t on_surf) const = 0;
+  virtual UniqueCell get_cell(Position r, Direction u, int32_t on_surf) const = 0;
 
-  virtual Cell* get_cell(std::vector<GeoLilyPad>& stack, Position r,
+  virtual UniqueCell get_cell(std::vector<GeoLilyPad>& stack, Position r,
                          Direction u, int32_t on_surf) const = 0;
 
   virtual void set_elements(std::vector<int32_t> univs) = 0;
@@ -90,7 +90,7 @@ class Lattice : public Universe {
   // get number of cell instances across all universes
   uint32_t get_num_cell_instances(uint32_t cell_id) const override final;
 
-  std::vector<std::map<const uint32_t, uint32_t>> get_offset_map() const override final;
+  void make_offset_map() override;
 
   bool contains_universe(uint32_t id) const override;
 

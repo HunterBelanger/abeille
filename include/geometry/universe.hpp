@@ -36,9 +36,9 @@ class Universe {
   Universe(uint32_t i_id, std::string i_name);
   virtual ~Universe() = default;
 
-  virtual Cell* get_cell(Position r, Direction u, int32_t on_surf) const = 0;
+  virtual UniqueCell get_cell(Position r, Direction u, int32_t on_surf) const = 0;
 
-  virtual Cell* get_cell(std::vector<GeoLilyPad>& stack, Position r,
+  virtual UniqueCell get_cell(std::vector<GeoLilyPad>& stack, Position r,
                          Direction u, int32_t on_surf) const = 0;
 
   virtual Boundary lost_get_boundary(const Position& r, const Direction& u,
@@ -61,7 +61,7 @@ class Universe {
 
   virtual uint32_t get_num_cell_instances(uint32_t cell_id) const = 0;
 
-  virtual std::vector<std::map<const uint32_t, uint32_t>> get_offset_map() const = 0;
+  virtual void make_offset_map() = 0;
 
   virtual bool contains_universe(uint32_t id) const = 0;
 
@@ -75,6 +75,7 @@ class Universe {
   uint32_t id_;
   std::string name_;
   bool has_boundary_conditions_ = true;
+  std::vector<std::map<const uint32_t, uint32_t>> cell_id_offsets;
 
 };  // Universe
 

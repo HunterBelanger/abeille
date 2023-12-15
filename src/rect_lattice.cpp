@@ -74,8 +74,9 @@ bool RectLattice::is_inside(Position r, Direction u) const {
   }
 }
 
-Cell* RectLattice::get_cell(Position r, Direction u, int32_t on_surf) const {
+UniqueCell RectLattice::get_cell(Position r, Direction u, int32_t on_surf) const {
   // Get index of each axis
+  UniqueCell ucell;
   auto tile = get_tile(r, u);
   int nx = tile[0];
   int ny = tile[1];
@@ -90,7 +91,8 @@ Cell* RectLattice::get_cell(Position r, Direction u, int32_t on_surf) const {
           ->get_cell(r, u, on_surf);
     } else {
       // Location can not be found, return nullptr
-      return nullptr;
+      ucell.cell = nullptr;
+      return ucell;
     }
   } else {
     if (lattice_universes[linear_index(static_cast<uint32_t>(nx),
@@ -113,15 +115,17 @@ Cell* RectLattice::get_cell(Position r, Direction u, int32_t on_surf) const {
             ->get_cell(r, u, on_surf);
       } else {
         // No outer_universe provided, return nullptr
-        return nullptr;
+        ucell.cell = nullptr;
+        return ucell;
       }
     }
   }
 }
 
-Cell* RectLattice::get_cell(std::vector<GeoLilyPad>& stack, Position r,
+UniqueCell RectLattice::get_cell(std::vector<GeoLilyPad>& stack, Position r,
                             Direction u, int32_t on_surf) const {
   // Get index of each axis
+  UniqueCell ucell;
   auto tile = get_tile(r, u);
   int nx = tile[0];
   int ny = tile[1];
@@ -145,7 +149,8 @@ Cell* RectLattice::get_cell(std::vector<GeoLilyPad>& stack, Position r,
           {GeoLilyPad::PadType::Lattice, id_, r, {nx, ny, nz}, false});
 
       // Location can not be found, return nullptr
-      return nullptr;
+      ucell.cell = nullptr;
+      return ucell;
     }
   } else {
     if (lattice_universes[linear_index(static_cast<uint32_t>(nx),
@@ -181,7 +186,8 @@ Cell* RectLattice::get_cell(std::vector<GeoLilyPad>& stack, Position r,
             {GeoLilyPad::PadType::Lattice, id_, r, {nx, ny, nz}, false});
 
         // No outer_universe provided, return nullptr
-        return nullptr;
+        ucell.cell = nullptr;
+        return ucell;
       }
     }
   }
