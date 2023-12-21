@@ -74,46 +74,53 @@ bool RectLattice::is_inside(Position r, Direction u) const {
   }
 }
 
-UniqueCell RectLattice::get_cell(Position r, Direction u, int32_t on_surf) const {
+UniqueCell RectLattice::get_cell(Position r, Direction u,
+                                 int32_t on_surf) const {
   // Get index of each axis
-  UniqueCell ucell;
   auto tile = get_tile(r, u);
   int nx = tile[0];
   int ny = tile[1];
   int nz = tile[2];
+
+  UniqueCell ucell;
 
   if ((nx < 0 || nx >= static_cast<int>(Nx)) ||
       (ny < 0 || ny >= static_cast<int>(Ny)) ||
       (nz < 0 || nz >= static_cast<int>(Nz))) {
     // Index is outside of lattice, if outside_universe, try outer_universe
     if (outer_universe_index >= 0) {
-     UniqueCell return_cell = geometry::universes[static_cast<std::size_t>(outer_universe_index)]->get_cell(r, u, on_surf);
-      return_cell.instance += cell_id_offsets[outer_universe_index].at(return_cell.cell->id());
-      return return_cell;
+      ucell =
+          geometry::universes[static_cast<std::size_t>(outer_universe_index)]
+              ->get_cell(r, u, on_surf);
+      if (ucell) ucell.instance += cell_offset_map.back().at(ucell.id);
+      return ucell;
     } else {
       // Location can not be found, return nullptr
       return ucell;
     }
   } else {
-    if (lattice_universes[linear_index(static_cast<uint32_t>(nx),
-                                       static_cast<uint32_t>(ny),
-                                       static_cast<uint32_t>(nz))] >= 0) {
+    const auto lin_indx =
+        linear_index(static_cast<uint32_t>(nx), static_cast<uint32_t>(ny),
+                     static_cast<uint32_t>(nz));
+    if (lattice_universes[lin_indx] >= 0) {
       // Element is a valid fill, get cell from that universe
       // Transform coordinates to lattice elements locale frame
       Position r_local = r - tile_center(nx, ny, nz);
-      int32_t univ_indx = lattice_universes[linear_index(
-          static_cast<uint32_t>(nx), static_cast<uint32_t>(ny),
-          static_cast<uint32_t>(nz))];
-      UniqueCell return_cell = geometry::universes[static_cast<std::size_t>(univ_indx)]->get_cell(r_local, u, on_surf);
-      return_cell.instance += cell_id_offsets[univ_indx].at(return_cell.cell->id());
-      return return_cell;
+      const int32_t univ_indx = lattice_universes[lin_indx];
+      ucell =
+          geometry::universes[static_cast<std::size_t>(univ_indx)]->get_cell(
+              r_local, u, on_surf);
+      if (ucell) ucell.instance += cell_offset_map[lin_indx].at(ucell.id);
+      return ucell;
     } else {
       // Element is a dummy, try outer_universe
       if (outer_universe_index >= 0) {
         // outer_universe is give, get cell from that
-      UniqueCell return_cell = geometry::universes[static_cast<std::size_t>(outer_universe_index)]->get_cell(r, u, on_surf);
-      return_cell.instance += cell_id_offsets[outer_universe_index].at(return_cell.cell->id());
-      return return_cell;
+        ucell =
+            geometry::universes[static_cast<std::size_t>(outer_universe_index)]
+                ->get_cell(r, u, on_surf);
+        if (ucell) ucell.instance += cell_offset_map.back().at(ucell.id);
+        return ucell;
       } else {
         // No outer_universe provided, return nullptr
         return ucell;
@@ -123,13 +130,14 @@ UniqueCell RectLattice::get_cell(Position r, Direction u, int32_t on_surf) const
 }
 
 UniqueCell RectLattice::get_cell(std::vector<GeoLilyPad>& stack, Position r,
-                            Direction u, int32_t on_surf) const {
+                                 Direction u, int32_t on_surf) const {
   // Get index of each axis
-  UniqueCell ucell;
   auto tile = get_tile(r, u);
   int nx = tile[0];
   int ny = tile[1];
   int nz = tile[2];
+
+  UniqueCell ucell;
 
   if ((nx < 0 || nx >= static_cast<int>(Nx)) ||
       (ny < 0 || ny >= static_cast<int>(Ny)) ||
@@ -141,9 +149,11 @@ UniqueCell RectLattice::get_cell(std::vector<GeoLilyPad>& stack, Position r,
           {GeoLilyPad::PadType::Lattice, id_, r, {nx, ny, nz}, true});
 
       // Go to outside universe
-      UniqueCell return_cell = geometry::universes[static_cast<std::size_t>(outer_universe_index)]->get_cell(r, u, on_surf);
-      return_cell.instance += cell_id_offsets[outer_universe_index].at(return_cell.cell->id());
-      return return_cell;
+      ucell =
+          geometry::universes[static_cast<std::size_t>(outer_universe_index)]
+              ->get_cell(stack, r, u, on_surf);
+      if (ucell) ucell.instance += cell_offset_map.back().at(ucell.id);
+      return ucell;
     } else {
       // Save lattice info to stack
       stack.push_back(
@@ -153,23 +163,24 @@ UniqueCell RectLattice::get_cell(std::vector<GeoLilyPad>& stack, Position r,
       return ucell;
     }
   } else {
-    if (lattice_universes[linear_index(static_cast<uint32_t>(nx),
-                                       static_cast<uint32_t>(ny),
-                                       static_cast<uint32_t>(nz))] >= 0) {
+    const auto lin_indx =
+        linear_index(static_cast<uint32_t>(nx), static_cast<uint32_t>(ny),
+                     static_cast<uint32_t>(nz));
+    if (lattice_universes[lin_indx] >= 0) {
       // Element is a valid fill, get cell from that universe
       // Transform coordinates to lattice elements locale frame
       Position r_local = r - tile_center(nx, ny, nz);
-      int32_t univ_indx = lattice_universes[linear_index(
-          static_cast<uint32_t>(nx), static_cast<uint32_t>(ny),
-          static_cast<uint32_t>(nz))];
+      const int32_t univ_indx = lattice_universes[lin_indx];
 
       // Save lattice info to stack
       stack.push_back(
           {GeoLilyPad::PadType::Lattice, id_, r, {nx, ny, nz}, false});
 
-      UniqueCell return_cell = geometry::universes[static_cast<std::size_t>(univ_indx)]->get_cell(r_local, u, on_surf);
-      return_cell.instance += cell_id_offsets[univ_indx].at(return_cell.cell->id());
-      return return_cell;
+      ucell =
+          geometry::universes[static_cast<std::size_t>(univ_indx)]->get_cell(
+              stack, r_local, u, on_surf);
+      if (ucell) ucell.instance += cell_offset_map[lin_indx].at(ucell.id);
+      return ucell;
     } else {
       // Element is a dummy, try outer_universe
       if (outer_universe_index >= 0) {
@@ -178,9 +189,11 @@ UniqueCell RectLattice::get_cell(std::vector<GeoLilyPad>& stack, Position r,
             {GeoLilyPad::PadType::Lattice, id_, r, {nx, ny, nz}, true});
 
         // outer_universe is give, get cell from that
-      UniqueCell return_cell = geometry::universes[static_cast<std::size_t>(outer_universe_index)]->get_cell(r, u, on_surf);
-      return_cell.instance += cell_id_offsets[outer_universe_index].at(return_cell.cell->id());
-      return return_cell;
+        ucell =
+            geometry::universes[static_cast<std::size_t>(outer_universe_index)]
+                ->get_cell(stack, r, u, on_surf);
+        if (ucell) ucell.instance += cell_offset_map.back().at(ucell.id);
+        return ucell;
       } else {
         // Save lattice info to stack
         stack.push_back(

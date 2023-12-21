@@ -173,12 +173,13 @@ std::optional<Position> BasicExactMGCancelator::sample_position_sobol(
 }
 
 Material* BasicExactMGCancelator::get_material(const Position& r) const {
-  UniqueCell ucell = geometry::get_cell(r, {1., 0., 0.});
-  if (!ucell.cell) {
+  Cell* cell = geometry::get_cell(r, {1., 0., 0.}).cell;
+
+  if (!cell) {
     return nullptr;
   }
 
-  Material* mat = ucell.cell->material();
+  Material* mat = cell->material();
 
   if (!mat) {
     std::stringstream mssg;

@@ -25,8 +25,8 @@
 #ifndef CELL_UNIVERSE_H
 #define CELL_UNIVERSE_H
 
-#include <geometry/universe.hpp>
 #include <yaml-cpp/yaml.h>
+#include <geometry/universe.hpp>
 
 #include <map>
 
@@ -52,7 +52,7 @@ class CellUniverse : public Universe {
   UniqueCell get_cell(Position r, Direction u, int32_t on_surf) const override;
 
   UniqueCell get_cell(std::vector<GeoLilyPad>& stack, Position r, Direction u,
-                 int32_t on_surf) const override;
+                      int32_t on_surf) const override;
 
   Boundary get_boundary_condition(const Position& r, const Direction& u,
                                   int32_t on_surf) const override final;
@@ -60,10 +60,7 @@ class CellUniverse : public Universe {
   Boundary lost_get_boundary(const Position& r, const Direction& u,
                              int32_t on_surf) const override final;
 
-
-  //void get_all_contained_cells() override final;
-  
-  //get all material cells in universe
+  // get all material cells in universe
   std::set<uint32_t> get_all_mat_cells() const override final;
 
   // get number of cell instances across all universes
@@ -71,11 +68,10 @@ class CellUniverse : public Universe {
 
   bool contains_universe(uint32_t id) const override final;
 
-  void make_offset_map() override;
+  void make_offset_map() override final;
 
  private:
   std::vector<uint32_t> cell_indicies;
-
 };  // CellUniverse
 
 //===========================================================================

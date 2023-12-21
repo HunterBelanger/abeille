@@ -60,10 +60,11 @@ class Lattice : public Universe {
   // Finds lattice element containing given position, transforms
   // coordinated to that element's frame, then asks that universe
   // for the cell of the local coordiante given.
-  virtual UniqueCell get_cell(Position r, Direction u, int32_t on_surf) const = 0;
+  virtual UniqueCell get_cell(Position r, Direction u,
+                              int32_t on_surf) const = 0;
 
   virtual UniqueCell get_cell(std::vector<GeoLilyPad>& stack, Position r,
-                         Direction u, int32_t on_surf) const = 0;
+                              Direction u, int32_t on_surf) const = 0;
 
   virtual void set_elements(std::vector<int32_t> univs) = 0;
 
@@ -83,14 +84,13 @@ class Lattice : public Universe {
   Boundary lost_get_boundary(const Position& r, const Direction& u,
                              int32_t on_surf) const override final;
 
-  //get all material cells in universe
-  //std::set<uint32_t> get_all_mat_cells() const override final;
+  // get all material cells in universe
   std::set<uint32_t> get_all_mat_cells() const override final;
 
   // get number of cell instances across all universes
   uint32_t get_num_cell_instances(uint32_t cell_id) const override final;
 
-  void make_offset_map() override;
+  void make_offset_map() override final;
 
   bool contains_universe(uint32_t id) const override;
 

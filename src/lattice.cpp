@@ -22,10 +22,10 @@
  * along with Abeille. If not, see <https://www.gnu.org/licenses/>.
  *
  * */
-#include <geometry/geometry.hpp>
-#include <geometry/lattice.hpp>
 #include <geometry/boundary.hpp>
+#include <geometry/geometry.hpp>
 #include <geometry/hex_lattice.hpp>
+#include <geometry/lattice.hpp>
 #include <geometry/rect_lattice.hpp>
 #include <geometry/surfaces/surface.hpp>
 #include <utils/error.hpp>
@@ -33,20 +33,21 @@
 #include <cstdint>
 
 Lattice::Lattice(uint32_t i_id, std::string i_name)
-    :  Universe{i_id, i_name},lattice_universes{}, outer_universe_index{-1}
-    {
-      this->has_boundary_conditions_ = false;
+    : Universe{i_id, i_name}, lattice_universes{}, outer_universe_index{-1} {
+  this->has_boundary_conditions_ = false;
 
   if (this->outer_universe()) {
-    this->has_boundary_conditions_ = this->outer_universe()->has_boundary_conditions();
+    this->has_boundary_conditions_ =
+        this->outer_universe()->has_boundary_conditions();
   }
 }
 
 void Lattice::set_outisde_universe(int32_t univ) {
   outer_universe_index = univ;
-  
+
   if (this->outer_universe()) {
-    this->has_boundary_conditions_ = this->outer_universe()->has_boundary_conditions();
+    this->has_boundary_conditions_ =
+        this->outer_universe()->has_boundary_conditions();
   }
 }
 
@@ -73,9 +74,8 @@ Universe* Lattice::get_universe(std::size_t ind) {
   return geometry::universes[uni_indx].get();
 }
 
-Boundary Lattice::get_boundary_condition(const Position& r,
-                                                 const Direction& u,
-                                                 int32_t on_surf) const {
+Boundary Lattice::get_boundary_condition(const Position& r, const Direction& u,
+                                         int32_t on_surf) const {
   if (this->has_boundary_conditions()) {
     // Get lattice
 
@@ -90,9 +90,8 @@ Boundary Lattice::get_boundary_condition(const Position& r,
   return ret_bound;
 }
 
-Boundary Lattice::lost_get_boundary(const Position& r,
-                                            const Direction& u,
-                                            int32_t on_surf) const {
+Boundary Lattice::lost_get_boundary(const Position& r, const Direction& u,
+                                    int32_t on_surf) const {
   // Get lattice
 
   const bool is_inside = this->is_inside(r, u);
@@ -131,21 +130,21 @@ bool Lattice::contains_universe(uint32_t id) const {
 }
 
 uint32_t Lattice::get_num_cell_instances(uint32_t cell_id) const {
-   uint32_t instances = 0;
+  uint32_t instances = 0;
 
   // go through all tiles/universes
   for (std::size_t ind = 0; ind < this->size(); ind++) {
-     const Universe* uni = this->get_universe(ind);    
-     if(uni) {
+    const Universe* uni = this->get_universe(ind);
+    if (uni) {
       instances += uni->get_num_cell_instances(cell_id);
-     }
+    }
   }
 
   if (this->outer_universe()) {
     instances += this->outer_universe()->get_num_cell_instances(cell_id);
   }
 
-  return instances; 
+  return instances;
 }
 
 std::set<uint32_t> Lattice::get_all_mat_cells() const {
@@ -153,29 +152,28 @@ std::set<uint32_t> Lattice::get_all_mat_cells() const {
 
   // go through all tiles/universes
   for (std::size_t ind = 0; ind < this->size(); ind++) {
-    const Universe* uni = this->get_universe(ind);    
+    const Universe* uni = this->get_universe(ind);
     if (uni) {
-      auto uni_mat_cells = uni->get_all_mat_cells(); 
+      auto uni_mat_cells = uni->get_all_mat_cells();
       mat_cells.insert(uni_mat_cells.begin(), uni_mat_cells.end());
     }
   }
 
   if (this->outer_universe()) {
-      auto outer_mat_cells = this->outer_universe()->get_all_mat_cells(); 
-      mat_cells.insert(outer_mat_cells.begin(), outer_mat_cells.end());
+    auto outer_mat_cells = this->outer_universe()->get_all_mat_cells();
+    mat_cells.insert(outer_mat_cells.begin(), outer_mat_cells.end());
   }
 
   return mat_cells;
 }
 
 void Lattice::make_offset_map() {
-  
-  cell_id_offsets.resize(this->size() + (this->outer_universe() ? 1 : 0));
+  cell_offset_map.resize(this->size() + (this->outer_universe() ? 1 : 0));
   // Set of all material cells contained in this universe
   std::set<uint32_t> mat_cell_ids = this->get_all_mat_cells();
 
   // Set all offsets to be zero
-  for (auto& map : cell_id_offsets) {
+  for (auto& map : cell_offset_map) {
     for (uint32_t mat_cell_id : mat_cell_ids) {
       map[mat_cell_id] = 0;
     }
@@ -183,13 +181,14 @@ void Lattice::make_offset_map() {
 
   // Now go through and build all offsets
   for (std::size_t i = 1; i < this->size(); i++) {
-    const Universe* uni = this->get_universe(i-1);
+    const Universe* uni = this->get_universe(i - 1);
 
-    for(uint32_t mat_cell_id : mat_cell_ids) {
-      cell_id_offsets[i][mat_cell_id] = cell_id_offsets[i-1][mat_cell_id];
+    for (uint32_t mat_cell_id : mat_cell_ids) {
+      cell_offset_map[i][mat_cell_id] = cell_offset_map[i - 1][mat_cell_id];
 
       if (uni) {
-        cell_id_offsets[i][mat_cell_id] += uni->get_num_cell_instances(mat_cell_id);
+        cell_offset_map[i][mat_cell_id] +=
+            uni->get_num_cell_instances(mat_cell_id);
       }
     }
   }
@@ -197,10 +196,12 @@ void Lattice::make_offset_map() {
   // Also get offsets for outer universe
   if (this->outer_universe()) {
     auto uni = this->outer_universe();
-    const std::size_t i = cell_id_offsets.size() - 1;
+    const std::size_t i = cell_offset_map.size() - 1;
 
-    for(uint32_t mat_cell_id : mat_cell_ids) {
-      cell_id_offsets[i][mat_cell_id] = cell_id_offsets[i-1][mat_cell_id] + uni->get_num_cell_instances(mat_cell_id);
+    for (uint32_t mat_cell_id : mat_cell_ids) {
+      cell_offset_map[i][mat_cell_id] =
+          cell_offset_map[i - 1][mat_cell_id] +
+          uni->get_num_cell_instances(mat_cell_id);
     }
   }
 }

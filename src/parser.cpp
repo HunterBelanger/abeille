@@ -222,6 +222,10 @@ void make_geometry(const YAML::Node& input) {
     }
   }
 
+  for (auto& uni : geometry::universes) {
+    uni->make_offset_map();
+  }
+
   // Parse root universe
   if (input["root-universe"] && input["root-universe"].IsScalar()) {
     uint32_t root_id = input["root-universe"].as<uint32_t>();

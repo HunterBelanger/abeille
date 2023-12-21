@@ -41,7 +41,7 @@ class RectLattice : public Lattice {
   UniqueCell get_cell(Position r, Direction u, int32_t on_surf) const override;
 
   UniqueCell get_cell(std::vector<GeoLilyPad>& stack, Position r, Direction u,
-                 int32_t on_surf) const override;
+                      int32_t on_surf) const override;
 
   double distance_to_tile_boundary(Position r_local, Direction u,
                                    std::array<int32_t, 3> tile) const override;

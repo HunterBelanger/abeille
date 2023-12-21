@@ -36,25 +36,26 @@ class Universe {
   Universe(uint32_t i_id, std::string i_name);
   virtual ~Universe() = default;
 
-  virtual UniqueCell get_cell(Position r, Direction u, int32_t on_surf) const = 0;
+  virtual UniqueCell get_cell(Position r, Direction u,
+                              int32_t on_surf) const = 0;
 
   virtual UniqueCell get_cell(std::vector<GeoLilyPad>& stack, Position r,
-                         Direction u, int32_t on_surf) const = 0;
+                              Direction u, int32_t on_surf) const = 0;
 
   virtual Boundary lost_get_boundary(const Position& r, const Direction& u,
                                      int32_t on_surf) const = 0;
 
   virtual Boundary get_boundary_condition(const Position& r, const Direction& u,
                                           int32_t on_surf) const = 0;
-  
+
   //============================================================================
   // Lattice Methods
-  virtual std::array<int32_t, 3> get_tile(Position r, Direction u) const; 
-  
+  virtual std::array<int32_t, 3> get_tile(Position r, Direction u) const;
+
   // Given the position in the frame of the lattice (NOT THE FRAME OF THE
   // TILE!), the distance to the edge of the provided tile is returned.
-  virtual double distance_to_tile_boundary(
-      Position r_local, Direction u, std::array<int32_t, 3> tile) const;
+  virtual double distance_to_tile_boundary(Position r_local, Direction u,
+                                           std::array<int32_t, 3> tile) const;
   //============================================================================
 
   virtual std::set<uint32_t> get_all_mat_cells() const = 0;
@@ -72,10 +73,10 @@ class Universe {
   std::string name() const;
 
  protected:
+  std::vector<std::map<const uint32_t, uint32_t>> cell_offset_map;
   uint32_t id_;
   std::string name_;
   bool has_boundary_conditions_ = true;
-  std::vector<std::map<const uint32_t, uint32_t>> cell_id_offsets;
 
 };  // Universe
 

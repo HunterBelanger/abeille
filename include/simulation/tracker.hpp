@@ -46,7 +46,7 @@ class Tracker {
     tree.reserve(10);
 
     current_cell = geometry::get_cell(tree, r_, u_, surface_token_);
-    if (current_cell.cell) current_mat = current_cell.cell->material();
+    if (current_cell) current_mat = current_cell.cell->material();
   };
 
   ~Tracker() = default;
@@ -63,7 +63,7 @@ class Tracker {
   void restart_get_current() {
     tree.clear();
     current_cell = geometry::get_cell(tree, r_, u_, surface_token_);
-    if (current_cell.cell) {
+    if (current_cell) {
       if (current_cell.cell->fill() == Cell::Fill::Universe) {
         fatal_error("Did not find a cell with a material.");
       }
@@ -89,6 +89,7 @@ class Tracker {
 
   Material* material() { return current_mat; }
   Cell* cell() { return current_cell.cell; }
+  uint32_t cell_instance() const { return current_cell.instance; }
 
   Boundary get_boundary_condition() const {
     if (!this->is_lost()) {
@@ -229,7 +230,7 @@ class Tracker {
     surface_token_ = -d_t.token;
   }
 
-  bool is_lost() const { return !current_cell.cell; }
+  bool is_lost() const { return !current_cell; }
 
   void get_current() {
     // Iterator pointing to the highest leaf in the tree
@@ -291,10 +292,10 @@ class Tracker {
 
       // If we couldn't get a cell, we need to call in the big guns, and
       // re-start from scratch.
-      if (!current_cell.cell) restart_get_current();
+      if (!current_cell) restart_get_current();
 
       // If we have a valid cell, we must now also fill the material.
-      if (current_cell.cell) {
+      if (current_cell) {
         if (current_cell.cell->fill() == Cell::Fill::Universe) {
           fatal_error("Did not find a cell with a material.");
         }

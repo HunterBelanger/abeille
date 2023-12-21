@@ -122,7 +122,10 @@ class Cell {
 
 struct UniqueCell {
   Cell* cell = nullptr;
+  uint32_t id = 0;
   uint32_t instance = 0;
+
+  operator bool() const { return cell != nullptr; }
 };
 
 //===========================================================================

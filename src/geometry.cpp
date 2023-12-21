@@ -46,7 +46,7 @@ UniqueCell get_cell(const Position& r, const Direction& u, int32_t on_surf) {
 }
 
 UniqueCell get_cell(std::vector<GeoLilyPad>& stack, const Position& r,
-               const Direction& u, int32_t on_surf) {
+                    const Direction& u, int32_t on_surf) {
   // Ask root_universe for cell. If no cell is found, answer
   // will be a nullptr
   return root_universe->get_cell(stack, r, u, on_surf);
