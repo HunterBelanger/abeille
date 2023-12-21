@@ -95,11 +95,11 @@ UniqueCell CellUniverse::get_cell(std::vector<GeoLilyPad>& stack, Position r,
         ucell.cell = cell;
         // This is a deep as it goes, so we set the ID here
         ucell.id = ucell.cell->id();
-        ucell.instance += cell_offset_map[i].at(ucell.id);
+        ucell.instance = 0;
         return ucell;
       }
 
-      ucell = cell->universe()->get_cell(r, u, on_surf);
+      ucell = cell->universe()->get_cell(stack, r, u, on_surf);
       ucell.instance += cell_offset_map[i].at(ucell.id);
       return ucell;
     }
