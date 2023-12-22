@@ -26,7 +26,6 @@
 #include <geometry/geometry.hpp>
 #include <geometry/hex_lattice.hpp>
 #include <geometry/lattice.hpp>
-#include <geometry/lattice_universe.hpp>
 #include <geometry/rect_lattice.hpp>
 #include <geometry/surfaces/all_surfaces.hpp>
 #include <materials/nuclide.hpp>
@@ -64,7 +63,6 @@
 std::map<uint32_t, size_t> surface_id_to_indx;
 std::map<uint32_t, size_t> cell_id_to_indx;
 std::map<uint32_t, size_t> universe_id_to_indx;
-std::map<uint32_t, size_t> lattice_id_to_indx;
 
 //===========================================================================
 // Objects to build Simulation
@@ -224,6 +222,13 @@ void make_geometry(const YAML::Node& input) {
     }
   }
 
+  // Now that all surfaces, cells, and universes have been created, we can go
+  // through and create all of the offset maps for determining the unique
+  // instance of each material cell.
+  for (auto& uni : geometry::universes) {
+    uni->make_offset_map();
+  }
+
   // Parse root universe
   if (input["root-universe"] && input["root-universe"].IsScalar()) {
     uint32_t root_id = input["root-universe"].as<uint32_t>();
@@ -296,13 +301,12 @@ void make_universe(const YAML::Node& uni_node, const YAML::Node& input) {
     if (universe_id_to_indx.find(id) == universe_id_to_indx.end()) {
       if (uni_node["cells"] && uni_node["cells"].IsSequence()) {
         make_cell_universe(uni_node);
-      } else if (uni_node["lattice"] && uni_node["lattice"].IsScalar()) {
-        make_lattice_universe(uni_node, input);
+      } else if (uni_node["pitch"] && uni_node["pitch"].IsSequence()) {
+        make_lattice(uni_node, input);
       } else {
         fatal_error("Invalid universe definition.");
       }
     }
-
   } else {
     fatal_error("Universe must have a valid id.");
   }

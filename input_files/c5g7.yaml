@@ -240,19 +240,6 @@ universes:
     name: moderator
     id: 7
 
-  - lattice: 1
-    id: 8
-    name: UO2 uni
-
-  - lattice: 2
-    id: 9
-    name: MOX uni
-
-  - lattice: 3
-    id: 100
-    name: root uni
-
-lattices:
   # The type of lattice used in this simulation is a rectlinear lattice.
   # The shape describes the number of lattice tiles or blocks along the x, y,
   # and z directions respectively. The pitch is the distance between lattice
@@ -261,8 +248,8 @@ lattices:
   # lattice tiles are given in row-major order. Here, we can envision the 
   # x-axis runing down the file, and the y-axis running to the right.
   # All lattices must have a unique id greater than or equal to 1.
-  - type: rectlinear
-    id: 1
+  - id: 8
+    type: rectlinear
     shape: [17, 17, 1]
     pitch: [1.26, 1.26, 192.78]
     origin: [0., 0., 0.]
@@ -285,8 +272,8 @@ lattices:
                 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
                 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
 
-  - type: rectlinear
-    id: 2
+  - id: 9
+    type: rectlinear
     shape: [17, 17, 1]
     pitch: [1.26, 1.26, 192.78]
     origin: [0., 0., 0.]
@@ -309,8 +296,8 @@ lattices:
                 2,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,2,
                 2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2]
 
-  - type: rectlinear
-    id: 3
+  - id: 100
+    type: rectlinear
     name: core lattice
     shape: [2,2,1]
     pitch: [21.42, 21.42, 192.78]
@@ -318,7 +305,7 @@ lattices:
     outer: 7
     universes: [ 8,  9,
                  9,  8 ]
-    
+
 # This is the universe id which is designated a the root of the geometry.
 root-universe: 100
 
