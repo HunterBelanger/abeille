@@ -95,7 +95,7 @@ UniqueCell CellUniverse::get_cell(std::vector<GeoLilyPad>& stack, Position r,
         ucell.cell = cell;
         // This is a deep as it goes, so we set the ID here
         ucell.id = ucell.cell->id();
-        ucell.instance = 0;
+        ucell.instance += cell_offset_map[i].at(ucell.id);
         return ucell;
       }
 
@@ -275,10 +275,16 @@ void CellUniverse::make_offset_map() {
     for (uint32_t mat_cell_id : mat_cell_ids) {
       cell_offset_map[i][mat_cell_id] = cell_offset_map[i - 1][mat_cell_id];
 
-      Cell* cell = geometry::cells[i - 1].get();
+      Cell* cell = geometry::cells[cell_indicies[i - 1]].get();
       if (cell->fill() == Cell::Fill::Universe) {
         cell_offset_map[i][mat_cell_id] +=
             cell->universe()->get_num_cell_instances(mat_cell_id);
+      } else if (cell->id() == mat_cell_id) {
+        // Currently, this isn't strictly necessary, as a material cell should
+        // only appear in a universe once, so a non-zero offset would never be
+        // used. This might become important however if cell transformations
+        // are added one day.
+        cell_offset_map[i][mat_cell_id] += 1;
       }
     }
   }

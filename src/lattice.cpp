@@ -195,13 +195,16 @@ void Lattice::make_offset_map() {
 
   // Also get offsets for outer universe
   if (this->outer_universe()) {
-    auto uni = this->outer_universe();
     const std::size_t i = cell_offset_map.size() - 1;
+    auto uni = this->get_universe(this->size() - 1);
 
     for (uint32_t mat_cell_id : mat_cell_ids) {
-      cell_offset_map[i][mat_cell_id] =
-          cell_offset_map[i - 1][mat_cell_id] +
-          uni->get_num_cell_instances(mat_cell_id);
+      cell_offset_map[i][mat_cell_id] = cell_offset_map[i - 1][mat_cell_id];
+
+      if (uni) {
+        cell_offset_map[i][mat_cell_id] +=
+            uni->get_num_cell_instances(mat_cell_id);
+      }
     }
   }
 }
