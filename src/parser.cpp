@@ -222,6 +222,9 @@ void make_geometry(const YAML::Node& input) {
     }
   }
 
+  // Now that all surfaces, cells, and universes have been created, we can go
+  // through and create all of the offset maps for determining the unique
+  // instance of each material cell.
   for (auto& uni : geometry::universes) {
     uni->make_offset_map();
   }

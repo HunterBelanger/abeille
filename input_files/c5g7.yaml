@@ -306,7 +306,6 @@ universes:
     universes: [ 8,  9,
                  9,  8 ]
 
-
 # This is the universe id which is designated a the root of the geometry.
 root-universe: 100
 

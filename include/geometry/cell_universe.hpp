@@ -25,8 +25,9 @@
 #ifndef CELL_UNIVERSE_H
 #define CELL_UNIVERSE_H
 
-#include <yaml-cpp/yaml.h>
 #include <geometry/universe.hpp>
+
+#include <yaml-cpp/yaml.h>
 
 #include <map>
 

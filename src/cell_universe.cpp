@@ -25,7 +25,6 @@
 #include <geometry/boundary.hpp>
 #include <geometry/cell_universe.hpp>
 #include <geometry/geometry.hpp>
-#include <map>
 #include <utils/error.hpp>
 
 CellUniverse::CellUniverse(std::vector<uint32_t> i_ind, uint32_t i_id,
@@ -282,7 +281,7 @@ void CellUniverse::make_offset_map() {
       } else if (cell->id() == mat_cell_id) {
         // Currently, this isn't strictly necessary, as a material cell should
         // only appear in a universe once, so a non-zero offset would never be
-        // used. This might become important however if cell transformations
+        // used. This might become important, however, if cell transformations
         // are added one day.
         cell_offset_map[i][mat_cell_id] += 1;
       }
@@ -307,11 +306,11 @@ void make_cell_universe(const YAML::Node& uni_node) {
 
   // Get cells
   std::vector<uint32_t> cells;
-  std::map<uint32_t, int> instances;
   if (uni_node["cells"] && uni_node["cells"].IsSequence()) {
     // Go through and check all cells
     for (size_t c = 0; c < uni_node["cells"].size(); c++) {
       uint32_t cell_id = uni_node["cells"][c].as<uint32_t>();
+
       // Get index for id
       uint32_t cell_indx = 0;
       if (cell_id_to_indx.find(cell_id) == cell_id_to_indx.end()) {
@@ -322,11 +321,6 @@ void make_cell_universe(const YAML::Node& uni_node) {
         cell_indx = static_cast<uint32_t>(cell_id_to_indx[cell_id]);
       }
       cells.push_back(cell_indx);
-      // if the index exists
-      if (instances.find(cell_indx) != instances.end())
-        instances[cell_indx]++;
-      else
-        instances.insert({cell_indx, 0});
     }
 
   } else {

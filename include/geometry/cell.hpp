@@ -120,6 +120,8 @@ class Cell {
   Universe* universe_raw_;
 };  // Cell
 
+//============================================================================
+// UniqueCell
 struct UniqueCell {
   Cell* cell = nullptr;
   uint32_t id = 0;
