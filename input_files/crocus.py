@@ -227,11 +227,10 @@ Outter_Lattice.universes = [n, n, n, n, n, n, n, M, M, M, M, M, M, n, n, n, n, n
                             n, n, n, M, M, M, M, M, M, M, M, M, M, M, M, M, M, n, n, n,
                             n, n, n, n, n, M, M, M, M, M, M, M, M, M, M, n, n, n, n, n,
                             n, n, n, n, n, n, n, M, M, M, M, M, M, n, n, n, n, n, n, n ]
-Outer_Lat_Uni = LatticeUniverse(Outter_Lattice)
 
 
 Inner_Lattice = RectLattice(shape=(22, 22, 1), pitch=(1.837, 1.837, 120.),
-                            origin=(0., 0.,57.3), outer_universe= Outer_Lat_Uni)
+                            origin=(0., 0.,57.3), outer_universe= Outter_Lattice)
 Inner_Lattice.universes = [n, n, n, n, n, n, n, n, U, U, U, U, U, U, n, n, n, n, n, n, n, n,
                            n, n, n, n, n, n, n, n, U, U, U, U, U, U, n, n, n, n, n, n, n, n,
                            n, n, n, n, n, U, U, U, U, U, U, U, U, U, U, U, U, n, n, n, n, n,
@@ -254,7 +253,6 @@ Inner_Lattice.universes = [n, n, n, n, n, n, n, n, U, U, U, U, U, U, n, n, n, n,
                            n, n, n, n, n, U, U, U, U, U, U, U, U, U, U, U, U, n, n, n, n, n,
                            n, n, n, n, n, n, n, n, U, U, U, U, U, U, n, n, n, n, n, n, n, n,
                            n, n, n, n, n, n, n, n, U, U, U, U, U, U, n, n, n, n, n, n, n, n ]
-Inner_Lat_Uni = LatticeUniverse(Inner_Lattice)
 
 #===============================================================================
 # Sources
@@ -289,5 +287,5 @@ settings.transport = 'surface-tracking'
 entropy = Entropy(Point(-29.17, -29.17, -2.7), Point(29.17, 29.17, 100.), (5,5,5))
 
 
-input = Input(Inner_Lat_Uni, sources, settings, tallies=tallies, entropy=entropy)
+input = Input(Inner_Lattice, sources, settings, tallies=tallies, entropy=entropy)
 input.to_file('crocus.yaml')

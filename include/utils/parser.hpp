@@ -45,7 +45,6 @@
 extern std::map<uint32_t, size_t> surface_id_to_indx;
 extern std::map<uint32_t, size_t> cell_id_to_indx;
 extern std::map<uint32_t, size_t> universe_id_to_indx;
-extern std::map<uint32_t, size_t> lattice_id_to_indx;
 
 //===========================================================================
 // Object to build Simulation

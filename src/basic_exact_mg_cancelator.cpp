@@ -173,7 +173,7 @@ std::optional<Position> BasicExactMGCancelator::sample_position_sobol(
 }
 
 Material* BasicExactMGCancelator::get_material(const Position& r) const {
-  Cell* cell = geometry::get_cell(r, {1., 0., 0.});
+  Cell* cell = geometry::get_cell(r, {1., 0., 0.}).cell;
 
   if (!cell) {
     return nullptr;

@@ -52,15 +52,12 @@ extern std::shared_ptr<Universe> root_universe;
 // All universes in problem(including root universe at 0)
 extern std::vector<std::shared_ptr<Universe>> universes;
 
-// All lattices in problem
-extern std::vector<std::shared_ptr<Lattice>> lattices;
-
 //==========================================================================
 // Functions
-Cell* get_cell(const Position& r, const Direction& u, int32_t on_surf = 0);
+UniqueCell get_cell(const Position& r, const Direction& u, int32_t on_surf = 0);
 
-Cell* get_cell(std::vector<GeoLilyPad>& stack, const Position& r,
-               const Direction& u, int32_t on_surf = 0);
+UniqueCell get_cell(std::vector<GeoLilyPad>& stack, const Position& r,
+                    const Direction& u, int32_t on_surf = 0);
 
 int32_t id_to_token(int32_t id);
 

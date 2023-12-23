@@ -69,6 +69,7 @@ class GuiPlotter : public ImApp::Layer {
   double ox, oy, oz;      // Plot origin
   double mx, my, mz;      // Mouse position
   ::Cell* mcell;          // Mouse cell
+  uint32_t mcell_inst;    // Mouse cell instance
   ::Material* mmaterial;  // Mouse material
   double dist_per_pixel;
   ImApp::Pixel background;

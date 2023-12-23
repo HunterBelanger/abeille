@@ -364,13 +364,9 @@ class Universe(ABC):
         pass
 
 
-class Lattice(ABC):
-    _id_counter = 1
-
+class Lattice(Universe):
     def __init__(self, name: Optional[str] = None, outer_universe: Optional[Universe] = None, origin: Tuple[float, float, float] = (0., 0., 0.), universes: Iterable[Universe] = []):
-        self.id = Lattice._id_counter
-        Lattice._id_counter += 1
-        self.name = name
+        super(Lattice, self).__init__(name)
         self.outer_universe = outer_universe
         self.origin = origin
         self.universes = universes
@@ -431,32 +427,6 @@ class CellUniverse(Universe):
             cell.add_universes(unis)
 
 
-class LatticeUniverse(Universe):
-    def __init__(self, lattice: Lattice, name: Optional[str] = None):
-        self.lattice = lattice
-        super(LatticeUniverse, self).__init__(name)
-
-    def to_string(self):
-        out = "id: {:}, lattice: {:}".format(self.id, self.lattice.id)
-        if self.name is not None:
-            out += ", name: {:}".format(self.name)
-        return "  - {"+out+"}"
-
-    def add_surfaces(self, surfs: Dict[int, Surface]) -> None:
-        self.lattice.add_surfaces(surfs)
-
-    def add_cells(self, cells: Dict[int, Cell]) -> None:
-        self.lattice.add_cells(cells)
-
-    def add_lattices(self, lats: Dict[int, Lattice]) -> None:
-        if self.lattice.id not in lats:
-            lats[self.lattice.id] = self.lattice
-            self.lattice.add_lattices(lats)
-    
-    def add_universes(self, unis: Dict[int, Universe]) -> None:
-        self.lattice.add_universes(unis)
-
-
 class RectLattice(Lattice):
     def __init__(self, shape: Tuple[int, int, int], pitch: Tuple[float, float, float], origin: Tuple[float, float, float] = (0., 0., 0.), name: Optional[str] = None, outer_universe: Optional[Universe] = None, universes: Iterable[Universe] = []):
         if len(shape) != 3:
@@ -497,7 +467,7 @@ class RectLattice(Lattice):
                     if indx < len(self.universes)-1:
                         out += "{:},".format(uni_id)
                     else:
-                        out += "{:}]\n".format(uni_id)
+                        out += "{:}]".format(uni_id)
 
                     indx += 1
 

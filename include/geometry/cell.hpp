@@ -120,6 +120,16 @@ class Cell {
   Universe* universe_raw_;
 };  // Cell
 
+//============================================================================
+// UniqueCell
+struct UniqueCell {
+  Cell* cell = nullptr;
+  uint32_t id = 0;
+  uint32_t instance = 0;
+
+  operator bool() const { return cell != nullptr; }
+};
+
 //===========================================================================
 // Non-Member Functions
 std::vector<int32_t> infix_to_rpn(const std::vector<int32_t>& infix);

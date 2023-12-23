@@ -23,9 +23,21 @@
  *
  * */
 #include <geometry/universe.hpp>
+#include <utils/constants.hpp>
 
 Universe::Universe(uint32_t i_id, std::string i_name)
-    : id_{i_id}, name_{i_name} {}
+    : cell_offset_map{}, id_{i_id}, name_{i_name} {}
+
+std::array<int32_t, 3> Universe::get_tile(Position /*r*/,
+                                          Direction /*u*/) const {
+  return {0, 0, 0};
+}
+
+double Universe::distance_to_tile_boundary(
+    Position /*r_local*/, Direction /*u*/,
+    std::array<int32_t, 3> /*tile*/) const {
+  return INF;
+}
 
 uint32_t Universe::id() const { return id_; }
 

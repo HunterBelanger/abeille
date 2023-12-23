@@ -36,18 +36,17 @@ std::vector<std::shared_ptr<Surface>> surfaces;
 std::vector<std::shared_ptr<Cell>> cells;
 std::shared_ptr<Universe> root_universe;
 std::vector<std::shared_ptr<Universe>> universes;
-std::vector<std::shared_ptr<Lattice>> lattices;
 
 //==========================================================================
 // Function Definitions
-Cell* get_cell(const Position& r, const Direction& u, int32_t on_surf) {
+UniqueCell get_cell(const Position& r, const Direction& u, int32_t on_surf) {
   // Ask root_universe for cell. If no cell is found, answer
   // will be a nullptr
   return root_universe->get_cell(r, u, on_surf);
 }
 
-Cell* get_cell(std::vector<GeoLilyPad>& stack, const Position& r,
-               const Direction& u, int32_t on_surf) {
+UniqueCell get_cell(std::vector<GeoLilyPad>& stack, const Position& r,
+                    const Direction& u, int32_t on_surf) {
   // Ask root_universe for cell. If no cell is found, answer
   // will be a nullptr
   return root_universe->get_cell(stack, r, u, on_surf);

@@ -78,7 +78,10 @@ bool HexLattice::is_inside(Position r, Direction /*u*/) const {
   return true;
 }
 
-Cell* HexLattice::get_cell(Position r, Direction u, int32_t on_surf) const {
+UniqueCell HexLattice::get_cell(Position r, Direction u,
+                                int32_t on_surf) const {
+  UniqueCell ucell;
+
   // Get coordinates in frame of center tile
   Position r_o{r.x() - X_o, r.y() - Y_o, r.z() - Z_o};
 
@@ -92,45 +95,55 @@ Cell* HexLattice::get_cell(Position r, Direction u, int32_t on_surf) const {
   if (ring >= Nrings) {
     // Invalid ring
     if (outer_universe_index == -1) {
-      return nullptr;
+      return ucell;
     } else {
-      return geometry::universes[static_cast<uint32_t>(outer_universe_index)]
-          ->get_cell(r, u, on_surf);
+      ucell = geometry::universes[static_cast<uint32_t>(outer_universe_index)]
+                  ->get_cell(r, u, on_surf);
+      if (ucell) ucell.instance += cell_offset_map.back().at(ucell.id);
+      return ucell;
     }
   }
 
   // Check z bin now
   if (qrz[2] < 0 || qrz[2] >= static_cast<int32_t>(Nz)) {
     if (outer_universe_index == -1) {
-      return nullptr;
+      return ucell;
     } else {
-      return geometry::universes[static_cast<uint32_t>(outer_universe_index)]
-          ->get_cell(r, u, on_surf);
+      ucell = geometry::universes[static_cast<uint32_t>(outer_universe_index)]
+                  ->get_cell(r, u, on_surf);
+      if (ucell) ucell.instance += cell_offset_map.back().at(ucell.id);
+      return ucell;
     }
   }
 
   // Inside a lattice bin
-  size_t indx = linear_index({qrz[0], qrz[1]}, qrz[2]);
+  const size_t indx = linear_index({qrz[0], qrz[1]}, qrz[2]);
 
   // If -1, send to outside universe
   if (lattice_universes[indx] == -1) {
     if (outer_universe_index == -1) {
-      return nullptr;
+      return ucell;
     } else {
-      return geometry::universes[static_cast<uint32_t>(outer_universe_index)]
-          ->get_cell(r, u, on_surf);
+      ucell = geometry::universes[static_cast<uint32_t>(outer_universe_index)]
+                  ->get_cell(r, u, on_surf);
+      if (ucell) ucell.instance += cell_offset_map.back().at(ucell.id);
+      return ucell;
     }
   }
 
   // Move coordinates to tile center
   Position center = tile_center(qrz[0], qrz[1], qrz[2]);
   Position r_tile = r_o - center;
-  return geometry::universes[static_cast<uint32_t>(lattice_universes[indx])]
-      ->get_cell(r_tile, u, on_surf);
+  ucell = geometry::universes[static_cast<uint32_t>(lattice_universes[indx])]
+              ->get_cell(r_tile, u, on_surf);
+  if (ucell) ucell.instance += cell_offset_map[indx].at(ucell.id);
+  return ucell;
 }
 
-Cell* HexLattice::get_cell(std::vector<GeoLilyPad>& stack, Position r,
-                           Direction u, int32_t on_surf) const {
+UniqueCell HexLattice::get_cell(std::vector<GeoLilyPad>& stack, Position r,
+                                Direction u, int32_t on_surf) const {
+  UniqueCell ucell;
+
   // Get coordinates in frame of center tile
   Position r_o{r.x() - X_o, r.y() - Y_o, r.z() - Z_o};
 
@@ -146,12 +159,14 @@ Cell* HexLattice::get_cell(std::vector<GeoLilyPad>& stack, Position r,
     if (outer_universe_index == -1) {
       // Save info to stack
       stack.push_back({GeoLilyPad::PadType::Lattice, id_, r, qrz, false});
-      return nullptr;
+      return ucell;
     } else {
       // Save info to stack
       stack.push_back({GeoLilyPad::PadType::Lattice, id_, r, qrz, true});
-      return geometry::universes[static_cast<uint32_t>(outer_universe_index)]
-          ->get_cell(stack, r, u, on_surf);
+      ucell = geometry::universes[static_cast<uint32_t>(outer_universe_index)]
+                  ->get_cell(stack, r, u, on_surf);
+      if (ucell) ucell.instance += cell_offset_map.back().at(ucell.id);
+      return ucell;
     }
   }
 
@@ -160,29 +175,33 @@ Cell* HexLattice::get_cell(std::vector<GeoLilyPad>& stack, Position r,
     if (outer_universe_index == -1) {
       // Save info to stack
       stack.push_back({GeoLilyPad::PadType::Lattice, id_, r, qrz, false});
-      return nullptr;
+      return ucell;
     } else {
       // Save info to stack
       stack.push_back({GeoLilyPad::PadType::Lattice, id_, r, qrz, true});
-      return geometry::universes[static_cast<uint32_t>(outer_universe_index)]
-          ->get_cell(stack, r, u, on_surf);
+      ucell = geometry::universes[static_cast<uint32_t>(outer_universe_index)]
+                  ->get_cell(stack, r, u, on_surf);
+      if (ucell) ucell.instance += cell_offset_map.back().at(ucell.id);
+      return ucell;
     }
   }
 
   // Inside a lattice bin
-  size_t indx = linear_index({qrz[0], qrz[1]}, qrz[2]);
+  const size_t indx = linear_index({qrz[0], qrz[1]}, qrz[2]);
 
   // If -1, send to outside universe
   if (lattice_universes[indx] == -1) {
     if (outer_universe_index == -1) {
       // Save info to stack
       stack.push_back({GeoLilyPad::PadType::Lattice, id_, r, qrz, false});
-      return nullptr;
+      return ucell;
     } else {
       // Save info to stack
       stack.push_back({GeoLilyPad::PadType::Lattice, id_, r, qrz, true});
-      return geometry::universes[static_cast<uint32_t>(outer_universe_index)]
-          ->get_cell(stack, r, u, on_surf);
+      ucell = geometry::universes[static_cast<uint32_t>(outer_universe_index)]
+                  ->get_cell(stack, r, u, on_surf);
+      if (ucell) ucell.instance += cell_offset_map.back().at(ucell.id);
+      return ucell;
     }
   }
 
@@ -191,8 +210,10 @@ Cell* HexLattice::get_cell(std::vector<GeoLilyPad>& stack, Position r,
   Position r_tile = r_o - center;
   // Save info to stack
   stack.push_back({GeoLilyPad::PadType::Lattice, id_, r, qrz, false});
-  return geometry::universes[static_cast<uint32_t>(lattice_universes[indx])]
-      ->get_cell(stack, r_tile, u, on_surf);
+  ucell = geometry::universes[static_cast<uint32_t>(lattice_universes[indx])]
+              ->get_cell(stack, r_tile, u, on_surf);
+  if (ucell) ucell.instance += cell_offset_map[indx].at(ucell.id);
+  return ucell;
 }
 
 void HexLattice::set_elements(std::vector<int32_t> univs) {
@@ -504,10 +525,10 @@ void make_hex_lattice(const YAML::Node& latt_node, const YAML::Node& input) {
     fatal_error("Lattice instance must have a valid universes definition.");
   }
 
-  // Make sure lattice id not taken
-  if (lattice_id_to_indx.find(id) != lattice_id_to_indx.end()) {
+  // Make sure id not taken
+  if (universe_id_to_indx.find(id) != universe_id_to_indx.end()) {
     std::stringstream mssg;
-    mssg << "Lattice id " << id << " appears multiple times.";
+    mssg << "Universe id " << id << " appears multiple times.";
     fatal_error(mssg.str());
   }
 
@@ -551,6 +572,6 @@ void make_hex_lattice(const YAML::Node& latt_node, const YAML::Node& input) {
   }
 
   // Set lattice
-  lattice_id_to_indx[id] = geometry::lattices.size();
-  geometry::lattices.push_back(lat);
+  universe_id_to_indx[id] = geometry::universes.size();
+  geometry::universes.push_back(lat);
 }

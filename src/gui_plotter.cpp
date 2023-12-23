@@ -210,9 +210,11 @@ void GuiPlotter::render_viewport() {
 
     if (mtrkr.is_lost()) {
       mcell = nullptr;
+      mcell_inst = 0;
       mmaterial = nullptr;
     } else {
       mcell = mtrkr.cell();
+      mcell_inst = mtrkr.cell_instance();
       mmaterial = mtrkr.material();
     }
   }
@@ -328,38 +330,39 @@ void GuiPlotter::render_controls() {
                 static_cast<float>(color.b()) / 255.f,
                 static_cast<float>(color.a()) / 255.f);
 
-  if (colorby == ColorBy::Cell) {
-    if (!mcell) {
-      ImGui::Text("Cell for given position is not defined.");
-    } else {
-      ImGui::Text("Cell ID: %i", mcell->id());
-      ImGui::Text("Cell Name: %s", mcell->name().data());
-      if (ImGui::ColorEdit3("", reinterpret_cast<float*>(&fcolor))) {
-        color.r() = static_cast<uint8_t>(fcolor.x * 255.f);
-        color.g() = static_cast<uint8_t>(fcolor.y * 255.f);
-        color.b() = static_cast<uint8_t>(fcolor.z * 255.f);
-
-        cell_id_to_color[mcell->id()] = color;
-
-        must_rerender = true;
-      }
-    }
+  if (!mcell) {
+    ImGui::Text("Cell for given position is not defined.");
   } else {
-    if (!mmaterial) {
-      ImGui::Text("Material for given position is not defined.");
-    } else {
-      ImGui::Text("Material ID: %i", mmaterial->id());
-      ImGui::Text("Material Name: %s", mmaterial->name().data());
+    ImGui::Text("Cell ID: %i", mcell->id());
+    ImGui::Text("Cell Instance: %i", mcell_inst);
+    ImGui::Text("Cell Name: %s", mcell->name().data());
 
-      if (ImGui::ColorEdit3("", reinterpret_cast<float*>(&fcolor))) {
-        color.r() = static_cast<uint8_t>(fcolor.x * 255.f);
-        color.g() = static_cast<uint8_t>(fcolor.y * 255.f);
-        color.b() = static_cast<uint8_t>(fcolor.z * 255.f);
+    if (colorby == ColorBy::Cell &&
+        ImGui::ColorEdit3("", reinterpret_cast<float*>(&fcolor))) {
+      color.r() = static_cast<uint8_t>(fcolor.x * 255.f);
+      color.g() = static_cast<uint8_t>(fcolor.y * 255.f);
+      color.b() = static_cast<uint8_t>(fcolor.z * 255.f);
 
-        material_id_to_color[mmaterial->id()] = color;
+      cell_id_to_color[mcell->id()] = color;
 
-        must_rerender = true;
-      }
+      must_rerender = true;
+    }
+  }
+  if (!mmaterial) {
+    ImGui::Text("Material for given position is not defined.");
+  } else {
+    ImGui::Text("Material ID: %i", mmaterial->id());
+    ImGui::Text("Material Name: %s", mmaterial->name().data());
+
+    if (colorby == ColorBy::Material &&
+        ImGui::ColorEdit3("", reinterpret_cast<float*>(&fcolor))) {
+      color.r() = static_cast<uint8_t>(fcolor.x * 255.f);
+      color.g() = static_cast<uint8_t>(fcolor.y * 255.f);
+      color.b() = static_cast<uint8_t>(fcolor.z * 255.f);
+
+      material_id_to_color[mmaterial->id()] = color;
+
+      must_rerender = true;
     }
   }
 
