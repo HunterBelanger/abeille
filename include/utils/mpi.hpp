@@ -152,9 +152,15 @@ void Bcast(std::vector<T>& vals, int root,
 #ifdef ABEILLE_USE_MPI
   if (size > 1) {
     timer.start();
+
+    // First, we broadcast the size of the vector to all processes.
     std::size_t count = vals.size();
     Bcast(count, root);
+
+    // Resize if necessary
     vals.resize(count);
+
+    // Now we broadcast data.
     int err = MPI_Bcast(&vals[0], static_cast<int>(vals.size()), dtype<T>(), root, com);
     check_error(err, loc);
     timer.stop();

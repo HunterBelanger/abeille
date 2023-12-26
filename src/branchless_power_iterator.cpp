@@ -613,6 +613,7 @@ void BranchlessPowerIterator::comb_particles(
   double comb_position_pos = 0.;
   double comb_position_neg = 0.;
   if (mpi::rank == 0) {
+    // The initial random offset of the comb is sampled on the master node.
     comb_position_pos = RNG::rand(settings::rng) * avg_pos_wgt;
     comb_position_neg = RNG::rand(settings::rng) * avg_neg_wgt;
   }
@@ -640,7 +641,8 @@ void BranchlessPowerIterator::comb_particles(
 
   double current_particle_pos = 0.;
   double current_particle_neg = 0.;
-  // Comb positive and negative particles at the same time
+  // Comb positive and negative particles at the same time, to ensure that
+  // particle orders aren't changed for different parallelization schemes.
   for (std::size_t i = 0; i < next_gen.size(); i++) {
     if (next_gen[i].wgt > 0.) {
       current_particle_pos += next_gen[i].wgt;

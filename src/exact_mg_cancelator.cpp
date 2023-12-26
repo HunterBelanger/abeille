@@ -383,11 +383,11 @@ void ExactMGCancelator::cancel_bin(CancelBin& bin, MGNuclide* nuclide) {
     const double B2 = get_beta(bin, i, false);
     const double f = get_f(r1, u1, g1, g3, r4, g4, Esmp, nuclide);
 
-    const double P_p1 = (f - B1) / f;
     const double P_u1 = B1 / f;
+    const double P_p1 = 1. - P_u1;
 
-    const double P_p2 = (f - B2) / f;
     const double P_u2 = B2 / f;
+    const double P_p2 = 1. - P_u2;
 
     // If either P_p or P_u is Inf or NaN, we can't do cancellation.
     // This usually happens when the weight in question is zero, which
@@ -643,6 +643,8 @@ std::vector<BankedParticle> ExactMGCancelator::get_new_particles(pcg32& rng) {
 
   std::vector<BankedParticle> uniform_particles;
 
+  // Key-MatID pairs are put into a set so that the  uniform particles are
+  // always generated in the same order.
   std::set<std::pair<Key, uint32_t>> key_set;
   for (auto& key_bin_pair : bins) {
     const auto& key = key_bin_pair.first;
@@ -654,87 +656,76 @@ std::vector<BankedParticle> ExactMGCancelator::get_new_particles(pcg32& rng) {
     }
   }
 
-  /*
-  for (auto& key_bin_pair : bins) {
-    const auto& key = key_bin_pair.first;
-    auto& material_bins = key_bin_pair.second;
-
-    for (auto& mat_bin_pair : material_bins) {
-      uint32_t mat_id = mat_bin_pair.first;
-      Material* mat = materials[mat_id].get();*/
   for (const auto& pr : key_set) {
-      //CancelBin& bin = mat_bin_pair.second;
-      Key key = pr.first;
-      uint32_t mat_id = pr.second;
-      Material* mat = materials[mat_id].get();
-      CancelBin& bin = bins.at(key).at(mat_id);
+    Key key = pr.first;
+    uint32_t mat_id = pr.second;
+    Material* mat = materials[mat_id].get();
+    CancelBin& bin = bins.at(key).at(mat_id);
 
-      // Determine number of new particles to add
-      uint32_t N = static_cast<uint32_t>(std::ceil(
-          std::max(std::abs(bin.uniform_wgt), std::abs(bin.uniform_wgt2))));
+    // Determine number of new particles to add
+    uint32_t N = static_cast<uint32_t>(std::ceil(
+        std::max(std::abs(bin.uniform_wgt), std::abs(bin.uniform_wgt2))));
 
-      if (N > 0) {
-        double w = bin.uniform_wgt / N;
-        double w2 = bin.uniform_wgt2 / N;
+    if (N > 0) {
+      double w = bin.uniform_wgt / N;
+      double w2 = bin.uniform_wgt2 / N;
 
-        // Get the single nuclide from the material, and convert to MGNuclide.
-        // This SHOULD be safe, as in theory, we wont construct an
-        // ExactMGCancelator instance in CE mode.
-        MGNuclide* nuclide =
-            static_cast<MGNuclide*>(mat->components()[0].nuclide.get());
+      // Get the single nuclide from the material, and convert to MGNuclide.
+      // This SHOULD be safe, as in theory, we wont construct an
+      // ExactMGCancelator instance in CE mode.
+      MGNuclide* nuclide =
+          static_cast<MGNuclide*>(mat->components()[0].nuclide.get());
 
-        // Make all N uniform particles for this bin
-        for (size_t i = 0; i < N; i++) {
-          // Sample position
-          std::optional<Position> r_smp = sample_position(key, mat, rng);
+      // Make all N uniform particles for this bin
+      for (size_t i = 0; i < N; i++) {
+        // Sample position
+        std::optional<Position> r_smp = sample_position(key, mat, rng);
 
-          if (!r_smp) {
-            // For some reason we couldn't sample a position, probably because
-            // there is so little of the material in the region. If this
-            // is the case, we shouldn't have gotten this far, but hey, here
-            // were are ! We are just gonna call this a fatal error for now,
-            // and see if it ever pops up.
-            fatal_error("Couldn't sample position for uniform particle.");
-          }
-
-          // Now we sample an energy group
-          std::size_t e_index = 0;
-          if (CHI_MATRIX) {
-            // We need to select a random energy group from our bin.
-            const double xi_E = RNG::rand(rng);
-            std::size_t g_index = static_cast<std::size_t>(std::floor(
-                xi_E * static_cast<double>(Key::group_bins[key.e].size())));
-            e_index = Key::group_bins[key.e][g_index];
-          } else {
-            // Fission spectrum is independent of incident energy.
-            // We can just sample an energy from the first row
-            // of the chi matrix.
-            e_index =
-                static_cast<std::size_t>(RNG::discrete(rng, nuclide->chi()[0]));
-          }
-          double E_smp = 0.5 * (settings::energy_bounds[e_index] +
-                                settings::energy_bounds[e_index + 1]);
-
-          // Sample Direction
-          Direction u_smp(2. * RNG::rand(rng) - 1., 2. * PI * RNG::rand(rng));
-
-          // Construct uniform_particle
-          BankedParticle uniform_particle;
-          uniform_particle.r = r_smp.value();
-          uniform_particle.u = u_smp;
-          uniform_particle.E = E_smp;
-          uniform_particle.wgt = w;
-          uniform_particle.wgt2 = w2;
-
-          // Save sampled particle
-          uniform_particles.push_back(uniform_particle);
+        if (!r_smp) {
+          // For some reason we couldn't sample a position, probably because
+          // there is so little of the material in the region. If this
+          // is the case, we shouldn't have gotten this far, but hey, here
+          // were are ! We are just gonna call this a fatal error for now,
+          // and see if it ever pops up.
+          fatal_error("Couldn't sample position for uniform particle.");
         }
+
+        // Now we sample an energy group
+        std::size_t e_index = 0;
+        if (CHI_MATRIX) {
+          // We need to select a random energy group from our bin.
+          const double xi_E = RNG::rand(rng);
+          std::size_t g_index = static_cast<std::size_t>(std::floor(
+              xi_E * static_cast<double>(Key::group_bins[key.e].size())));
+          e_index = Key::group_bins[key.e][g_index];
+        } else {
+          // Fission spectrum is independent of incident energy.
+          // We can just sample an energy from the first row
+          // of the chi matrix.
+          e_index =
+              static_cast<std::size_t>(RNG::discrete(rng, nuclide->chi()[0]));
+        }
+        double E_smp = 0.5 * (settings::energy_bounds[e_index] +
+                              settings::energy_bounds[e_index + 1]);
+
+        // Sample Direction
+        Direction u_smp(2. * RNG::rand(rng) - 1., 2. * PI * RNG::rand(rng));
+
+        // Construct uniform_particle
+        BankedParticle uniform_particle;
+        uniform_particle.r = r_smp.value();
+        uniform_particle.u = u_smp;
+        uniform_particle.E = E_smp;
+        uniform_particle.wgt = w;
+        uniform_particle.wgt2 = w2;
+
+        // Save sampled particle
+        uniform_particles.push_back(uniform_particle);
       }
+    }
 
-      bin.uniform_wgt = 0.;
-      bin.uniform_wgt2 = 0.;
-
-    //}
+    bin.uniform_wgt = 0.;
+    bin.uniform_wgt2 = 0.;
   }
 
   return uniform_particles;
@@ -776,9 +767,9 @@ std::shared_ptr<ExactMGCancelator> make_exact_mg_cancelator(
     fatal_error("No valid shape entry for basic exact MG cancelator.");
   }
 
-  uint64_t Nx = node["shape"][0].as<uint32_t>();
-  uint64_t Ny = node["shape"][1].as<uint32_t>();
-  uint64_t Nz = node["shape"][2].as<uint32_t>();
+  uint64_t Nx = node["shape"][0].as<uint64_t>();
+  uint64_t Ny = node["shape"][1].as<uint64_t>();
+  uint64_t Nz = node["shape"][2].as<uint64_t>();
   uint64_t Ne = 0;
 
   std::vector<std::vector<std::size_t>> group_bins;

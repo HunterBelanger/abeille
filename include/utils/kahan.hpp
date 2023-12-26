@@ -28,8 +28,8 @@
 
 #include <simulation/particle.hpp>
 /*
-    This is actually the Kahan-Babushka Summation Algorithm
-*/
+ * This is actually the Kahan-Babushka Summation Algorithm
+ * */
 template<class InputIt, class T>
 inline T kahan(InputIt first, InputIt last, T init) {
     T sum = init;
@@ -58,9 +58,11 @@ inline T kahan(InputIt first, InputIt last, T init) {
 }
 
 
-// Returns tuple which contains two doubles and two ints
-// doubles are positive and negative sum of banked particle weights in a vector 
-// ints are the total counts of positive particles and negative particles
+/*
+ * Returns a tuple of two doubles and two ints. The doubles are the sums of the
+ * weights of the positive and negative particles respectively in the vector.
+ * The ints are the total counts of positive and negative particles.
+ * */
 inline std::tuple<double,double,int,int> kahan_bank(std::vector<BankedParticle>::iterator first, std::vector<BankedParticle>::iterator last) {
     double sum_pos = 0.;
     double sum_neg = 0.;
@@ -80,8 +82,7 @@ inline std::tuple<double,double,int,int> kahan_bank(std::vector<BankedParticle>:
 
     for (auto input = first; input != last; input++) {
         auto input_i_wgt = input->wgt;
-        if(input_i_wgt > 0.)
-        {
+        if(input_i_wgt > 0.) {
             count_pos++;
             double t = sum_pos + input_i_wgt;
 
@@ -99,9 +100,7 @@ inline std::tuple<double,double,int,int> kahan_bank(std::vector<BankedParticle>:
                 cc_pos = (c_pos - t) + cs_pos;
             cs_pos = t;
             ccs_pos = ccs_pos + cc_pos;
-        }
-        else
-        {
+        } else {
             coung_neg++;
             double t = sum_neg + input_i_wgt;
 
@@ -123,6 +122,5 @@ inline std::tuple<double,double,int,int> kahan_bank(std::vector<BankedParticle>:
     double r1 = sum_pos + cs_pos + ccs_pos;
     double r2 = (sum_neg + cs_neg + ccs_neg) * -1.0;
     return std::tuple<double,double,int,int>(r1,r2,count_pos,coung_neg);
-
 }
 #endif

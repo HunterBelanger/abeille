@@ -224,6 +224,7 @@ void ApproximateMeshCancelator::perform_cancellation_loop(pcg32& /*rng*/) {
   }
   keys.clear();
 }
+
 void ApproximateMeshCancelator::perform_cancellation_vector(pcg32& /*rng*/) {
   // Get keys of all non empty bins
   std::vector<int> keys = sync_keys();
@@ -279,51 +280,6 @@ void ApproximateMeshCancelator::perform_cancellation_vector(pcg32& /*rng*/) {
 
 void ApproximateMeshCancelator::perform_cancellation(pcg32& rng) {
   this->perform_cancellation_vector(rng);
-  /*
-  // Go through all bins in the mesh
-  for (auto& key_bin_pair : bins) {
-    auto& bin = key_bin_pair.second;
-
-    // Only do cancelation if we have more than one particle per bin
-    if (bin.size() > 1) {
-      // Only do cancellation if we have differing signs
-      bool has_pos_w1 = false;
-      bool has_neg_w1 = false;
-      bool has_pos_w2 = false;
-      bool has_neg_w2 = false;
-      double sum_wgt = 0.;
-      double sum_wgt2 = 0.;
-
-      // Go through all particles in the bin
-      for (const auto& p : bin) {
-        if (p->wgt > 0.)
-          has_pos_w1 = true;
-        else if (p->wgt < 0.)
-          has_neg_w1 = true;
-        sum_wgt += p->wgt;
-
-        if (p->wgt2 > 0.)
-          has_pos_w2 = true;
-        else if (p->wgt2 < 0.)
-          has_neg_w2 = true;
-        sum_wgt2 += p->wgt2;
-      }
-
-      // Get average weights
-      double N = static_cast<double>(bin.size());
-      double avg_wgt = sum_wgt / N;
-      double avg_wgt2 = sum_wgt2 / N;
-
-      // Go through all particles and change their weights
-      for (auto& p : bin) {
-        if (has_pos_w1 && has_neg_w1) p->wgt = avg_wgt;
-        if (has_pos_w2 && has_neg_w2) p->wgt2 = avg_wgt2;
-      }
-    }
-
-    bin.clear();
-  }
-  */
 }
 
 std::vector<BankedParticle> ApproximateMeshCancelator::get_new_particles(

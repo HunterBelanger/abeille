@@ -375,9 +375,6 @@ void Noise::power_iteration(bool sample_noise) {
   // Zero all entropy bins
   zero_entropy();
 
-  // If we sampled a noise source, sort that too !
-  if (sample_noise) std::sort(noise_bank.begin(), noise_bank.end());
-
   // Reset converged to original value
   settings::converged = orig_converged;
 }
