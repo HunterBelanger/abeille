@@ -217,8 +217,8 @@ void ApproximateMeshCancelator::perform_cancellation_loop(pcg32& /*rng*/) {
     // Loop through particles in the bin once again and perform cancellation if
     // necessary
     for (const auto& p : bin) {
-       p->wgt = avg_wgt;
-       p->wgt2 = avg_wgt2;
+      p->wgt = avg_wgt;
+      p->wgt2 = avg_wgt2;
     }
     bins[key].clear();
   }
@@ -232,7 +232,7 @@ void ApproximateMeshCancelator::perform_cancellation_vector(pcg32& /*rng*/) {
   // change to uint16
   NDArray<double> wgts({2, keys.size()});
   std::vector<uint16_t> n_totals(keys.size(), 0);
-  
+
   for (std::size_t i = 0; i < keys.size(); i++) {
     const auto key = keys[i];
     std::uint64_t n_total = 0;
@@ -259,17 +259,17 @@ void ApproximateMeshCancelator::perform_cancellation_vector(pcg32& /*rng*/) {
 
   // all the vectors have size keys.size() so we use variable x to index them
   // since they should match to keys
-  for (std::size_t i = 0; i < keys.size();i++) {
+  for (std::size_t i = 0; i < keys.size(); i++) {
     const auto key = keys[i];
 
     // Set the avg weights
     const double inv_n = 1. / static_cast<double>(n_totals[i]);
-    const double avg_wgt = wgts(0,i) * inv_n;
-    const double avg_wgt2 = wgts(1,i) * inv_n;
+    const double avg_wgt = wgts(0, i) * inv_n;
+    const double avg_wgt2 = wgts(1, i) * inv_n;
 
     for (auto& p : bins[key]) {
-       p->wgt = avg_wgt;
-       p->wgt2 = avg_wgt2;
+      p->wgt = avg_wgt;
+      p->wgt2 = avg_wgt2;
     }
 
     bins[key].clear();

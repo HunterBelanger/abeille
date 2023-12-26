@@ -529,7 +529,8 @@ void PowerIterator::normalize_weights(std::vector<BankedParticle>& next_gen) {
   double W_neg = 0.;
   double W_pos = 0.;
 
-  std::tie(W_pos, W_neg, Npos, Nneg) = kahan_bank(next_gen.begin(),next_gen.end());
+  std::tie(W_pos, W_neg, Npos, Nneg) =
+      kahan_bank(next_gen.begin(), next_gen.end());
   W_neg = std::abs(W_neg);
 
   // Get totals across all nodes

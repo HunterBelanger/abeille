@@ -406,15 +406,15 @@ void ExactMGCancelator::cancel_bin(CancelBin& bin, MGNuclide* nuclide) {
   }
 }
 
-std::vector<std::pair<ExactMGCancelator::Key, uint32_t>> ExactMGCancelator::sync_keys() {
+std::vector<std::pair<ExactMGCancelator::Key, uint32_t>>
+ExactMGCancelator::sync_keys() {
   // Get vector of keys to do cancellation in parallel
   std::vector<std::pair<Key, uint32_t>> key_matid_pairs;
   key_matid_pairs.reserve(bins.size());
   for (const auto& key_matbin_pair : bins) {
     const auto& key = key_matbin_pair.first;
     const auto& matbins = key_matbin_pair.second;
-    for (const auto& mat_bin_pair : matbins)
-    {
+    for (const auto& mat_bin_pair : matbins) {
       key_matid_pairs.emplace_back(key, mat_bin_pair.first);
     }
   }
@@ -453,10 +453,10 @@ std::vector<std::pair<ExactMGCancelator::Key, uint32_t>> ExactMGCancelator::sync
 
 void ExactMGCancelator::perform_cancellation(pcg32&) {
   // Get vector of keys to do cancellation in parallel
-  std::vector<std::pair<Key, uint32_t>> key_matid_pairs = sync_keys(); 
+  std::vector<std::pair<Key, uint32_t>> key_matid_pairs = sync_keys();
 
   // Initialize array for transfer of needed bits for cancellation
-  NDArray<double> sum_c_and_c_wgts({3, key_matid_pairs.size()}); 
+  NDArray<double> sum_c_and_c_wgts({3, key_matid_pairs.size()});
 
   // Go through all bins and get the averages. This is done in parallel when
   // possible, as this part of cancellation is very expensive.
@@ -467,13 +467,13 @@ void ExactMGCancelator::perform_cancellation(pcg32&) {
     Key key = key_matid_pairs[i].first;
     uint32_t mat_id = key_matid_pairs[i].second;
     Material* mat = materials[mat_id].get();
-    
+
     if (bins.find(key) == bins.end() ||
         bins.at(key).find(mat_id) == bins.at(key).end()) {
       continue;
     }
 
-    CancelBin& bin = bins.at(key).at(mat_id); 
+    CancelBin& bin = bins.at(key).at(mat_id);
 
     // For cancellation to be eact in the most general MG case,
     // need access to all scattering PDFs, and to the Chi matrix,
@@ -484,7 +484,6 @@ void ExactMGCancelator::perform_cancellation(pcg32&) {
     MGNuclide* nuclide =
         static_cast<MGNuclide*>(mat->components()[0].nuclide.get());
 
-        
     // Get the average value of the fission density and 1 / fission density
     // for each particle in the bin.
     compute_averages(key, mat, nuclide, bin);
@@ -512,7 +511,7 @@ void ExactMGCancelator::perform_cancellation(pcg32&) {
         continue;
       }
 
-      CancelBin& bin = bins.at(key).at(mat_id); 
+      CancelBin& bin = bins.at(key).at(mat_id);
 
       bin.sum_c = sum_c_and_c_wgts(0, i);
       bin.sum_c_wgt = sum_c_and_c_wgts(1, i);
@@ -541,7 +540,7 @@ void ExactMGCancelator::perform_cancellation(pcg32&) {
       continue;
     }
 
-    CancelBin& bin = bins.at(key).at(mat_id); 
+    CancelBin& bin = bins.at(key).at(mat_id);
 
     // For cancellation to be eact in the most general MG case,
     // need access to all scattering PDFs, and to the Chi matrix,
@@ -560,11 +559,11 @@ void ExactMGCancelator::perform_cancellation(pcg32&) {
     bin.averages.clear();
     bin.sum_c = 0.;
     bin.sum_c_wgt = 0.;
-    bin.sum_c_wgt2 = 0.; 
+    bin.sum_c_wgt2 = 0.;
 
-    uniform_wgts(0,i) = bin.uniform_wgt;
-    uniform_wgts(1,i) = bin.uniform_wgt2;
-  } 
+    uniform_wgts(0, i) = bin.uniform_wgt;
+    uniform_wgts(1, i) = bin.uniform_wgt2;
+  }
 
   // Get total uniform weights on ONLY master node. Only the master will
   // sample uniform particles
@@ -578,9 +577,10 @@ void ExactMGCancelator::perform_cancellation(pcg32&) {
 
       // Add any missing bins from other nodes to master
       if (bins.find(key) == bins.end()) {
-        // Make an empty bin. We need this on master for sampling uniform portions.
-        // If the bin doesn't exist yet, initalize it
-        bins.emplace(std::make_pair(key, std::unordered_map<uint32_t, CancelBin>()));
+        // Make an empty bin. We need this on master for sampling uniform
+        // portions. If the bin doesn't exist yet, initalize it
+        bins.emplace(
+            std::make_pair(key, std::unordered_map<uint32_t, CancelBin>()));
       }
 
       // Check if a bin exists for that material

@@ -28,7 +28,7 @@
 #include <utils/mpi.hpp>
 
 #include <type_traits>
-#include <utility>  
+#include <utility>
 
 #ifdef ABEILLE_USE_MPI
 #include <mpi.h>
@@ -67,7 +67,7 @@ void register_key_type() {
   // required by MPI.
   static_assert(std::is_standard_layout<ExactMGCancelator::Key>::value);
 
-  ExactMGCancelator::Key k(0,0,0,0);
+  ExactMGCancelator::Key k(0, 0, 0, 0);
   int err = 0;
   constexpr std::size_t KEY_NUM_MEMBERS = 4;
   int sizes[KEY_NUM_MEMBERS]{1, 1, 1, 1};
@@ -93,12 +93,13 @@ void register_key_uint32_pair() {
 #ifdef ABEILLE_USE_MPI
   // Ensure that std::pair<Key,uint32_t> is standard layout ! This is
   // required by MPI.
-  static_assert(std::is_standard_layout<std::pair<ExactMGCancelator::Key,uint32_t>>::value);
+  static_assert(std::is_standard_layout<
+                std::pair<ExactMGCancelator::Key, uint32_t>>::value);
 
-  std::pair<ExactMGCancelator::Key,uint32_t> p;
+  std::pair<ExactMGCancelator::Key, uint32_t> p;
   int err = 0;
   constexpr std::size_t PAIR_NUM_MEMBERS = 2;
-  int sizes[PAIR_NUM_MEMBERS]{1,1};
+  int sizes[PAIR_NUM_MEMBERS]{1, 1};
   DType dtypes[PAIR_NUM_MEMBERS]{KeyType, UInt32};
   MPI_Aint disps[PAIR_NUM_MEMBERS];
   MPI_Get_address(&p.first, &disps[0]);
@@ -107,7 +108,8 @@ void register_key_uint32_pair() {
     disps[i] -= disps[0];
   }
 
-  err = MPI_Type_create_struct(PAIR_NUM_MEMBERS, sizes, disps, dtypes, &KeyUInt32Pair);
+  err = MPI_Type_create_struct(PAIR_NUM_MEMBERS, sizes, disps, dtypes,
+                               &KeyUInt32Pair);
   check_error(err, std::source_location::current());
 
   err = MPI_Type_commit(&KeyUInt32Pair);
@@ -147,7 +149,8 @@ void register_banked_particle_type() {
     disps[i] -= disps[0];
   }
 
-  err = MPI_Type_create_struct(BP_NUM_MEMBERS, sizes, disps, dtypes, &BParticle);
+  err =
+      MPI_Type_create_struct(BP_NUM_MEMBERS, sizes, disps, dtypes, &BParticle);
   check_error(err, std::source_location::current());
 
   err = MPI_Type_commit(&BParticle);

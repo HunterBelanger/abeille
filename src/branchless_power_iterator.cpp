@@ -533,7 +533,8 @@ void BranchlessPowerIterator::normalize_weights(
   double W_pos = 0.;
   double W_neg = 0.;
 
-  std::tie(W_pos, W_neg, Npos, Nneg) = kahan_bank(next_gen.begin(),next_gen.end());
+  std::tie(W_pos, W_neg, Npos, Nneg) =
+      kahan_bank(next_gen.begin(), next_gen.end());
   W_neg = std::abs(W_neg);
 
   // Get totals across all nodes
@@ -575,11 +576,11 @@ void BranchlessPowerIterator::normalize_weights(
 }
 void BranchlessPowerIterator::comb_particles(
     std::vector<BankedParticle>& next_gen) {
-
   double Wpos_node = 0.;
   double Wneg_node = 0.;
   // Get sum of total positive and negative weights using Kahan Summation
-  std::tie(Wpos_node, Wneg_node, std::ignore, std::ignore) = kahan_bank(next_gen.begin(),next_gen.end());
+  std::tie(Wpos_node, Wneg_node, std::ignore, std::ignore) =
+      kahan_bank(next_gen.begin(), next_gen.end());
 
   // Get total weights for all nodes
   std::vector<double> Wpos_each_node(mpi::size, 0.);
@@ -591,7 +592,6 @@ void BranchlessPowerIterator::comb_particles(
   Wneg_each_node[mpi::rank] = Wneg_node;
   mpi::Allreduce_sum(Wneg_each_node);
   const double Wneg = kahan(Wneg_each_node.begin(), Wneg_each_node.end(), 0.);
-
 
   // Determine how many positive and negative particles we want to have after
   // combing on this node and globaly as well
@@ -621,12 +621,12 @@ void BranchlessPowerIterator::comb_particles(
   mpi::Bcast(comb_position_neg, 0);
 
   // Find Comb Position for this Node
-  const double U_pos = kahan(Wpos_each_node.begin(),
-                                       Wpos_each_node.begin() + mpi::rank, 0.);
+  const double U_pos =
+      kahan(Wpos_each_node.begin(), Wpos_each_node.begin() + mpi::rank, 0.);
   const double beta_pos = std::floor((U_pos - comb_position_pos) / avg_pos_wgt);
 
-  const double U_neg = std::abs(kahan(
-      Wneg_each_node.begin(), Wneg_each_node.begin() + mpi::rank, 0.));
+  const double U_neg = std::abs(
+      kahan(Wneg_each_node.begin(), Wneg_each_node.begin() + mpi::rank, 0.));
   const double beta_neg = std::floor((U_neg - comb_position_neg) / avg_neg_wgt);
 
   if (mpi::rank != 0) {

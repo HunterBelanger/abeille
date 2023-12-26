@@ -107,12 +107,12 @@ inline DType dtype<BankedParticle>() {
 template <>
 inline DType dtype<ExactMGCancelator::Key>() {
   return KeyType;
-} 
+}
 
 template <>
-inline DType dtype<std::pair<ExactMGCancelator::Key,uint32_t>>() {
+inline DType dtype<std::pair<ExactMGCancelator::Key, uint32_t>>() {
   return KeyUInt32Pair;
-} 
+}
 #endif
 
 extern std::vector<uint64_t> node_nparticles;
@@ -161,7 +161,8 @@ void Bcast(std::vector<T>& vals, int root,
     vals.resize(count);
 
     // Now we broadcast data.
-    int err = MPI_Bcast(&vals[0], static_cast<int>(vals.size()), dtype<T>(), root, com);
+    int err = MPI_Bcast(&vals[0], static_cast<int>(vals.size()), dtype<T>(),
+                        root, com);
     check_error(err, loc);
     timer.stop();
   }

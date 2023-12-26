@@ -379,7 +379,8 @@ void Noise::power_iteration(bool sample_noise) {
   settings::converged = orig_converged;
 }
 
-inline void Noise::perform_regional_cancellation(std::vector<BankedParticle>& bank) {
+inline void Noise::perform_regional_cancellation(
+    std::vector<BankedParticle>& bank) {
   // Only perform cancellation if we are master !!
   std::size_t n_lost_boys = 0;
 

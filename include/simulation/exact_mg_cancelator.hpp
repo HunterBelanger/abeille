@@ -55,7 +55,7 @@ class ExactMGCancelator : public Cancelator {
     Key(uint64_t i, uint64_t j, uint64_t k, uint64_t e)
         : i(i), j(j), k(k), e(e) {}
 
-    Key(): i(0), j(0), k(0), e(0) {}
+    Key() : i(0), j(0), k(0), e(0) {}
     uint64_t i, j, k, e;
 
     std::size_t hash_key() const {
@@ -109,7 +109,6 @@ class ExactMGCancelator : public Cancelator {
     std::vector<Averages> averages;
   };
 
-  
   struct KeyHash {
     std::size_t operator()(const Key& key) const { return key.hash_key(); }
   };
@@ -138,7 +137,7 @@ class ExactMGCancelator : public Cancelator {
 
   std::optional<Key> get_key(const Position& r, std::size_t g);
 
-  std::vector<std::pair<ExactMGCancelator::Key,uint32_t>> sync_keys();
+  std::vector<std::pair<ExactMGCancelator::Key, uint32_t>> sync_keys();
 
   // Get's a pointer to the material at r
   Material* get_material(const Position& r) const;
