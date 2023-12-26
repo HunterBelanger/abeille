@@ -25,6 +25,7 @@
 #include <geometry/geometry.hpp>
 #include <simulation/power_iterator.hpp>
 #include <utils/error.hpp>
+#include <utils/kahan.hpp>
 #include <utils/mpi.hpp>
 #include <utils/output.hpp>
 #include <utils/rng.hpp>
@@ -345,14 +346,13 @@ void PowerIterator::run() {
 
     mpi::synchronize();
 
+    // Do weight cancelation
+    if (settings::regional_cancellation && cancelator) {
+      perform_regional_cancellation(next_gen);
+    }
+
     // Synchronize particles across nodes
     sync_banks(mpi::node_nparticles, next_gen);
-
-    // Do weight cancelation
-    if (settings::regional_cancellation && cancelator && mpi::rank == 0) {
-      perform_regional_cancellation(next_gen);
-      sync_banks(mpi::node_nparticles, next_gen);
-    }
 
     // Calculate net positive and negative weight
     normalize_weights(next_gen);
@@ -528,19 +528,10 @@ void PowerIterator::normalize_weights(std::vector<BankedParticle>& next_gen) {
   double W = 0.;
   double W_neg = 0.;
   double W_pos = 0.;
-  Nnet = 0;
-  Ntot = 0;
-  Npos = 0;
-  Nneg = 0;
-  for (size_t i = 0; i < next_gen.size(); i++) {
-    if (next_gen[i].wgt > 0.) {
-      W_pos += next_gen[i].wgt;
-      Npos++;
-    } else {
-      W_neg -= next_gen[i].wgt;
-      Nneg++;
-    }
-  }
+
+  std::tie(W_pos, W_neg, Npos, Nneg) =
+      kahan_bank(next_gen.begin(), next_gen.end());
+  W_neg = std::abs(W_neg);
 
   // Get totals across all nodes
   mpi::Allreduce_sum(W_pos);
@@ -776,8 +767,8 @@ void PowerIterator::perform_regional_cancellation(
   // now have modified weights.
   // Now we can get the uniform particles
   auto tmp = cancelator->get_new_particles(settings::rng);
-  next_gen.insert(next_gen.end(), tmp.begin(), tmp.end());
-  mpi::node_nparticles[0] += tmp.size();
+
+  if (tmp.size() > 0) next_gen.insert(next_gen.begin(), tmp.begin(), tmp.end());
 
   // All done ! Clear cancelator for next run
   cancelator->clear();

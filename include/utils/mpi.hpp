@@ -35,6 +35,7 @@
 #ifdef ABEILLE_USE_MPI
 #include <mpi.h>
 
+#include <simulation/exact_mg_cancelator.hpp>
 #include <simulation/particle.hpp>
 #endif
 
@@ -52,8 +53,12 @@ extern const Com com;
 extern const DType Bool;
 extern const DType Int;
 extern const DType Double;
+extern const DType UInt16;
+extern const DType UInt32;
 extern const DType UInt64;
 extern DType BParticle;
+extern DType KeyType;
+extern DType KeyUInt32Pair;
 
 extern const OpType Sum;
 extern const OpType And;
@@ -80,6 +85,16 @@ inline DType dtype<double>() {
 }
 
 template <>
+inline DType dtype<uint16_t>() {
+  return UInt16;
+}
+
+template <>
+inline DType dtype<uint32_t>() {
+  return UInt32;
+}
+
+template <>
 inline DType dtype<uint64_t>() {
   return UInt64;
 }
@@ -87,6 +102,16 @@ inline DType dtype<uint64_t>() {
 template <>
 inline DType dtype<BankedParticle>() {
   return BParticle;
+}
+
+template <>
+inline DType dtype<ExactMGCancelator::Key>() {
+  return KeyType;
+}
+
+template <>
+inline DType dtype<std::pair<ExactMGCancelator::Key, uint32_t>>() {
+  return KeyUInt32Pair;
 }
 #endif
 
@@ -116,6 +141,33 @@ void Bcast(T& val, int root,
   }
 #else
   (void)val;
+  (void)root;
+  (void)loc;
+#endif
+}
+
+template <typename T>
+void Bcast(std::vector<T>& vals, int root,
+           std::source_location loc = std::source_location::current()) {
+#ifdef ABEILLE_USE_MPI
+  if (size > 1) {
+    timer.start();
+
+    // First, we broadcast the size of the vector to all processes.
+    std::size_t count = vals.size();
+    Bcast(count, root);
+
+    // Resize if necessary
+    vals.resize(count);
+
+    // Now we broadcast data.
+    int err = MPI_Bcast(&vals[0], static_cast<int>(vals.size()), dtype<T>(),
+                        root, com);
+    check_error(err, loc);
+    timer.stop();
+  }
+#else
+  (void)vals;
   (void)root;
   (void)loc;
 #endif

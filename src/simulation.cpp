@@ -111,11 +111,11 @@ void Simulation::sync_banks(std::vector<uint64_t>& nums,
     } else if (mpi::rank == (R - 1)) {
       mpi::Recv(sendBank, R);
       bank.insert(bank.end(), sendBank.begin(), sendBank.end());
-    } 
+    }
     nums[R] -= nts;
     nums[R - 1] += nts;
   };
-  
+
   // This lambda sends nts particles to the RIGHT from rank L to rank L+1.
   // It also updates nums for each rank.
   auto SendRight = [&bank, &nums](const int L, const int nts) {
@@ -152,7 +152,7 @@ void Simulation::sync_banks(std::vector<uint64_t>& nums,
           nums_i = static_cast<int>(nums[i]);
           nums_i1 = static_cast<int>(nums[i + 1]);
           ntr = ntr_left + base + (i < remainder ? 1 : 0) - nums_i;
-        } 
+        }
 
         if (ntr > 0) {
           // Needs particles ! Get ntr particles from the next rank.

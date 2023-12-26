@@ -47,6 +47,10 @@ class ApproximateMeshCancelator : public Cancelator {
   std::array<uint32_t, 4> shape;
   double dx, dy, dz;
   std::unordered_map<int, std::vector<BankedParticle*>> bins;
+  std::vector<int> sync_keys();
+
+  void perform_cancellation_loop(pcg32& rng);
+  void perform_cancellation_vector(pcg32& rng);
 };
 
 std::shared_ptr<ApproximateMeshCancelator> make_approximate_mesh_cancelator(
