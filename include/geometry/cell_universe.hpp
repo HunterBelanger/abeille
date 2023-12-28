@@ -50,10 +50,10 @@ class CellUniverse : public Universe {
   CellUniverse(std::vector<uint32_t> i_ind, uint32_t i_id, std::string i_name);
   ~CellUniverse() = default;
 
-  Cell* get_cell(Position r, Direction u, int32_t on_surf) const override;
+  UniqueCell get_cell(Position r, Direction u, int32_t on_surf) const override;
 
-  Cell* get_cell(std::vector<GeoLilyPad>& stack, Position r, Direction u,
-                 int32_t on_surf) const override;
+  UniqueCell get_cell(std::vector<GeoLilyPad>& stack, Position r, Direction u,
+                      int32_t on_surf) const override;
 
   Boundary get_boundary_condition(const Position& r, const Direction& u,
                                   int32_t on_surf) const override final;
@@ -61,11 +61,18 @@ class CellUniverse : public Universe {
   Boundary lost_get_boundary(const Position& r, const Direction& u,
                              int32_t on_surf) const override final;
 
-  bool contains_universe(uint32_t id) const override;
+  // get all material cells in universe
+  std::set<uint32_t> get_all_mat_cells() const override final;
+
+  // get number of cell instances across all universes
+  uint32_t get_num_cell_instances(uint32_t cell_id) const override final;
+
+  bool contains_universe(uint32_t id) const override final;
+
+  void make_offset_map() override final;
 
  private:
   std::vector<uint32_t> cell_indicies;
-
 };  // CellUniverse
 
 //===========================================================================

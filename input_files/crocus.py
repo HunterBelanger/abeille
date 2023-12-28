@@ -295,11 +295,18 @@ if __name__ == "__main__":
   cells.append({"id": 64, "region": "+4 & +16", "material": Air})
 
   #==============================================================================
-  # Lattices
-  lattices = []
+  # Universes
   LC = +57.3
-  # UO2 Assembly
-  lattices.append({"id": 1, "type": "rectlinear", "shape": [22, 22, 1],
+  universes = []
+  
+  # UO2 Pin Cell Universe
+  universes.append({"id": 1, "cells": [30,31,32,33,34,35,36,37,38,39,40,41,42,43,44]})
+
+  # U Metal Pin Cell Universe
+  universes.append({"id": 2, "cells": [50,51,52,53,54,55,56,57,58,59,60,61,62,63,64]})
+
+  # UO2 Lattice
+  universes.append({"id": 3, "type": "rectlinear", "shape": [22, 22, 1],
     "pitch": [1.837, 1.837, 120.], "outer": 4,
     "origin": [0., 0., LC], "name": "UO2 Lattice",
     "universes": [-1, -1, -1, -1, -1, -1, -1, -1,  1,  1,  1,  1,  1,  1, -1, -1, -1, -1, -1, -1, -1, -1,
@@ -344,10 +351,10 @@ if __name__ == "__main__":
                   
                   -1, -1, -1, -1, -1, -1, -1, -1,  1,  1,  1,  1,  1,  1, -1, -1, -1, -1, -1, -1, -1, -1,
 
-                  -1, -1, -1, -1, -1, -1, -1, -1,  1,  1,  1,  1,  1,  1, -1, -1, -1, -1, -1, -1, -1, -1 ]}) 
+                  -1, -1, -1, -1, -1, -1, -1, -1,  1,  1,  1,  1,  1,  1, -1, -1, -1, -1, -1, -1, -1, -1 ]})
 
-  # U Metal Assembly
-  lattices.append({"id": 2, "type": "rectlinear", "shape": [20, 20, 1],
+  # U Metal Lattice
+  universes.append({"id": 4, "type": "rectlinear", "shape": [20, 20, 1],
     "pitch": [2.917, 2.917, 120.], "outer": 5,
     "origin": [0., 0., LC], "name": "U Metal Lattice",
     "universes": [-1, -1, -1, -1, -1, -1, -1,  2,  2,  2,  2,  2,  2, -1, -1, -1, -1, -1, -1, -1,
@@ -388,23 +395,7 @@ if __name__ == "__main__":
 
                   -1, -1, -1, -1, -1,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2, -1, -1, -1, -1, -1,
 
-                  -1, -1, -1, -1, -1, -1, -1,  2,  2,  2,  2,  2,  2, -1, -1, -1, -1, -1, -1, -1 ]}) 
-
-  #==============================================================================
-  # Universes
-  universes = []
-  
-  # UO2 Pin Cell Universe
-  universes.append({"id": 1, "cells": [30,31,32,33,34,35,36,37,38,39,40,41,42,43,44]})
-
-  # U Metal Pin Cell Universe
-  universes.append({"id": 2, "cells": [50,51,52,53,54,55,56,57,58,59,60,61,62,63,64]})
-
-  # UO2 Lattice
-  universes.append({"id": 3, "lattice": 1})
-
-  # U Metal Lattice
-  universes.append({"id": 4, "lattice": 2})
+                  -1, -1, -1, -1, -1, -1, -1,  2,  2,  2,  2,  2,  2, -1, -1, -1, -1, -1, -1, -1 ]})
 
   # Base plate, lower grid, and water, and tank
   universes.append({"id": 5, "cells": [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21]})
@@ -489,7 +480,6 @@ if __name__ == "__main__":
   crocus['surfaces'] = surfaces
   crocus['cells'] = cells
   crocus['universes'] = universes
-  crocus['lattices'] = lattices
   crocus['root-universe'] = root_universe
   crocus['sources'] = sources
   crocus['tallies'] = tallies

@@ -50,7 +50,6 @@ materials = []
 surfaces = []
 cells = []
 universes = []
-lattices = []
 
 #===============================================================================
 # Materials
@@ -1010,7 +1009,7 @@ def L(i,F,G,I=None):
   if I is None:
     I = G
 
-  lattices.append({"id": i, "type": "rectlinear", "shape": [17,17,1],
+  universes.append({"id": 10000+i, "type": "rectlinear", "shape": [17,17,1],
     "pitch": [1.25984, 1.25984, 460.], "outer": 1200,
     "origin": [0., 0., 0.], "name": "Normal Assembly",
     "universes": [F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
@@ -1031,7 +1030,6 @@ def L(i,F,G,I=None):
                   F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
                   F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F
                  ]})
-  universes.append({"id": 10000+i, "lattice": i})
   return 10000+i
 
 def L6(i,F,G,B,Dir,I=None):
@@ -1120,11 +1118,10 @@ def L6(i,F,G,B,Dir,I=None):
             F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F]
 
 
-  lattices.append({"id": i, "type": "rectlinear", "shape": [17,17,1],
+  universes.append({"id": 10000+i, "type": "rectlinear", "shape": [17,17,1],
     "pitch": [1.25984, 1.25984, 460.], "outer": 1200,
     "origin": [0., 0., 0.], "name": "Normal Assembly",
     "universes": unis})
-  universes.append({"id": 10000+i, "lattice": i})
   return 10000+i
 
 def L4(i,F,G,B,I=None):
@@ -1133,7 +1130,7 @@ def L4(i,F,G,B,I=None):
   if I is None:
     I = G
 
-  lattices.append({"id": i, "type": "rectlinear", "shape": [17,17,1],
+  universes.append({"id": 10000+i, "type": "rectlinear", "shape": [17,17,1],
     "pitch": [1.25984, 1.25984, 460.], "outer": 1200,
     "origin": [0., 0., 0.], "name": "4BA Assembly",
     "universes": [F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
@@ -1154,7 +1151,6 @@ def L4(i,F,G,B,I=None):
                   F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
                   F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F
                  ]})
-  universes.append({"id": 10000+i, "lattice": i})
   return 10000+i
 
 def L8(i,F,G,B,I=None):
@@ -1163,7 +1159,7 @@ def L8(i,F,G,B,I=None):
   if I is None:
     I = G
 
-  lattices.append({"id": i, "type": "rectlinear", "shape": [17,17,1],
+  universes.append({"id": 10000+i, "type": "rectlinear", "shape": [17,17,1],
     "pitch": [1.25984, 1.25984, 460.], "outer": 1200,
     "origin": [0., 0., 0.], "name": "8BA Assembly",
     "universes": [F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
@@ -1184,7 +1180,6 @@ def L8(i,F,G,B,I=None):
                   F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
                   F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F
                  ]})
-  universes.append({"id": 10000+i, "lattice": i})
   return 10000+i
 
 def L12_C1(i,F,G,B,I=None):
@@ -1193,7 +1188,7 @@ def L12_C1(i,F,G,B,I=None):
   if I is None:
     I = G
 
-  lattices.append({"id": i, "type": "rectlinear", "shape": [17,17,1],
+  universes.append({"id": 10000+i, "type": "rectlinear", "shape": [17,17,1],
     "pitch": [1.25984, 1.25984, 460.], "outer": 1200,
     "origin": [0., 0., 0.], "name": "12BA Assembly",
     "universes": [F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
@@ -1214,7 +1209,6 @@ def L12_C1(i,F,G,B,I=None):
                   F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
                   F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F
                  ]})
-  universes.append({"id": 10000+i, "lattice": i})
   return 10000+i
 
 def L12_C2(i,F,G,B,I=None):
@@ -1223,7 +1217,7 @@ def L12_C2(i,F,G,B,I=None):
   if I is None:
     I = G
 
-  lattices.append({"id": i, "type": "rectlinear", "shape": [17,17,1],
+  universes.append({"id": 10000+i, "type": "rectlinear", "shape": [17,17,1],
     "pitch": [1.25984, 1.25984, 460.], "outer": 1200,
     "origin": [0., 0., 0.], "name": "12BA Assembly",
     "universes": [F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
@@ -1244,7 +1238,6 @@ def L12_C2(i,F,G,B,I=None):
                   F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
                   F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F
                  ]})
-  universes.append({"id": 10000+i, "lattice": i})
   return 10000+i
 
 def L15(i,F,G,B,Dir,I=None):
@@ -1333,11 +1326,10 @@ def L15(i,F,G,B,Dir,I=None):
             F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F]
 
 
-  lattices.append({"id": i, "type": "rectlinear", "shape": [17,17,1],
+  universes.append({"id": 10000+i, "type": "rectlinear", "shape": [17,17,1],
     "pitch": [1.25984, 1.25984, 460.], "outer": 1200,
     "origin": [0., 0., 0.], "name": "Normal Assembly",
     "universes": unis})
-  universes.append({"id": 10000+i, "lattice": i})
   return 10000+i
 
 def L16(i,F,G,B,I=None):
@@ -1346,7 +1338,7 @@ def L16(i,F,G,B,I=None):
   if I is None:
     I = G
 
-  lattices.append({"id": i, "type": "rectlinear", "shape": [17,17,1],
+  universes.append({"id": 10000+i, "type": "rectlinear", "shape": [17,17,1],
     "pitch": [1.25984, 1.25984, 460.], "outer": 1200,
     "origin": [0., 0., 0.], "name": "16BA Assembly",
     "universes": [F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
@@ -1367,7 +1359,6 @@ def L16(i,F,G,B,I=None):
                   F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
                   F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F
                  ]})
-  universes.append({"id": 10000+i, "lattice": i})
   return 10000+i
 
 def L20(i,F,G,B,I=None):
@@ -1376,7 +1367,7 @@ def L20(i,F,G,B,I=None):
   if I is None:
     I = G
 
-  lattices.append({"id": i, "type": "rectlinear", "shape": [17,17,1],
+  universes.append({"id": 10000+i, "type": "rectlinear", "shape": [17,17,1],
     "pitch": [1.25984, 1.25984, 460.], "outer": 1200,
     "origin": [0., 0., 0.], "name": "20BA Assembly",
     "universes": [F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
@@ -1397,7 +1388,6 @@ def L20(i,F,G,B,I=None):
                   F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F,
                   F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F
                  ]})
-  universes.append({"id": 10000+i, "lattice": i})
   return 10000+i
 
 #===============================================================================
@@ -1513,11 +1503,10 @@ core_unis = [EMPTY_____, EMPTY_____, EMPTY_____, EMPTY_____, F31_______, F31_06S
 
              EMPTY_____, EMPTY_____, EMPTY_____, EMPTY_____, F31_______, F31_06N___, F31_______, F31_06N___, F31_______, F31_06N___, F31_______, EMPTY_____, EMPTY_____, EMPTY_____, EMPTY_____] # 15
 
-lattices.append({"id": 20000, "type": "rectlinear", "shape": [15,15,1],
+universes.append({"id": 20000, "type": "rectlinear", "shape": [15,15,1],
   "pitch": [21.50364, 21.50364, 460.], "outer": 17001,
   "origin": [0., 0., 230.], "name": "Normal Assembly",
   "universes": core_unis})
-universes.append({"id": 20000, "lattice": 20000})
 CORE = 20000
 
 
@@ -1606,7 +1595,6 @@ beavrs['materials'] = materials
 beavrs['surfaces'] = surfaces
 beavrs['cells'] = cells
 beavrs['universes'] = universes
-beavrs['lattices'] = lattices
 beavrs['root-universe'] = CORE
 beavrs['sources'] = sources
 beavrs['tallies'] = tallies
