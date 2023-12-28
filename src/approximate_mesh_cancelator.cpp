@@ -33,15 +33,16 @@
 
 ApproximateMeshCancelator::ApproximateMeshCancelator(Position low, Position hi,
                                                      uint32_t Nx, uint32_t Ny,
-                                                     uint32_t Nz)
-    : r_low(low),
-      r_hi(hi),
+                                                     uint32_t Nz, bool loop)
+    : bins(),
       energy_edges(),
       shape{Nx, Ny, Nz, 1},
+      r_low(low),
+      r_hi(hi),
       dx(0.),
       dy(0.),
       dz(0.),
-      bins() {
+      loop(loop) {
   // Make sure the low points are all lower than the high points
   if (r_low.x() >= r_hi.x() || r_low.y() >= r_hi.y() || r_low.z() >= r_hi.z()) {
     fatal_error(
@@ -56,15 +57,16 @@ ApproximateMeshCancelator::ApproximateMeshCancelator(Position low, Position hi,
 
 ApproximateMeshCancelator::ApproximateMeshCancelator(
     Position low, Position hi, uint32_t Nx, uint32_t Ny, uint32_t Nz,
-    std::vector<double> energy_bounds)
-    : r_low(low),
-      r_hi(hi),
+    std::vector<double> energy_bounds, bool loop)
+    : bins(),
       energy_edges(energy_bounds),
       shape{Nx, Ny, Nz, 1},
+      r_low(low),
+      r_hi(hi),
       dx(0.),
       dy(0.),
       dz(0.),
-      bins() {
+      loop(loop) {
   // Make sure the low points are all lower than the high points
   if (r_low.x() >= r_hi.x() || r_low.y() >= r_hi.y() || r_low.z() >= r_hi.z()) {
     fatal_error(
@@ -185,7 +187,7 @@ std::vector<int> ApproximateMeshCancelator::sync_keys() {
   return keys;
 }
 
-void ApproximateMeshCancelator::perform_cancellation_loop(pcg32& /*rng*/) {
+void ApproximateMeshCancelator::perform_cancellation_loop() {
   // Get keys of all non empty bins
   std::vector<int> keys = sync_keys();
 
@@ -225,7 +227,7 @@ void ApproximateMeshCancelator::perform_cancellation_loop(pcg32& /*rng*/) {
   keys.clear();
 }
 
-void ApproximateMeshCancelator::perform_cancellation_vector(pcg32& /*rng*/) {
+void ApproximateMeshCancelator::perform_cancellation_vector() {
   // Get keys of all non empty bins
   std::vector<int> keys = sync_keys();
 
@@ -278,8 +280,12 @@ void ApproximateMeshCancelator::perform_cancellation_vector(pcg32& /*rng*/) {
   keys.clear();
 }
 
-void ApproximateMeshCancelator::perform_cancellation(pcg32& rng) {
-  this->perform_cancellation_vector(rng);
+void ApproximateMeshCancelator::perform_cancellation() {
+  if (loop) {
+    this->perform_cancellation_loop();
+  } else {
+    this->perform_cancellation_vector();
+  }
 }
 
 std::vector<BankedParticle> ApproximateMeshCancelator::get_new_particles(
@@ -323,20 +329,32 @@ std::shared_ptr<ApproximateMeshCancelator> make_approximate_mesh_cancelator(
   uint32_t Ny = node["shape"][1].as<uint32_t>();
   uint32_t Nz = node["shape"][2].as<uint32_t>();
 
-  if (!node["energy-bounds"]) {
-    return std::make_shared<ApproximateMeshCancelator>(r_low, r_hi, Nx, Ny, Nz);
+  bool loop = false;
+  if (node["loop"] && node["loop"].IsScalar()) {
+    loop = node["loop"].as<bool>();
+  } else if (node["loop"]) {
+    fatal_error("Invalid entry for loop in approximate mesh cancelator.");
   }
 
-  if (!node["energy-bounds"].IsSequence()) {
+  std::vector<double> energy_bounds;
+  if (node["energy-bounds"] && node["energy-bounds"].IsSequence()) {
+    energy_bounds = node["energy-bounds"].as<std::vector<double>>();
+  } else if (node["energy-bounds"]) {
     fatal_error(
         "No valid energy-bounds entry for approximate mesh cancelator.");
   }
 
-  std::vector<double> energy_bounds =
-      node["energy-bounds"].as<std::vector<double>>();
+  if (loop) {
+    Output::instance().write(" Using ApproximateMeshCancelator with loop.\n");
+  } else {
+    Output::instance().write(" Using ApproximateMeshCancelator with vector.\n");
+  }
 
-  Output::instance().write(" Using ApproximateMeshCancelator.\n");
-
-  return std::make_shared<ApproximateMeshCancelator>(r_low, r_hi, Nx, Ny, Nz,
-                                                     energy_bounds);
+  if (energy_bounds.size() == 0) {
+    return std::make_shared<ApproximateMeshCancelator>(r_low, r_hi, Nx, Ny, Nz,
+                                                       loop);
+  } else {
+    return std::make_shared<ApproximateMeshCancelator>(r_low, r_hi, Nx, Ny, Nz,
+                                                       energy_bounds, loop);
+  }
 }

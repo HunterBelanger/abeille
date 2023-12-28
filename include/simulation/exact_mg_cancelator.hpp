@@ -44,7 +44,7 @@ class ExactMGCancelator : public Cancelator {
                     uint32_t n_samples);
 
   bool add_particle(BankedParticle& p) override final;
-  void perform_cancellation(pcg32&) override final;
+  void perform_cancellation() override final;
   std::vector<BankedParticle> get_new_particles(pcg32& rng) override final;
   void clear() override final;
 

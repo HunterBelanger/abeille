@@ -451,7 +451,7 @@ ExactMGCancelator::sync_keys() {
   return key_matid_pairs;
 }
 
-void ExactMGCancelator::perform_cancellation(pcg32&) {
+void ExactMGCancelator::perform_cancellation() {
   // Get vector of keys to do cancellation in parallel
   std::vector<std::pair<Key, uint32_t>> key_matid_pairs = sync_keys();
 
@@ -803,19 +803,19 @@ std::shared_ptr<ExactMGCancelator> make_exact_mg_cancelator(
     }
   }
 
-  uint32_t n_samples = 10;
-  if (node["n-samples"] && node["n-samples"].IsScalar()) {
-    n_samples = node["n-samples"].as<uint32_t>();
-  } else if (node["n-samples"]) {
-    fatal_error("Invalid n-samples entry for cancelator.");
+  uint32_t nsamples = 10;
+  if (node["nsamples"] && node["nsamples"].IsScalar()) {
+    nsamples = node["nsamples"].as<uint32_t>();
+  } else if (node["nsamples"]) {
+    fatal_error("Invalid nsamples entry for cancelator.");
   }
 
-  if (n_samples == 0) {
-    fatal_error("n-samples must be greater than zero.");
+  if (nsamples == 0) {
+    fatal_error("nsamples must be greater than zero.");
   }
 
   std::stringstream otpt;
-  otpt << " Using ExactMGCancelator and " << n_samples << " points.\n";
+  otpt << " Using ExactMGCancelator and " << nsamples << " points.\n";
   if (settings::use_virtual_collisions)
     otpt << "   Will use particles born after virtual collisions.\n";
   else
@@ -824,5 +824,5 @@ std::shared_ptr<ExactMGCancelator> make_exact_mg_cancelator(
 
   return std::make_shared<ExactMGCancelator>(
       r_low, r_hi, shape, group_bins, settings::chi_matrix,
-      settings::use_virtual_collisions, n_samples);
+      settings::use_virtual_collisions, nsamples);
 }

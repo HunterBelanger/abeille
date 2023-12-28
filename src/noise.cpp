@@ -394,7 +394,7 @@ inline void Noise::perform_regional_cancellation(
               << " particles with no cancellation bin.\n";
 
   // Perform Cancellation for each Bin
-  cancelator->perform_cancellation(settings::rng);
+  cancelator->perform_cancellation();
 
   // All particles which were placed into a cancellation bin from next_gen
   // now have modified weights.
