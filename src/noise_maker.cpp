@@ -24,9 +24,9 @@
  * */
 #include <materials/material.hpp>
 #include <materials/nuclide.hpp>
-#include <simulation/flat_vibration_noise_source.hpp>
-#include <simulation/noise_maker.hpp>
-#include <simulation/square_oscillation_noise_source.hpp>
+#include <noise_source/flat_vibration_noise_source.hpp>
+#include <noise_source/noise_maker.hpp>
+#include <noise_source/square_oscillation_noise_source.hpp>
 #include <utils/error.hpp>
 #include <utils/rng.hpp>
 

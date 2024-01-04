@@ -25,7 +25,7 @@
 #ifndef NUCLIDE_H
 #define NUCLIDE_H
 
-#include <simulation/noise_source.hpp>
+#include <noise_source/noise_source.hpp>
 #include <simulation/particle.hpp>
 
 #include <cstdint>

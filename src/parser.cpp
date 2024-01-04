@@ -35,11 +35,11 @@
 #include <simulation/entropy.hpp>
 #include <simulation/fixed_source.hpp>
 #include <simulation/implicit_leakage_delta_tracker.hpp>
-#include <simulation/mesh_tally.hpp>
 #include <simulation/modified_fixed_source.hpp>
 #include <simulation/noise.hpp>
 #include <simulation/power_iterator.hpp>
 #include <simulation/surface_tracker.hpp>
+#include <tallies/mesh_tally.hpp>
 #include <utils/error.hpp>
 #include <utils/mpi.hpp>
 #include <utils/nd_directory.hpp>

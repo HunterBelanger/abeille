@@ -22,7 +22,7 @@
  * along with Abeille. If not, see <https://www.gnu.org/licenses/>.
  *
  * */
-#include <simulation/track_length_mesh_tally.hpp>
+#include <tallies/track_length_mesh_tally.hpp>
 #include <utils/constants.hpp>
 #include <utils/error.hpp>
 #include <utils/output.hpp>

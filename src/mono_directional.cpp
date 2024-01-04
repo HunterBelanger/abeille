@@ -22,7 +22,7 @@
  * along with Abeille. If not, see <https://www.gnu.org/licenses/>.
  *
  * */
-#include <simulation/mono_directional.hpp>
+#include <source/mono_directional.hpp>
 #include <utils/error.hpp>
 
 std::shared_ptr<MonoDirectional> make_mono_directional_distribution(

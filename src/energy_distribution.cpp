@@ -22,11 +22,11 @@
  * along with Abeille. If not, see <https://www.gnu.org/licenses/>.
  *
  * */
-#include <simulation/energy_distribution.hpp>
-#include <simulation/maxwellian.hpp>
-#include <simulation/mono_energetic.hpp>
-#include <simulation/tabulated_energy.hpp>
-#include <simulation/watt.hpp>
+#include <source/energy_distribution.hpp>
+#include <source/maxwellian.hpp>
+#include <source/mono_energetic.hpp>
+#include <source/tabulated_energy.hpp>
+#include <source/watt.hpp>
 #include <utils/error.hpp>
 
 std::shared_ptr<EnergyDistribution> make_energy_distribution(

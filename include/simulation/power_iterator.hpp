@@ -25,7 +25,7 @@
 #ifndef POWER_ITERATOR_H
 #define POWER_ITERATOR_H
 
-#include <simulation/cancelator.hpp>
+#include <cancelator/cancelator.hpp>
 #include <simulation/simulation.hpp>
 
 #include <unordered_set>

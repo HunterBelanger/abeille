@@ -22,8 +22,8 @@
  * along with Abeille. If not, see <https://www.gnu.org/licenses/>.
  *
  * */
+#include <cancelator/exact_mg_cancelator.hpp>
 #include <geometry/geometry.hpp>
-#include <simulation/exact_mg_cancelator.hpp>
 #include <utils/error.hpp>
 #include <utils/output.hpp>
 #include <utils/settings.hpp>

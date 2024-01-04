@@ -22,7 +22,7 @@
  * along with Abeille. If not, see <https://www.gnu.org/licenses/>.
  *
  * */
-#include <simulation/box.hpp>
+#include <source/box.hpp>
 #include <utils/error.hpp>
 
 #include <memory>

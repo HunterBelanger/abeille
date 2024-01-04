@@ -22,7 +22,7 @@
  * along with Abeille. If not, see <https://www.gnu.org/licenses/>.
  *
  * */
-#include <simulation/tabulated_energy.hpp>
+#include <source/tabulated_energy.hpp>
 #include <utils/error.hpp>
 #include <utils/pctable.hpp>
 

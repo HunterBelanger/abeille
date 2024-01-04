@@ -22,7 +22,7 @@
  * along with Abeille. If not, see <https://www.gnu.org/licenses/>.
  *
  * */
-#include <simulation/tallies.hpp>
+#include <tallies/tallies.hpp>
 #include <utils/error.hpp>
 #include <utils/mpi.hpp>
 #include <utils/output.hpp>

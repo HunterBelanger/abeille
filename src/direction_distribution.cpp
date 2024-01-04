@@ -22,10 +22,10 @@
  * along with Abeille. If not, see <https://www.gnu.org/licenses/>.
  *
  * */
-#include <simulation/cone.hpp>
-#include <simulation/direction_distribution.hpp>
-#include <simulation/isotropic.hpp>
-#include <simulation/mono_directional.hpp>
+#include <source/cone.hpp>
+#include <source/direction_distribution.hpp>
+#include <source/isotropic.hpp>
+#include <source/mono_directional.hpp>
 #include <utils/error.hpp>
 
 #include <memory>

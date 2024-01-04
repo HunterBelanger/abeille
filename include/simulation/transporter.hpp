@@ -27,9 +27,9 @@
 
 #include <geometry/geometry.hpp>
 #include <materials/nuclide.hpp>
-#include <simulation/noise_maker.hpp>
+#include <noise_source/noise_maker.hpp>
 #include <simulation/particle.hpp>
-#include <simulation/tallies.hpp>
+#include <tallies/tallies.hpp>
 #include <utils/constants.hpp>
 #include <utils/rng.hpp>
 #include <utils/settings.hpp>

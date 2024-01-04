@@ -22,9 +22,9 @@
  * along with Abeille. If not, see <https://www.gnu.org/licenses/>.
  *
  * */
-#include <simulation/collision_mesh_tally.hpp>
-#include <simulation/mesh_tally.hpp>
-#include <simulation/track_length_mesh_tally.hpp>
+#include <tallies/collision_mesh_tally.hpp>
+#include <tallies/mesh_tally.hpp>
+#include <tallies/track_length_mesh_tally.hpp>
 #include <utils/error.hpp>
 #include <utils/mpi.hpp>
 #include <utils/output.hpp>

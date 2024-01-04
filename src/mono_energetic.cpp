@@ -22,7 +22,7 @@
  * along with Abeille. If not, see <https://www.gnu.org/licenses/>.
  *
  * */
-#include <simulation/mono_energetic.hpp>
+#include <source/mono_energetic.hpp>
 #include <utils/error.hpp>
 
 #include <memory>

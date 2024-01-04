@@ -22,9 +22,9 @@
  * along with Abeille. If not, see <https://www.gnu.org/licenses/>.
  *
  * */
-#include <simulation/approximate_mesh_cancelator.hpp>
-#include <simulation/cancelator.hpp>
-#include <simulation/exact_mg_cancelator.hpp>
+#include <cancelator/approximate_mesh_cancelator.hpp>
+#include <cancelator/cancelator.hpp>
+#include <cancelator/exact_mg_cancelator.hpp>
 #include <utils/error.hpp>
 #include <utils/settings.hpp>
 

@@ -25,13 +25,13 @@
 #ifndef PARSER_H
 #define PARSER_H
 
-#include <simulation/cancelator.hpp>
-#include <simulation/noise_maker.hpp>
-#include <simulation/noise_source.hpp>
+#include <cancelator/cancelator.hpp>
+#include <noise_source/noise_maker.hpp>
+#include <noise_source/noise_source.hpp>
 #include <simulation/simulation.hpp>
-#include <simulation/source.hpp>
-#include <simulation/tallies.hpp>
 #include <simulation/transporter.hpp>
+#include <source/source.hpp>
+#include <tallies/tallies.hpp>
 #include <utils/settings.hpp>
 
 #include <yaml-cpp/yaml.h>

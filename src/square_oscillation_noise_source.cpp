@@ -23,7 +23,7 @@
  *
  * */
 #include <materials/material_helper.hpp>
-#include <simulation/square_oscillation_noise_source.hpp>
+#include <noise_source/square_oscillation_noise_source.hpp>
 #include <simulation/tracker.hpp>
 #include <utils/constants.hpp>
 #include <utils/direction.hpp>

@@ -25,8 +25,8 @@
 #ifndef NOISE_H
 #define NOISE_H
 
-#include <simulation/cancelator.hpp>
-#include <simulation/noise_maker.hpp>
+#include <cancelator/cancelator.hpp>
+#include <noise_source/noise_maker.hpp>
 #include <simulation/simulation.hpp>
 
 #include <memory>

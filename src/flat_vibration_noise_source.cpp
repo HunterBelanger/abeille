@@ -23,7 +23,7 @@
  *
  * */
 #include <materials/material_helper.hpp>
-#include <simulation/flat_vibration_noise_source.hpp>
+#include <noise_source/flat_vibration_noise_source.hpp>
 #include <utils/constants.hpp>
 #include <utils/error.hpp>
 

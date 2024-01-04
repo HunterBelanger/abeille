@@ -22,7 +22,7 @@
  * along with Abeille. If not, see <https://www.gnu.org/licenses/>.
  *
  * */
-#include <simulation/cone.hpp>
+#include <source/cone.hpp>
 #include <utils/error.hpp>
 
 #include <cmath>

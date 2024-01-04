@@ -22,7 +22,7 @@
  * along with Abeille. If not, see <https://www.gnu.org/licenses/>.
  *
  * */
-#include <simulation/point.hpp>
+#include <source/point.hpp>
 #include <utils/error.hpp>
 
 std::shared_ptr<Point> make_point_distribution(const YAML::Node& node) {

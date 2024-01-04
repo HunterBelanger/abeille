@@ -20,7 +20,7 @@
  * along with Abeille. If not, see <https://www.gnu.org/licenses/>.
  *
  * */
-#include <simulation/maxwellian.hpp>
+#include <source/maxwellian.hpp>
 #include <utils/constants.hpp>
 #include <utils/error.hpp>
 #include <utils/rng.hpp>

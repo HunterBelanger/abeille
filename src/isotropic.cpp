@@ -22,7 +22,7 @@
  * along with Abeille. If not, see <https://www.gnu.org/licenses/>.
  *
  * */
-#include <simulation/isotropic.hpp>
+#include <source/isotropic.hpp>
 #include <utils/constants.hpp>
 
 Direction Isotropic::sample(pcg32& rng) const {

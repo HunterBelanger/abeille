@@ -22,7 +22,7 @@
  * along with Abeille. If not, see <https://www.gnu.org/licenses/>.
  *
  * */
-#include <simulation/source_mesh_tally.hpp>
+#include <tallies/source_mesh_tally.hpp>
 #include <utils/error.hpp>
 #include <utils/position.hpp>
 #include <utils/settings.hpp>

@@ -27,9 +27,9 @@
 
 #include <geometry/geometry.hpp>
 #include <simulation/entropy.hpp>
-#include <simulation/source.hpp>
-#include <simulation/tallies.hpp>
 #include <simulation/transporter.hpp>
+#include <source/source.hpp>
+#include <tallies/tallies.hpp>
 #include <utils/rng.hpp>
 #include <utils/settings.hpp>
 #include <utils/timer.hpp>

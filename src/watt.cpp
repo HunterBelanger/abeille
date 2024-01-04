@@ -22,7 +22,7 @@
  * along with Abeille. If not, see <https://www.gnu.org/licenses/>.
  *
  * */
-#include <simulation/watt.hpp>
+#include <source/watt.hpp>
 #include <utils/constants.hpp>
 #include <utils/error.hpp>
 #include <utils/rng.hpp>

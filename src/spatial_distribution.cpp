@@ -22,9 +22,9 @@
  * along with Abeille. If not, see <https://www.gnu.org/licenses/>.
  *
  * */
-#include <simulation/box.hpp>
-#include <simulation/point.hpp>
-#include <simulation/spatial_distribution.hpp>
+#include <source/box.hpp>
+#include <source/point.hpp>
+#include <source/spatial_distribution.hpp>
 #include <utils/error.hpp>
 
 std::shared_ptr<SpatialDistribution> make_spatial_distribution(
