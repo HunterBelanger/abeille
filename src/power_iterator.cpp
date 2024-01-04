@@ -331,7 +331,7 @@ void PowerIterator::run() {
       for (auto& p : bank) families.insert(p.family_id());
     }
 
-    std::vector<BankedParticle> next_gen = transporter->transport(bank);
+    std::vector<BankedParticle> next_gen = particle_mover->transport(bank);
     transported_histories += bank.size();
 
     if (next_gen.empty()) {
@@ -349,13 +349,16 @@ void PowerIterator::run() {
     // Do weight cancelation
     if (settings::regional_cancellation && cancelator) {
       perform_regional_cancellation(next_gen);
-    }
-
-    // Synchronize particles across nodes
-    sync_banks(mpi::node_nparticles, next_gen);
+    } 
 
     // Calculate net positive and negative weight
     normalize_weights(next_gen);
+
+    // Comb particles
+    if (settings::combing) comb_particles(next_gen);
+
+    // Synchronize particles across nodes
+    sync_banks(mpi::node_nparticles, next_gen);
 
     // Compute pair distance squared
     if (settings::pair_distance_sqrd) compute_pair_dist_sqrd(next_gen);
@@ -459,6 +462,95 @@ void PowerIterator::run() {
 
   // write source
   write_source(bank);
+}
+
+void PowerIterator::comb_particles(std::vector<BankedParticle>& next_gen) {
+  double Wpos_node = 0.;
+  double Wneg_node = 0.;
+  // Get sum of total positive and negative weights using Kahan Summation
+  std::tie(Wpos_node, Wneg_node, std::ignore, std::ignore) =
+      kahan_bank(next_gen.begin(), next_gen.end());
+
+  // Get total weights for all nodes
+  std::vector<double> Wpos_each_node(mpi::size, 0.);
+  Wpos_each_node[mpi::rank] = Wpos_node;
+  mpi::Allreduce_sum(Wpos_each_node);
+  const double Wpos = kahan(Wpos_each_node.begin(), Wpos_each_node.end(), 0.);
+
+  std::vector<double> Wneg_each_node(mpi::size, 0.);
+  Wneg_each_node[mpi::rank] = Wneg_node;
+  mpi::Allreduce_sum(Wneg_each_node);
+  const double Wneg = kahan(Wneg_each_node.begin(), Wneg_each_node.end(), 0.);
+
+  // Determine how many positive and negative particles we want to have after
+  // combing on this node and globaly as well
+  const std::size_t Npos_node = static_cast<std::size_t>(std::round(Wpos_node));
+  const std::size_t Nneg_node =
+      static_cast<std::size_t>(std::round(std::abs(Wneg_node)));
+
+  const std::size_t Npos = static_cast<std::size_t>(std::round(Wpos));
+  const std::size_t Nneg = static_cast<std::size_t>(std::round(std::abs(Wneg)));
+
+  // The + 2 is to account for rounding in the ceil operations between global
+  // array vs just the node
+  std::vector<BankedParticle> new_next_gen;
+  new_next_gen.reserve(Npos_node + Nneg_node + 2);
+
+  // Variables for combing particles
+  const double avg_pos_wgt = Wpos / static_cast<double>(Npos);
+  const double avg_neg_wgt = std::abs(Wneg) / static_cast<double>(Nneg);
+  double comb_position_pos = 0.;
+  double comb_position_neg = 0.;
+  if (mpi::rank == 0) {
+    // The initial random offset of the comb is sampled on the master node.
+    comb_position_pos = RNG::rand(settings::rng) * avg_pos_wgt;
+    comb_position_neg = RNG::rand(settings::rng) * avg_neg_wgt;
+  }
+  mpi::Bcast(comb_position_pos, 0);
+  mpi::Bcast(comb_position_neg, 0);
+
+  // Find Comb Position for this Node
+  const double U_pos =
+      kahan(Wpos_each_node.begin(), Wpos_each_node.begin() + mpi::rank, 0.);
+  const double beta_pos = std::floor((U_pos - comb_position_pos) / avg_pos_wgt);
+
+  const double U_neg = std::abs(
+      kahan(Wneg_each_node.begin(), Wneg_each_node.begin() + mpi::rank, 0.));
+  const double beta_neg = std::floor((U_neg - comb_position_neg) / avg_neg_wgt);
+
+  if (mpi::rank != 0) {
+    comb_position_pos =
+        ((beta_pos + 1.) * avg_pos_wgt) + comb_position_pos - U_pos;
+    if (comb_position_pos > avg_pos_wgt) comb_position_pos -= avg_pos_wgt;
+
+    comb_position_neg =
+        ((beta_neg + 1.) * avg_neg_wgt) + comb_position_neg - U_neg;
+    if (comb_position_neg > avg_neg_wgt) comb_position_neg -= avg_neg_wgt;
+  }
+
+  double current_particle_pos = 0.;
+  double current_particle_neg = 0.;
+  // Comb positive and negative particles at the same time, to ensure that
+  // particle orders aren't changed for different parallelization schemes.
+  for (std::size_t i = 0; i < next_gen.size(); i++) {
+    if (next_gen[i].wgt > 0.) {
+      current_particle_pos += next_gen[i].wgt;
+      while (comb_position_pos < current_particle_pos) {
+        new_next_gen.push_back(next_gen[i]);
+        new_next_gen.back().wgt = avg_pos_wgt;
+        comb_position_pos += avg_pos_wgt;
+      }
+    } else {
+      current_particle_neg -= next_gen[i].wgt;
+      while (comb_position_neg < current_particle_neg) {
+        new_next_gen.push_back(next_gen[i]);
+        new_next_gen.back().wgt = -avg_neg_wgt;
+        comb_position_neg += avg_neg_wgt;
+      }
+    }
+  }
+
+  next_gen.swap(new_next_gen);
 }
 
 void PowerIterator::write_entropy_families_etc_to_results() const {

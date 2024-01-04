@@ -71,6 +71,8 @@ class PowerIterator : public Simulation {
 
   void normalize_weights(std::vector<BankedParticle>& next_gen);
 
+  void comb_particles(std::vector<BankedParticle>& next_gen);
+
   void perform_regional_cancellation(std::vector<BankedParticle>& next_gen);
 
   // Entropy calculation

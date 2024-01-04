@@ -27,7 +27,7 @@
 
 #include <geometry/geometry.hpp>
 #include <simulation/entropy.hpp>
-#include <simulation/transporter.hpp>
+#include <simulation/particle_mover.hpp>
 #include <source/source.hpp>
 #include <tallies/tallies.hpp>
 #include <utils/rng.hpp>
@@ -38,7 +38,7 @@
 
 class Simulation {
  public:
-  Simulation(std::shared_ptr<Tallies> i_t, std::shared_ptr<Transporter> i_tr,
+  Simulation(std::shared_ptr<Tallies> i_t, std::shared_ptr<IParticleMover> i_pm,
              std::vector<std::shared_ptr<Source>> srcs);
   virtual ~Simulation() = default;
 
@@ -76,7 +76,7 @@ class Simulation {
 
  protected:
   std::shared_ptr<Tallies> tallies;
-  std::shared_ptr<Transporter> transporter;
+  std::shared_ptr<IParticleMover> particle_mover;
   std::vector<std::shared_ptr<Source>> sources;
 
   Timer simulation_timer;

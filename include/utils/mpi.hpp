@@ -35,7 +35,7 @@
 #ifdef ABEILLE_USE_MPI
 #include <mpi.h>
 
-#include <simulation/exact_mg_cancelator.hpp>
+#include <cancelator/exact_mg_cancelator.hpp>
 #include <simulation/particle.hpp>
 #endif
 

@@ -30,15 +30,15 @@
 #include <geometry/surfaces/all_surfaces.hpp>
 #include <materials/nuclide.hpp>
 #include <simulation/branchless_power_iterator.hpp>
-#include <simulation/carter_tracker.hpp>
-#include <simulation/delta_tracker.hpp>
 #include <simulation/entropy.hpp>
 #include <simulation/fixed_source.hpp>
-#include <simulation/implicit_leakage_delta_tracker.hpp>
 #include <simulation/modified_fixed_source.hpp>
 #include <simulation/noise.hpp>
 #include <simulation/power_iterator.hpp>
-#include <simulation/surface_tracker.hpp>
+#include <simulation/transport_operators/carter_tracker.hpp>
+#include <simulation/transport_operators/delta_tracker.hpp>
+#include <simulation/transport_operators/implicit_leakage_delta_tracker.hpp>
+#include <simulation/transport_operators/surface_tracker.hpp>
 #include <tallies/mesh_tally.hpp>
 #include <utils/error.hpp>
 #include <utils/mpi.hpp>
@@ -69,7 +69,7 @@ std::map<uint32_t, size_t> universe_id_to_indx;
 std::vector<std::shared_ptr<Source>> sources;
 NoiseMaker noise_maker;
 std::shared_ptr<Tallies> tallies = nullptr;
-std::shared_ptr<Transporter> transporter = nullptr;
+std::shared_ptr<IParticleMover> particle_mover = nullptr;
 std::shared_ptr<Simulation> simulation = nullptr;
 std::shared_ptr<Cancelator> cancelator = nullptr;
 std::string xspath;
@@ -107,7 +107,7 @@ void parse_input_file(std::string fname) {
 
   make_tallies(input);
 
-  make_transporter();
+  make_particle_mover();
 
   if (settings::regional_cancellation ||
       settings::regional_cancellation_noise) {
@@ -352,8 +352,6 @@ void make_settings(const YAML::Node& input) {
 
     if (sim_type == "k-eigenvalue") {
       settings::mode = settings::SimulationMode::K_EIGENVALUE;
-    } else if (sim_type == "branchless-k-eigenvalue") {
-      settings::mode = settings::SimulationMode::BRANCHLESS_K_EIGENVALUE;
     } else if (sim_type == "fixed-source") {
       settings::mode = settings::SimulationMode::FIXED_SOURCE;
     } else if (sim_type == "modified-fixed-source") {
@@ -368,8 +366,7 @@ void make_settings(const YAML::Node& input) {
     if (settings::mode == settings::SimulationMode::BRANCHLESS_K_EIGENVALUE) {
       // Splitting
       if (settnode["branchless-splitting"]) {
-        settings::branchless_splitting =
-            settnode["branchless-splitting"].as<bool>();
+        settings::branchless_splitting = settnode["branchless-splitting"].as<bool>();
       }
 
       if (settings::branchless_splitting) {
@@ -381,7 +378,7 @@ void make_settings(const YAML::Node& input) {
       }
 
       // Combing
-      if (settnode["branchless-combing"]) {
+      if (settnode["combing"]) {
         settings::branchless_combing =
             settnode["branchless-combing"].as<bool>();
       }
@@ -392,61 +389,69 @@ void make_settings(const YAML::Node& input) {
       } else {
         Output::instance().write(" No combing between fission generations.\n");
       }
-
-      // Branchless on Material or Isotope
-      if (settnode["branchless-material"]) {
-        settings::branchless_material =
-            settnode["branchless-material"].as<bool>();
-      }
-
-      if (settings::branchless_material) {
-        Output::instance().write(
-            " Performing branchless collision on material.\n");
-      } else {
-        Output::instance().write(
-            " Performing branchless collision on isotope.\n");
-      }
     }
 
     // Get transport method
+    std::string transport_type;
     if (settnode["transport"] && settnode["transport"].IsScalar()) {
-      if (settnode["transport"].as<std::string>() == "delta-tracking") {
-        settings::tracking = settings::TrackingMode::DELTA_TRACKING;
-      } else if (settnode["transport"].as<std::string>() ==
-                 "implicit-leakage-delta-tracking") {
-        settings::tracking =
-            settings::TrackingMode::IMPLICIT_LEAKAGE_DELTA_TRACKING;
-      } else if (settnode["transport"].as<std::string>() ==
-                 "surface-tracking") {
-        settings::tracking = settings::TrackingMode::SURFACE_TRACKING;
-      } else if (settnode["transport"].as<std::string>() == "carter-tracking") {
-        settings::tracking = settings::TrackingMode::CARTER_TRACKING;
+      transport_type = settnode["transport"].as<std::string>();
+    } else if (settnode["transport"]) {
+      std::string mssg = "Invalid transport method entry.";
+      fatal_error(mssg);
+    } else {
+      // Use surface tracking by default
+      transport_type = "surface-tracking";
+    }
+    
+    if (transport_type == "surface-tracking") {
+      settings::tracking = settings::TrackingMode::SURFACE_TRACKING;
+    } else if (transport_type == "delta-tracking") {
+      settings::tracking = settings::TrackingMode::DELTA_TRACKING;
+    } else if (transport_type == "implicit-leakage-delta-tracking") {
+      settings::tracking = settings::TrackingMode::IMPLICIT_LEAKAGE_DELTA_TRACKING;
+    } else if (transport_type == "carter-tracking") {
+      settings::tracking = settings::TrackingMode::CARTER_TRACKING;
 
-        // Read the sampling-xs entry in the input file
-        if (!input["sampling-xs-ratio"] ||
-            !input["sampling-xs-ratio"].IsSequence()) {
-          fatal_error(
-              "Must provide the \"sampling-xs-ratio\" vector to use Carter "
-              "Tracking.");
+      // Read the sampling-xs entry in the input file
+      if (!input["sampling-xs-ratio"] ||
+          !input["sampling-xs-ratio"].IsSequence()) {
+        fatal_error("Must provide the \"sampling-xs-ratio\" vector to use Carter Tracking.");
+      }
+
+      settings::sample_xs_ratio =
+          input["sampling-xs-ratio"].as<std::vector<double>>();
+
+      // Make sure all ratios are positive
+      for (const auto& v : settings::sample_xs_ratio) {
+        if (v <= 0.) {
+          fatal_error("Sampling XS ratios must be > 0.");
         }
-
-        settings::sample_xs_ratio =
-            input["sampling-xs-ratio"].as<std::vector<double>>();
-
-        // Make sure all ratios are positive
-        for (const auto& v : settings::sample_xs_ratio) {
-          if (v <= 0.) {
-            fatal_error("Sampling XS ratios must be > 0.");
-          }
-        }
-      } else {
-        std::string mssg = "Invalid tracking method " +
-                           settnode["transport"].as<std::string>() + ".";
-        fatal_error(mssg);
       }
     } else {
-      // By default, use surface tracking
-      settings::tracking = settings::TrackingMode::SURFACE_TRACKING;
+      std::string err = "Invalid transport method " + transport_type + ".";
+      fatal_error(err);
+    }
+
+    // Get collision method
+    std::string coll_type;
+    if (settnode["collisions"] && settnode["collisions"].IsScalar()) {
+      coll_type = settnode["collisions"].as<std::string>();
+    } else if (settnode["collisions"]) {
+      std::string mssg = "Invalid collisions method entry.";
+      fatal_error(mssg);
+    } else {
+      coll_type = "branching";
+    }
+
+    if (coll_type == "branching") {
+      settings::collisions = settings::CollisionMode::BRANCHING;
+    } else if (coll_type == "branchless-isotope") {
+      settings::collisions = settings::CollisionMode::BRANCHLESS_ISOTOPE;
+    } else if (coll_type == "branchless-material") {
+      settings::collisions = settings::CollisionMode::BRANCHLESS_ISOTOPE;
+    } else {
+      std::string mssg = "Invalid collision method " + coll_type + ".";
+      fatal_error(mssg);
     }
 
     // Get energy mode type
@@ -886,28 +891,8 @@ void make_tallies(const YAML::Node& input) {
   }
 }
 
-void make_transporter() {
-  switch (settings::tracking) {
-    case settings::TrackingMode::SURFACE_TRACKING:
-      transporter = std::make_shared<SurfaceTracker>(tallies);
-      Output::instance().write(" Using Surface-Tracking.\n");
-      break;
-
-    case settings::TrackingMode::DELTA_TRACKING:
-      transporter = std::make_shared<DeltaTracker>(tallies);
-      Output::instance().write(" Using Delta-Tracking.\n");
-      break;
-
-    case settings::TrackingMode::IMPLICIT_LEAKAGE_DELTA_TRACKING:
-      transporter = std::make_shared<ImplicitLeakageDeltaTracker>(tallies);
-      Output::instance().write(" Using Implicit-Leakage-Delta-Tracking.\n");
-      break;
-
-    case settings::TrackingMode::CARTER_TRACKING:
-      transporter = std::make_shared<CarterTracker>(tallies);
-      Output::instance().write(" Using Carter-Tracking.\n");
-      break;
-  }
+void make_particle_mover() {
+  
 }
 
 void make_cancellation_bins(const YAML::Node& input) {

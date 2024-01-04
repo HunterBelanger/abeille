@@ -111,7 +111,7 @@ void FixedSource::run() {
 
     // Now transport all particles. In fixed-source mode, this should
     // return and empty vector !
-    auto fission_bank = transporter->transport(bank);
+    auto fission_bank = particle_mover->transport(bank);
     if (!fission_bank.empty()) {
       fatal_error("Returned bank not empty on fixed-source transport.");
     }

@@ -177,7 +177,7 @@ void CarterTracker::transport(Particle& p, Tracker& trkr, MaterialHelper& mat, T
     }
 
     if (p.is_alive() && std::abs(p.wgt()) >= settings::wgt_split) {
-      // Split particle is weight magnitude is too large
+      // Split particle, weight magnitude is too large
       int n_new = static_cast<int>(std::ceil(std::abs(p.wgt())));
       p.split(n_new);
     }

@@ -29,7 +29,7 @@
 #include <noise_source/noise_maker.hpp>
 #include <noise_source/noise_source.hpp>
 #include <simulation/simulation.hpp>
-#include <simulation/transporter.hpp>
+#include <simulation/particle_mover.hpp>
 #include <source/source.hpp>
 #include <tallies/tallies.hpp>
 #include <utils/settings.hpp>
@@ -51,7 +51,7 @@ extern std::map<uint32_t, size_t> universe_id_to_indx;
 extern std::vector<std::shared_ptr<Source>> sources;
 extern NoiseMaker noise_maker;
 extern std::shared_ptr<Tallies> tallies;
-extern std::shared_ptr<Transporter> transporter;
+extern std::shared_ptr<IParticleMover> particle_mover;
 extern std::shared_ptr<Simulation> simulation;
 extern std::shared_ptr<Cancelator> cancelator;
 extern std::string xspath;
@@ -80,8 +80,8 @@ void make_settings(const YAML::Node& input);
 // Reads tallies and populates pointer
 void make_tallies(const YAML::Node& input);
 
-// Reads into to make transporter
-void make_transporter();
+// Reads input to make ParticleMover
+void make_particle_mover();
 
 // Reads regional cancellation bins
 void make_cancellation_bins(const YAML::Node& input);

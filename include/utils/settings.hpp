@@ -40,7 +40,6 @@ using TempInterpolation = NDDirectory::TemperatureInterpolation;
 namespace settings {
 enum class SimulationMode {
   K_EIGENVALUE,
-  BRANCHLESS_K_EIGENVALUE,
   FIXED_SOURCE,
   MODIFIED_FIXED_SOURCE,
   NOISE
@@ -50,6 +49,11 @@ enum class TrackingMode {
   DELTA_TRACKING,
   IMPLICIT_LEAKAGE_DELTA_TRACKING,
   CARTER_TRACKING
+};
+enum class CollisionMode {
+  BRANCHING,
+  BRANCHLESS_ISOTOPE,
+  BRANCHLESS_MATERIAL
 };
 enum class EnergyMode { CE, MG };
 
@@ -71,6 +75,7 @@ extern double target_at_rest_threshold;
 
 extern SimulationMode mode;
 extern TrackingMode tracking;
+extern CollisionMode collisions;
 extern EnergyMode energy_mode;
 
 extern uint64_t rng_seed;
@@ -100,10 +105,9 @@ extern bool normalize_noise_source;
 extern bool rng_stride_warnings;
 extern bool load_source_file;
 
-// Branchless PI settings
+// PI settings
+extern bool combing;
 extern bool branchless_splitting;
-extern bool branchless_combing;
-extern bool branchless_material;
 
 // Energy bounds for multi-group mode
 extern std::vector<double> energy_bounds;

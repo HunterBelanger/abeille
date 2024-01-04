@@ -32,10 +32,10 @@
 #include <functional>
 
 Simulation::Simulation(std::shared_ptr<Tallies> i_t,
-                       std::shared_ptr<Transporter> i_tr,
+                       std::shared_ptr<IParticleMover> i_pm,
                        std::vector<std::shared_ptr<Source>> srcs)
     : tallies{i_t},
-      transporter{i_tr},
+      particle_mover{i_pm},
       sources{srcs},
       simulation_timer(),
       p_pre_entropy(nullptr),

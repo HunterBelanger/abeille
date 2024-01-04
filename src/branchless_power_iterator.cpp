@@ -331,7 +331,7 @@ void BranchlessPowerIterator::run() {
       for (auto& p : bank) families.insert(p.family_id());
     }
 
-    std::vector<BankedParticle> next_gen = transporter->transport(bank);
+    std::vector<BankedParticle> next_gen = particle_mover->transport(bank);
     transported_histories += bank.size();
 
     if (next_gen.empty()) {

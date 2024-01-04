@@ -80,7 +80,7 @@ void ModifiedFixedSource::run() {
     bank = this->sample_sources(static_cast<std::size_t>(settings::nparticles));
 
     while (!bank.empty()) {
-      auto fission_bank = transporter->transport(bank);
+      auto fission_bank = particle_mover->transport(bank);
       transported_histories += bank.size();
 
       // Cancellation may be performed on fission_bank here

@@ -52,6 +52,7 @@ double target_at_rest_threshold = 400.;
 
 SimulationMode mode = SimulationMode::K_EIGENVALUE;
 TrackingMode tracking = TrackingMode::SURFACE_TRACKING;
+CollisionMode collisions = CollisionMode::BRANCHING;
 EnergyMode energy_mode = EnergyMode::CE;
 
 uint64_t rng_seed = 19073486328125;
@@ -84,9 +85,8 @@ bool rng_stride_warnings = false;
 
 bool load_source_file = false;
 
+bool combing = true;
 bool branchless_splitting = false;
-bool branchless_combing = true;
-bool branchless_material = true;
 
 // Energy bounds for multi-group mode
 std::vector<double> energy_bounds{};
@@ -129,9 +129,6 @@ void write_settings_to_output() {
     case SimulationMode::K_EIGENVALUE:
       h5.createAttribute<std::string>("mode", "k-eigenvalue");
       break;
-    case SimulationMode::BRANCHLESS_K_EIGENVALUE:
-      h5.createAttribute<std::string>("mode", "branchless-k-eigenvalue");
-      break;
     case SimulationMode::FIXED_SOURCE:
       h5.createAttribute<std::string>("mode", "fixed-source");
       break;
@@ -144,10 +141,8 @@ void write_settings_to_output() {
   }
 
   // Branchless specific things
-  if (mode == SimulationMode::BRANCHLESS_K_EIGENVALUE) {
-    h5.createAttribute<bool>("branchless-combing", branchless_combing);
-    h5.createAttribute<bool>("branchless-splitting", branchless_splitting);
-    h5.createAttribute<bool>("branchless-material", branchless_material);
+  if (mode == SimulationMode::K_EIGENVALUE) {
+    h5.createAttribute<bool>("combing", combing);
   }
 
   // Noise specific things
@@ -188,6 +183,23 @@ void write_settings_to_output() {
     case TrackingMode::CARTER_TRACKING:
       h5.createAttribute<std::string>("transport", "carter-tracking");
       break;
+  }
+
+  // Collision Mode
+  switch (collisions) {
+    case CollisionMode::BRANCHING:
+      h5.createAttribute<std::string>("collisions", "branching");
+      break;
+    case CollisionMode::BRANCHLESS_ISOTOPE:
+      h5.createAttribute<std::string>("collisions", "branchless-isotope");
+      break;
+    case CollisionMode::BRANCHLESS_MATERIAL:
+      h5.createAttribute<std::string>("collisions", "branchless-material");
+      break;
+  }
+
+  if (collisions == CollisionMode::BRANCHLESS_ISOTOPE || collisions == CollisionMode::BRANCHLESS_MATERIAL) {
+    h5.createAttribute<bool>("branchless-splitting", branchless_splitting);
   }
 
   // MG CT specific
