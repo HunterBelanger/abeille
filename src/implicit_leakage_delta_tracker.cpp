@@ -43,9 +43,7 @@
 #include <sstream>
 #include <vector>
 
-ImplicitLeakageDeltaTracker::ImplicitLeakageDeltaTracker(
-    std::shared_ptr<Tallies> i_t)
-    : tallies(i_t), EGrid(nullptr), Emaj(nullptr) {
+ImplicitLeakageDeltaTracker::ImplicitLeakageDeltaTracker() : EGrid(nullptr), Emaj(nullptr) {
   Output::instance().write(" Finding majorant cross sections.\n");
   auto Egrid_Emaj_pair = make_majorant_xs();
   EGrid = std::make_shared<pndl::EnergyGrid>(Egrid_Emaj_pair.first);
@@ -68,12 +66,11 @@ ImplicitLeakageDeltaTracker::ImplicitLeakageDeltaTracker(
 
 void ImplicitLeakageDeltaTracker::transport(Particle& p, Tracker& trkr,
                                             MaterialHelper& mat,
-                                            ThreadLocalScores& thread_scores,
-                                            bool noise) const {
+                                            ThreadLocalScores& thread_scores) const {
   bool had_collision = false;
   while (p.is_alive() && had_collision == false) {
     auto maj_indx = EGrid->get_lower_index(p.E());
-    double Emajorant = Emaj->evaluate(p.E(), maj_indx) + mat.Ew(p.E(), noise);
+    double Emajorant = Emaj->evaluate(p.E(), maj_indx) + mat.Ew(p.E());
     p.set_Esmp(Emajorant);  // Sampling XS saved for cancellation
     auto bound = trkr.get_boundary_condition();
 
@@ -105,14 +102,14 @@ void ImplicitLeakageDeltaTracker::transport(Particle& p, Tracker& trkr,
       // Score the TLE for the portion which would have leaked
       p.set_weight(wgt_leak);
       p.set_weight2(wgt2_leak);
-      tallies->score_flight(p, bound.distance, mat, settings::converged);
+      Tallies::instance().score_flight(p, bound.distance, mat, settings::converged);
 
       // Reduce weight
       p.set_weight(wgt_collides);
       p.set_weight2(wgt2_collides);
 
       // Score TLE for the portion which only goes to the collision site
-      tallies->score_flight(p, d_coll, mat, settings::converged);
+      Tallies::instance().score_flight(p, d_coll, mat, settings::converged);
     } else {
       d_coll = RNG::exponential(p.rng, Emajorant);
 
@@ -120,7 +117,7 @@ void ImplicitLeakageDeltaTracker::transport(Particle& p, Tracker& trkr,
       // This is here because flux-like tallies are allowed with DT.
       // No other quantity should be scored with a TLE, as an error
       // should have been thrown when building all tallies.
-      tallies->score_flight(p, std::min(d_coll, bound.distance), mat,
+      Tallies::instance().score_flight(p, std::min(d_coll, bound.distance), mat,
                             settings::converged);
     }
 
@@ -173,7 +170,7 @@ void ImplicitLeakageDeltaTracker::transport(Particle& p, Tracker& trkr,
       mat.set_material(trkr.material(), p.E());
 
       // Get true cross section here
-      double Et = mat.Et(p.E(), noise);
+      double Et = mat.Et(p.E());
 
       if (Et - Emajorant > 1.E-10) {
         std::stringstream mssg;

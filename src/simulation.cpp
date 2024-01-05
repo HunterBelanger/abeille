@@ -23,6 +23,8 @@
  *
  * */
 #include <simulation/simulation.hpp>
+#include <simulation/fixed_source.hpp>
+#include <utils/error.hpp>
 #include <utils/mpi.hpp>
 #include <utils/output.hpp>
 #include <utils/settings.hpp>
@@ -192,4 +194,37 @@ void Simulation::write_source(std::vector<Particle>& bank) const {
         h5.createDataSet<double>("source", H5::DataSpace(source.shape()));
     source_dset.write_raw(&source[0]);
   }
+}
+
+std::shared_ptr<Simulation> make_simulation(const YAML::Node& input) {
+  // Get the simulation mode
+  if (input["simulation"] == false) {
+    fatal_error("No simulation entry provided in input.");
+  } else if (input["simulation"] && input["simulation"].IsMap() == false) {
+    fatal_error("Invalid simulation entry provided in input.");
+  }
+  const YAML::Node& sim = input["simulation"];
+
+  // First, get the string identifying the simulation mode
+  if (sim["mode"] == false) {
+    fatal_error("No mode entry in simulation definition."):
+  } else if (sim["mode"].IsScalar() == false) {
+    fatal_error("Invalid mode entry in simulation.");
+  }
+  std::string mode = sim["mode"].as<std::string>();
+
+  std::shared_ptr<Simulation> simulation = nullptr;
+  if (mode == "k-eigenvalue") {
+    simulation = make_power_iterator(sim);
+  } else if (mode == "fixed-source") {
+    simulation = make_fixed_source(sim);
+  } else if (mode == "modified-fixed-source") {
+    fatal_error("Simulation mode modified-fixed-source not yet implemented.");
+  } else if (mode == "noise") {
+    fatal_error("Simulation mode noise not yet implemented.");
+  } else {
+    fatal_error("Unknown simulation mode " + mode + ".");
+  }
+
+  return simulation;
 }

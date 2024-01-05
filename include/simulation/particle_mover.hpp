@@ -33,31 +33,28 @@
 #include <simulation/transport_operators/transport_operator.hpp>
 #include <tallies/tallies.hpp>
 #include <utils/error.hpp>
+#include <utils/noise_parameters.hpp>
 #include <utils/settings.hpp>
 
+#include <yaml-cpp/yaml.h>
+
 #include <memory>
+#include <optional>
 #include <sstream>
 #include <vector>
 
 class IParticleMover {
   virtual ~IParticleMover() = default;
 
-  virtual std::vector<BankedParticle> transport(
-      std::vector<Particle>& bank, bool noise = false,
-      std::vector<BankedParticle>* noise_bank = nullptr,
-      const NoiseMaker* = nullptr) = 0;
+  virtual std::vector<BankedParticle> transport(std::vector<Particle>& bank, std::optional<NoiseParameters> noise = std::nullopt, std::vector<BankedParticle>* noise_bank = nullptr, const NoiseMaker* = nullptr) = 0;
 };
 
 template <TransportOperator TransportOp, CollisionOperator CollisionOp>
 class ParticleMover : public IParticleMover {
  public:
-  ParticleMover(TransportOp t, CollisionOp c, std::shared_ptr<Tallies> tallies)
-      : transport_operator_(t), collision_operator_(c), tallies_(tallies) {}
+  ParticleMover(TransportOp t, CollisionOp c) : transport_operator_(t), collision_operator_(c) {}
 
-  std::vector<BankedParticle> transport(
-      std::vector<Particle>& bank, bool noise = false,
-      std::vector<BankedParticle>* noise_bank = nullptr,
-      const NoiseMaker* = nullptr) {
+  std::vector<BankedParticle> transport(std::vector<Particle>& bank, std::optional<NoiseParameters> noise = std::nullopt, std::vector<BankedParticle>* noise_bank = nullptr, const NoiseMaker* noise_maker = nullptr) {
 #ifdef ABEILLE_USE_OMP
 #pragma omp parallel
 #endif
@@ -85,26 +82,25 @@ class ParticleMover : public IParticleMover {
         // Only make helper if we aren't lost, to make sure that material isn't
         // a nullptr. We also set the URR random variable here, if using
         // ptables.
-        MaterialHelper mat(trkr.material(), p.E());
+        MaterialHelper mat(trkr.material(), p.E(), noise);
         if (settings::use_urr_ptables) mat.set_urr_rand_vals(p.rng);
 
         // While the partilce is alive, we continually do flights and collisions
         while (p.is_alive()) {
-          transport_operator_.transport(p, trkr, mat, thread_scores, noise);
+          transport_operator_.transport(p, trkr, mat, thread_scores);
 
           if (p.is_alive()) {
             // Sample noise source from the noise maker
             if (noise_maker) {
-              noise_maker->sample_noise_source(p, mat, tallies->keff(),
-                                               settings::w_noise);
+              noise_maker->sample_noise_source(p, mat);
             }
 
             // Score flux collision estimator with Sigma_t
-            tallies->score_collision(p, mat, settings::converged);
+            Tallies::instance().score_collision(p, mat);
 
             // Contribute to keff collision estimator and migration area scores
             thread_scores.k_col_score +=
-                p.wgt() * mat.vEf(p.E()) / mat.Et(p.E(), noise);
+                p.wgt() * mat.vEf(p.E()) / mat.Et(p.E());
             const double mig_dist = (p.r() - p.r_birth()).norm();
             thread_scores.mig_score +=
                 p.wgt() * mat.Ea(p.E()) / mat.Et(p.E()) * mig_dist * mig_dist;
@@ -132,12 +128,12 @@ class ParticleMover : public IParticleMover {
       }    // For all particles
 
       // Send all thread local scores to tallies instance
-      tallies->score_k_col(thread_scores.k_col_score);
-      tallies->score_k_abs(thread_scores.k_abs_score);
-      tallies->score_k_trk(thread_scores.k_trk_score);
-      tallies->score_k_tot(thread_scores.k_tot_score);
-      tallies->score_leak(thread_scores.leakage_score);
-      tallies->score_mig_area(thread_scores.mig_score);
+      Tallies::instance().score_k_col(thread_scores.k_col_score);
+      Tallies::instance().score_k_abs(thread_scores.k_abs_score);
+      Tallies::instance().score_k_trk(thread_scores.k_trk_score);
+      Tallies::instance().score_k_tot(thread_scores.k_tot_score);
+      Tallies::instance().score_leak(thread_scores.leakage_score);
+      Tallies::instance().score_mig_area(thread_scores.mig_score);
       thread_scores.k_col_score = 0.;
       thread_scores.k_abs_score = 0.;
       thread_scores.k_trk_score = 0.;
@@ -169,7 +165,6 @@ class ParticleMover : public IParticleMover {
  private:
   TransportOp transport_operator_;
   CollisionOp collision_operator_;
-  std::shared_ptr<Tallies> tallies_;
 
   void resurection_ritual(Particle& p, Tracker& trkr,
                           MaterialHelper& mat) const {
@@ -205,5 +200,7 @@ class ParticleMover : public IParticleMover {
     }
   }
 };
+
+std::shared_ptr<IParticleMover> make_particle_mover(const YAML::Node& sim, settings::SimMode mode);
 
 #endif

@@ -31,9 +31,13 @@
 #include <tallies/tallies.hpp>
 #include <utils/russian_roulette.hpp>
 
+template <class FissionSaver>
 class BranchlessMaterialCollision {
  public:
   BranchlessMaterialCollision() = default;
+
+  bool splitting() const { return splitting_; }
+  void set_splitting(bool splt) { splitting_ = splt; }
 
   void collision(Particle& p, MaterialHelper& mat,
                  ThreadLocalScores& thread_scores) const {
@@ -90,7 +94,7 @@ class BranchlessMaterialCollision {
       }
 
       // Split particle if weight magnitude is too large
-      if (settings::branchless_splitting && p.is_alive() &&
+      if (splitting_ && p.is_alive() &&
           std::abs(p.wgt()) >= settings::wgt_split) {
         int n_new = static_cast<int>(std::ceil(std::abs(p.wgt())));
         p.split(n_new);
@@ -116,10 +120,14 @@ class BranchlessMaterialCollision {
                                    p.previous_E(),
                                    p.E(),
                                    p.Esmp()};
-      p.add_fission_particle(fiss_particle);
+      fiss_saver.save_fission_particle(p, fiss_particle);
       p.kill();
     }
   }
+
+  private:
+    bool splitting_ = false;
+    FissionSaver fiss_saver;
 };
 
 #endif

@@ -43,8 +43,7 @@
 #include <sstream>
 #include <vector>
 
-DeltaTracker::DeltaTracker(std::shared_ptr<Tallies> i_t)
-    : tallies(i_t), EGrid(nullptr), Emaj(nullptr) {
+DeltaTracker::DeltaTracker() : EGrid(nullptr), Emaj(nullptr) {
   Output::instance().write(" Finding majorant cross sections.\n");
   auto Egrid_Emaj_pair = make_majorant_xs();
   EGrid = std::make_shared<pndl::EnergyGrid>(Egrid_Emaj_pair.first);
@@ -66,13 +65,12 @@ DeltaTracker::DeltaTracker(std::shared_ptr<Tallies> i_t)
 }
 
 void DeltaTracker::transport(Particle& p, Tracker& trkr, MaterialHelper& mat,
-                             ThreadLocalScores& thread_scores,
-                             bool noise) const {
+                             ThreadLocalScores& thread_scores) const {
   bool had_collision = false;
   while (p.is_alive() && had_collision == false) {
     bool crossed_boundary = false;
     auto maj_indx = EGrid->get_lower_index(p.E());
-    double Emajorant = Emaj->evaluate(p.E(), maj_indx) + mat.Ew(p.E(), noise);
+    double Emajorant = Emaj->evaluate(p.E(), maj_indx) + mat.Ew(p.E());
     p.set_Esmp(Emajorant);  // Sampling XS saved for cancellation
     double d_coll = RNG::exponential(p.rng, Emajorant);
     Boundary bound(INF, -1, BoundaryType::Normal);
@@ -95,8 +93,7 @@ void DeltaTracker::transport(Particle& p, Tracker& trkr, MaterialHelper& mat,
     // This is here because flux-like tallies are allowed with DT.
     // No other quantity should be scored with a TLE, as an error
     // should have been thrown when building all tallies.
-    tallies->score_flight(p, std::min(d_coll, bound.distance), mat,
-                          settings::converged);
+    Tallies::instance().score_flight(p, std::min(d_coll, bound.distance), mat, settings::converged);
 
     if (crossed_boundary) {
       if (bound.boundary_type == BoundaryType::Vacuum) {
@@ -134,7 +131,7 @@ void DeltaTracker::transport(Particle& p, Tracker& trkr, MaterialHelper& mat,
       mat.set_material(trkr.material(), p.E());
 
       // Get true cross section here
-      double Et = mat.Et(p.E(), noise);
+      double Et = mat.Et(p.E());
 
       if (Et - Emajorant > 1.E-10) {
         std::stringstream mssg;

@@ -41,6 +41,7 @@ namespace H5 = HighFive;
 #include <ios>
 #include <iostream>
 #include <numeric>
+#include <optional>
 #include <sstream>
 #include <vector>
 
@@ -62,6 +63,46 @@ void PowerIterator::set_cancelator(std::shared_ptr<Cancelator> cncl) {
   cancelator_ = cncl;
   if (cancelator_ == nullptr) {
     fatal_error("Was given a nullptr for a Cancelator.");
+  }
+
+  // If we already had an entropy, we need to copy it to all others now
+  if (t_pre_entropy) {
+    p_pre_entropy = std::make_shared<Entropy>(*t_pre_entropy);
+    p_pre_entropy->set_sign(Entropy::Sign::Positive);
+
+    n_pre_entropy = std::make_shared<Entropy>(*t_pre_entropy);
+    n_pre_entropy->set_sign(Entropy::Sign::Negative);
+
+    t_post_entropy = std::make_shared<Entropy>(*t_pre_entropy);
+    t_post_entropy->set_sign(Entropy::Sign::Total);
+
+    p_post_entropy = std::make_shared<Entropy>(*t_pre_entropy);
+    p_post_entropy->set_sign(Entropy::Sign::Positive);
+
+    n_post_entropy = std::make_shared<Entropy>(*t_pre_entropy);
+    n_post_entropy->set_sign(Entropy::Sign::Negative);
+  }
+}
+
+void PowerIterator::set_entropy(const Entropy& entropy) {
+  t_pre_entropy = std::make_shared<Entropy>(entropy);
+  t_pre_entropy->set_sign(Entropy::Sign::Total):
+
+  if (cancelator_) {
+    p_pre_entropy = std::make_shared<Entropy>(*t_pre_entropy);
+    p_pre_entropy->set_sign(Entropy::Sign::Positive);
+
+    n_pre_entropy = std::make_shared<Entropy>(*t_pre_entropy);
+    n_pre_entropy->set_sign(Entropy::Sign::Negative);
+
+    t_post_entropy = std::make_shared<Entropy>(*t_pre_entropy);
+    t_post_entropy->set_sign(Entropy::Sign::Total);
+
+    p_post_entropy = std::make_shared<Entropy>(*t_pre_entropy);
+    p_post_entropy->set_sign(Entropy::Sign::Positive);
+
+    n_post_entropy = std::make_shared<Entropy>(*t_pre_entropy);
+    n_post_entropy->set_sign(Entropy::Sign::Negative);
   }
 }
 
@@ -331,7 +372,10 @@ void PowerIterator::run() {
   simulation_timer.start();
 
   // Check for immediate convergence (i.e. we read source from file)
-  if (nignored == 0) converged = true;
+  Tallies::instance()->set_scoring(false);
+  if (nignored == 0) {
+    Tallies::instance()->set_scoring(true);
+  }
 
   for (std::size_t g = 1; g <= ngenerations; g++) {
     gen = g;
@@ -375,9 +419,9 @@ void PowerIterator::run() {
     // Compute pair distance squared
     if (pair_distance_sqrd) compute_pair_dist_sqrd(next_gen);
 
-    // Score the source and gen if passed ignored
-    if (converged) {
-      tallies->score_source(next_gen, converged);
+    // Score the source and gen if passed nignored
+    if (gen > nignored) {
+      tallies->score_source(next_gen);
       tallies->record_generation();
     }
 
@@ -429,7 +473,9 @@ void PowerIterator::run() {
 
     // Once ignored generations are finished, mark as true to start
     // doing tallies
-    if (g == nignored) converged = true;
+    if (g == nignored) {
+      Tallies::instance()->set_scoring(true);
+    }
   }
 
   // Stop timer
@@ -437,7 +483,7 @@ void PowerIterator::run() {
   out.write("\n Total Simulation Time: " +
             std::to_string(simulation_timer.elapsed_time()) + " seconds.\n");
 
-  if (converged) {
+  if (gen > nignored) {
     // Write the final results of all estimators
     out.write("\n");
     std::stringstream output;
@@ -875,4 +921,116 @@ void PowerIterator::perform_regional_cancellation(
 
   // All done ! Clear cancelator for next run
   cancelator->clear();
+}
+
+std::make_shared<PowerIterator> make_power_iterator(const YAML::Node& sim) {
+  // Get the number of particles
+  if (sim["nparticles"] == false || sim["nparticles"].IsScalar() == false) {
+    fatal_error("No nparticles entry in fixed-source simulation."):
+  }
+  std::size_t nparticles = sim["nparticles"].as<std::size_t>();
+
+  // Get the number of generations
+  if (sim["ngenerations"] == false || sim["ngenerations"].IsScalar() == false) {
+    fatal_error("No ngenerations entry in k-eigenvalue simulation."):
+  }
+  std::size_t ngenerations = sim["ngenerations"].as<std::size_t>();
+
+  // Get the number of ignored generations
+  if (sim["nignored"] == false || sim["nignored"].IsScalar() == false) {
+    fatal_error("No nignored entry in k-eigenvalue simulation."):
+  }
+  std::size_t nignored = sim["nignored"].as<std::size_t>();
+
+  std::string in_source_file;
+  if (sim["source-file"] && sim["source-file"].IsScalar()) {
+    in_source_file = sim["source-file"].as<std::string>();
+  } else if (sim["source-file"]) {
+    fatal_error("Invalid source-file entry in k-eigenvalue simulation.");
+  }
+
+  // Read all sources if we don't have a source file
+  if (in_source_file.empty()) {
+    if (sim["sources"] == false || sim["sources"].IsSequence() == false) {
+      fatal_error("No sources entry in k-eigenvalue simulation.");
+    }
+    std::vector<std::shared_ptr<Source>> sources;
+    for (std::size_t s = 0; s < sim["sources"].size(); s++) {
+      sources.push_back(make_source(sim["sources"][s]));
+    }
+  }
+
+  // We now need to make the particle mover, which is the combination of the
+  // transport operator and the collision operator.
+  std::shared_ptr<IParticleMover> mover = make_particle_mover(sim, settings::SimMode::KEFF);
+
+  // Combing
+  bool combing = false;
+  if (sim["combing"] && sim["combing"].IsScalar()) {
+    combing = sim["combing"].as<bool>();
+  } else if (sim["combing"]) {
+    fatal_error("Invalid combing entry in k-eigenvalue simulation.");
+  }
+
+  // Families
+  bool families = false;
+  if (sim["families"] && sim["families"].IsScalar()) {
+    families = sim["families"].as<bool>();
+  } else if (sim["families"]) {
+    fatal_error("Invalid families entry in k-eigenvalue simulation.");
+  }
+
+  // Pair Distance Sqrd
+  bool pair_dist = false;
+  if (sim["pair-distance-sqrd"] && sim["pair-distance-sqrd"].IsScalar()) {
+    pair_dist = sim["pair-distance-sqrd"].as<bool>();
+  } else if (sim["pair-distance-sqrd"]) {
+    fatal_error("Invalid pair-distance-sqrd entry in k-eigenvalue simulation.");
+  }
+
+  // Get empty entropy bin fraction
+  bool empty_entropy_frac = false;
+  if (sim["empty-entropy-bins"] && sim["empty-entropy-bins"].IsScalar()) {
+    empty_entropy_frac = sim["empty-entropy-bins"].as<bool>();
+  } else if (sim[""]) {
+    fatal_error("Invalid empty-entropy-bins entry in k-eigenvalue simulation.");
+  }
+
+  // Get entropy bins
+  std::optional<Entropy> entropy = std::nullopt;
+  if (sim["entropy"] && sim["entropy"].IsMap()) {
+    entropy = make_entropy(sim["entropy"]);
+  } else if (sim["entropy"]) {
+    fatal_error("Invalid entropy entry in k-eigenvalue simulation.");
+  }
+
+  // Get cancelator
+  std::shared_ptr<Cancelator> cancelator = nullptr;
+  if (sim["cancelator"] && sim["cancelator"].IsMap()) {
+    cancelator = make_cancelator(sim["cancelator"]);
+  } else if (sim["cancelator"]) {
+    fatal_error("Invalid cancelator entry in k-eigenvalue simulation.");
+  }
+
+  // Create simulation
+  std::shared_ptr<PowerIterator> sim = std::make_shared<PowerIterator>(mover);   
+
+  // Set quantities
+  sim->set_nparticles(nparticles);
+  sim->set_ngenerations(ngenerations);
+  sim->set_nignored(nignored);
+  for (const auto& src : sources) {
+    sim->add_source(src);
+  }
+  if (in_source_file.empty() == false) {
+    sim->set_in_source_file(in_source_file);
+  }
+  sim->set_combing(combing);
+  sim->set_families(families);
+  sim->set_pair_distance(pair_dist);
+  sim->set_empty_entropy_bins(empty_entropy_frac);
+  if (cancelator) sim->set_cancelator();
+  if (entropy) sim->set_entropy(*entropy);
+
+  return sim;
 }

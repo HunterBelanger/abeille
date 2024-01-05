@@ -22,8 +22,8 @@
  * along with Abeille. If not, see <https://www.gnu.org/licenses/>.
  *
  * */
-#ifndef FISSION_OPERATOR_H
-#define FISSION_OPERATOR_H
+#ifndef NOISE_FISSION_OPERATOR_H
+#define NOISE_FISSION_OPERATOR_H
 
 #include <materials/nuclide.hpp>
 #include <simulation/particle.hpp>
@@ -37,9 +37,9 @@
 
 class NoiseFissionOperator {
  public:
-  NoiseFissionOperator(std::shared_ptr<Tallies> itallies) : tallies(itallies) {}
+  NoiseFissionOperator() = default;
 
-  void fission(Particle& p, const MicroXSs& xs, const Nuclide& nuc) const {
+  void fission(Particle& p, const MicroXSs& xs, const Nuclide& nuc, double omega) const {
     const int n_new = this->n_fission_neutrons(p, xs, p.rng);
 
     // Probability of a fission neutron being a delayed neutron.
@@ -50,18 +50,16 @@ class NoiseFissionOperator {
           nuc.sample_fission(p.E(), p.u(), xs.energy_index, P_delayed, p.rng);
 
       // If parent was a noise particle, we start with their weight
-      wgt = p.wgt();
-      wgt2 = p.wgt2();
+      double wgt = p.wgt();
+      double wgt2 = p.wgt2();
 
       if (finfo.delayed) {
         // If the sampled fission neutron was delayed, we need to apply a
         // complex yield based on the precursor decay constant.
         std::complex<double> wgt_cmpx{wgt, wgt2};
         double lambda = finfo.precursor_decay_constant;
-        double denom =
-            (lambda * lambda) + (settings::w_noise * settings::w_noise);
-        std::complex<double> mult{lambda * lambda / denom,
-                                  -lambda * settings::w_noise / denom};
+        double denom = (lambda * lambda) + (omega * omega);
+        std::complex<double> mult{lambda * lambda / denom, -lambda * omega / denom};
         wgt_cmpx *= mult;
         wgt = wgt_cmpx.real();
         wgt2 = wgt_cmpx.imag();
@@ -88,15 +86,13 @@ class NoiseFissionOperator {
   }
 
  private:
-  std::shared_ptr<Tallies> tallies;
-
-  int n_fission_neutrons(const Particle& p, const MicroXSs& xs,
+  int n_fission_neutrons(Particle& p, const MicroXSs& xs,
                          pcg32& rng) const {
     // When transporting noise particles, we don't normalize the number of
     // generated particles by the weight ! We also scale by keff to make the
     // problem "critical".
     return static_cast<int>(
-        std::floor(xs.nu_total * xs.fission / (xs.total * tallies->keff())) +
+        std::floor(xs.nu_total * xs.fission / (xs.total * Tallies::instance().keff())) +
         RNG::rand(p.rng));
   }
 

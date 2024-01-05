@@ -33,18 +33,16 @@
 #include <sstream>
 
 void SurfaceTracker::transport(Particle& p, Tracker& trkr, MaterialHelper& mat,
-                               ThreadLocalScores& thread_scores,
-                               bool noise) const {
+                               ThreadLocalScores& thread_scores) const {
   bool had_collision = false;
 
   while (p.is_alive() && had_collision == false) {
-    double d_coll = RNG::exponential(p.rng, mat.Et(p.E(), noise));
+    double d_coll = RNG::exponential(p.rng, mat.Et(p.E()));
     auto bound = trkr.get_nearest_boundary();
 
     // score track length tally for boundary distance,
     // no matter what sort of boundary condition
-    tallies->score_flight(p, std::min(d_coll, bound.distance), mat,
-                          settings::converged);
+    Tallies::instance().score_flight(p, std::min(d_coll, bound.distance), mat);
     double k_trk_scr =
         p.wgt() * std::min(d_coll, bound.distance) * mat.vEf(p.E());
     thread_scores.k_trk_score += k_trk_scr;

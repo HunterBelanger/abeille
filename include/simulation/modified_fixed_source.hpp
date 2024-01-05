@@ -38,12 +38,19 @@ class ModifiedFixedSource : public Simulation {
   void run() override final;
   void premature_kill() override final;
 
+  void set_nparticles(std::size_t np) { nparticles = np; }
+  void set_nbatches(std::size_t nb) { nbatches = nb; }
+  void add_source(std::shared_ptr<Source> src);
+
  private:
-  int gen = 0;
-  void check_time(int gen);
-  bool out_of_time(int gen);
+  std::vector<std::shared_ptr<Source>> sources{};
+  std::size_t batch = 0;
+  std::size_t nparticles, nbatches;
+
+  void check_time(std::size_t batch);
+  bool out_of_time(std::size_t batch);
   void print_header();
-  void generation_output(int gen);
+  void generation_output(std::size_t batch);
 };
 
 #endif

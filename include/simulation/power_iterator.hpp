@@ -30,6 +30,8 @@
 #include <simulation/entropy.hpp>
 #include <source/source.hpp>
 
+#include <yaml-cpp/yaml.h>
+
 #include <memory>
 #include <string>
 #include <unordered_set>
@@ -47,6 +49,7 @@ class PowerIterator : public Simulation {
   void premature_kill() override final;
 
   void set_cancelator(std::shared_ptr<Cancelator> cncl);
+  void set_entropy(const Entropy& entropy);
   void set_combing(bool comb) { combing = comb; }
   void set_families(bool fams) { calc_families = fams; }
   void set_pair_distance(bool prdist) { pair_distance_sqrd = prdist; }
@@ -114,5 +117,7 @@ class PowerIterator : public Simulation {
   void load_source_from_file();
 
 };  // PowerIterator
+
+std::make_shared<PowerIterator> make_power_iterator(const YAML::Node& sim);
 
 #endif  // MG_POWER_ITERATOR_H

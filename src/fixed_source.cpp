@@ -104,9 +104,7 @@ void FixedSource::run() {
   uint64_t node_nparticles =
       mpi::node_nparticles[static_cast<std::size_t>(mpi::rank)];
 
-  for (std::size_t b = 1; b <= nbatches; g++) {
-    batch = g;
-
+  for (batch = 1; batch <= nbatches; batch++) {
     // First, sample the sources and place into bank
     bank = this->sample_sources(node_nparticles);
 
@@ -240,4 +238,43 @@ void FixedSource::check_time(std::size_t batch) {
     // transport loop as if we finished the simulation normally.
     batches = batch;
   }
+}
+
+std::shared_ptr<FixedSource> make_fixed_source(const YAML::Node& sim) {
+  // Get the number of particles
+  if (sim["nparticles"] == false || sim["nparticles"].IsScalar() == false) {
+    fatal_error("No nparticles entry in fixed-source simulation."):
+  }
+  std::size_t nparticles = sim["nparticles"].as<std::size_t>();
+
+  // Get the number of batches
+  if (sim["nbatches"] == false || sim["nbatches"].IsScalar() == false) {
+    fatal_error("No nbatches entry in fixed-source simulation."):
+  }
+  std::size_t nbatches = sim["nbatches"].as<std::size_t>();
+
+  // Read all sources
+  if (sim["sources"] == false || sim["sources"].IsSequence() == false) {
+    fatal_error("No sources entry in fixed-source simulation.");
+  }
+  std::vector<std::shared_ptr<Source>> sources;
+  for (std::size_t s = 0; s < sim["sources"].size(); s++) {
+    sources.push_back(make_source(sim["sources"][s]));
+  }
+
+  // We now need to make the particle mover, which is the combination of the
+  // transport operator and the collision operator.
+  std::shared_ptr<IParticleMover> mover = make_particle_mover(sim, settings::SimMode::FIXED_SOURCE);
+
+  // Create simulation
+  std::shared_ptr<FixedSource> sim = std::make_shared<FixedSource>(mover);   
+
+  // Set quantities
+  sim->set_nparticles(nparticles);
+  sim->set_nbatches(nbatches);
+  for (const auto& src : sources) {
+    sim->add_source(src);
+  }
+
+  return sim;
 }

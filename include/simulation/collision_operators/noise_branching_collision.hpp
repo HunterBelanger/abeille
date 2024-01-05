@@ -37,16 +37,18 @@
 
 class NoiseBranchingCollision {
  public:
-  NoiseBranchingCollision(const NoiseFissionOperator& fiss_op)
-      : fission_operator(fiss_op) {}
+  NoiseBranchingCollision() = default;
 
   void collision(Particle& p, MaterialHelper& mat,
                  ThreadLocalScores& thread_scores) const {
     // Sample a nuclide for the collision
-    std::pair<const Nuclide*, MicroXSs> nuclide_info =
-        mat.sample_nuclide(p.E(), p.rng, true);
+    std::pair<const Nuclide*, MicroXSs> nuclide_info = mat.sample_nuclide(p.E(), p.rng);
     const Nuclide* nuclide = nuclide_info.first;
     MicroXSs xs = nuclide_info.second;
+
+    // Get noise parameters. We assume that the optional must be filled here
+    const double eta = mat.noise_params()->eta;
+    const double omega = mat.noise_params()->omega;
 
     // Score kabs
     const double k_abs_scr = p.wgt() * xs.nu_total * xs.fission / xs.total;
@@ -57,7 +59,7 @@ class NoiseBranchingCollision {
 
     // Make a copy of the particle when doing noise transport, modifying
     // the weight of the copy as well
-    noise_copy(p, xs);
+    noise_copy(p, xs, eta);
 
     // Implicit capture
     p.set_weight(p.wgt() * (1. - (xs.absorption + xs.noise_copy) / xs.total));
@@ -114,10 +116,10 @@ class NoiseBranchingCollision {
     p.set_weight2(p.wgt2() * sinfo.yield);
   }
 
-  void noise_copy(Particle& p, const MicroXSs& xs) const {
+  void noise_copy(Particle& p, const MicroXSs& xs, double eta) const {
     std::complex<double> weight_copy{p.wgt(), p.wgt2()};
     if (xs.noise_copy / xs.total + RNG::rand(p.rng) >= 1.) {
-      std::complex<double> yield{1., -1. / settings::eta};
+      std::complex<double> yield{1., -1. / eta};
       weight_copy *= yield;
       p.make_secondary(p.u(), p.E(), weight_copy.real(), weight_copy.imag());
     }

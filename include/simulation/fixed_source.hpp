@@ -26,6 +26,11 @@
 #define FIXED_SOURCE_H
 
 #include <simulation/simulation.hpp>
+#include <source/source.hpp>
+
+#include <yaml-cpp/yaml.h>
+
+#include <memory>
 
 class FixedSource : public Simulation {
  public:
@@ -52,5 +57,7 @@ class FixedSource : public Simulation {
   void mpi_setup();
   void mpi_advance();
 };
+
+std::shared_ptr<FixedSource> make_fixed_source(const YAML::Node& sim);
 
 #endif

@@ -33,23 +33,28 @@
 
 void ModifiedFixedSource::initialize() {}
 
+void ModifiedFixedSource::add_source(std::shared_ptr<Source> src) {
+  if (src) sources.push_back(src);
+  else fatal_error("Was provided a nullptr Source.");
+}
+
 void ModifiedFixedSource::print_header() {
   Output& out = Output::instance();
 
   // Change the header for the output based on wether or not the entropy is
   // being calculated
   out.write("\n");
-  out.write("  Gen   leakage   average +/- err\n");
+  out.write("  Batch   leakage   average +/- err\n");
   out.write(" ------------------------------------\n");
   //           1120   1.23456   1.23456 +/- 0.00023
 }
 
-void ModifiedFixedSource::generation_output(int gen) {
+void ModifiedFixedSource::generation_output(std::size_t batch) {
   std::stringstream output;
 
-  if (gen == 0) print_header();
+  if (batch == 0) print_header();
 
-  output << std::fixed << std::setw(5) << std::setfill(' ') << gen << "   "
+  output << std::fixed << std::setw(5) << std::setfill(' ') << batch << "   "
          << std::setprecision(5) << tallies->leakage();
   output << "   " << tallies->leakage_avg() << " +/- " << tallies->leakage_err()
          << "\n";
@@ -59,12 +64,8 @@ void ModifiedFixedSource::generation_output(int gen) {
 void ModifiedFixedSource::run() {
   Output& out = Output::instance();
   out.write(" Running Modified-Fixed-Source Problem...\n");
-  out.write(" NPARTICLES: " + std::to_string(settings::nparticles) + ", ");
-  out.write(" NGENERATIONS: " + std::to_string(settings::ngenerations) + "\n");
-
-  // Make sure the settings is set to converged, as we dont need to
-  // allow for source convergence in fixed source calculations.
-  settings::converged = true;
+  out.write(" NPARTICLES: " + std::to_string(nparticles) + ", ");
+  out.write(" NBATCHES: " + std::to_string(nbatches) + "\n");
 
   // Initialize vectors to hold particles
   std::vector<Particle> bank;
@@ -73,11 +74,9 @@ void ModifiedFixedSource::run() {
   simulation_timer.reset();
   simulation_timer.start();
 
-  for (int g = 1; g <= settings::ngenerations; g++) {
-    gen = g;
-
+  for (batch = 1; batch <= nbatches; batch++) {
     // First, sample the sources and place into bank
-    bank = this->sample_sources(static_cast<std::size_t>(settings::nparticles));
+    bank = this->sample_sources(nparticles);
 
     while (!bank.empty()) {
       auto fission_bank = particle_mover->transport(bank);
@@ -106,7 +105,7 @@ void ModifiedFixedSource::run() {
     bank.clear();
 
     // Output
-    generation_output(g);
+    generation_output(batch);
 
     // Check if signal has been sent after generation keff has been
     // recorded, and cancellation has occured. Otherwize source file
@@ -116,7 +115,7 @@ void ModifiedFixedSource::run() {
 
     // Check if we have enough time to finish the simulation. If not,
     // stop now.
-    check_time(g);
+    check_time(batch);
   }
 
   // Stop timer
@@ -154,9 +153,9 @@ void ModifiedFixedSource::premature_kill() {
     // Looks like they really want to kill it.
     // Save everthing for them, and abort.
 
-    // Setting ngenerations to gen will cause us to exit the
+    // Setting nbatches to batch will cause us to exit the
     // transport loop as if we finished the simulation normally.
-    settings::ngenerations = gen;
+    nbatches = batch;
   }
 
   // They don't really want to kill it. Reset flag
@@ -190,8 +189,8 @@ void ModifiedFixedSource::check_time(int gen) {
   mpi::Allreduce_or(should_stop_now);
 
   if (should_stop_now) {
-    // Setting ngenerations to gen will cause us to exit the
+    // Setting nbatches to batch will cause us to exit the
     // transport loop as if we finished the simulation normally.
-    settings::ngenerations = gen;
+    nbatches = batch;
   }
 }

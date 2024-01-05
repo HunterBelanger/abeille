@@ -309,30 +309,6 @@ universes:
 # This is the universe id which is designated a the root of the geometry.
 root-universe: 100
 
-# Any number of particle sources may be defined to begin the simulation.
-# low and hi follow the same convention as from above. Chi is the energy
-# spectrum for the source, and weight is a float describing the relative
-# probability of being born using the rules for that source description.
-sources:
-  - spatial:
-      type: box
-      low: [-32.13, -32.13, -107.1]
-      hi: [10.71, 10.71, 85.68]
-      fissile-only: true
-    direction:
-      type: isotropic
-    energy:
-      type: mono-energetic
-      energy: 6.5
-    weight: 1.
-
-cancelator:
-  type: exact
-  shape: [170, 170, 765]
-  low: [-32.13, -32.13, -107.11]
-  hi: [10.71, 10.71, 85.69] 
-  nsamples: 20
-
 # Here, the cartesian mesh for the flux tally is defined. The ebtries
 # have the same definitions as above. If this element is not defined,
 # no flux tally we be performed.
@@ -349,17 +325,40 @@ tallies:
 # initial number of particles in the system. insource defines the name
 # of the source file to be loaded, should one want to use a previously
 # saved source file.
-settings:
+settings: 
+  energy-mode: multi-group
+  ngroups: 7
+  energy-bounds: [0, 1, 2, 3, 4, 5, 6, 7]
+
+simulation:
+  mode: k-eigenvalue
   nparticles: 100000
   ngenerations: 2500
   nignored: 500
-  ngroups: 7
-  #transport: carter-tracking
-  transport: delta-tracking
-  simulation: k-eigenvalue
-  #cancellation: true
-  energy-mode: multi-group
-  energy-bounds: [0, 1, 2, 3, 4, 5, 6, 7]
+
+  transport-operator:
+    type: delta-tracking
+
+  collisions-operator:
+    type: branching
+  
+  # Any number of particle sources may be defined to begin the simulation.
+  # low and hi follow the same convention as from above. Chi is the energy
+  # spectrum for the source, and weight is a float describing the relative
+  # probability of being born using the rules for that source description.
+  sources:
+    - spatial: {type: box, low: [-32.13, -32.13, -107.1], hi: [10.71, 10.71, 85.68], fissile-only: true}
+      direction: {type: isotropic}
+      energy: {type: mono-energetic, energy: 6.5}
+      weight: 1.
+
+  cancelator:
+    type: exact
+    shape: [170, 170, 765]
+    low: [-32.13, -32.13, -107.11]
+    hi: [10.71, 10.71, 85.69] 
+    nsamples: 20
+
 
 # Plots of the geometry may be created in the .ppm format.
 # It takes a slice of the geometry along the xy, xz, or yz basis. The

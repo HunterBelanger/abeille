@@ -35,13 +35,11 @@
 
 class CarterTracker {
  public:
-  CarterTracker(std::shared_ptr<Tallies> i_t);
+  CarterTracker();
 
-  void transport(Particle& p, Tracker& trkr, MaterialHelper& mat,
-                 ThreadLocalScores& thread_scores, bool noise) const;
+  void transport(Particle& p, Tracker& trkr, MaterialHelper& mat, ThreadLocalScores& thread_scores) const;
 
  private:
-  std::shared_ptr<Tallies> tallies;
   std::shared_ptr<pndl::EnergyGrid> EGrid;
   std::shared_ptr<pndl::CrossSection> Esmp;
 };

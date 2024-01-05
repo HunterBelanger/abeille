@@ -32,7 +32,7 @@
 template <class T, class FissionSaver>
 class FissionOperator {
  public:
-  FissionOperator(FissionSaver fiss_saver): fission_saver(fiss_saver) {}
+  FissionOperator() = default;
 
   void fission(Particle& p, const MicroXSs& xs, const Nuclide& nuc) const {
     const int n_new =

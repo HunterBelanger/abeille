@@ -70,53 +70,48 @@ class Tallies {
   void add_source_mesh_tally(std::shared_ptr<SourceMeshTally> stally);
   void add_noise_source_mesh_tally(std::shared_ptr<SourceMeshTally> stally);
 
-  void score_collision(const Particle& p, MaterialHelper& mat, bool converged) {
-    // Only do spacial tallies if converged
-    if (converged && !collision_mesh_tallies_.empty()) {
+  void score_collision(const Particle& p, MaterialHelper& mat) {
+    // Only do spacial tallies if scoring is on
+    if (scoring_ && !collision_mesh_tallies_.empty()) {
       for (auto& tally : collision_mesh_tallies_)
         tally->score_collision(p, mat);
     }
   }
 
-  void score_flight(const Particle& p, double d, MaterialHelper& mat,
-                    bool converged) {
-    if (converged && !track_length_mesh_tallies_.empty()) {
+  void score_flight(const Particle& p, double d, MaterialHelper& mat) {
+    if (scoring_ && !track_length_mesh_tallies_.empty()) {
       for (auto& tally : track_length_mesh_tallies_)
         tally->score_flight(p, d, mat);
     }
   }
 
-  void score_source(const BankedParticle& p, bool converged) {
-    if (converged && !source_mesh_tallies_.empty()) {
+  void score_source(const BankedParticle& p) {
+    if (scoring_ && !source_mesh_tallies_.empty()) {
       for (auto& tally : source_mesh_tallies_) tally->score_source(p);
     }
   }
 
-  void score_source(const std::vector<BankedParticle>& vp, bool converged) {
-    if (converged && !source_mesh_tallies_.empty()) {
+  void score_source(const std::vector<BankedParticle>& vp) {
+    if (scoring_ && !source_mesh_tallies_.empty()) {
       for (const auto& p : vp) {
         for (auto& tally : source_mesh_tallies_) tally->score_source(p);
       }
     }
   }
 
-  void score_noise_source(const BankedParticle& p, bool converged) {
-    if (converged && !noise_source_mesh_tallies_.empty()) {
+  void score_noise_source(const BankedParticle& p) {
+    if (scoring_ && !noise_source_mesh_tallies_.empty()) {
       for (auto& tally : noise_source_mesh_tallies_) tally->score_source(p);
     }
   }
 
-  void score_noise_source(const std::vector<BankedParticle>& vp,
-                          bool converged) {
-    if (converged && !noise_source_mesh_tallies_.empty()) {
+  void score_noise_source(const std::vector<BankedParticle>& vp) {
+    if (scoring_ && !noise_source_mesh_tallies_.empty()) {
       for (const auto& p : vp) {
         for (auto& tally : noise_source_mesh_tallies_) tally->score_source(p);
       }
     }
   }
-
-  void set_keff(double k) { keff_ = k; }
-  double keff() const { return keff_; }
 
   void score_k_col(double scr);
   void score_k_abs(double scr);
@@ -174,10 +169,14 @@ class Tallies {
 
   int generations() const { return gen; }
 
+  bool scoring() const { return scoring_; }
+
+  void set_scoring(bool scr) { scoring_ = scr; }
+
  private:
   Tallies();
+  bool scoring_ = true;
   int gen = 0;
-  double keff_ = 1.;
 
   double total_weight;
 

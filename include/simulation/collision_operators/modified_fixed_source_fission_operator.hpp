@@ -39,9 +39,7 @@ class ModifiedFixedSourceFissionOperator
     : public FissionOperator<ModifiedFixedSourceFissionOperator,
                              FissionBankSaver> {
  public:
-  ModifiedFixedSourceFissionOperator()
-      : FissionOperator<ModifiedFixedSourceFissionOperator, FissionBankSaver>(
-            FissionBankSaver()) {}
+  ModifiedFixedSourceFissionOperator() = default;
 
   int n_fission_neutrons(const Particle& p, const MicroXSs& xs,
                          pcg32& rng) const {

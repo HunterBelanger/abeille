@@ -46,8 +46,7 @@
 // Currently, carter tracking just finds the majorant xs like is done in
 // delta tracking. I am not sure yet how we will implement under-estimations
 // of the xs in continuous energy, so for now, we just have this.
-CarterTracker::CarterTracker(std::shared_ptr<Tallies> i_t)
-    : tallies(i_t), EGrid(nullptr), Esmp(nullptr) {
+CarterTracker::CarterTracker() : EGrid(nullptr), Esmp(nullptr) {
   Output::instance().write(" Finding majorant cross sections.\n");
   auto Egrid_Emaj_pair = make_majorant_xs();
   EGrid = std::make_shared<pndl::EnergyGrid>(Egrid_Emaj_pair.first);
@@ -85,12 +84,12 @@ CarterTracker::CarterTracker(std::shared_ptr<Tallies> i_t)
   }
 }
 
-void CarterTracker::transport(Particle& p, Tracker& trkr, MaterialHelper& mat, ThreadLocalScores& thread_scores, bool noise) const {
+void CarterTracker::transport(Particle& p, Tracker& trkr, MaterialHelper& mat, ThreadLocalScores& thread_scores) const {
   bool had_collision = false;
   while (p.is_alive() && had_collision == false) {
     bool crossed_boundary = false;
     auto maj_indx = EGrid->get_lower_index(p.E());
-    double Esample = Esmp->evaluate(p.E(), maj_indx) + mat.Ew(p.E(), noise);
+    double Esample = Esmp->evaluate(p.E(), maj_indx) + mat.Ew(p.E());
     p.set_Esmp(Esample);  // Sampling XS saved for cancellation
     double d_coll = RNG::exponential(p.rng, Esample);
     Boundary bound(INF, -1, BoundaryType::Normal);
@@ -113,8 +112,7 @@ void CarterTracker::transport(Particle& p, Tracker& trkr, MaterialHelper& mat, T
     // This is here because flux-like tallies are allowed with DT.
     // No other quantity should be scored with a TLE, as an error
     // should have been thrown when building all tallies.
-    tallies->score_flight(p, std::min(d_coll, bound.distance), mat,
-                          settings::converged);
+    Tallies::instance().score_flight(p, std::min(d_coll, bound.distance), mat, settings::converged);
 
     if (crossed_boundary) {
       if (bound.boundary_type == BoundaryType::Vacuum) {
@@ -151,7 +149,7 @@ void CarterTracker::transport(Particle& p, Tracker& trkr, MaterialHelper& mat, T
       mat.set_material(trkr.material(), p.E());
 
       // Get true cross section here
-      double Et = mat.Et(p.E(), noise);
+      double Et = mat.Et(p.E());
 
       if (Esample >= Et) {
         if (RNG::rand(p.rng) < (Et / Esample)) {

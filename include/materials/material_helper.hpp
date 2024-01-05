@@ -4,6 +4,7 @@
 #include <materials/material.hpp>
 #include <materials/nuclide.hpp>
 #include <utils/constants.hpp>
+#include <utils/noise_parameters.hpp>
 #include <utils/rng.hpp>
 #include <utils/settings.hpp>
 
@@ -16,7 +17,10 @@ class MaterialHelper {
  public:
   enum class BranchlessReaction { SCATTER, FISSION };
 
-  MaterialHelper(Material* material, double E);
+  MaterialHelper(Material* material, double E, std::optional<NoiseParameters> noise_params = std::nullopt);
+
+  std::optional<NoiseParameters> noise_params() const { return noise_params_; }
+  void set_noise_params(std::optional<NoiseParameters> np) { noise_params_ = np; }
 
   void set_material(Material* material, double E) {
     mat = material;
@@ -44,7 +48,7 @@ class MaterialHelper {
     this->clear_xs();
   }
 
-  double Et(double E, bool noise = false) {
+  double Et(double E) {
     this->set_energy(E);
 
     double Et_ = 0.;
@@ -55,19 +59,18 @@ class MaterialHelper {
       Et_ += comp.atoms_bcm * micro_xs.total;
     }
 
-    if (noise) {
-      Et_ += this->Ew(E, noise);
-    }
+    // Get noise copy component (0 if noise_params_ is empty)
+    Et_ += this->Ew(E);
 
     return Et_;
   }
 
-  double Ew(double E, bool noise = false) {
+  double Ew(double E) {
     this->set_energy(E);
 
     double Ew_ = 0.;
 
-    if (noise && mat->components().size() > 0) {
+    if (noise_params_ && mat->components().size() > 0) {
       std::size_t energy_index = 0;
 
       // Needing to check MG/CE here isn't exactly elegant, but I don't
@@ -77,7 +80,7 @@ class MaterialHelper {
       }
 
       double p_speed = speed(E, energy_index);
-      Ew_ += settings::eta * settings::w_noise / p_speed;
+      Ew_ += noise_params_->eta * noise_params_->omega / p_speed;
     }
 
     return Ew_;
@@ -175,14 +178,13 @@ class MaterialHelper {
    * be $N_i \sigma_i(E) / \Sigma_t(E)$. It can also be used for when performing
    * branchless collisions on the isotope.
    */
-  std::pair<const Nuclide*, MicroXSs> sample_nuclide(double E, pcg32& rng,
-                                                     bool noise = false) {
+  std::pair<const Nuclide*, MicroXSs> sample_nuclide(double E, pcg32& rng) {
     this->set_energy(E);
 
     // First, get total xs
-    const double Et_ = this->Et(E, noise);
+    const double Et_ = this->Et(E);
     const double invs_Et = 1. / Et_;
-    const double Ew_ = this->Ew(E, noise);
+    const double Ew_ = this->Ew(E);
     const double N_nuclides = static_cast<double>(mat->components().size());
 
     // Get our random variable
@@ -196,7 +198,7 @@ class MaterialHelper {
 
       // If we are a noise neutron, we then need to get the copy xs for this
       // nuclide, and adjust the total xs accordingly.
-      if (noise) {
+      if (noise_params_) {
         micro_xs.noise_copy = Ew_ / (micro_xs.concentration * N_nuclides);
         micro_xs.total += micro_xs.noise_copy;
       }
@@ -215,7 +217,7 @@ class MaterialHelper {
     MicroXSs micro_xs = this->get_micro_xs(comp.nuclide.get());
     micro_xs.concentration = comp.atoms_bcm;
 
-    if (noise) {
+    if (noise_params_) {
       micro_xs.noise_copy = Ew_ / (micro_xs.concentration * N_nuclides);
       micro_xs.total += micro_xs.noise_copy;
     }
@@ -277,6 +279,7 @@ class MaterialHelper {
   }
 
  private:
+  std::optional<NoiseParameters> noise_params_;
   Material* mat;
   double E_;
   boost::unordered_flat_map<const Nuclide*, std::optional<MicroXSs>> xs_;

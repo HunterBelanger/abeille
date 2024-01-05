@@ -274,6 +274,37 @@ void find_universe(const YAML::Node& input, uint32_t id) {
 }
 
 void make_settings(const YAML::Node& input) {
+  //----------------------------------------------------------------------------
+  // Get the simulation mode, just for parsin input materials and making sure
+  // MG data has everything needed
+  if (input["simulation"] == false) {
+    fatal_error("No simulation entry provided in input.");
+  } else if (input["simulation"] && input["simulation"].IsMap() == false) {
+    fatal_error("Invalid simulation entry provided in input.");
+  }
+  const YAML::Node& sim = input["simulation"];
+
+  // First, get the string identifying the simulation mode
+  if (sim["mode"] == false) {
+    fatal_error("No mode entry in simulation definition."):
+  } else if (sim["mode"].IsScalar() == false) {
+    fatal_error("Invalid mode entry in simulation.");
+  }
+  std::string mode = sim["mode"].as<std::string>();
+
+  if (mode == "k-eigenvalue") {
+    settings::sim_mode = settings::SimMode::KEFF;
+  } else if (mode == "fixed-source") {
+    settings::sim_mode = settings::SimMode::FIXED_SOURCE;
+  } else if (mode == "modified-fixed-source") {
+    settings::sim_mode = settings::SimMode::FIXED_SOURCE;
+  } else if (mode == "noise") {
+    settings::sim_mode = settings::SimMode::NOISE;
+  } else {
+    fatal_error("Unknown simulation mode " + mode + ".");
+  }
+  
+  //----------------------------------------------------------------------------
   if (input["settings"] && input["settings"].IsMap()) {
     const auto& settnode = input["settings"];
 

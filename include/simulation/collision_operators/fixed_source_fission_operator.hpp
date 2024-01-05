@@ -38,10 +38,8 @@
 class FixedSourceFissionOperator
     : public FissionOperator<FixedSourceFissionOperator, SecondaryBankSaver> {
  public:
-  FixedSourceFissionOperator()
-      : FissionOperator<FixedSourceFissionOperator, SecondaryBankSaver>(
-            SecondaryBankSaver()) {}
-
+  FixedSourceFissionOperator() = default;
+      
   int n_fission_neutrons(const Particle& p, const MicroXSs& xs,
                          pcg32& rng) const {
     const double k_abs_scr = p.wgt() * xs.nu_total * xs.fission / xs.total;

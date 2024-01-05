@@ -33,9 +33,8 @@
 template <typename T>
 concept TransportOperator = requires(T t, Particle& p, Tracker& trkr,
                                      MaterialHelper& mat,
-                                     ThreadLocalScores& thread_scores,
-                                     bool noise) {
-  t.transport(p, trkr, mat, thread_scores, noise);
+                                     ThreadLocalScores& thread_scores) {
+  t.transport(p, trkr, mat, thread_scores);
 };
 
 #endif

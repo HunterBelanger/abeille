@@ -38,10 +38,7 @@
 class KeffFissionOperator
     : public FissionOperator<KeffFissionOperator, FissionBankSaver> {
  public:
-  KeffFissionOperator(std::shared_ptr<Tallies> itallies)
-      : FissionOperator<KeffFissionOperator, FissionBankSaver>(
-            FissionBankSaver()),
-        tallies(itallies) {}
+  KeffFissionOperator() = default;
 
   int n_fission_neutrons(const Particle& p, const MicroXSs& xs,
                          pcg32& rng) const {
@@ -51,11 +48,8 @@ class KeffFissionOperator
     // keff of the previous generation, so that the number of particles per
     // generation stays approximately constant.
     return static_cast<int>(
-        std::floor(std::abs(k_abs_scr) / tallies->kcol() + RNG::rand(rng)));
+        std::floor(std::abs(k_abs_scr) / Tallies::instance().kcol() + RNG::rand(rng)));
   }
-
- private:
-  std::shared_ptr<Tallies> tallies;
 };
 
 #endif

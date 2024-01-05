@@ -34,7 +34,7 @@
 template <class FissOp>
 class BranchingCollision {
  public:
-  BranchingCollision(const FissOp& fiss_op) : fission_operator(fiss_op) {}
+  BranchingCollision() = default;
 
   void collision(Particle& p, MaterialHelper& mat,
                  ThreadLocalScores& thread_scores) const {

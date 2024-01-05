@@ -34,13 +34,9 @@
 
 class SurfaceTracker {
  public:
-  SurfaceTracker(std::shared_ptr<Tallies> itallies): tallies(itallies) {}
+  SurfaceTracker() = default;
 
-  void transport(Particle& p, Tracker& trkr, MaterialHelper& mat,
-                 ThreadLocalScores& thread_scores, bool noise) const;
-
- private:
-  std::shared_ptr<Tallies> tallies;
+  void transport(Particle& p, Tracker& trkr, MaterialHelper& mat, ThreadLocalScores& thread_scores) const;
 };
 
 #endif

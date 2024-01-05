@@ -274,20 +274,19 @@ void NoiseMaker::sample_vibration_noise_scatter(
   p.add_noise_particle(p_noise);
 }
 
-void NoiseMaker::sample_noise_source(Particle& p, MaterialHelper& mat,
-                                     const double keff, const double w) const {
+void NoiseMaker::sample_noise_source(Particle& p, MaterialHelper& mat) const {
   // First, check if we are inside any noise source. If no, we can return
   // without making any noise particles.
   if (this->is_inside(p) == false) return;
 
   // First, we can go ahead and make the copy, as it's easiest to do.
-  this->sample_noise_copy(p, mat, w);
+  this->sample_noise_copy(p, mat, noise_params_.omega);
 
   // Now from this point on, we sample the oscillation and vibration
   // parts separately
-  this->sample_vibration_noise_source(p, mat, keff, w);
+  this->sample_vibration_noise_source(p, mat, noise_params_.keff, noise_params_.omega);
 
-  this->sample_oscillation_noise_source(p, mat, keff, w);
+  this->sample_oscillation_noise_source(p, mat, noise_params_.keff, noise_params_.omega);
 }
 
 void NoiseMaker::sample_oscillation_noise_source(Particle& p,

@@ -29,6 +29,7 @@
 #include <simulation/particle.hpp>
 #include <noise_source/oscillation_noise_source.hpp>
 #include <noise_source/vibration_noise_source.hpp>
+#include <utils/noise_parameters.hpp>
 
 #include <yaml-cpp/yaml.h>
 
@@ -53,13 +54,17 @@ class NoiseMaker {
     return vibration_noise_sources_.size() + oscillation_noise_sources_.size();
   }
 
-  void sample_noise_source(Particle& p, MaterialHelper& mat, const double keff,
-                           const double w) const;
+  NoiseParameters& noise_parameters() { return noise_params_; }
+
+  const NoiseParameters& noise_parameters() const { return noise_params_; }
+
+  void sample_noise_source(Particle& p, MaterialHelper& mat) const;
 
  private:
   std::vector<std::shared_ptr<VibrationNoiseSource>> vibration_noise_sources_;
   std::vector<std::shared_ptr<OscillationNoiseSource>>
       oscillation_noise_sources_;
+  NoiseParameters noise_params_;
 
   bool is_inside(const Particle& p) const;
   std::complex<double> dEt(const Particle& p, double w) const;

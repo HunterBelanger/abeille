@@ -371,4 +371,4 @@ class Tracker {
 
 };  // Tracker
 
-#endif  // MG_TRACKER_H
+#endif

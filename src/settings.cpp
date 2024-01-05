@@ -31,6 +31,9 @@
 #include <random>
 
 namespace settings {
+
+SimMode sim_mode = SimMode::KEFF;
+
 uint32_t ngroups = 0;
 
 bool plotting_mode = false;
