@@ -46,7 +46,7 @@ namespace H5 = HighFive;
 
 void PowerIterator::initialize() {
   // If not using source file
-  if (settings::load_source_file == false) {
+  if (in_source_file_name.empty()) {
     sample_source_from_sources();
   } else {
     // Load source file
@@ -58,9 +58,21 @@ void PowerIterator::initialize() {
   for (auto& p : bank) p.set_family_id(p.history_id());
 }
 
+void PowerIterator::set_cancelator(std::shared_ptr<Cancelator> cncl) {
+  cancelator_ = cncl;
+  if (cancelator_ == nullptr) {
+    fatal_error("Was given a nullptr for a Cancelator.");
+  }
+}
+
+void PowerIterator::add_source(std::shared_ptr<Source> src) {
+  if (src) sources.push_back(src);
+  else fatal_error("Was provided a nullptr Source.");
+}
+
 void PowerIterator::load_source_from_file() {
   // Load source file
-  auto h5s = H5::File(settings::in_source_file_name, H5::File::ReadOnly);
+  auto h5s = H5::File(in_source_file_name, H5::File::ReadOnly);
 
   // Get the dataset and dimensions
   auto source_ds = h5s.getDataSet("source");
@@ -129,7 +141,7 @@ void PowerIterator::load_source_from_file() {
 
   Output::instance().write(
       " Total Weight of System: " + std::to_string(std::round(tot_wgt)) + "\n");
-  settings::nparticles = static_cast<int>(std::round(tot_wgt));
+  nparticles = static_cast<int>(std::round(tot_wgt));
   tallies->set_total_weight(std::round(tot_wgt));
 }
 
@@ -137,8 +149,8 @@ void PowerIterator::sample_source_from_sources() {
   Output::instance().write(" Generating source particles...\n");
   // Calculate the base number of particles per node to run
   uint64_t base_particles_per_node =
-      static_cast<uint64_t>(settings::nparticles / mpi::size);
-  uint64_t remainder = static_cast<uint64_t>(settings::nparticles % mpi::size);
+      static_cast<uint64_t>(nparticles / mpi::size);
+  uint64_t remainder = static_cast<uint64_t>(nparticles % mpi::size);
 
   // Set the base number of particles per node in the node_nparticles vector
   mpi::node_nparticles.resize(static_cast<std::size_t>(mpi::size),
@@ -173,9 +185,9 @@ void PowerIterator::print_header() {
 
   // First get the number of columns required to print the max generation number
   int n_col_gen =
-      static_cast<int>(std::to_string(settings::ngenerations).size());
+      static_cast<int>(std::to_string(ngenerations).size());
 
-  if (settings::regional_cancellation && t_pre_entropy) {
+  if (cancelator_ && t_pre_entropy) {
     out.write(
         std::string(static_cast<std::size_t>(std::max(n_col_gen, 3) + 1), ' ') +
         "                                         Pre-Cancelation Entropies    "
@@ -191,29 +203,29 @@ void PowerIterator::print_header() {
   output << std::right << "Gen"
          << "      k         kavg +/- err    ";
 
-  if (!settings::regional_cancellation && t_pre_entropy) {
+  if (cancelator_ == nullptr && t_pre_entropy) {
     output << "    Entropy  ";
   }
 
-  if (settings::regional_cancellation && t_pre_entropy) {
+  if (cancelator_ && t_pre_entropy) {
     output << "     Positive     Nevative        Total     Positive     "
               "Negative        Total";
   }
 
-  if (settings::regional_cancellation) {
+  if (cancelator_) {
     output << "      Nnet      Ntot      Npos      Nneg      Wnet      Wtot    "
               "  Wpos      Wneg";
   }
 
-  if (settings::pair_distance_sqrd) {
+  if (pair_distance_sqrd) {
     output << "      <r^2>  ";
   }
 
-  if (settings::families) {
+  if (families) {
     output << "   N_Families  ";
   }
 
-  if (t_pre_entropy && settings::empty_entropy_bins) {
+  if (t_pre_entropy && empty_entropy_bins) {
     output << "   Empty Entropy Frac.  ";
   }
 
@@ -232,12 +244,12 @@ void PowerIterator::generation_output() {
 
   // First get the number of columns required to print the max generation number
   int n_col_gen =
-      static_cast<int>(std::to_string(settings::ngenerations).size());
+      static_cast<int>(std::to_string(ngenerations).size());
 
   output << " " << std::setw(std::max(n_col_gen, 3)) << std::setfill(' ');
   output << std::right << gen << "   " << std::fixed << std::setprecision(5);
   output << kcol;
-  if (gen <= settings::nignored + 1) {
+  if (gen <= nignored + 1) {
     output << "                      ";
   } else {
     double kcol_avg = tallies->kcol_avg();
@@ -246,12 +258,12 @@ void PowerIterator::generation_output() {
   }
   output << "   ";
 
-  if (!settings::regional_cancellation && t_pre_entropy) {
+  if (cancelator_ == nullptr && t_pre_entropy) {
     output << std::setw(10) << std::scientific << std::setprecision(4);
     output << t_pre_entropy_vec.back();
   }
 
-  if (settings::regional_cancellation && t_pre_entropy) {
+  if (cancelator_ && t_pre_entropy) {
     output << std::setw(10) << std::scientific << std::setprecision(4)
            << p_pre_entropy_vec.back() << "   ";
     output << n_pre_entropy_vec.back() << "   ";
@@ -262,7 +274,7 @@ void PowerIterator::generation_output() {
     output << t_post_entropy_vec.back() << "   ";
   }
 
-  if (settings::regional_cancellation) {
+  if (cancelator_) {
     output << std::setw(7) << std::setfill(' ') << std::right;
     output << Nnet << "   ";
     output << std::setw(7) << std::setfill(' ') << std::right;
@@ -281,19 +293,19 @@ void PowerIterator::generation_output() {
     output << Wneg;
   }
 
-  if (settings::pair_distance_sqrd) {
+  if (pair_distance_sqrd) {
     output << "   " << std::setw(10) << std::scientific << std::setprecision(4)
            << r_sqrd;
   }
 
-  if (settings::families) {
-    std::size_t nfamilies = families.size();
+  if (families) {
+    std::size_t nfamilies = families_set.size();
     mpi::Reduce_sum(nfamilies, 0);
     families_vec.push_back(nfamilies);
     output << "   " << std::fixed << nfamilies;
   }
 
-  if (t_pre_entropy && settings::empty_entropy_bins) {
+  if (t_pre_entropy && empty_entropy_bins) {
     output << "   " << std::setprecision(6) << empty_entropy_frac_vec.back();
   }
 
@@ -306,9 +318,9 @@ void PowerIterator::generation_output() {
 void PowerIterator::run() {
   Output& out = Output::instance();
   out.write(" Running k Eigenvalue Problem...\n");
-  out.write(" NPARTICLES: " + std::to_string(settings::nparticles) + ", ");
-  out.write(" NGENERATIONS: " + std::to_string(settings::ngenerations) + ",");
-  out.write(" NIGNORED: " + std::to_string(settings::nignored) + "\n");
+  out.write(" NPARTICLES: " + std::to_string(nparticles) + ", ");
+  out.write(" NGENERATIONS: " + std::to_string(ngenerations) + ",");
+  out.write(" NIGNORED: " + std::to_string(nignored) + "\n");
 
   // Zero all entropy bins
   zero_entropy();
@@ -318,17 +330,17 @@ void PowerIterator::run() {
   mpi::synchronize();
   simulation_timer.start();
 
-  // Check for imediate convergence (i.e. we read source from file)
-  if (settings::nignored == 0) settings::converged = true;
+  // Check for immediate convergence (i.e. we read source from file)
+  if (nignored == 0) converged = true;
 
-  for (int g = 1; g <= settings::ngenerations; g++) {
+  for (std::size_t g = 1; g <= ngenerations; g++) {
     gen = g;
 
-    if (settings::families) {
+    if (families) {
       // Before transport, we get the set of all families, so that we can know
       // how many particle families entered the generation.
-      families.clear();
-      for (auto& p : bank) families.insert(p.family_id());
+      families_set.clear();
+      for (auto& p : bank) families_set.insert(p.family_id());
     }
 
     std::vector<BankedParticle> next_gen = particle_mover->transport(bank);
@@ -347,7 +359,7 @@ void PowerIterator::run() {
     mpi::synchronize();
 
     // Do weight cancelation
-    if (settings::regional_cancellation && cancelator) {
+    if (cancelator_) {
       perform_regional_cancellation(next_gen);
     } 
 
@@ -355,17 +367,17 @@ void PowerIterator::run() {
     normalize_weights(next_gen);
 
     // Comb particles
-    if (settings::combing) comb_particles(next_gen);
+    if (combing) comb_particles(next_gen);
 
     // Synchronize particles across nodes
     sync_banks(mpi::node_nparticles, next_gen);
 
     // Compute pair distance squared
-    if (settings::pair_distance_sqrd) compute_pair_dist_sqrd(next_gen);
+    if (pair_distance_sqrd) compute_pair_dist_sqrd(next_gen);
 
     // Score the source and gen if passed ignored
-    if (settings::converged) {
-      tallies->score_source(next_gen, settings::converged);
+    if (converged) {
+      tallies->score_source(next_gen, converged);
       tallies->record_generation();
     }
 
@@ -417,7 +429,7 @@ void PowerIterator::run() {
 
     // Once ignored generations are finished, mark as true to start
     // doing tallies
-    if (g == settings::nignored) settings::converged = true;
+    if (g == nignored) converged = true;
   }
 
   // Stop timer
@@ -425,11 +437,11 @@ void PowerIterator::run() {
   out.write("\n Total Simulation Time: " +
             std::to_string(simulation_timer.elapsed_time()) + " seconds.\n");
 
-  if (settings::converged) {
+  if (converged) {
     // Write the final results of all estimators
     out.write("\n");
     std::stringstream output;
-    output << " Results using " << gen - settings::nignored
+    output << " Results using " << gen - nignored
            << " active generations:\n";
     output << " -----------------------------------\n";
     output << std::fixed << std::setprecision(6);
@@ -566,8 +578,7 @@ void PowerIterator::write_entropy_families_etc_to_results() const {
     h5.createDataSet("results/pair-dist-sqrd", r_sqrd_vec);
   }
 
-  if (t_pre_entropy_vec.size() > 0 &&
-      settings::regional_cancellation == false) {
+  if (t_pre_entropy_vec.size() > 0 && cancelator_ == nullptr) {
     h5.createDataSet("results/entropy", t_pre_entropy_vec);
   } else if (t_pre_entropy_vec.size() > 0) {
     h5.createDataSet("results/total-pre-cancel-entropy", t_pre_entropy_vec);
@@ -579,7 +590,7 @@ void PowerIterator::write_entropy_families_etc_to_results() const {
     h5.createDataSet("results/pos-post-cancel-entropy", p_post_entropy_vec);
   }
 
-  if (settings::empty_entropy_bins) {
+  if (empty_entropy_bins) {
     h5.createDataSet("results/empty-entropy-frac", empty_entropy_frac_vec);
   }
 
@@ -636,7 +647,7 @@ void PowerIterator::normalize_weights(std::vector<BankedParticle>& next_gen) {
   Nnet = Npos - Nneg;
 
   // Re-Normalize particle weights
-  double w_per_part = static_cast<double>(settings::nparticles) / W;
+  double w_per_part = static_cast<double>(nparticles) / W;
   W *= w_per_part;
   W_neg *= w_per_part;
   W_pos *= w_per_part;
@@ -665,7 +676,7 @@ void PowerIterator::normalize_weights(std::vector<BankedParticle>& next_gen) {
 
 void PowerIterator::compute_pre_cancellation_entropy(
     std::vector<BankedParticle>& next_gen) {
-  if (t_pre_entropy && settings::regional_cancellation) {
+  if (t_pre_entropy && cancelator_) {
     for (size_t i = 0; i < next_gen.size(); i++) {
       p_pre_entropy->add_point(next_gen[i].r, next_gen[i].wgt);
       n_pre_entropy->add_point(next_gen[i].r, next_gen[i].wgt);
@@ -688,14 +699,14 @@ void PowerIterator::compute_pre_cancellation_entropy(
     t_pre_entropy_vec.push_back(t_pre_entropy->calculate_entropy());
   }
 
-  if (t_pre_entropy && settings::empty_entropy_bins) {
+  if (t_pre_entropy && empty_entropy_bins) {
     empty_entropy_frac_vec.push_back(t_pre_entropy->calculate_empty_fraction());
   }
 }
 
 void PowerIterator::compute_post_cancellation_entropy(
     std::vector<BankedParticle>& next_gen) {
-  if (t_pre_entropy && settings::regional_cancellation) {
+  if (t_pre_entropy && cancelator_) {
     for (size_t i = 0; i < next_gen.size(); i++) {
       p_post_entropy->add_point(next_gen[i].r, next_gen[i].wgt);
       n_post_entropy->add_point(next_gen[i].r, next_gen[i].wgt);
@@ -798,7 +809,7 @@ void PowerIterator::premature_kill() {
 
     // Setting ngenerations to gen will cause us to exit the
     // transport loop as if we finished the simulation normally.
-    settings::ngenerations = gen;
+    ngenerations = gen;
   }
 
   // They don't really want to kill it. Reset flag
@@ -834,7 +845,7 @@ void PowerIterator::check_time(int gen) {
   if (should_stop_now) {
     // Setting ngenerations to gen will cause us to exit the
     // transport loop as if we finished the simulation normally.
-    settings::ngenerations = gen;
+    ngenerations = gen;
   }
 }
 

@@ -29,10 +29,9 @@
 
 class ModifiedFixedSource : public Simulation {
  public:
-  ModifiedFixedSource(std::shared_ptr<Tallies> i_t,
-                      std::shared_ptr<Transporter> i_tr,
+  ModifiedFixedSource(std::shared_ptr<IParticleMover> i_pm,
                       std::vector<std::shared_ptr<Source>> src)
-      : Simulation(i_t, i_tr, src) {}
+      : Simulation(i_pm, src) {}
   ~ModifiedFixedSource() = default;
 
   void initialize() override final;

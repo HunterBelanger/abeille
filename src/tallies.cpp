@@ -33,7 +33,7 @@
 #include <vector>
 
 Tallies::Tallies(double tot_wgt)
-    : total_weight(tot_wgt),
+    : total_weight(0.),
       k_col_score(0.),
       k_abs_score(0.),
       k_trk_score(0.),
@@ -72,6 +72,12 @@ Tallies::Tallies(double tot_wgt)
   k_trk_vec.reserve(static_cast<std::size_t>(settings::ngenerations));
   leak_vec.reserve(static_cast<std::size_t>(settings::ngenerations));
   mig_vec.reserve(static_cast<std::size_t>(settings::ngenerations));
+}
+
+Tallies& Tallies::instance() {
+  static Tallies tallies;
+
+  return tallies;
 }
 
 void Tallies::add_collision_mesh_tally(

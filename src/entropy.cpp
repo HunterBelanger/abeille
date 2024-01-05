@@ -110,3 +110,39 @@ void Entropy::zero() {
 
   this->total_weight = 0.;
 }
+
+Entropy make_entropy(const YAML::Node& entropy) {
+  // Get lower corner
+  std::vector<double> low;
+  if (entropy["low"] && entropy["low"].IsSequence() &&
+      entropy["low"].size() == 3) {
+    low = entropy["low"].as<std::vector<double>>();
+  } else {
+    fatal_error("No valid lower corner provided for entropy mesh.");
+  }
+
+  // Get upper corner
+  std::vector<double> hi;
+  if (entropy["hi"] && entropy["hi"].IsSequence() &&
+      entropy["hi"].size() == 3) {
+    hi = entropy["hi"].as<std::vector<double>>();
+  } else {
+    fatal_error("No valid upper corner provided for entropy mesh.");
+  }
+
+  // Get shape
+  std::vector<uint32_t> shape;
+  if (entropy["shape"] && entropy["shape"].IsSequence() &&
+      entropy["shape"].size() == 3) {
+    shape = entropy["shape"].as<std::vector<uint32_t>>();
+  } else {
+    fatal_error("No valid shape provided for entropy mesh.");
+  }
+
+  // Add entropy to simulation
+  Position low_r(low[0], low[1], low[2]);
+  Position hi_r(hi[0], hi[1], hi[2]);
+  std::array<uint32_t, 3> shp{shape[0], shape[1], shape[2]};
+
+  return Entropy(low_r, hi_r, shp);
+}

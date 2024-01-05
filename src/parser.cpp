@@ -29,16 +29,8 @@
 #include <geometry/rect_lattice.hpp>
 #include <geometry/surfaces/all_surfaces.hpp>
 #include <materials/nuclide.hpp>
-#include <simulation/branchless_power_iterator.hpp>
 #include <simulation/entropy.hpp>
-#include <simulation/fixed_source.hpp>
-#include <simulation/modified_fixed_source.hpp>
-#include <simulation/noise.hpp>
-#include <simulation/power_iterator.hpp>
-#include <simulation/transport_operators/carter_tracker.hpp>
-#include <simulation/transport_operators/delta_tracker.hpp>
-#include <simulation/transport_operators/implicit_leakage_delta_tracker.hpp>
-#include <simulation/transport_operators/surface_tracker.hpp>
+#include <tallies/tallies.hpp>
 #include <tallies/mesh_tally.hpp>
 #include <utils/error.hpp>
 #include <utils/mpi.hpp>
@@ -66,12 +58,7 @@ std::map<uint32_t, size_t> universe_id_to_indx;
 
 //===========================================================================
 // Objects to build Simulation
-std::vector<std::shared_ptr<Source>> sources;
-NoiseMaker noise_maker;
-std::shared_ptr<Tallies> tallies = nullptr;
-std::shared_ptr<IParticleMover> particle_mover = nullptr;
 std::shared_ptr<Simulation> simulation = nullptr;
-std::shared_ptr<Cancelator> cancelator = nullptr;
 std::string xspath;
 
 void parse_input_file(std::string fname) {
@@ -107,22 +94,7 @@ void parse_input_file(std::string fname) {
 
   make_tallies(input);
 
-  make_particle_mover();
-
-  if (settings::regional_cancellation ||
-      settings::regional_cancellation_noise) {
-    make_cancellation_bins(input);
-  }
-
-  make_sources(input);
-
-  make_noise_sources(input);
-
-  make_simulation();
-
-  // Only parse entropy mesh if there is an entropy entry
-  if (input["entropy"] && input["entropy"].IsMap())
-    make_entropy_mesh(input["entropy"]);
+  simulation = make_simulation(input);
 
   // End parsing timer
   parsing_timer.stop();
@@ -180,9 +152,19 @@ void make_geometry(const YAML::Node& input) {
   if (input["surfaces"] && input["surfaces"].IsSequence()) {
     // Go through all surfaces
     for (size_t s = 0; s < input["surfaces"].size(); s++) {
-      make_surface(input["surfaces"][s]);
-    }
+      auto surf = make_surface(input["surfaces"][s]);
 
+      // Add surface ID to map of surface indicies
+      if (surface_id_to_indx.find(surf->id()) != surface_id_to_indx.end()) {
+        // ID already exists
+        std::stringstream mssg;
+        mssg << "The surface ID " << surf->id() << " appears multiple times.";
+        fatal_error(mssg.str());
+      } else {
+        surface_id_to_indx[surf->id()] = geometry::surfaces.size();
+        geometry::surfaces.push_back(surf);
+      }
+    }
   } else {
     // If surfaces doesn't exist and isn't a sequence, kill program
     fatal_error("No surfaces are provided in input file.");
@@ -245,53 +227,6 @@ void make_geometry(const YAML::Node& input) {
   }
 }
 
-void make_surface(const YAML::Node& surface_node) {
-  // Try to get type
-  std::string surf_type;
-  if (surface_node["type"] && surface_node["type"].IsScalar())
-    surf_type = surface_node["type"].as<std::string>();
-  else {
-    // Error, all surfaces must have a type
-    fatal_error("Surface is missing \"type\" attribute.");
-  }
-
-  // Call appropriate function to build pointer to surface
-  std::shared_ptr<Surface> surf_pntr = nullptr;
-  if (surf_type == "xplane") {
-    surf_pntr = make_xplane(surface_node);
-  } else if (surf_type == "yplane") {
-    surf_pntr = make_yplane(surface_node);
-  } else if (surf_type == "zplane") {
-    surf_pntr = make_zplane(surface_node);
-  } else if (surf_type == "plane") {
-    surf_pntr = make_plane(surface_node);
-  } else if (surf_type == "xcylinder") {
-    surf_pntr = make_xcylinder(surface_node);
-  } else if (surf_type == "ycylinder") {
-    surf_pntr = make_ycylinder(surface_node);
-  } else if (surf_type == "zcylinder") {
-    surf_pntr = make_zcylinder(surface_node);
-  } else if (surf_type == "cylinder") {
-    surf_pntr = make_cylinder(surface_node);
-  } else if (surf_type == "sphere") {
-    surf_pntr = make_sphere(surface_node);
-  } else {
-    // Error, unknown surface type
-    fatal_error("Surface type \"" + surf_type + "\" is unknown.");
-  }
-
-  // Add surface ID to map of surface indicies
-  if (surface_id_to_indx.find(surf_pntr->id()) != surface_id_to_indx.end()) {
-    // ID already exists
-    std::stringstream mssg;
-    mssg << "The surface ID " << surf_pntr->id() << " appears multiple times.";
-    fatal_error(mssg.str());
-  } else {
-    surface_id_to_indx[surf_pntr->id()] = geometry::surfaces.size();
-    geometry::surfaces.push_back(surf_pntr);
-  }
-}
-
 void make_universe(const YAML::Node& uni_node, const YAML::Node& input) {
   uint32_t id;
   if (uni_node["id"] && uni_node["id"].IsScalar()) {
@@ -341,118 +276,6 @@ void find_universe(const YAML::Node& input, uint32_t id) {
 void make_settings(const YAML::Node& input) {
   if (input["settings"] && input["settings"].IsMap()) {
     const auto& settnode = input["settings"];
-
-    // Get simulation type
-    std::string sim_type;
-    if (settnode["simulation"] && settnode["simulation"].IsScalar()) {
-      sim_type = settnode["simulation"].as<std::string>();
-    } else {
-      fatal_error("No simulation type provided.");
-    }
-
-    if (sim_type == "k-eigenvalue") {
-      settings::mode = settings::SimulationMode::K_EIGENVALUE;
-    } else if (sim_type == "fixed-source") {
-      settings::mode = settings::SimulationMode::FIXED_SOURCE;
-    } else if (sim_type == "modified-fixed-source") {
-      settings::mode = settings::SimulationMode::MODIFIED_FIXED_SOURCE;
-    } else if (sim_type == "noise") {
-      settings::mode = settings::SimulationMode::NOISE;
-    } else {
-      fatal_error("Unknown simulation type " + sim_type + ".");
-    }
-
-    // Get brancless settings if we are using branchless-k-eigenvalue
-    if (settings::mode == settings::SimulationMode::BRANCHLESS_K_EIGENVALUE) {
-      // Splitting
-      if (settnode["branchless-splitting"]) {
-        settings::branchless_splitting = settnode["branchless-splitting"].as<bool>();
-      }
-
-      if (settings::branchless_splitting) {
-        Output::instance().write(
-            " Using splitting during branchless collisions.\n");
-      } else {
-        Output::instance().write(
-            " No splitting during branchless collisions.\n");
-      }
-
-      // Combing
-      if (settnode["combing"]) {
-        settings::branchless_combing =
-            settnode["branchless-combing"].as<bool>();
-      }
-
-      if (settings::branchless_combing) {
-        Output::instance().write(
-            " Using combing between fission generations.\n");
-      } else {
-        Output::instance().write(" No combing between fission generations.\n");
-      }
-    }
-
-    // Get transport method
-    std::string transport_type;
-    if (settnode["transport"] && settnode["transport"].IsScalar()) {
-      transport_type = settnode["transport"].as<std::string>();
-    } else if (settnode["transport"]) {
-      std::string mssg = "Invalid transport method entry.";
-      fatal_error(mssg);
-    } else {
-      // Use surface tracking by default
-      transport_type = "surface-tracking";
-    }
-    
-    if (transport_type == "surface-tracking") {
-      settings::tracking = settings::TrackingMode::SURFACE_TRACKING;
-    } else if (transport_type == "delta-tracking") {
-      settings::tracking = settings::TrackingMode::DELTA_TRACKING;
-    } else if (transport_type == "implicit-leakage-delta-tracking") {
-      settings::tracking = settings::TrackingMode::IMPLICIT_LEAKAGE_DELTA_TRACKING;
-    } else if (transport_type == "carter-tracking") {
-      settings::tracking = settings::TrackingMode::CARTER_TRACKING;
-
-      // Read the sampling-xs entry in the input file
-      if (!input["sampling-xs-ratio"] ||
-          !input["sampling-xs-ratio"].IsSequence()) {
-        fatal_error("Must provide the \"sampling-xs-ratio\" vector to use Carter Tracking.");
-      }
-
-      settings::sample_xs_ratio =
-          input["sampling-xs-ratio"].as<std::vector<double>>();
-
-      // Make sure all ratios are positive
-      for (const auto& v : settings::sample_xs_ratio) {
-        if (v <= 0.) {
-          fatal_error("Sampling XS ratios must be > 0.");
-        }
-      }
-    } else {
-      std::string err = "Invalid transport method " + transport_type + ".";
-      fatal_error(err);
-    }
-
-    // Get collision method
-    std::string coll_type;
-    if (settnode["collisions"] && settnode["collisions"].IsScalar()) {
-      coll_type = settnode["collisions"].as<std::string>();
-    } else if (settnode["collisions"]) {
-      std::string mssg = "Invalid collisions method entry.";
-      fatal_error(mssg);
-    } else {
-      coll_type = "branching";
-    }
-
-    if (coll_type == "branching") {
-      settings::collisions = settings::CollisionMode::BRANCHING;
-    } else if (coll_type == "branchless-isotope") {
-      settings::collisions = settings::CollisionMode::BRANCHLESS_ISOTOPE;
-    } else if (coll_type == "branchless-material") {
-      settings::collisions = settings::CollisionMode::BRANCHLESS_ISOTOPE;
-    } else {
-      std::string mssg = "Invalid collision method " + coll_type + ".";
-      fatal_error(mssg);
-    }
 
     // Get energy mode type
     if (settnode["energy-mode"] && settnode["energy-mode"].IsScalar()) {
@@ -622,45 +445,6 @@ void make_settings(const YAML::Node& input) {
       }
     }
 
-    // Get number of particles
-    if (settnode["nparticles"] && settnode["nparticles"].IsScalar()) {
-      settings::nparticles = settnode["nparticles"].as<int>();
-    } else {
-      fatal_error("Number of particles not specified in settings.");
-    }
-
-    // Get number of generations
-    if (settnode["ngenerations"] && settnode["ngenerations"].IsScalar()) {
-      settings::ngenerations = settnode["ngenerations"].as<int>();
-    } else {
-      fatal_error("Number of generations not specified in settings.");
-    }
-
-    // Get number of ignored
-    if (settnode["nignored"] && settnode["nignored"].IsScalar()) {
-      settings::nignored = settnode["nignored"].as<int>();
-    } else if (settnode["simulation"] &&
-               settnode["simulation"].as<std::string>() == "k-eigenvalue") {
-      fatal_error("Number of ignored generations not specified in settings.");
-    } else {
-      settings::nignored = 0;
-    }
-
-    if ((settings::mode == settings::SimulationMode::K_EIGENVALUE ||
-         settings::mode == settings::SimulationMode::BRANCHLESS_K_EIGENVALUE) &&
-        settings::nignored >= settings::ngenerations) {
-      std::stringstream mssg;
-      mssg << "Number of ignored generations is greater than or equal to the";
-      mssg << "number of total generations.";
-      fatal_error(mssg.str());
-    }
-
-    // Get number of skips between noise batches.
-    // Default is 10
-    if (settnode["nskip"] && settnode["nskip"].IsScalar()) {
-      settings::nskip = settnode["nskip"].as<int>();
-    }
-
     // Get roulette settings
     if (settnode["wgt-cutoff"] && settnode["wgt-cutoff"].IsScalar()) {
       settings::wgt_cutoff = settnode["wgt-cutoff"].as<double>();
@@ -717,57 +501,6 @@ void make_settings(const YAML::Node& input) {
       fatal_error("Invalid max-run-time entry in settings.");
     }
 
-    // Get the frequency and keff for noise simulations
-    if (settings::mode == settings::SimulationMode::NOISE) {
-      // Frequency
-      if (!settnode["noise-angular-frequency"] ||
-          !settnode["noise-angular-frequency"].IsScalar()) {
-        fatal_error(
-            "No valid noise-angular-frequency in settings for noise "
-            "simulation.");
-      }
-      settings::w_noise = settnode["noise-angular-frequency"].as<double>();
-
-      Output::instance().write(
-          " Noise angular-frequency: " + std::to_string(settings::w_noise) +
-          " radians / s.\n");
-
-      // Keff
-      if (!settnode["keff"] || !settnode["keff"].IsScalar()) {
-        fatal_error("No valid keff in settings for noise simulation.");
-      }
-      settings::keff = settnode["keff"].as<double>();
-
-      if (settings::keff <= 0.) {
-        fatal_error("Noise keff must be greater than zero.");
-      }
-
-      Output::instance().write(
-          " Noise keff: " + std::to_string(settings::keff) + "\n");
-
-      // Get the inner_generations option
-      if (settnode["inner-generations"] &&
-          settnode["inner-generations"].IsScalar()) {
-        settings::inner_generations = settnode["inner-generations"].as<bool>();
-      } else if (settnode["inner-generations"]) {
-        fatal_error(
-            "Invalid \"inner-generations\" entry provided in settings.");
-      }
-
-      // Get the normalize_noise_source option
-      if (settnode["normalize-noise-source"] &&
-          settnode["normalize-noise-source"].IsScalar()) {
-        settings::normalize_noise_source =
-            settnode["normalize-noise-source"].as<bool>();
-        if (settings::normalize_noise_source) {
-          Output::instance().write(" Normalizing noise source\n");
-        }
-      } else if (settnode["normalize-noise-source"]) {
-        fatal_error(
-            "Invalid \"normalize-noise-source\" entry provided in settings.");
-      }
-    }
-
     // See if the user wants to see RNG stride warnings
     if (settnode["rng-stride-warnings"] &&
         settnode["rng-stride-warnings"].IsScalar()) {
@@ -776,21 +509,6 @@ void make_settings(const YAML::Node& input) {
     } else if (settnode["rng-stride-warnings"]) {
       fatal_error(
           "Invalid \"rng-stride-warnings\" entry provided in settings.");
-    }
-
-    // Get name of source in file
-    if (settnode["insource"] && settnode["insource"].IsScalar()) {
-      settings::in_source_file_name = settnode["insource"].as<std::string>();
-      settings::load_source_file = true;
-
-      // Make sure source file exists
-      std::ifstream source_fl(settings::in_source_file_name);
-      if (!source_fl.good()) {
-        std::stringstream mssg;
-        mssg << "Could not find source input file with name \"";
-        mssg << settings::in_source_file_name + "\".";
-        fatal_error(mssg.str());
-      }
     }
 
     // Get seed for rng
@@ -806,63 +524,6 @@ void make_settings(const YAML::Node& input) {
       Output::instance().write(
           " RNG stride = " + std::to_string(settings::rng_seed) + " ...\n");
     }
-
-    // Get cancellation settings
-    settings::regional_cancellation = false;
-    if (settnode["cancellation"] && settnode["cancellation"].IsScalar()) {
-      if (settnode["cancellation"].as<bool>() == true) {
-        settings::regional_cancellation = true;
-      }
-    }
-    if (settings::regional_cancellation) {
-      Output::instance().write(" Using regional cancellation.\n");
-    }
-
-    // Get number of noise generations to cancel
-    if (settnode["cancel-noise-gens"] &&
-        settnode["cancel-noise-gens"].IsScalar()) {
-      settings::n_cancel_noise_gens = settnode["cancel-noise-gens"].as<int>();
-    }
-
-    settings::regional_cancellation_noise = false;
-    if (settnode["noise-cancellation"] &&
-        settnode["noise-cancellation"].IsScalar()) {
-      if (settnode["noise-cancellation"].as<bool>() == true) {
-        settings::regional_cancellation_noise = true;
-        Output::instance().write(" Cancel noise gens : " +
-                                 std::to_string(settings::n_cancel_noise_gens) +
-                                 " generations.\n");
-      }
-    }
-
-    // Get option for computing pair distance sqrd for power iteration
-    if (settnode["pair-distance-sqrd"] &&
-        settnode["pair-distance-sqrd"].IsScalar()) {
-      settings::pair_distance_sqrd = settnode["pair-distance-sqrd"].as<bool>();
-    } else if (settnode["pair-distance-sqrd"]) {
-      fatal_error(
-          "The settings option \"pair-distance-sqrd\" must be a single boolean "
-          "value.");
-    }
-
-    // Get option for showing the number of particle families
-    if (settnode["families"] && settnode["families"].IsScalar()) {
-      settings::families = settnode["families"].as<bool>();
-    } else if (settnode["families"]) {
-      fatal_error(
-          "The settings option \"families\" must be a single boolean value.");
-    }
-
-    // Get option for writing the fraction of empty entropy bins
-    if (settnode["empty-entropy-bins"] &&
-        settnode["empty-entropy-bins"].IsScalar()) {
-      settings::empty_entropy_bins = settnode["empty-entropy-bins"].as<bool>();
-    } else if (settnode["empty-entropy-bins"]) {
-      fatal_error(
-          "The settings option \"empty-entropy-bins\" must be a single boolean "
-          "value.");
-    }
-
   } else {
     fatal_error("Not settings specified in input file.");
   }
@@ -872,8 +533,8 @@ void make_settings(const YAML::Node& input) {
 
 void make_tallies(const YAML::Node& input) {
   // Make base tallies object which is required
-  tallies =
-      std::make_shared<Tallies>(static_cast<double>(settings::nparticles));
+  auto& tallies = Tallies::instance();
+  tallies.set_total_weight(static_cast<double>(settings::nparticles));
 
   if (!input["tallies"]) {
     return;
@@ -883,157 +544,10 @@ void make_tallies(const YAML::Node& input) {
 
   // Add all spatial mesh tallies to the tallies instance
   for (size_t t = 0; t < input["tallies"].size(); t++) {
-    add_mesh_tally(*tallies, input["tallies"][t]);
+    add_mesh_tally(tallies, input["tallies"][t]);
   }
 
   if (settings::mode == settings::SimulationMode::NOISE) {
-    tallies->set_keff(settings::keff);
+    tallies.set_keff(settings::keff);
   }
-}
-
-void make_particle_mover() {
-  
-}
-
-void make_cancellation_bins(const YAML::Node& input) {
-  if (!input["cancelator"] || !input["cancelator"].IsMap()) {
-    fatal_error(
-        "Regional cancelation is activated, but no cancelator entry is "
-        "provided.");
-  }
-
-  // Make sure we are using cancelation with a valid transport method !
-  if (settings::mode == settings::SimulationMode::FIXED_SOURCE) {
-    fatal_error(
-        "Cancellation may only be used with k-eigenvalue, "
-        "modified-fixed-source, or noise problems.");
-  }
-
-  // Make cancelator will check the cancelator type agains the tracking type.
-  // This is because exact cancelators may only be used with DT, or Carter
-  // Tracking, while the approximate cancelator can be used with any tracking
-  // method.
-  cancelator = make_cancelator(input["cancelator"]);
-}
-
-void make_sources(const YAML::Node& input) {
-  if (input["sources"] && input["sources"].IsSequence()) {
-    // Do all sources
-    for (size_t s = 0; s < input["sources"].size(); s++) {
-      sources.push_back(make_source(input["sources"][s]));
-    }
-  } else if (settings::mode == settings::SimulationMode::FIXED_SOURCE ||
-             !settings::load_source_file) {
-    // No source file given
-    fatal_error("No source specified for problem.");
-  }
-}
-
-void make_noise_sources(const YAML::Node& input) {
-  if (input["noise-sources"] && input["noise-sources"].IsSequence()) {
-    // Do all sources
-    for (size_t s = 0; s < input["noise-sources"].size(); s++) {
-      noise_maker.add_noise_source(input["noise-sources"][s]);
-    }
-  } else if (settings::mode == settings::SimulationMode::NOISE) {
-    // No source file given
-    fatal_error("No valid noise-source entry for noise problem.");
-  }
-
-  if (noise_maker.num_noise_sources() == 0 &&
-      settings::mode == settings::SimulationMode::NOISE) {
-    fatal_error("No noise source specified for noise problem.");
-  }
-}
-
-void make_simulation() {
-  switch (settings::mode) {
-    case settings::SimulationMode::K_EIGENVALUE:
-      if (!settings::regional_cancellation) {
-        simulation =
-            std::make_shared<PowerIterator>(tallies, transporter, sources);
-      } else {
-        simulation = std::make_shared<PowerIterator>(tallies, transporter,
-                                                     sources, cancelator);
-      }
-      break;
-
-    case settings::SimulationMode::BRANCHLESS_K_EIGENVALUE:
-      if (!settings::regional_cancellation) {
-        simulation = std::make_shared<BranchlessPowerIterator>(
-            tallies, transporter, sources);
-      } else {
-        simulation = std::make_shared<BranchlessPowerIterator>(
-            tallies, transporter, sources, cancelator);
-      }
-      break;
-
-    case settings::SimulationMode::FIXED_SOURCE:
-      simulation = std::make_shared<FixedSource>(tallies, transporter, sources);
-      break;
-
-    case settings::SimulationMode::MODIFIED_FIXED_SOURCE:
-      simulation =
-          std::make_shared<ModifiedFixedSource>(tallies, transporter, sources);
-      break;
-
-    case settings::SimulationMode::NOISE:
-      if (!settings::regional_cancellation &&
-          !settings::regional_cancellation_noise) {
-        simulation =
-            std::make_shared<Noise>(tallies, transporter, sources, noise_maker);
-      } else {
-        simulation = std::make_shared<Noise>(tallies, transporter, sources,
-                                             cancelator, noise_maker);
-      }
-      break;
-  }
-}
-
-void make_entropy_mesh(const YAML::Node& entropy) {
-  // Get lower corner
-  std::vector<double> low;
-  if (entropy["low"] && entropy["low"].IsSequence() &&
-      entropy["low"].size() == 3) {
-    low = entropy["low"].as<std::vector<double>>();
-  } else {
-    fatal_error("No valid lower corner provided for entropy mesh.");
-  }
-
-  // Get upper corner
-  std::vector<double> hi;
-  if (entropy["hi"] && entropy["hi"].IsSequence() &&
-      entropy["hi"].size() == 3) {
-    hi = entropy["hi"].as<std::vector<double>>();
-  } else {
-    fatal_error("No valid upper corner provided for entropy mesh.");
-  }
-
-  // Get shape
-  std::vector<uint32_t> shape;
-  if (entropy["shape"] && entropy["shape"].IsSequence() &&
-      entropy["shape"].size() == 3) {
-    shape = entropy["shape"].as<std::vector<uint32_t>>();
-  } else {
-    fatal_error("No valid shape provided for entropy mesh.");
-  }
-
-  // Add entropy to simulation
-  Position low_r(low[0], low[1], low[2]);
-  Position hi_r(hi[0], hi[1], hi[2]);
-  std::array<uint32_t, 3> shp{shape[0], shape[1], shape[2]};
-
-  simulation->set_p_pre_entropy(
-      std::make_shared<Entropy>(low_r, hi_r, shp, Entropy::Sign::Positive));
-  simulation->set_n_pre_entropy(
-      std::make_shared<Entropy>(low_r, hi_r, shp, Entropy::Sign::Negative));
-  simulation->set_t_pre_entropy(
-      std::make_shared<Entropy>(low_r, hi_r, shp, Entropy::Sign::Total));
-
-  simulation->set_p_post_entropy(
-      std::make_shared<Entropy>(low_r, hi_r, shp, Entropy::Sign::Positive));
-  simulation->set_n_post_entropy(
-      std::make_shared<Entropy>(low_r, hi_r, shp, Entropy::Sign::Negative));
-  simulation->set_t_post_entropy(
-      std::make_shared<Entropy>(low_r, hi_r, shp, Entropy::Sign::Total));
 }

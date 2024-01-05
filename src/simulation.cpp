@@ -31,26 +31,9 @@
 
 #include <functional>
 
-Simulation::Simulation(std::shared_ptr<Tallies> i_t,
-                       std::shared_ptr<IParticleMover> i_pm,
-                       std::vector<std::shared_ptr<Source>> srcs)
-    : tallies{i_t},
-      particle_mover{i_pm},
-      sources{srcs},
-      simulation_timer(),
-      p_pre_entropy(nullptr),
-      n_pre_entropy(nullptr),
-      t_pre_entropy(nullptr),
-      p_pre_entropy_vec(),
-      n_pre_entropy_vec(),
-      t_pre_entropy_vec(),
-      p_post_entropy(nullptr),
-      n_post_entropy(nullptr),
-      t_post_entropy(nullptr),
-      p_post_entropy_vec(),
-      n_post_entropy_vec(),
-      t_post_entropy_vec(),
-      empty_entropy_frac_vec() {
+Simulation::Simulation(std::shared_ptr<IParticleMover> i_pm)
+    : particle_mover{i_pm},
+      simulation_timer() {
   settings::initialize_global_rng();
 }
 

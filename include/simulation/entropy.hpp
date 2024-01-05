@@ -27,6 +27,8 @@
 
 #include <utils/position.hpp>
 
+#include <yaml-cpp/yaml.h>
+
 #include <array>
 #include <cmath>
 #include <cstdint>
@@ -37,7 +39,7 @@ class Entropy {
   enum Sign { Positive, Negative, Total };
 
  public:
-  Entropy(Position low, Position up, std::array<uint32_t, 3> shp, Sign sgn)
+  Entropy(Position low, Position up, std::array<uint32_t, 3> shp, Sign sgn = Sign::Positive)
       : lower_corner{low},
         upper_corner{up},
         shape{shp},
@@ -47,7 +49,7 @@ class Entropy {
         dz{},
         bins{},
         total_weight{},
-        sign{sgn} {
+        sign_{sgn} {
     nbins = shape[0] * shape[1] * shape[2];
     bins.resize(nbins, 0.);
     total_weight = 0.;
@@ -56,6 +58,10 @@ class Entropy {
     dz = (upper_corner.z() - lower_corner.z()) / static_cast<double>(shape[2]);
   }
   ~Entropy() = default;
+
+  Sign sign() const { return sign_; }
+
+  void set_sign(Sign sgn) { sign_ = sgn; }
 
   void add_point(const Position& r, const double& w);
 
@@ -77,8 +83,10 @@ class Entropy {
   double dx, dy, dz;
   std::vector<double> bins;
   double total_weight;
-  Sign sign;
+  Sign sign_;
 
-};  // Etnropy
+};  // Entropy
+
+Entropy make_entropy(const YAML::Node& entropy);
 
 #endif  // MG_ENTROPY_H

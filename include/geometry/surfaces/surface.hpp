@@ -28,8 +28,11 @@
 #include <utils/direction.hpp>
 #include <utils/position.hpp>
 
+#include <yaml-cpp/yaml.h>
+
 #include <cstdint>
 #include <string>
+#include <memory>
 
 enum BoundaryType { Vacuum, Reflective, Normal };
 
@@ -55,5 +58,8 @@ class Surface {
   std::string name_;
 
 };  // Surface
+
+// Makes any type of surface from a surface yaml node
+std::shared_ptr<Surface> make_surface(const YAML::Node& surface_node);
 
 #endif

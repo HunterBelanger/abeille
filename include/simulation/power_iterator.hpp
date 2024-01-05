@@ -27,19 +27,17 @@
 
 #include <cancelator/cancelator.hpp>
 #include <simulation/simulation.hpp>
+#include <simulation/entropy.hpp>
+#include <source/source.hpp>
 
+#include <memory>
+#include <string>
 #include <unordered_set>
 #include <vector>
 
 class PowerIterator : public Simulation {
  public:
-  PowerIterator(std::shared_ptr<Tallies> i_t, std::shared_ptr<Transporter> i_tr,
-                std::vector<std::shared_ptr<Source>> src)
-      : Simulation(i_t, i_tr, src), bank(), r_sqrd_vec(){};
-  PowerIterator(std::shared_ptr<Tallies> i_t, std::shared_ptr<Transporter> i_tr,
-                std::vector<std::shared_ptr<Source>> src,
-                std::shared_ptr<Cancelator> cncl)
-      : Simulation(i_t, i_tr, src), bank(), cancelator(cncl), r_sqrd_vec(){};
+  PowerIterator(std::shared_ptr<IParticleMover> i_pm) : Simulation(i_pm) {};
   ~PowerIterator() = default;
 
   void initialize() override final;
@@ -48,18 +46,45 @@ class PowerIterator : public Simulation {
 
   void premature_kill() override final;
 
+  void set_cancelator(std::shared_ptr<Cancelator> cncl);
+  void set_combing(bool comb) { combing = comb; }
+  void set_families(bool fams) { calc_families = fams; }
+  void set_pair_distance(bool prdist) { pair_distance_sqrd = prdist; }
+  void set_empty_entropy_bins(bool eeb) { empty_entropy_bins = eeb; }
+  void set_in_source_file(const std::string& sf) { in_source_file_name = sf; }
+  void add_source(std::shared_ptr<Source> src);
+  void set_nparticles(std::size_t np) { nparticles = np; }
+  void set_ngenerations(std::size_t ng) { ngenerations = ng; }
+  void set_nignored(std::size_t ni) { nignored = ni; }
+
  private:
-  std::vector<Particle> bank;
-  std::shared_ptr<Cancelator> cancelator = nullptr;
-  std::unordered_set<uint64_t> families = {};
-  std::vector<std::size_t> families_vec = {};
-  int Nnet = 0, Npos = 0, Nneg = 0, Ntot = 0;
-  int Wnet = 0, Wpos = 0, Wneg = 0, Wtot = 0;
+  std::vector<std::shared_ptr<Source>> sources{};
+  std::vector<Particle> bank{};
+  std::vector<std::size_t> families_vec{};
   std::vector<int> Nnet_vec{}, Npos_vec{}, Nneg_vec{}, Ntot_vec{};
   std::vector<int> Wnet_vec{}, Wpos_vec{}, Wneg_vec{}, Wtot_vec{};
-  int gen = 0;
+  std::vector<double> r_sqrd_vec{};
+  std::vector<double> t_pre_entropy_vec{}, p_pre_entropy_vec{}, n_pre_entropy_vec{};
+  std::vector<double> t_post_entropy_vec{}, p_post_entropy_vec{}, n_post_entropy_vec{};
+  std::string in_source_file_name{};
+  std::unordered_set<uint64_t> families_set{};
+  std::shared_ptr<Cancelator> cancelator_ = nullptr;
+  std::shared_ptr<Entropy> t_pre_entropy = nullptr;
+  std::shared_ptr<Entropy> p_pre_entropy = nullptr;
+  std::shared_ptr<Entropy> n_pre_entropy = nullptr;
+  std::shared_ptr<Entropy> t_post_entropy = nullptr;
+  std::shared_ptr<Entropy> p_post_entropy = nullptr;
+  std::shared_ptr<Entropy> n_post_entropy = nullptr;
+  std::size_t ngenerations, nignored, nparticles;
+  std::size_t gen = 0;
+  int Nnet = 0, Npos = 0, Nneg = 0, Ntot = 0;
+  int Wnet = 0, Wpos = 0, Wneg = 0, Wtot = 0;
   double r_sqrd = 0.;
-  std::vector<double> r_sqrd_vec;
+  bool converged = false;
+  bool combing = false;
+  bool calc_families = false;
+  bool pair_distance_sqrd = false;
+  bool empty_entropy_bins = false;
 
   void check_time(int gen);
 

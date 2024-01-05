@@ -23,6 +23,10 @@
  *
  * */
 #include <geometry/surfaces/surface.hpp>
+#include <geometry/surfaces/all_surfaces.hpp>
+#include <utils/error.hpp>
+
+#include <string>
 
 Surface::Surface(BoundaryType bound, uint32_t i_id, std::string i_name)
     : boundary_{bound}, id_{i_id}, name_{i_name} {}
@@ -32,3 +36,41 @@ BoundaryType Surface::boundary() const { return boundary_; }
 uint32_t Surface::id() const { return id_; }
 
 std::string Surface::name() const { return name_; }
+
+std::shared_ptr<Surface> make_surface(const YAML::Node& surface_node) {
+  // Try to get type
+  std::string surf_type;
+  if (surface_node["type"] && surface_node["type"].IsScalar())
+    surf_type = surface_node["type"].as<std::string>();
+  else {
+    // Error, all surfaces must have a type
+    fatal_error("Surface is missing \"type\" attribute.");
+  }
+
+  // Call appropriate function to build pointer to surface
+  std::shared_ptr<Surface> surf_pntr = nullptr;
+  if (surf_type == "xplane") {
+    surf_pntr = make_xplane(surface_node);
+  } else if (surf_type == "yplane") {
+    surf_pntr = make_yplane(surface_node);
+  } else if (surf_type == "zplane") {
+    surf_pntr = make_zplane(surface_node);
+  } else if (surf_type == "plane") {
+    surf_pntr = make_plane(surface_node);
+  } else if (surf_type == "xcylinder") {
+    surf_pntr = make_xcylinder(surface_node);
+  } else if (surf_type == "ycylinder") {
+    surf_pntr = make_ycylinder(surface_node);
+  } else if (surf_type == "zcylinder") {
+    surf_pntr = make_zcylinder(surface_node);
+  } else if (surf_type == "cylinder") {
+    surf_pntr = make_cylinder(surface_node);
+  } else if (surf_type == "sphere") {
+    surf_pntr = make_sphere(surface_node);
+  } else {
+    // Error, unknown surface type
+    fatal_error("Surface type \"" + surf_type + "\" is unknown.");
+  }
+
+  return surf_pntr;
+}

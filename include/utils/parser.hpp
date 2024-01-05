@@ -25,14 +25,7 @@
 #ifndef PARSER_H
 #define PARSER_H
 
-#include <cancelator/cancelator.hpp>
-#include <noise_source/noise_maker.hpp>
-#include <noise_source/noise_source.hpp>
 #include <simulation/simulation.hpp>
-#include <simulation/particle_mover.hpp>
-#include <source/source.hpp>
-#include <tallies/tallies.hpp>
-#include <utils/settings.hpp>
 
 #include <yaml-cpp/yaml.h>
 
@@ -48,12 +41,7 @@ extern std::map<uint32_t, size_t> universe_id_to_indx;
 
 //===========================================================================
 // Object to build Simulation
-extern std::vector<std::shared_ptr<Source>> sources;
-extern NoiseMaker noise_maker;
-extern std::shared_ptr<Tallies> tallies;
-extern std::shared_ptr<IParticleMover> particle_mover;
 extern std::shared_ptr<Simulation> simulation;
-extern std::shared_ptr<Cancelator> cancelator;
 extern std::string xspath;
 
 // Main function to parse input file
@@ -64,9 +52,6 @@ void make_materials(const YAML::Node& input, bool plotting_mode = false);
 
 // Only reads and builds geometry (used for plotting).
 void make_geometry(const YAML::Node& input);
-
-// Makes any type of surface from a surface yaml node
-void make_surface(const YAML::Node& surface_node);
 
 // Makes a universe based on wether cells or lattice
 void make_universe(const YAML::Node& uni_node, const YAML::Node& input);
@@ -79,23 +64,5 @@ void make_settings(const YAML::Node& input);
 
 // Reads tallies and populates pointer
 void make_tallies(const YAML::Node& input);
-
-// Reads input to make ParticleMover
-void make_particle_mover();
-
-// Reads regional cancellation bins
-void make_cancellation_bins(const YAML::Node& input);
-
-// Reads sources and populates sources vector
-void make_sources(const YAML::Node& input);
-
-// Reads noise sources and populates noise_sources vector
-void make_noise_sources(const YAML::Node& input);
-
-// Construct simulation pointer
-void make_simulation();
-
-// Get the entropy mesh if given
-void make_entropy_mesh(const YAML::Node& entropy);
 
 #endif

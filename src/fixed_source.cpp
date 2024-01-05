@@ -36,22 +36,27 @@
 
 void FixedSource::initialize() {}
 
+void FixedSource::add_source(std::shared_ptr<Source> src) {
+  if (src) sources.push_back(src);
+  else fatal_error("Was provided a nullptr Source.");
+}
+
 void FixedSource::print_header() {
   Output& out = Output::instance();
 
   // Change the header for the output based on wether or not the entropy is
   // being calculated
   out.write("\n");
-  out.write("  Gen   leakage   average +/- err\n");
+  out.write("  Batch   leakage   average +/- err\n");
   out.write(" ------------------------------------\n");
-  //           1120   1.23456   1.23456 +/- 0.00023
+  //            1120   1.23456   1.23456 +/- 0.00023
 }
 
 void FixedSource::mpi_setup() {
   // Calculate the base number of particles per node to run
   uint64_t base_particles_per_node =
-      static_cast<uint64_t>(settings::nparticles / mpi::size);
-  uint64_t remainder = static_cast<uint64_t>(settings::nparticles % mpi::size);
+      static_cast<uint64_t>(nparticles / mpi::size);
+  uint64_t remainder = static_cast<uint64_t>(nparticles % mpi::size);
 
   // Set the base number of particles per node in the node_nparticles vector
   mpi::node_nparticles.resize(static_cast<std::size_t>(mpi::size),
@@ -74,22 +79,18 @@ void FixedSource::mpi_setup() {
 
 void FixedSource::mpi_advance() {
   histories_counter +=
-      static_cast<uint64_t>(settings::nparticles) -
+      static_cast<uint64_t>(nparticles) -
       mpi::node_nparticles[static_cast<std::size_t>(mpi::rank)];
 }
 
 void FixedSource::run() {
   Output& out = Output::instance();
   out.write(" Running Fixed-Source Problem...\n");
-  out.write(" NPARTICLES: " + std::to_string(settings::nparticles) + ", ");
-  out.write(" NGENERATIONS: " + std::to_string(settings::ngenerations) + "\n");
+  out.write(" NPARTICLES: " + std::to_string(nparticles) + ", ");
+  out.write(" NBATCHES: " + std::to_string(nbatches) + "\n");
 
   // Calculate the number of particles that each node should run.
   mpi_setup();
-
-  // Make sure the settings is set to converged, as we dont need to
-  // allow for source convergence in fixed source calculations.
-  settings::converged = true;
 
   // Initialize vectors to hold particles
   std::vector<Particle> bank;
@@ -103,8 +104,8 @@ void FixedSource::run() {
   uint64_t node_nparticles =
       mpi::node_nparticles[static_cast<std::size_t>(mpi::rank)];
 
-  for (int g = 1; g <= settings::ngenerations; g++) {
-    gen = g;
+  for (std::size_t b = 1; b <= nbatches; g++) {
+    batch = g;
 
     // First, sample the sources and place into bank
     bank = this->sample_sources(node_nparticles);
@@ -131,16 +132,13 @@ void FixedSource::run() {
     bank.clear();
 
     // Output
-    generation_output(g);
+    batch_output(b);
 
     // Advance history counters so that each node starts at the right location
     // for the next batch.
     mpi_advance();
 
-    // Check if signal has been sent after generation keff has been
-    // recorded, and cancellation has occured. Otherwize source file
-    // will be larger than necessary, and wrong number of gens will be
-    // in output file based on number averaged for tallies.
+    // Check if signaled
     sync_signaled();
     if (signaled) premature_kill();
 
@@ -172,15 +170,13 @@ void FixedSource::run() {
   tallies->write_tallies();
 }
 
-void FixedSource::generation_output(int gen) {
+void FixedSource::batch_output(std::size_t batch) {
   std::stringstream output;
 
-  if (gen == 1) print_header();
+  if (batch == 1) print_header();
 
-  output << std::fixed << std::setw(5) << std::setfill(' ') << gen << "   "
-         << std::setprecision(5) << tallies->leakage();
-  output << "   " << tallies->leakage_avg() << " +/- " << tallies->leakage_err()
-         << "\n";
+  output << std::fixed << std::setw(5) << std::setfill(' ') << batch << "   " << std::setprecision(5) << tallies->leakage();
+  output << "   " << tallies->leakage_avg() << " +/- " << tallies->leakage_err() << "\n";
   Output::instance().write(output.str());
 }
 
@@ -203,9 +199,9 @@ void FixedSource::premature_kill() {
     // Looks like they really want to kill it.
     // Save everthing for them, and abort.
 
-    // Setting ngenerations to gen will cause us to exit the
+    // Setting nbatches to gen will cause us to exit the
     // transport loop as if we finished the simulation normally.
-    settings::ngenerations = gen;
+    nbatches = batch;
   } else if (mpi::rank == 0) {
     std::cout << "\n";
   }
@@ -214,9 +210,9 @@ void FixedSource::premature_kill() {
   signaled = false;
 }
 
-bool FixedSource::out_of_time(int gen) {
+bool FixedSource::out_of_time(std::size_t batch) {
   // Get the average time per batch
-  double T_avg = simulation_timer.elapsed_time() / static_cast<double>(gen);
+  double T_avg = simulation_timer.elapsed_time() / static_cast<double>(batch);
 
   // See how much time we have used so far.
   double T_used = settings::alpha_omega_timer.elapsed_time();
@@ -233,15 +229,15 @@ bool FixedSource::out_of_time(int gen) {
   return false;
 }
 
-void FixedSource::check_time(int gen) {
+void FixedSource::check_time(std::size_t batch) {
   bool should_stop_now = false;
-  if (mpi::rank == 0) should_stop_now = out_of_time(gen);
+  if (mpi::rank == 0) should_stop_now = out_of_time(batch);
 
   mpi::Allreduce_or(should_stop_now);
 
   if (should_stop_now) {
-    // Setting ngenerations to gen will cause us to exit the
+    // Setting nbatches to batch will cause us to exit the
     // transport loop as if we finished the simulation normally.
-    settings::ngenerations = gen;
+    batches = batch;
   }
 }

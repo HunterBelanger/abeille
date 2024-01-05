@@ -33,9 +33,9 @@
 
 class Noise : public Simulation {
  public:
-  Noise(std::shared_ptr<Tallies> i_t, std::shared_ptr<Transporter> i_tr,
+  Noise(std::shared_ptr<IParticleMover> i_pm,
         std::vector<std::shared_ptr<Source>> srcs, NoiseMaker noise_mkr)
-      : Simulation(i_t, i_tr, srcs),
+      : Simulation(i_pm, srcs),
         noise_maker(noise_mkr),
         bank(),
         noise_bank(),

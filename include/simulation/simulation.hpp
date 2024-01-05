@@ -25,82 +25,37 @@
 #ifndef SIMULATION_H
 #define SIMULATION_H
 
-#include <geometry/geometry.hpp>
-#include <simulation/entropy.hpp>
 #include <simulation/particle_mover.hpp>
-#include <source/source.hpp>
-#include <tallies/tallies.hpp>
-#include <utils/rng.hpp>
-#include <utils/settings.hpp>
 #include <utils/timer.hpp>
 
+#include <yaml-cpp/yaml.h>
+
 #include <sstream>
+#include <memory>
 
 class Simulation {
  public:
-  Simulation(std::shared_ptr<Tallies> i_t, std::shared_ptr<IParticleMover> i_pm,
-             std::vector<std::shared_ptr<Source>> srcs);
+  Simulation(std::shared_ptr<IParticleMover> i_pm);
   virtual ~Simulation() = default;
 
   virtual void initialize() = 0;
   virtual void run() = 0;
-
   virtual void premature_kill() = 0;
 
   // Method to sample sources
   std::vector<Particle> sample_sources(std::size_t N);
 
-  // Methods to set entropies
-  void set_p_pre_entropy(std::shared_ptr<Entropy> entrpy) {
-    p_pre_entropy = entrpy;
-  }
-  void set_n_pre_entropy(std::shared_ptr<Entropy> entrpy) {
-    n_pre_entropy = entrpy;
-  }
-  void set_t_pre_entropy(std::shared_ptr<Entropy> entrpy) {
-    t_pre_entropy = entrpy;
-  }
-
-  void set_p_post_entropy(std::shared_ptr<Entropy> entrpy) {
-    p_post_entropy = entrpy;
-  }
-  void set_n_post_entropy(std::shared_ptr<Entropy> entrpy) {
-    n_post_entropy = entrpy;
-  }
-  void set_t_post_entropy(std::shared_ptr<Entropy> entrpy) {
-    t_post_entropy = entrpy;
-  }
-
   bool signaled = false;
   bool terminate = false;
 
  protected:
-  std::shared_ptr<Tallies> tallies;
   std::shared_ptr<IParticleMover> particle_mover;
-  std::vector<std::shared_ptr<Source>> sources;
 
   Timer simulation_timer;
 
   uint64_t histories_counter = 0;
   uint64_t global_histories_counter = 0;
   uint64_t transported_histories = 0;
-
-  // All entropy bins possible
-  std::shared_ptr<Entropy> p_pre_entropy = nullptr;
-  std::shared_ptr<Entropy> n_pre_entropy = nullptr;
-  std::shared_ptr<Entropy> t_pre_entropy = nullptr;
-  std::vector<double> p_pre_entropy_vec;
-  std::vector<double> n_pre_entropy_vec;
-  std::vector<double> t_pre_entropy_vec;
-
-  std::shared_ptr<Entropy> p_post_entropy = nullptr;
-  std::shared_ptr<Entropy> n_post_entropy = nullptr;
-  std::shared_ptr<Entropy> t_post_entropy = nullptr;
-  std::vector<double> p_post_entropy_vec;
-  std::vector<double> n_post_entropy_vec;
-  std::vector<double> t_post_entropy_vec;
-
-  std::vector<double> empty_entropy_frac_vec;
 
   void sync_signaled();
   void sync_banks(std::vector<uint64_t>& nums,
@@ -109,5 +64,7 @@ class Simulation {
   void write_source(std::vector<Particle>& bank) const;
 
 };  // Simulation
+
+std::shared_ptr<Simulation> make_simulation(const YAML::Node& input);
 
 #endif  // MG_SIMULATION_H

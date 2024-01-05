@@ -53,10 +53,16 @@ struct ThreadLocalScores {
   }
 };
 
+// This is a singleton which holds all the tallies for the simulation
 class Tallies {
  public:
-  Tallies(double tot_wgt);
+  Tallies(const Tallies&) = delete;
+  Tallies(Tallies&&) = delete;
+  Tallies& operator=(const Tallies&) = delete;
+  Tallies& operator=(Tallies&&) = delete;
   ~Tallies() = default;
+
+  static Tallies& instance();
 
   void add_collision_mesh_tally(std::shared_ptr<CollisionMeshTally> cetally);
   void add_track_length_mesh_tally(
@@ -169,6 +175,7 @@ class Tallies {
   int generations() const { return gen; }
 
  private:
+  Tallies();
   int gen = 0;
   double keff_ = 1.;
 

@@ -31,14 +31,7 @@
 #include <random>
 
 namespace settings {
-int nparticles = 100000;  // Number of particles per batch / generation
-int ngenerations = 120;
-int nignored = 20;
-int nskip =
-    10;  // Number of power iteration generations between each noise batch
-
 uint32_t ngroups = 0;
-int n_cancel_noise_gens = INF_INT;
 
 bool plotting_mode = false;
 
@@ -47,46 +40,20 @@ double max_time = INF;
 
 double min_energy = 0.;       // [MeV]
 double max_energy = 100000.;  // [MeV]
-
 double target_at_rest_threshold = 400.;
+bool use_urr_ptables = true;
 
-SimulationMode mode = SimulationMode::K_EIGENVALUE;
-TrackingMode tracking = TrackingMode::SURFACE_TRACKING;
-CollisionMode collisions = CollisionMode::BRANCHING;
 EnergyMode energy_mode = EnergyMode::CE;
 
 uint64_t rng_seed = 19073486328125;
 uint64_t rng_stride = 152917;
 pcg32 rng;
+bool rng_stride_warnings = false;
 
 // double wgt_cutoff = 0.8;  // Needs to be high for noise !
 double wgt_cutoff = 0.25;
 double wgt_survival = 1.0;
 double wgt_split = 2.0;
-
-double w_noise = -1.;
-double eta = 1.;   // Used in noise transport
-double keff = 1.;  // Used in noise transport
-
-bool use_urr_ptables = true;
-
-bool converged = false;
-
-bool pair_distance_sqrd = false;
-bool families = false;
-bool empty_entropy_bins = false;
-
-bool regional_cancellation = false;
-bool regional_cancellation_noise = false;
-
-bool inner_generations = true;
-bool normalize_noise_source = true;
-bool rng_stride_warnings = false;
-
-bool load_source_file = false;
-
-bool combing = true;
-bool branchless_splitting = false;
 
 // Energy bounds for multi-group mode
 std::vector<double> energy_bounds{};
@@ -102,10 +69,6 @@ std::size_t group(double E) {
   // Should never get here
   return 0;
 }
-std::vector<double> sample_xs_ratio{};
-
-std::string output_file_name = "output.txt";
-std::string in_source_file_name = "";
 
 std::unique_ptr<NDDirectory> nd_directory = nullptr;
 std::string nd_directory_fname;
@@ -124,40 +87,6 @@ void write_settings_to_output() {
   // Get reference to HDF5 file
   H5::File& h5 = Output::instance().h5();
 
-  // Simulation Mode
-  switch (mode) {
-    case SimulationMode::K_EIGENVALUE:
-      h5.createAttribute<std::string>("mode", "k-eigenvalue");
-      break;
-    case SimulationMode::FIXED_SOURCE:
-      h5.createAttribute<std::string>("mode", "fixed-source");
-      break;
-    case SimulationMode::MODIFIED_FIXED_SOURCE:
-      h5.createAttribute<std::string>("mode", "modified-fixed-source");
-      break;
-    case SimulationMode::NOISE:
-      h5.createAttribute<std::string>("mode", "noise");
-      break;
-  }
-
-  // Branchless specific things
-  if (mode == SimulationMode::K_EIGENVALUE) {
-    h5.createAttribute<bool>("combing", combing);
-  }
-
-  // Noise specific things
-  if (mode == SimulationMode::NOISE) {
-    h5.createAttribute("nskip", nskip);
-
-    h5.createAttribute("noise-angular-frequency", w_noise);
-
-    h5.createAttribute("keff", keff);
-
-    h5.createAttribute<bool>("inner-generations", inner_generations);
-
-    h5.createAttribute<bool>("normalize-noise-source", normalize_noise_source);
-  }
-
   // Energy Mode
   switch (energy_mode) {
     case EnergyMode::CE:
@@ -168,49 +97,12 @@ void write_settings_to_output() {
       break;
   }
 
-  // Tracking Mode
-  switch (tracking) {
-    case TrackingMode::SURFACE_TRACKING:
-      h5.createAttribute<std::string>("transport", "surface-tracking");
-      break;
-    case TrackingMode::DELTA_TRACKING:
-      h5.createAttribute<std::string>("transport", "delta-tracking");
-      break;
-    case TrackingMode::IMPLICIT_LEAKAGE_DELTA_TRACKING:
-      h5.createAttribute<std::string>("transport",
-                                      "implicit-leakage-delta-tracking");
-      break;
-    case TrackingMode::CARTER_TRACKING:
-      h5.createAttribute<std::string>("transport", "carter-tracking");
-      break;
-  }
-
-  // Collision Mode
-  switch (collisions) {
-    case CollisionMode::BRANCHING:
-      h5.createAttribute<std::string>("collisions", "branching");
-      break;
-    case CollisionMode::BRANCHLESS_ISOTOPE:
-      h5.createAttribute<std::string>("collisions", "branchless-isotope");
-      break;
-    case CollisionMode::BRANCHLESS_MATERIAL:
-      h5.createAttribute<std::string>("collisions", "branchless-material");
-      break;
-  }
-
-  if (collisions == CollisionMode::BRANCHLESS_ISOTOPE || collisions == CollisionMode::BRANCHLESS_MATERIAL) {
-    h5.createAttribute<bool>("branchless-splitting", branchless_splitting);
-  }
 
   // MG CT specific
   if (energy_mode == EnergyMode::MG) {
     h5.createAttribute("ngroups", ngroups);
 
     h5.createAttribute("energy-bounds", energy_bounds);
-
-    if (tracking == TrackingMode::CARTER_TRACKING) {
-      h5.createAttribute("sampling-xs-ratio", sample_xs_ratio);
-    }
   }
 
   if (energy_mode == EnergyMode::CE) {
@@ -238,12 +130,6 @@ void write_settings_to_output() {
   }
 
   // Common bits
-  h5.createAttribute("nparticles", nparticles);
-
-  h5.createAttribute("ngenerations", ngenerations);
-
-  h5.createAttribute("nignored", nignored);
-
   h5.createAttribute("max-run-time", max_time);
 
   h5.createAttribute("rng-stride-warnings", rng_stride_warnings);
@@ -257,17 +143,5 @@ void write_settings_to_output() {
   h5.createAttribute("wgt-survival", wgt_survival);
 
   h5.createAttribute("wgt-split", wgt_split);
-
-  h5.createAttribute<bool>("cancellation", regional_cancellation);
-
-  h5.createAttribute<bool>("noise-cancellation", regional_cancellation_noise);
-
-  h5.createAttribute("cancel-noise-gens", n_cancel_noise_gens);
-
-  h5.createAttribute<bool>("pair-distance-sqrt", pair_distance_sqrd);
-
-  h5.createAttribute<bool>("families", families);
-
-  h5.createAttribute<bool>("empty-entropy-bins", empty_entropy_bins);
 }
 }  // namespace settings
