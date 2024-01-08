@@ -70,6 +70,10 @@ class Tallies {
   void add_source_mesh_tally(std::shared_ptr<SourceMeshTally> stally);
   void add_noise_source_mesh_tally(std::shared_ptr<SourceMeshTally> stally);
 
+  void allocate_batch_arrays(std::size_t nbatches);
+
+  void verify_track_length_tallies(bool track_length_transporter) const;
+
   void score_collision(const Particle& p, MaterialHelper& mat) {
     // Only do spacial tallies if scoring is on
     if (scoring_ && !collision_mesh_tallies_.empty()) {
@@ -163,9 +167,15 @@ class Tallies {
     return std::sqrt(mig_var / static_cast<double>(gen));
   }
 
-  void write_tallies();
+  void write_tallies(bool track_length_compatible);
 
-  void set_total_weight(double tot_wgt) { total_weight = tot_wgt; }
+  void set_total_weight(double tot_wgt) {
+    total_weight = tot_wgt;
+    for (auto& t : track_length_mesh_tallies_) t->set_net_weight(total_weight);
+    for (auto& t : collision_mesh_tallies_) t->set_net_weight(total_weight);
+    for (auto& t : source_mesh_tallies_) t->set_net_weight(total_weight);
+    for (auto& t : noise_source_mesh_tallies_) t->set_net_weight(total_weight);
+  }
 
   int generations() const { return gen; }
 

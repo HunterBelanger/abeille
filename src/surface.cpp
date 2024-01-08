@@ -22,8 +22,8 @@
  * along with Abeille. If not, see <https://www.gnu.org/licenses/>.
  *
  * */
-#include <geometry/surfaces/surface.hpp>
 #include <geometry/surfaces/all_surfaces.hpp>
+#include <geometry/surfaces/surface.hpp>
 #include <utils/error.hpp>
 
 #include <string>

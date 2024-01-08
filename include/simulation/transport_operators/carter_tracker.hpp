@@ -32,12 +32,22 @@
 #include <PapillonNDL/energy_grid.hpp>
 
 #include <memory>
+#include <vector>
 
 class CarterTracker {
  public:
-  CarterTracker();
+  CarterTracker(const std::vector<double>& mgxs);
+  CarterTracker(const std::vector<double>& energy,
+                const std::vector<double>& xs);
 
-  void transport(Particle& p, Tracker& trkr, MaterialHelper& mat, ThreadLocalScores& thread_scores) const;
+  void transport(Particle& p, Tracker& trkr, MaterialHelper& mat,
+                 ThreadLocalScores& thread_scores) const;
+
+  bool exact_cancellation_compatible() const { return true; }
+
+  bool track_length_compatible() const { return false; }
+
+  void write_output_info(const std::string& base) const;
 
  private:
   std::shared_ptr<pndl::EnergyGrid> EGrid;

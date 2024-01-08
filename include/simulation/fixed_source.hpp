@@ -40,6 +40,7 @@ class FixedSource : public Simulation {
   void initialize() override final;
   void run() override final;
   void premature_kill() override final;
+  void write_output_info() const override final;
 
   void set_nparticles(std::size_t np) { nparticles = np; }
   void set_nbatches(std::size_t nb) { nbatches = nb; }

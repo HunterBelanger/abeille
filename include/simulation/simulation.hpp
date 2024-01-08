@@ -25,13 +25,16 @@
 #ifndef SIMULATION_H
 #define SIMULATION_H
 
+#include <simulation/particle.hpp>
 #include <simulation/particle_mover.hpp>
+#include <source/source.hpp>
 #include <utils/timer.hpp>
 
 #include <yaml-cpp/yaml.h>
 
-#include <sstream>
 #include <memory>
+#include <sstream>
+#include <vector>
 
 class Simulation {
  public:
@@ -41,9 +44,10 @@ class Simulation {
   virtual void initialize() = 0;
   virtual void run() = 0;
   virtual void premature_kill() = 0;
+  virtual void write_output_info() const = 0;
 
-  // Method to sample sources
-  std::vector<Particle> sample_sources(std::size_t N);
+  std::vector<Particle> sample_sources(
+      const std::vector<std::shared_ptr<Source>>& sources, std::size_t N);
 
   bool signaled = false;
   bool terminate = false;

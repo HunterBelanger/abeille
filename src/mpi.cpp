@@ -22,7 +22,7 @@
  * along with Abeille. If not, see <https://www.gnu.org/licenses/>.
  *
  * */
-#include <simulation/exact_mg_cancelator.hpp>
+#include <cancelator/exact_mg_cancelator.hpp>
 #include <simulation/particle.hpp>
 #include <utils/error.hpp>
 #include <utils/mpi.hpp>

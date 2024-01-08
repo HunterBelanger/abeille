@@ -39,8 +39,9 @@ class NoiseFissionOperator {
  public:
   NoiseFissionOperator() = default;
 
-  void fission(Particle& p, const MicroXSs& xs, const Nuclide& nuc, double omega) const {
-    const int n_new = this->n_fission_neutrons(p, xs, p.rng);
+  void fission(Particle& p, const MicroXSs& xs, const Nuclide& nuc,
+               double omega, double keff) const {
+    const int n_new = this->n_fission_neutrons(p, xs, keff);
 
     // Probability of a fission neutron being a delayed neutron.
     const double P_delayed = xs.nu_delayed / xs.nu_total;
@@ -59,7 +60,8 @@ class NoiseFissionOperator {
         std::complex<double> wgt_cmpx{wgt, wgt2};
         double lambda = finfo.precursor_decay_constant;
         double denom = (lambda * lambda) + (omega * omega);
-        std::complex<double> mult{lambda * lambda / denom, -lambda * omega / denom};
+        std::complex<double> mult{lambda * lambda / denom,
+                                  -lambda * omega / denom};
         wgt_cmpx *= mult;
         wgt = wgt_cmpx.real();
         wgt2 = wgt_cmpx.imag();
@@ -86,13 +88,12 @@ class NoiseFissionOperator {
   }
 
  private:
-  int n_fission_neutrons(Particle& p, const MicroXSs& xs,
-                         pcg32& rng) const {
+  int n_fission_neutrons(Particle& p, const MicroXSs& xs, double keff) const {
     // When transporting noise particles, we don't normalize the number of
     // generated particles by the weight ! We also scale by keff to make the
     // problem "critical".
     return static_cast<int>(
-        std::floor(xs.nu_total * xs.fission / (xs.total * Tallies::instance().keff())) +
+        std::floor(xs.nu_total * xs.fission / (xs.total * keff)) +
         RNG::rand(p.rng));
   }
 

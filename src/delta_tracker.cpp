@@ -48,20 +48,25 @@ DeltaTracker::DeltaTracker() : EGrid(nullptr), Emaj(nullptr) {
   auto Egrid_Emaj_pair = make_majorant_xs();
   EGrid = std::make_shared<pndl::EnergyGrid>(Egrid_Emaj_pair.first);
   Emaj = std::make_shared<pndl::CrossSection>(Egrid_Emaj_pair.second, EGrid, 0);
+}
 
-  if (mpi::rank == 0) {
-    // We now create a temporary array, which will hold the majorant xs info,
-    // so we can save it to the output file.
-    NDArray<double> maj_xs({2, Egrid_Emaj_pair.first.size()});
-    for (std::size_t i = 0; i < Egrid_Emaj_pair.first.size(); i++) {
-      maj_xs(0, i) = Egrid_Emaj_pair.first[i];
-      maj_xs(1, i) = Egrid_Emaj_pair.second[i];
-    }
-    auto& h5 = Output::instance().h5();
-    auto maj_xs_ds =
-        h5.createDataSet<double>("majorant-xs", H5::DataSpace(maj_xs.shape()));
-    maj_xs_ds.write_raw(&maj_xs[0]);
+void DeltaTracker::write_output_info(const std::string& base) const {
+  if (mpi::rank != 0) return;
+
+  auto& h5 = Output::instance().h5();
+  h5.createAttribute<std::string>(base + "transport-operator",
+                                  "delta-tracking");
+
+  // We now create a temporary array, which will hold the majorant xs info,
+  // so we can save it to the output file.
+  NDArray<double> maj_xs({2, EGrid->size()});
+  for (std::size_t i = 0; i < EGrid->size(); i++) {
+    maj_xs(0, i) = (*EGrid)[i];
+    maj_xs(1, i) = (*Emaj)[i];
   }
+  auto maj_xs_ds = h5.createDataSet<double>(base + "majorant-xs",
+                                            H5::DataSpace(maj_xs.shape()));
+  maj_xs_ds.write_raw(&maj_xs[0]);
 }
 
 void DeltaTracker::transport(Particle& p, Tracker& trkr, MaterialHelper& mat,
@@ -93,7 +98,7 @@ void DeltaTracker::transport(Particle& p, Tracker& trkr, MaterialHelper& mat,
     // This is here because flux-like tallies are allowed with DT.
     // No other quantity should be scored with a TLE, as an error
     // should have been thrown when building all tallies.
-    Tallies::instance().score_flight(p, std::min(d_coll, bound.distance), mat, settings::converged);
+    Tallies::instance().score_flight(p, std::min(d_coll, bound.distance), mat);
 
     if (crossed_boundary) {
       if (bound.boundary_type == BoundaryType::Vacuum) {

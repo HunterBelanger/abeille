@@ -26,8 +26,8 @@
 #define POWER_ITERATOR_H
 
 #include <cancelator/cancelator.hpp>
-#include <simulation/simulation.hpp>
 #include <simulation/entropy.hpp>
+#include <simulation/simulation.hpp>
 #include <source/source.hpp>
 
 #include <yaml-cpp/yaml.h>
@@ -39,14 +39,13 @@
 
 class PowerIterator : public Simulation {
  public:
-  PowerIterator(std::shared_ptr<IParticleMover> i_pm) : Simulation(i_pm) {};
+  PowerIterator(std::shared_ptr<IParticleMover> i_pm) : Simulation(i_pm){};
   ~PowerIterator() = default;
 
   void initialize() override final;
-
   void run() override final;
-
   void premature_kill() override final;
+  void write_output_info() const override final;
 
   void set_cancelator(std::shared_ptr<Cancelator> cncl);
   void set_entropy(const Entropy& entropy);
@@ -67,11 +66,14 @@ class PowerIterator : public Simulation {
   std::vector<int> Nnet_vec{}, Npos_vec{}, Nneg_vec{}, Ntot_vec{};
   std::vector<int> Wnet_vec{}, Wpos_vec{}, Wneg_vec{}, Wtot_vec{};
   std::vector<double> r_sqrd_vec{};
-  std::vector<double> t_pre_entropy_vec{}, p_pre_entropy_vec{}, n_pre_entropy_vec{};
-  std::vector<double> t_post_entropy_vec{}, p_post_entropy_vec{}, n_post_entropy_vec{};
+  std::vector<double> t_pre_entropy_vec{}, p_pre_entropy_vec{},
+      n_pre_entropy_vec{};
+  std::vector<double> t_post_entropy_vec{}, p_post_entropy_vec{},
+      n_post_entropy_vec{};
+  std::vector<double> empty_entropy_frac_vec{};
   std::string in_source_file_name{};
   std::unordered_set<uint64_t> families_set{};
-  std::shared_ptr<Cancelator> cancelator_ = nullptr;
+  std::shared_ptr<Cancelator> cancelator = nullptr;
   std::shared_ptr<Entropy> t_pre_entropy = nullptr;
   std::shared_ptr<Entropy> p_pre_entropy = nullptr;
   std::shared_ptr<Entropy> n_pre_entropy = nullptr;
@@ -89,9 +91,9 @@ class PowerIterator : public Simulation {
   bool pair_distance_sqrd = false;
   bool empty_entropy_bins = false;
 
-  void check_time(int gen);
+  void check_time(std::size_t gen);
 
-  bool out_of_time(int gen);
+  bool out_of_time(std::size_t gen);
 
   void generation_output();
 
@@ -118,6 +120,6 @@ class PowerIterator : public Simulation {
 
 };  // PowerIterator
 
-std::make_shared<PowerIterator> make_power_iterator(const YAML::Node& sim);
+std::shared_ptr<PowerIterator> make_power_iterator(const YAML::Node& sim);
 
 #endif  // MG_POWER_ITERATOR_H

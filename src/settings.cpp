@@ -100,7 +100,6 @@ void write_settings_to_output() {
       break;
   }
 
-
   // MG CT specific
   if (energy_mode == EnergyMode::MG) {
     h5.createAttribute("ngroups", ngroups);

@@ -35,8 +35,7 @@ class FissionOperator {
   FissionOperator() = default;
 
   void fission(Particle& p, const MicroXSs& xs, const Nuclide& nuc) const {
-    const int n_new =
-        static_cast<const T*>(this)->n_fission_neutrons(p, xs, p.rng);
+    const int n_new = static_cast<const T*>(this)->n_fission_neutrons(p, xs);
 
     // Probability of a fission neutron being a delayed neutron.
     const double P_delayed = xs.nu_delayed / xs.nu_total;

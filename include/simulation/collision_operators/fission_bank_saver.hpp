@@ -28,12 +28,12 @@
 #include <simulation/particle.hpp>
 
 class FissionBankSaver {
-  public:
-    FissionBankSaver() = default;
+ public:
+  FissionBankSaver() = default;
 
-    void save_fission_particle(Particle& p, BankedParticle& fp) const {
-      p.add_fission_particle(fp);
-    }
+  void save_fission_particle(Particle& p, BankedParticle& fp) const {
+    p.add_fission_particle(fp);
+  }
 };
 
 #endif

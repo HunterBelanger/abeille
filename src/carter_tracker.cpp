@@ -24,8 +24,8 @@
  * */
 #include <materials/material.hpp>
 #include <materials/material_helper.hpp>
-#include <simulation/transport_operators/carter_tracker.hpp>
 #include <simulation/tracker.hpp>
+#include <simulation/transport_operators/carter_tracker.hpp>
 #include <utils/constants.hpp>
 #include <utils/error.hpp>
 #include <utils/majorant.hpp>
@@ -38,53 +38,106 @@
 
 #include <ndarray.hpp>
 
+#include <algorithm>
 #include <cmath>
 #include <memory>
 #include <sstream>
 #include <vector>
 
-// Currently, carter tracking just finds the majorant xs like is done in
-// delta tracking. I am not sure yet how we will implement under-estimations
-// of the xs in continuous energy, so for now, we just have this.
-CarterTracker::CarterTracker() : EGrid(nullptr), Esmp(nullptr) {
-  Output::instance().write(" Finding majorant cross sections.\n");
-  auto Egrid_Emaj_pair = make_majorant_xs();
-  EGrid = std::make_shared<pndl::EnergyGrid>(Egrid_Emaj_pair.first);
-  Esmp = std::make_shared<pndl::CrossSection>(Egrid_Emaj_pair.second, EGrid, 0);
-
-  if (settings::energy_mode == settings::EnergyMode::MG) {
-    for (uint32_t g = 0; g < settings::ngroups; g++) {
-      // Get the energy at the mid-point for the group
-      size_t i = g * 2;
-      double Eg =
-          0.5 * (Egrid_Emaj_pair.first[i] + Egrid_Emaj_pair.first[i + 1]);
-
-      double xs = (*Esmp)(Eg);
-      Egrid_Emaj_pair.second[i] = xs * settings::sample_xs_ratio[g];
-      Egrid_Emaj_pair.second[i + 1] = xs * settings::sample_xs_ratio[g];
-    }
-
-    EGrid = std::make_shared<pndl::EnergyGrid>(Egrid_Emaj_pair.first);
-    Esmp =
-        std::make_shared<pndl::CrossSection>(Egrid_Emaj_pair.second, EGrid, 0);
+CarterTracker::CarterTracker(const std::vector<double>& mgxs)
+    : EGrid(nullptr), Esmp(nullptr) {
+  if (settings::energy_mode == settings::EnergyMode::CE) {
+    fatal_error(
+        "Using multi-group constructor for continuous energy simulation.");
   }
 
-  if (mpi::rank == 0) {
-    // We now create a temporary array, which will hold the sampling xs info,
-    // so we can save it to the output file.
-    NDArray<double> smp_xs({2, Egrid_Emaj_pair.first.size()});
-    for (std::size_t i = 0; i < Egrid_Emaj_pair.first.size(); i++) {
-      smp_xs(0, i) = Egrid_Emaj_pair.first[i];
-      smp_xs(1, i) = Egrid_Emaj_pair.second[i];
-    }
-    auto& h5 = Output::instance().h5();
-    auto smp_xs_ds =
-        h5.createDataSet<double>("sampling-xs", H5::DataSpace(smp_xs.shape()));
-    smp_xs_ds.write_raw(&smp_xs[0]);
+  if (mgxs.size() != settings::ngroups) {
+    std::stringstream mssg;
+    mssg << "Number of provided sampling cross section values does not agree "
+            "with the number of energy groups.";
+    fatal_error(mssg.str());
   }
+
+  // Make the energy grid vector from the group bounds vector, and fill xs
+  std::vector<double> egrid, xs;
+  egrid.reserve(2 * settings::ngroups);
+  xs.reserve(2 * settings::ngroups);
+  std::size_t grp = 0;
+  for (std::size_t i = 0; i < settings::energy_bounds.size(); i++) {
+    egrid.push_back(settings::energy_bounds[i]);
+
+    if (i != 0 && i != (settings::energy_bounds.size() - 1)) {
+      egrid.push_back(settings::energy_bounds[i]);
+    }
+
+    if (grp < settings::ngroups) {
+      const auto xsval = mgxs[grp];
+
+      if (xsval <= 0.) {
+        fatal_error("Sampling cross section must be > 0.");
+      }
+
+      xs.push_back(xsval);
+      xs.push_back(xsval);
+    }
+  }
+
+  EGrid = std::make_shared<pndl::EnergyGrid>(egrid);
+  Esmp = std::make_shared<pndl::CrossSection>(xs, EGrid, 0);
 }
 
-void CarterTracker::transport(Particle& p, Tracker& trkr, MaterialHelper& mat, ThreadLocalScores& thread_scores) const {
+CarterTracker::CarterTracker(const std::vector<double>& egrid,
+                             const std::vector<double>& xs)
+    : EGrid(nullptr), Esmp(nullptr) {
+  if (settings::energy_mode == settings::EnergyMode::MG) {
+    fatal_error(
+        "Using continuous energy constructor for multi-group simulation.");
+  }
+
+  if (xs.size() != egrid.size()) {
+    std::stringstream mssg;
+    mssg << "Size of energy grid does not agree with size of cross section "
+            "array.";
+    fatal_error(mssg.str());
+  }
+
+  // Make sure energy grid is sorted
+  if (std::is_sorted(egrid.begin(), egrid.end()) == false) {
+    fatal_error("Sampling cross section energy grid is not sorted.");
+  }
+
+  // Make sure sampling xs is positive
+  for (const auto& v : xs) {
+    if (v <= 0.) {
+      fatal_error("Sampling cross section must be > 0.");
+    }
+  }
+
+  EGrid = std::make_shared<pndl::EnergyGrid>(egrid);
+  Esmp = std::make_shared<pndl::CrossSection>(xs, EGrid, 0);
+}
+
+void CarterTracker::write_output_info(const std::string& base) const {
+  if (mpi::rank != 0) return;
+
+  auto& h5 = Output::instance().h5();
+  h5.createAttribute<std::string>(base + "transport-operator",
+                                  "carter-tracking");
+
+  // We now create a temporary array, which will hold the sampling xs info,
+  // so we can save it to the output file.
+  NDArray<double> smp_xs({2, EGrid->size()});
+  for (std::size_t i = 0; i < EGrid->size(); i++) {
+    smp_xs(0, i) = (*EGrid)[i];
+    smp_xs(1, i) = (*Esmp)[i];
+  }
+  auto smp_xs_ds = h5.createDataSet<double>(base + "sampling-xs",
+                                            H5::DataSpace(smp_xs.shape()));
+  smp_xs_ds.write_raw(&smp_xs[0]);
+}
+
+void CarterTracker::transport(Particle& p, Tracker& trkr, MaterialHelper& mat,
+                              ThreadLocalScores& thread_scores) const {
   bool had_collision = false;
   while (p.is_alive() && had_collision == false) {
     bool crossed_boundary = false;
@@ -112,7 +165,7 @@ void CarterTracker::transport(Particle& p, Tracker& trkr, MaterialHelper& mat, T
     // This is here because flux-like tallies are allowed with DT.
     // No other quantity should be scored with a TLE, as an error
     // should have been thrown when building all tallies.
-    Tallies::instance().score_flight(p, std::min(d_coll, bound.distance), mat, settings::converged);
+    Tallies::instance().score_flight(p, std::min(d_coll, bound.distance), mat);
 
     if (crossed_boundary) {
       if (bound.boundary_type == BoundaryType::Vacuum) {
@@ -135,8 +188,8 @@ void CarterTracker::transport(Particle& p, Tracker& trkr, MaterialHelper& mat, T
                                          bound.surface_index)]
                       ->id();
           mssg << " at a distance of " << bound.distance << " cm.\n";
-          mssg << "Currently lost at r = " << trkr.r()
-               << ", u = " << trkr.u() << ".";
+          mssg << "Currently lost at r = " << trkr.r() << ", u = " << trkr.u()
+               << ".";
           fatal_error(mssg.str());
         }
         bound = trkr.get_boundary_condition();

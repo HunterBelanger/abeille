@@ -42,21 +42,21 @@ universes:
 
 root-universe: 1
 
-sources:
-  - spatial:
-      type: point
-      position: [0., 0., 0.]
-    energy:
-      type: mono-energetic
-      energy: 0.7
-    direction:
-      type: isotropic
-    weight: 1.
-
 settings:
+  use-dbrc: false
+
+simulation:
+  mode: k-eigenvalue
   nparticles: 10000
   ngenerations: 2100
   nignored: 100
-  use-dbrc: false
-  transport: surface-tracking
-  simulation: k-eigenvalue
+  sources:
+    - spatial:
+        type: point
+        position: [0., 0., 0.]
+      energy:
+        type: mono-energetic
+        energy: 0.7
+      direction:
+        type: isotropic
+      weight: 1.

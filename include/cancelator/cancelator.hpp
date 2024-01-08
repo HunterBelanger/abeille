@@ -26,6 +26,7 @@
 #define CANCELATOR_H
 
 #include <simulation/particle.hpp>
+#include <simulation/particle_mover.hpp>
 #include <utils/rng.hpp>
 
 #include <yaml-cpp/yaml.h>
@@ -40,6 +41,8 @@ class Cancelator {
   virtual void perform_cancellation() = 0;
   virtual std::vector<BankedParticle> get_new_particles(pcg32& rng) = 0;
   virtual void clear() = 0;
+  virtual void check_particle_mover_compatibility(
+      const std::shared_ptr<IParticleMover>& pmover) const = 0;
 };
 
 std::shared_ptr<Cancelator> make_cancelator(const YAML::Node& node);

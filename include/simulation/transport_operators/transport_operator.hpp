@@ -30,11 +30,18 @@
 #include <simulation/tracker.hpp>
 #include <tallies/tallies.hpp>
 
+#include <concepts>
+#include <string>
+
 template <typename T>
 concept TransportOperator = requires(T t, Particle& p, Tracker& trkr,
                                      MaterialHelper& mat,
-                                     ThreadLocalScores& thread_scores) {
-  t.transport(p, trkr, mat, thread_scores);
+                                     ThreadLocalScores& thread_scores,
+                                     const std::string& base) {
+  { t.transport(p, trkr, mat, thread_scores) } -> std::same_as<void>;
+  { t.exact_cancellation_compatible() } -> std::same_as<bool>;
+  { t.track_length_compatible() } -> std::same_as<bool>;
+  { t.write_output_info(base) } -> std::same_as<void>;
 };
 
 #endif

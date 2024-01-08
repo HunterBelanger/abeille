@@ -26,9 +26,9 @@
 #define NOISE_PARAMETERS_H
 
 struct NoiseParameters {
-    double omega; // Angular noise frequency
-    double eta;
-    double keff;
+  double omega;  // Angular noise frequency
+  double eta;
+  double keff;
 };
 
 #endif

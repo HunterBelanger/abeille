@@ -39,7 +39,8 @@ class Entropy {
   enum Sign { Positive, Negative, Total };
 
  public:
-  Entropy(Position low, Position up, std::array<uint32_t, 3> shp, Sign sgn = Sign::Positive)
+  Entropy(Position low, Position up, std::array<uint32_t, 3> shp,
+          Sign sgn = Sign::Positive)
       : lower_corner{low},
         upper_corner{up},
         shape{shp},

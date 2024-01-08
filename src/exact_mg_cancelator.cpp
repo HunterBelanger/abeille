@@ -114,6 +114,15 @@ ExactMGCancelator::ExactMGCancelator(
   if (Key::shape[3] == 0) Key::shape[3] = 1;
 }
 
+void ExactMGCancelator::check_particle_mover_compatibility(
+    const std::shared_ptr<IParticleMover>& pmover) const {
+  if (pmover->exact_cancellation_compatible() == false) {
+    fatal_error(
+        "Selected transport operator is incompatible with exact regional "
+        "cancellation.");
+  }
+}
+
 std::optional<ExactMGCancelator::Key> ExactMGCancelator::get_key(
     const Position& r, std::size_t g) {
   // If we are outside the spatial mesh, return nullopt.

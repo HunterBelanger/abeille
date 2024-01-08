@@ -401,19 +401,7 @@ if __name__ == "__main__":
   universes.append({"id": 5, "cells": [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21]})
 
   root_universe = 3
-
-  #=============================================================================
-  # Sources
-  sources = []
-  
-  sources.append({})
-  sources[0]["spatial"] = {"type": "box", "low": [-29.17, -29.17, 0.05],
-                                           "hi": [29.17, 29.17, H-0.05]}
-  sources[0]["direction"] = {"type": "isotropic"}
-  sources[0]["energy"] = {"type": "watt", "a": 0.977, "b": 2.546} # U235 Watt spectrum from MCNP manual
-  sources[0]["fissile-only"] = True
-  sources[0]["weight"] = 1.
-
+ 
   #=============================================================================
   # Tallies
   tallies = []
@@ -438,8 +426,19 @@ if __name__ == "__main__":
   Ebounds_array = list(np.logspace(np.log10(1.E-11), np.log10(20.), 2000))
   for Ebound in Ebounds_array:
     Ebounds.append(float(Ebound))
-  tallies[1]['energy-bounds'] = Ebounds
+  tallies[1]['energy-bounds'] = Ebounds 
 
+  #=============================================================================
+  # Settings
+  settings = {}
+
+  #=============================================================================
+  # Simulation
+  simulation = {}
+  simulation['mode'] = 'k-eigenvalue'
+  simulation['nparticles'] = 10000
+  simulation['ngenerations'] = 3200
+  simulation['nignored'] = 200
 
   #=============================================================================
   # Entropy
@@ -447,17 +446,20 @@ if __name__ == "__main__":
   entropy['shape'] = [20,20,50]
   entropy['low'] = [-29.17, -29.17, -2.7]
   entropy['hi'] = [29.17, 29.17, 100.]
-
-
+  simulation['entropy'] = entropy
+  
   #=============================================================================
-  # Settings
-  settings = {}
-  settings['nparticles'] = 10000
-  settings['ngenerations'] = 3200
-  settings['nignored'] = 200
-  settings['simulation'] = 'k-eigenvalue'
-  settings['transport'] = 'surface-tracking'
-
+  # Sources
+  sources = []
+  
+  sources.append({})
+  sources[0]["spatial"] = {"type": "box", "low": [-29.17, -29.17, 0.05],
+                                           "hi": [29.17, 29.17, H-0.05]}
+  sources[0]["direction"] = {"type": "isotropic"}
+  sources[0]["energy"] = {"type": "watt", "a": 0.977, "b": 2.546} # U235 Watt spectrum from MCNP manual
+  sources[0]["fissile-only"] = True
+  sources[0]["weight"] = 1.
+  simulation['sources'] = sources
 
   #=============================================================================
   # Plots
@@ -481,10 +483,9 @@ if __name__ == "__main__":
   crocus['cells'] = cells
   crocus['universes'] = universes
   crocus['root-universe'] = root_universe
-  crocus['sources'] = sources
   crocus['tallies'] = tallies
-  crocus['entropy'] = entropy
   crocus['settings'] = settings
+  crocus['simulation'] = simulation
   crocus['plots'] = plots
 
   with open('crocus.yaml', 'w') as input_file:

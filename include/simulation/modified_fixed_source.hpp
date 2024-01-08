@@ -26,17 +26,20 @@
 #define MODIFIED_FIXED_SOURCE_H
 
 #include <simulation/simulation.hpp>
+#include <source/source.hpp>
+
+#include <memory>
 
 class ModifiedFixedSource : public Simulation {
  public:
-  ModifiedFixedSource(std::shared_ptr<IParticleMover> i_pm,
-                      std::vector<std::shared_ptr<Source>> src)
-      : Simulation(i_pm, src) {}
+  ModifiedFixedSource(std::shared_ptr<IParticleMover> i_pm)
+      : Simulation(i_pm) {}
   ~ModifiedFixedSource() = default;
 
   void initialize() override final;
   void run() override final;
   void premature_kill() override final;
+  void write_output_info() const override final;
 
   void set_nparticles(std::size_t np) { nparticles = np; }
   void set_nbatches(std::size_t nb) { nbatches = nb; }

@@ -30,8 +30,9 @@
 #include <geometry/surfaces/all_surfaces.hpp>
 #include <materials/nuclide.hpp>
 #include <simulation/entropy.hpp>
-#include <tallies/tallies.hpp>
+#include <simulation/simulation.hpp>
 #include <tallies/mesh_tally.hpp>
+#include <tallies/tallies.hpp>
 #include <utils/error.hpp>
 #include <utils/mpi.hpp>
 #include <utils/nd_directory.hpp>
@@ -275,9 +276,9 @@ void find_universe(const YAML::Node& input, uint32_t id) {
 
 void make_settings(const YAML::Node& input) {
   //----------------------------------------------------------------------------
-  // Get the simulation mode, just for parsin input materials and making sure
+  // Get the simulation mode, just for parsing input materials and making sure
   // MG data has everything needed
-  if (input["simulation"] == false) {
+  if (!input["simulation"]) {
     fatal_error("No simulation entry provided in input.");
   } else if (input["simulation"] && input["simulation"].IsMap() == false) {
     fatal_error("Invalid simulation entry provided in input.");
@@ -285,8 +286,8 @@ void make_settings(const YAML::Node& input) {
   const YAML::Node& sim = input["simulation"];
 
   // First, get the string identifying the simulation mode
-  if (sim["mode"] == false) {
-    fatal_error("No mode entry in simulation definition."):
+  if (!sim["mode"]) {
+    fatal_error("No mode entry in simulation definition.");
   } else if (sim["mode"].IsScalar() == false) {
     fatal_error("Invalid mode entry in simulation.");
   }
@@ -303,7 +304,7 @@ void make_settings(const YAML::Node& input) {
   } else {
     fatal_error("Unknown simulation mode " + mode + ".");
   }
-  
+
   //----------------------------------------------------------------------------
   if (input["settings"] && input["settings"].IsMap()) {
     const auto& settnode = input["settings"];
@@ -330,7 +331,7 @@ void make_settings(const YAML::Node& input) {
 
     // If we are in CE mode, we need to get the path to the nuclear data
     // directory file, which is either in the settings, or in the
-    // environment variable. The settings file takes precidence. We also
+    // environment variable. The settings file takes precedence. We also
     // need to read the temperature interpolation method too.
     if (settings::energy_mode == settings::EnergyMode::CE) {
       // Get temperature interpolation method
@@ -464,16 +465,6 @@ void make_settings(const YAML::Node& input) {
                           settings::energy_bounds.end())) {
         fatal_error("The energy-bounds for multi-group mode are not sorted.");
       }
-
-      // If we are using carter tracking, make sure we have the right number
-      // of sampling xs ratios !
-      if (settings::tracking == settings::TrackingMode::CARTER_TRACKING) {
-        if (settings::sample_xs_ratio.size() != settings::ngroups) {
-          fatal_error(
-              "The number of energy groups does not match the size of "
-              "\"sampling-xs\".");
-        }
-      }
     }
 
     // Get roulette settings
@@ -565,7 +556,6 @@ void make_settings(const YAML::Node& input) {
 void make_tallies(const YAML::Node& input) {
   // Make base tallies object which is required
   auto& tallies = Tallies::instance();
-  tallies.set_total_weight(static_cast<double>(settings::nparticles));
 
   if (!input["tallies"]) {
     return;
@@ -576,9 +566,5 @@ void make_tallies(const YAML::Node& input) {
   // Add all spatial mesh tallies to the tallies instance
   for (size_t t = 0; t < input["tallies"].size(); t++) {
     add_mesh_tally(tallies, input["tallies"][t]);
-  }
-
-  if (settings::mode == settings::SimulationMode::NOISE) {
-    tallies.set_keff(settings::keff);
   }
 }

@@ -25,9 +25,9 @@
 #ifndef EXACT_MG_CANCELATOR_H
 #define EXACT_MG_CANCELATOR_H
 
+#include <cancelator/cancelator.hpp>
 #include <materials/material.hpp>
 #include <materials/mg_nuclide.hpp>
-#include <cancelator/cancelator.hpp>
 
 #include <array>
 #include <cstdint>
@@ -47,6 +47,8 @@ class ExactMGCancelator : public Cancelator {
   void perform_cancellation() override final;
   std::vector<BankedParticle> get_new_particles(pcg32& rng) override final;
   void clear() override final;
+  void check_particle_mover_compatibility(
+      const std::shared_ptr<IParticleMover>& pmover) const override final;
 
   // Key which represents a unique cancellation bin for a
   // given position and energy group.

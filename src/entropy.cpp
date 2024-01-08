@@ -47,7 +47,7 @@ void Entropy::add_point(const Position& r, const double& w) {
 
     // Get sign of particle
     Sign p_sign;
-    if (sign == Sign::Total)
+    if (sign_ == Sign::Total)
       p_sign = Sign::Total;
     else if (w > 0.)
       p_sign = Sign::Positive;
@@ -55,7 +55,7 @@ void Entropy::add_point(const Position& r, const double& w) {
       p_sign = Sign::Negative;
 
     // Add weight to bin if sign agrees
-    if (p_sign == sign) {
+    if (p_sign == sign_) {
       this->bins[static_cast<std::size_t>(
           (shape[1] * shape[2]) * static_cast<std::uint32_t>(nx) +
           (shape[2]) * static_cast<std::uint32_t>(ny) +

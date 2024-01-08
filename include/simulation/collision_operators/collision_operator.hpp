@@ -29,10 +29,15 @@
 #include <simulation/particle.hpp>
 #include <tallies/tallies.hpp>
 
+#include <concepts>
+#include <string>
+
 template <typename C>
 concept CollisionOperator = requires(C c, Particle& p, MaterialHelper& mat,
-                                     ThreadLocalScores& thread_scores) {
-  c.collision(p, mat, thread_scores);
+                                     ThreadLocalScores& thread_scores,
+                                     const std::string& base) {
+  { c.collision(p, mat, thread_scores) } -> std::same_as<void>;
+  { c.write_output_info(base) } -> std::same_as<void>;
 };
 
 #endif

@@ -31,11 +31,24 @@
 
 #include <iomanip>
 
-void ModifiedFixedSource::initialize() {}
+void ModifiedFixedSource::initialize() { this->write_output_info(); }
+
+void ModifiedFixedSource::write_output_info() const {
+  if (mpi::rank != 0) return;
+
+  auto& h5 = Output::instance().h5();
+
+  h5.createAttribute<std::string>("simulation-mode", "modified-fixed-source");
+  h5.createAttribute("nparticles", nparticles);
+  h5.createAttribute("nbatches", nbatches);
+  particle_mover->write_output_info();
+}
 
 void ModifiedFixedSource::add_source(std::shared_ptr<Source> src) {
-  if (src) sources.push_back(src);
-  else fatal_error("Was provided a nullptr Source.");
+  if (src)
+    sources.push_back(src);
+  else
+    fatal_error("Was provided a nullptr Source.");
 }
 
 void ModifiedFixedSource::print_header() {
@@ -55,9 +68,9 @@ void ModifiedFixedSource::generation_output(std::size_t batch) {
   if (batch == 0) print_header();
 
   output << std::fixed << std::setw(5) << std::setfill(' ') << batch << "   "
-         << std::setprecision(5) << tallies->leakage();
-  output << "   " << tallies->leakage_avg() << " +/- " << tallies->leakage_err()
-         << "\n";
+         << std::setprecision(5) << Tallies::instance().leakage();
+  output << "   " << Tallies::instance().leakage_avg() << " +/- "
+         << Tallies::instance().leakage_err() << "\n";
   Output::instance().write(output.str());
 }
 
@@ -76,7 +89,7 @@ void ModifiedFixedSource::run() {
 
   for (batch = 1; batch <= nbatches; batch++) {
     // First, sample the sources and place into bank
-    bank = this->sample_sources(nparticles);
+    bank = this->sample_sources(sources, nparticles);
 
     while (!bank.empty()) {
       auto fission_bank = particle_mover->transport(bank);
@@ -93,13 +106,13 @@ void ModifiedFixedSource::run() {
     }
 
     // Get new values
-    tallies->calc_gen_values();
+    Tallies::instance().calc_gen_values();
 
     // Keep values
-    tallies->record_generation();
+    Tallies::instance().record_generation();
 
     // Zero tallies for next generation
-    tallies->clear_generation();
+    Tallies::instance().clear_generation();
 
     // Clear particle banks
     bank.clear();
@@ -127,8 +140,8 @@ void ModifiedFixedSource::run() {
   out.write("\n");
   std::stringstream output;
   output << std::fixed << std::setprecision(6);
-  output << " leakage = " << tallies->leakage_avg() << " +/- "
-         << tallies->leakage_err() << "\n";
+  output << " leakage = " << Tallies::instance().leakage_avg() << " +/- "
+         << Tallies::instance().leakage_err() << "\n";
   out.write(output.str());
 
   // Write saved warnings
@@ -138,7 +151,7 @@ void ModifiedFixedSource::run() {
   out.write("\n");
 
   // Write flux file
-  tallies->write_tallies();
+  Tallies::instance().write_tallies(particle_mover->track_length_compatible());
 }
 
 void ModifiedFixedSource::premature_kill() {
@@ -163,9 +176,9 @@ void ModifiedFixedSource::premature_kill() {
   std::cout << "\n";
 }
 
-bool ModifiedFixedSource::out_of_time(int gen) {
+bool ModifiedFixedSource::out_of_time(std::size_t batch) {
   // Get the average time per batch
-  double T_avg = simulation_timer.elapsed_time() / static_cast<double>(gen);
+  double T_avg = simulation_timer.elapsed_time() / static_cast<double>(batch);
 
   // See how much time we have used so far.
   double T_used = settings::alpha_omega_timer.elapsed_time();
@@ -182,9 +195,9 @@ bool ModifiedFixedSource::out_of_time(int gen) {
   return false;
 }
 
-void ModifiedFixedSource::check_time(int gen) {
+void ModifiedFixedSource::check_time(std::size_t batch) {
   bool should_stop_now = false;
-  if (mpi::rank == 0) should_stop_now = out_of_time(gen);
+  if (mpi::rank == 0) should_stop_now = out_of_time(batch);
 
   mpi::Allreduce_or(should_stop_now);
 

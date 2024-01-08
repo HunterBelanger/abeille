@@ -25,8 +25,13 @@
 #include <materials/material_helper.hpp>
 #include <materials/nuclide.hpp>
 
-MaterialHelper::MaterialHelper(Material* material, double E, std::optional<NoiseParameters> noise_params)
-    : noise_params_(noise_params), mat(material), E_(E), xs_(), zaid_to_urr_rand_() {
+MaterialHelper::MaterialHelper(Material* material, double E,
+                               std::optional<NoiseParameters> noise_params)
+    : noise_params_(noise_params),
+      mat(material),
+      E_(E),
+      xs_(),
+      zaid_to_urr_rand_() {
   // Add all nuclides to the xs_ map
   for (const auto& nuc : nuclides) {
     xs_[nuc.second.get()] = std::nullopt;

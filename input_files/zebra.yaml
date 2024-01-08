@@ -141,22 +141,22 @@ universes:
 
 root-universe: 1
 
-sources:
-  - spatial:
-      type: box
-      low: [-2.62720, -2.62720, -1.11125]
-      hi: [2.62720, 2.62720, 1.11125]
-    energy:
-      type: mono-energetic
-      energy: 0.7
-    direction:
-      type: isotropic
-    weight: 1.
+settings: 
+  use-dbrc: false
 
-settings:
+simulation:
+  mode: k-eigenvalue
   nparticles: 10000
   ngenerations: 2100
   nignored: 100
-  use-dbrc: false
-  transport: surface-tracking
-  simulation: k-eigenvalue
+  sources:
+    - spatial:
+        type: box
+        low: [-2.62720, -2.62720, -1.11125]
+        hi: [2.62720, 2.62720, 1.11125]
+      energy:
+        type: mono-energetic
+        energy: 0.7
+      direction:
+        type: isotropic
+      weight: 1.

@@ -28,9 +28,19 @@
 #include <simulation/transport_operators/surface_tracker.hpp>
 #include <utils/constants.hpp>
 #include <utils/error.hpp>
+#include <utils/mpi.hpp>
+#include <utils/output.hpp>
 #include <utils/settings.hpp>
 
 #include <sstream>
+
+void SurfaceTracker::write_output_info(const std::string& base) const {
+  if (mpi::rank != 0) return;
+
+  auto& h5 = Output::instance().h5();
+  h5.createAttribute<std::string>(base + "transport-operator",
+                                  "surface-tracking");
+}
 
 void SurfaceTracker::transport(Particle& p, Tracker& trkr, MaterialHelper& mat,
                                ThreadLocalScores& thread_scores) const {

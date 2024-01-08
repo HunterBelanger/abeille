@@ -29,6 +29,8 @@
 #include <simulation/collision_operators/collision_operator.hpp>
 #include <simulation/particle.hpp>
 #include <tallies/tallies.hpp>
+#include <utils/mpi.hpp>
+#include <utils/output.hpp>
 #include <utils/russian_roulette.hpp>
 
 template <class FissionSaver>
@@ -39,10 +41,20 @@ class BranchlessIsotopeCollision {
   bool splitting() const { return splitting_; }
   void set_splitting(bool splt) { splitting_ = splt; }
 
+  void write_output_info(const std::string& base) const {
+    if (mpi::rank != 0) return;
+
+    auto& h5 = Output::instance().h5();
+    h5.createAttribute<std::string>(base + "collision-operator",
+                                    "branchless-isotope");
+    h5.createAttribute(base + "branchless-isotope-splitting", splitting_);
+  }
+
   void collision(Particle& p, MaterialHelper& mat,
                  ThreadLocalScores& thread_scores) const {
     // Sample a nuclide for the collision
-    std::pair<const Nuclide*, MicroXSs> nuclide_info = mat.sample_nuclide(p.E(), p.rng);
+    std::pair<const Nuclide*, MicroXSs> nuclide_info =
+        mat.sample_nuclide(p.E(), p.rng);
     const Nuclide& nuclide = *nuclide_info.first;
     const MicroXSs& microxs = nuclide_info.second;
 
@@ -118,9 +130,9 @@ class BranchlessIsotopeCollision {
     }
   }
 
-  private:
-    bool splitting_ = false;
-    FissionSaver fiss_saver;
+ private:
+  bool splitting_ = false;
+  FissionSaver fiss_saver;
 };
 
 #endif

@@ -25,8 +25,6 @@
 #ifndef PARSER_H
 #define PARSER_H
 
-#include <simulation/simulation.hpp>
-
 #include <yaml-cpp/yaml.h>
 
 #include <map>
@@ -41,6 +39,7 @@ extern std::map<uint32_t, size_t> universe_id_to_indx;
 
 //===========================================================================
 // Object to build Simulation
+class Simulation;
 extern std::shared_ptr<Simulation> simulation;
 extern std::string xspath;
 

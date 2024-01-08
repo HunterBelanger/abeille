@@ -29,10 +29,11 @@
 #include <utils/settings.hpp>
 
 #include <exception>
+#include <sstream>
 #include <string>
 #include <vector>
 
-Tallies::Tallies(double tot_wgt)
+Tallies::Tallies()
     : total_weight(0.),
       k_col_score(0.),
       k_abs_score(0.),
@@ -66,18 +67,35 @@ Tallies::Tallies(double tot_wgt)
       collision_mesh_tallies_(),
       track_length_mesh_tallies_(),
       source_mesh_tallies_(),
-      noise_source_mesh_tallies_() {
-  k_col_vec.reserve(static_cast<std::size_t>(settings::ngenerations));
-  k_abs_vec.reserve(static_cast<std::size_t>(settings::ngenerations));
-  k_trk_vec.reserve(static_cast<std::size_t>(settings::ngenerations));
-  leak_vec.reserve(static_cast<std::size_t>(settings::ngenerations));
-  mig_vec.reserve(static_cast<std::size_t>(settings::ngenerations));
-}
+      noise_source_mesh_tallies_() {}
 
 Tallies& Tallies::instance() {
   static Tallies tallies;
 
   return tallies;
+}
+
+void Tallies::allocate_batch_arrays(std::size_t nbatches) {
+  k_col_vec.reserve(nbatches);
+  k_abs_vec.reserve(nbatches);
+  k_trk_vec.reserve(nbatches);
+  leak_vec.reserve(nbatches);
+  mig_vec.reserve(nbatches);
+}
+
+void Tallies::verify_track_length_tallies(bool track_length_transporter) const {
+  if (track_length_transporter == false) {
+    for (const auto& tally : track_length_mesh_tallies_) {
+      if (tally->quantity() != MeshTally::Quantity::Flux &&
+          tally->quantity() != MeshTally::Quantity::RealFlux &&
+          tally->quantity() != MeshTally::Quantity::ImgFlux) {
+        std::stringstream mssg;
+        mssg << "Estimator for tally " << tally->name()
+             << " is incompatible with the selected transport operator.";
+        fatal_error(mssg.str());
+      }
+    }
+  }
 }
 
 void Tallies::add_collision_mesh_tally(
@@ -208,7 +226,7 @@ void Tallies::record_generation(double multiplier) {
     tally->record_generation(multiplier);
 }
 
-void Tallies::write_tallies() {
+void Tallies::write_tallies(bool track_length_compatible) {
   if (mpi::rank != 0) return;
 
   auto& h5 = Output::instance().h5();
@@ -220,10 +238,9 @@ void Tallies::write_tallies() {
   results.createAttribute("generations", gen);
 
   // Write vectors to hdf5
-  if (settings::mode == settings::SimulationMode::K_EIGENVALUE ||
-      settings::mode == settings::SimulationMode::BRANCHLESS_K_EIGENVALUE) {
+  if (settings::sim_mode == settings::SimMode::KEFF) {
     results.createDataSet("kcol", k_col_vec);
-    if (settings::tracking == settings::TrackingMode::SURFACE_TRACKING) {
+    if (track_length_compatible) {
       // The TLE is no good if we aren't using surface tracking
       results.createDataSet("ktrk", k_trk_vec);
     }
@@ -237,7 +254,7 @@ void Tallies::write_tallies() {
       results.createAttribute("kcol-avg", kcol_avg());
       results.createAttribute("kcol-std", kcol_err());
 
-      if (settings::tracking == settings::TrackingMode::SURFACE_TRACKING) {
+      if (track_length_compatible) {
         // The TLE is no good if we aren't using surface tracking
         results.createAttribute("ktrk-avg", ktrk_avg());
         results.createAttribute("ktrk-std", ktrk_err());

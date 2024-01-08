@@ -26,9 +26,9 @@
 #define NOISE_MAKER_H
 
 #include <materials/material_helper.hpp>
-#include <simulation/particle.hpp>
 #include <noise_source/oscillation_noise_source.hpp>
 #include <noise_source/vibration_noise_source.hpp>
+#include <simulation/particle.hpp>
 #include <utils/noise_parameters.hpp>
 
 #include <yaml-cpp/yaml.h>

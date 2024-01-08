@@ -39,11 +39,6 @@ std::shared_ptr<Cancelator> make_cancelator(const YAML::Node& node) {
   if (type == "approximate") {
     cancelator = make_approximate_mesh_cancelator(node);
   } else if (type == "exact") {
-    // Check that we are not using surface-tracking !
-    if (settings::tracking == settings::TrackingMode::SURFACE_TRACKING) {
-      fatal_error("exect cancelators may not be used with surface-tracking.");
-    }
-
     // Check that we are not in CE mode !
     if (settings::energy_mode == settings::EnergyMode::CE) {
       fatal_error(

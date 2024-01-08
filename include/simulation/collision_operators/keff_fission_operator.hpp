@@ -40,15 +40,14 @@ class KeffFissionOperator
  public:
   KeffFissionOperator() = default;
 
-  int n_fission_neutrons(const Particle& p, const MicroXSs& xs,
-                         pcg32& rng) const {
+  int n_fission_neutrons(Particle& p, const MicroXSs& xs) const {
     const double k_abs_scr = p.wgt() * xs.nu_total * xs.fission / xs.total;
 
     // In k-eigenvalue simulations, we normalize particle production by the
     // keff of the previous generation, so that the number of particles per
     // generation stays approximately constant.
-    return static_cast<int>(
-        std::floor(std::abs(k_abs_scr) / Tallies::instance().kcol() + RNG::rand(rng)));
+    return static_cast<int>(std::floor(
+        std::abs(k_abs_scr) / Tallies::instance().kcol() + RNG::rand(p.rng)));
   }
 };
 

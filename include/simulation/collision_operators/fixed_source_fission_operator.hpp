@@ -39,14 +39,13 @@ class FixedSourceFissionOperator
     : public FissionOperator<FixedSourceFissionOperator, SecondaryBankSaver> {
  public:
   FixedSourceFissionOperator() = default;
-      
-  int n_fission_neutrons(const Particle& p, const MicroXSs& xs,
-                         pcg32& rng) const {
+
+  int n_fission_neutrons(Particle& p, const MicroXSs& xs) const {
     const double k_abs_scr = p.wgt() * xs.nu_total * xs.fission / xs.total;
 
     // In fixed-source problems, we don't normalize the number of fission
     // particles produced. Problem must be sub critical !
-    return static_cast<int>(std::floor(std::abs(k_abs_scr) + RNG::rand(rng)));
+    return static_cast<int>(std::floor(std::abs(k_abs_scr) + RNG::rand(p.rng)));
   }
 };
 

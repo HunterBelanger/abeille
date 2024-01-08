@@ -27,64 +27,83 @@
 
 #include <cancelator/cancelator.hpp>
 #include <noise_source/noise_maker.hpp>
+#include <simulation/entropy.hpp>
 #include <simulation/simulation.hpp>
+#include <source/source.hpp>
+#include <utils/noise_parameters.hpp>
 
 #include <memory>
+#include <numeric>
 
 class Noise : public Simulation {
  public:
   Noise(std::shared_ptr<IParticleMover> i_pm,
-        std::vector<std::shared_ptr<Source>> srcs, NoiseMaker noise_mkr)
-      : Simulation(i_pm, srcs),
+        std::shared_ptr<IParticleMover> i_pipm, NoiseParameters noise_parms,
+        NoiseMaker noise_mkr)
+      : Simulation(i_pm),
+        noise_params(noise_parms),
         noise_maker(noise_mkr),
-        bank(),
-        noise_bank(),
-        noise_timer(),
-        cancellation_timer(),
-        power_iteration_timer(),
-        convergence_timer(),
-        noise_batch_timer() {}
-
-  Noise(std::shared_ptr<Tallies> i_t, std::shared_ptr<Transporter> i_tr,
-        std::vector<std::shared_ptr<Source>> srcs,
-        std::shared_ptr<Cancelator> cancel, NoiseMaker noise_mkr)
-      : Simulation(i_t, i_tr, srcs),
-        noise_maker(noise_mkr),
-        bank(),
-        noise_bank(),
-        noise_timer(),
-        cancellation_timer(),
-        power_iteration_timer(),
-        convergence_timer(),
-        noise_batch_timer(),
-        cancelator(cancel) {}
+        pi_particle_mover(i_pipm) {}
 
   void initialize() override final;
   void run() override final;
   void premature_kill() override final;
+  void write_output_info() const override final;
+
+  void set_in_source_file(const std::string& sf) { in_source_file_name = sf; }
+  void add_source(std::shared_ptr<Source> src);
+  void set_nparticles(std::size_t np) { nparticles = np; }
+  void set_nbatches(std::size_t nb) { nbatches = nb; }
+  void set_nignored(std::size_t ni) { nignored = ni; }
+  void set_nskip(std::size_t ns) { nskip = ns; }
+  void set_ncancel_noise_gens(std::size_t ncng) { ncancel_noise_gens = ncng; }
+  void set_normalize_noise_source(bool nns) { normalize_noise_source_ = nns; }
+  void set_entropy(const Entropy& entropy);
+  void set_cancelator(std::shared_ptr<Cancelator> cncl);
+  void set_regional_cancellation(bool rc);
+  void set_regional_cancellation_noise(bool rcn);
 
  private:
+  NoiseParameters noise_params;
   NoiseMaker noise_maker;
-  std::vector<Particle> bank;
-  std::vector<BankedParticle> noise_bank;
-  Timer noise_timer;
-  Timer cancellation_timer;
-  Timer power_iteration_timer;
-  Timer convergence_timer;
-  Timer noise_batch_timer;
+  std::vector<Particle> bank{};
+  std::vector<BankedParticle> noise_bank{};
+  std::vector<std::shared_ptr<Source>> sources{};
+  std::string in_source_file_name{};
+  Timer noise_timer{};
+  Timer cancellation_timer{};
+  Timer power_iteration_timer{};
+  Timer convergence_timer{};
+  Timer noise_batch_timer{};
+  std::shared_ptr<IParticleMover> pi_particle_mover = nullptr;
   std::shared_ptr<Cancelator> cancelator = nullptr;
-  int noise_batch = 0;  // Counter for number of noise batches
-  int pi_gen = 0;       // Counter for number of power iteration generations
+  std::shared_ptr<Entropy> t_pre_entropy = nullptr;
+  std::shared_ptr<Entropy> p_pre_entropy = nullptr;
+  std::shared_ptr<Entropy> n_pre_entropy = nullptr;
+  std::shared_ptr<Entropy> t_post_entropy = nullptr;
+  std::shared_ptr<Entropy> p_post_entropy = nullptr;
+  std::shared_ptr<Entropy> n_post_entropy = nullptr;
+  std::size_t noise_batch = 0;  // Counter for number of noise batches
+  std::size_t pi_gen = 0;  // Counter for number of power iteration generations
+  std::size_t nbatches = 0;
+  std::size_t nparticles = 0;
+  std::size_t nignored = 0;
+  std::size_t nskip = 3;
+  std::size_t ncancel_noise_gens = std::numeric_limits<std::size_t>::max();
   int Nnet = 0, Npos = 0, Nneg = 0, Ntot = 0;
   int Wnet = 0, Wpos = 0, Wneg = 0, Wtot = 0;
+  bool converged = false;
+  bool regional_cancellation_ = false;
+  bool regional_cancellation_noise_ = false;
+  bool normalize_noise_source_ = true;
 
   // Private helper methods
   void compute_pre_cancellation_entropy(std::vector<BankedParticle>& next_gen);
   void compute_post_cancellation_entropy(std::vector<BankedParticle>& next_gen);
   void zero_entropy();
 
-  bool out_of_time(int gen);
-  void check_time(int gen);
+  bool out_of_time(std::size_t batch);
+  void check_time(std::size_t batch);
 
   void normalize_weights(std::vector<BankedParticle>& next_gen);
   void perform_regional_cancellation(std::vector<BankedParticle>& bank);

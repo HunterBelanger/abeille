@@ -25,24 +25,23 @@ universes:
 
 root-universe: 1
 
-sources:
-  - spatial:
-      type: point
-      position: [0., 0., 0.]
-    direction:
-      type: isotropic
-    energy:
-      type: mono-energetic
-      energy: 0.5
-    weight: 1.
-
 settings:
+  energy-mode: multi-group
+  ngroups: 1
+  energy-bounds: [0, 1]
+
+simulation:
+  mode: k-eigenvalue
   nparticles: 1000000
   ngenerations: 1050
   nignored: 50
-  ngroups: 1
-  transport: surface-tracking
-  simulation: k-eigenvalue
-  energy-mode: multi-group
-  energy-bounds: [0, 1]
-
+  sources:
+    - spatial:
+        type: point
+        position: [0., 0., 0.]
+      direction:
+        type: isotropic
+      energy:
+        type: mono-energetic
+        energy: 0.5
+      weight: 1.

@@ -35,8 +35,14 @@
 
 // Here, we sample a particle source exactly as we do for power iteration.
 void Noise::initialize() {
+  this->write_output_info();
+
+  if (in_source_file_name.empty() && sources.empty()) {
+    fatal_error("No sources or source file provided.");
+  }
+
   // If not using source file
-  if (settings::load_source_file == false) {
+  if (in_source_file_name.empty()) {
     sample_source_from_sources();
   } else {
     // Load source file
@@ -44,11 +50,108 @@ void Noise::initialize() {
   }
 
   mpi::node_nparticles_noise.resize(static_cast<std::size_t>(mpi::size), 0);
+
+  Tallies::instance().allocate_batch_arrays(nbatches * nskip + nignored);
+  Tallies::instance().verify_track_length_tallies(
+      particle_mover->track_length_compatible());
+}
+
+void Noise::write_output_info() const {
+  if (mpi::rank != 0) return;
+
+  auto& h5 = Output::instance().h5();
+
+  h5.createAttribute<std::string>("simulation-mode", "noise");
+  h5.createAttribute("nparticles", nparticles);
+  h5.createAttribute("nbatches", nbatches);
+  h5.createAttribute("nignored", nignored);
+  h5.createAttribute("nskip", nskip);
+  h5.createAttribute("ncancel-noise-gens", ncancel_noise_gens);
+  h5.createAttribute("normalize-noise-source", normalize_noise_source_);
+  h5.createAttribute("regional-cancellation", regional_cancellation_);
+  h5.createAttribute("noise-regional-cancellation",
+                     regional_cancellation_noise_);
+  if (in_source_file_name.empty() == false)
+    h5.createAttribute("source-file", in_source_file_name);
+
+  particle_mover->write_output_info("noise-");
+  pi_particle_mover->write_output_info("power-iterator-");
+}
+
+void Noise::set_entropy(const Entropy& entropy) {
+  t_pre_entropy = std::make_shared<Entropy>(entropy);
+  t_pre_entropy->set_sign(Entropy::Sign::Total);
+
+  if (cancelator) {
+    p_pre_entropy = std::make_shared<Entropy>(*t_pre_entropy);
+    p_pre_entropy->set_sign(Entropy::Sign::Positive);
+
+    n_pre_entropy = std::make_shared<Entropy>(*t_pre_entropy);
+    n_pre_entropy->set_sign(Entropy::Sign::Negative);
+
+    t_post_entropy = std::make_shared<Entropy>(*t_pre_entropy);
+    t_post_entropy->set_sign(Entropy::Sign::Total);
+
+    p_post_entropy = std::make_shared<Entropy>(*t_pre_entropy);
+    p_post_entropy->set_sign(Entropy::Sign::Positive);
+
+    n_post_entropy = std::make_shared<Entropy>(*t_pre_entropy);
+    n_post_entropy->set_sign(Entropy::Sign::Negative);
+  }
+}
+
+void Noise::set_cancelator(std::shared_ptr<Cancelator> cncl) {
+  cancelator = cncl;
+  if (cancelator == nullptr) {
+    fatal_error("Was given a nullptr for a Cancelator.");
+  }
+
+  // If we already had an entropy, we need to copy it to all others now
+  if (t_pre_entropy) {
+    p_pre_entropy = std::make_shared<Entropy>(*t_pre_entropy);
+    p_pre_entropy->set_sign(Entropy::Sign::Positive);
+
+    n_pre_entropy = std::make_shared<Entropy>(*t_pre_entropy);
+    n_pre_entropy->set_sign(Entropy::Sign::Negative);
+
+    t_post_entropy = std::make_shared<Entropy>(*t_pre_entropy);
+    t_post_entropy->set_sign(Entropy::Sign::Total);
+
+    p_post_entropy = std::make_shared<Entropy>(*t_pre_entropy);
+    p_post_entropy->set_sign(Entropy::Sign::Positive);
+
+    n_post_entropy = std::make_shared<Entropy>(*t_pre_entropy);
+    n_post_entropy->set_sign(Entropy::Sign::Negative);
+  }
+}
+
+void Noise::add_source(std::shared_ptr<Source> src) {
+  if (src)
+    sources.push_back(src);
+  else
+    fatal_error("Was provided a nullptr Source.");
+}
+
+void Noise::set_regional_cancellation(bool rc) {
+  if (rc && cancelator == nullptr) {
+    fatal_error("Cannot use regional cancellation without a Cancelator.");
+  }
+
+  regional_cancellation_ = rc;
+}
+
+void Noise::set_regional_cancellation_noise(bool rcn) {
+  if (rcn && cancelator == nullptr) {
+    fatal_error(
+        "Cannot do regional cancellation on noise without a Cancelator.");
+  }
+
+  regional_cancellation_noise_ = rcn;
 }
 
 void Noise::load_source_from_file() {
   // Load source file
-  auto h5s = H5::File(settings::in_source_file_name, H5::File::ReadOnly);
+  auto h5s = H5::File(in_source_file_name, H5::File::ReadOnly);
 
   // Get the dataset and dimensions
   auto source_ds = h5s.getDataSet("source");
@@ -76,8 +179,8 @@ void Noise::load_source_from_file() {
   mpi::node_nparticles.resize(static_cast<std::size_t>(mpi::size),
                               base_particles_per_node);
 
-  // Distribute the remainder particles amonst the nodes. There are at most
-  // mpi::size-1 remainder particles, so we will distribute them untill we
+  // Distribute the remainder particles amongst the nodes. There are at most
+  // mpi::size-1 remainder particles, so we will distribute them until we
   // have no more.
   for (std::size_t rank = 0; rank < remainder; rank++) {
     mpi::node_nparticles[rank]++;
@@ -117,16 +220,16 @@ void Noise::load_source_from_file() {
 
   Output::instance().write(
       " Total Weight of System: " + std::to_string(std::round(tot_wgt)) + "\n");
-  settings::nparticles = static_cast<int>(std::round(tot_wgt));
-  tallies->set_total_weight(std::round(tot_wgt));
+  nparticles = static_cast<int>(std::round(tot_wgt));
+  Tallies::instance().set_total_weight(std::round(tot_wgt));
 }
 
 void Noise::sample_source_from_sources() {
   Output::instance().write(" Generating source particles...\n");
   // Calculate the base number of particles per node to run
   uint64_t base_particles_per_node =
-      static_cast<uint64_t>(settings::nparticles / mpi::size);
-  uint64_t remainder = static_cast<uint64_t>(settings::nparticles % mpi::size);
+      static_cast<uint64_t>(nparticles / mpi::size);
+  uint64_t remainder = static_cast<uint64_t>(nparticles % mpi::size);
 
   // Set the base number of particles per node in the node_nparticles vector
   mpi::node_nparticles.resize(static_cast<std::size_t>(mpi::size),
@@ -147,11 +250,13 @@ void Noise::sample_source_from_sources() {
   }
 
   // Go sample the particles for this node
-  bank =
-      sample_sources(mpi::node_nparticles[static_cast<std::size_t>(mpi::rank)]);
+  bank = sample_sources(
+      sources, mpi::node_nparticles[static_cast<std::size_t>(mpi::rank)]);
 
   global_histories_counter += static_cast<uint64_t>(std::accumulate(
       mpi::node_nparticles.begin(), mpi::node_nparticles.end(), 0));
+
+  Tallies::instance().set_total_weight(static_cast<double>(nparticles));
 }
 
 void Noise::print_header() const {
@@ -160,13 +265,13 @@ void Noise::print_header() const {
 
   // First get the number of columns required to print the max generation number
   int n_col_gen =
-      static_cast<int>(std::to_string(settings::ngenerations).size());
+      static_cast<int>(std::to_string(nbatches * nskip + nignored).size());
 
   output << " " << std::setw(std::max(n_col_gen, 3)) << std::setfill(' ');
   output << std::right << "Gen"
          << "      k     ";
 
-  if (!settings::regional_cancellation && t_pre_entropy) {
+  if (regional_cancellation_ == false && t_pre_entropy) {
     output << "    Entropy  ";
   }
 
@@ -176,9 +281,9 @@ void Noise::print_header() const {
   Output::instance().write(output.str());
 }
 
-bool Noise::out_of_time(int gen) {
+bool Noise::out_of_time(std::size_t batch) {
   // Get the average time per batch
-  double T_avg = noise_batch_timer.elapsed_time() / static_cast<double>(gen);
+  double T_avg = noise_batch_timer.elapsed_time() / static_cast<double>(batch);
 
   // See how much time we have used so far.
   double T_used = settings::alpha_omega_timer.elapsed_time();
@@ -195,26 +300,26 @@ bool Noise::out_of_time(int gen) {
   return false;
 }
 
-void Noise::check_time(int gen) {
+void Noise::check_time(std::size_t batch) {
   bool should_stop_now = false;
-  if (mpi::rank == 0) should_stop_now = out_of_time(gen);
+  if (mpi::rank == 0) should_stop_now = out_of_time(batch);
 
   mpi::Allreduce_or(should_stop_now);
 
   if (should_stop_now) {
-    // Setting ngenerations to gen will cause us to exit the
+    // Setting nbatches to batch will cause us to exit the
     // transport loop as if we finished the simulation normally.
-    settings::ngenerations = gen;
+    nbatches = batch;
   }
 }
 
 void Noise::run() {
   Output& out = Output::instance();
   out.write(" Running Noise Problem...\n");
-  out.write(" NPARTICLES: " + std::to_string(settings::nparticles) + ", ");
-  out.write(" NBATCHES: " + std::to_string(settings::ngenerations) + ",");
-  out.write(" NIGNORED: " + std::to_string(settings::nignored) + ",");
-  out.write(" NSKIP: " + std::to_string(settings::nskip) + "\n\n");
+  out.write(" NPARTICLES: " + std::to_string(nparticles) + ", ");
+  out.write(" NBATCHES: " + std::to_string(nbatches) + ",");
+  out.write(" NIGNORED: " + std::to_string(nignored) + ",");
+  out.write(" NSKIP: " + std::to_string(nskip) + "\n\n");
   print_header();
 
   // Zero all entropy bins
@@ -225,18 +330,19 @@ void Noise::run() {
   simulation_timer.start();
 
   //============================================================================
-  // Run standard power iteration untill the source has converged.
+  // Run standard power iteration until the source has converged.
   // Make sure converged is false so we don't collect statistics.
   convergence_timer.reset();
   convergence_timer.start();
-  settings::converged = false;
-  for (int g = 1; g <= settings::nignored; g++) {
-    pi_gen = g;
+  converged = false;
+  Tallies::instance().set_scoring(converged);
+  for (pi_gen = 1; pi_gen <= nignored; pi_gen++) {
     power_iteration(false);
   }
 
   // We now consider the source to be converged.
-  settings::converged = true;
+  converged = true;
+  Tallies::instance().set_scoring(converged);
 
   // Make sure timers is cleared
   convergence_timer.stop();
@@ -245,16 +351,16 @@ void Noise::run() {
   power_iteration_timer.reset();
 
   //============================================================================
-  // Now we run the desired number of noise batches, which is just ngenerations
+  // Now we run the desired number of noise batches
   noise_batch_timer.reset();
   noise_batch_timer.start();
-  for (noise_batch = 1; noise_batch <= settings::ngenerations; noise_batch++) {
+  for (noise_batch = 1; noise_batch <= nbatches; noise_batch++) {
     // We first run the decorrelation PI batches, where no source is sampled.
     // This should be nskip - 1.
     // Make sure converged is false so we don't collect statistics on the
     // power iteration parts.
     power_iteration_timer.start();
-    for (int skip = 0; skip < settings::nskip - 1; skip++) {
+    for (int skip = 0; skip < static_cast<int>(nskip) - 1; skip++) {
       pi_gen++;
       power_iteration(false);
     }
@@ -300,22 +406,26 @@ void Noise::run() {
             std::to_string(simulation_timer.elapsed_time()) + " seconds.\n");
 
   // Write flux file
-  if (settings::converged && tallies->generations() > 0) {
-    tallies->write_tallies();
+  if (converged && Tallies::instance().generations() > 0) {
+    Tallies::instance().write_tallies(
+        particle_mover->track_length_compatible());
   }
 }
 
 void Noise::power_iteration(bool sample_noise) {
   // We set converged to false so that we don't waste time doing tallies in the
   // power iteration portion of the simulation. We save a copy to reset after.
-  const bool orig_converged = settings::converged;
-  settings::converged = false;
+  const bool orig_converged = converged;
+  converged = false;
+  Tallies::instance().set_scoring(converged);
 
   std::vector<BankedParticle> next_gen;
   if (sample_noise == false) {
-    next_gen = transporter->transport(bank, false, nullptr, nullptr);
+    next_gen =
+        pi_particle_mover->transport(bank, std::nullopt, nullptr, nullptr);
   } else {
-    next_gen = transporter->transport(bank, false, &noise_bank, &noise_maker);
+    next_gen = pi_particle_mover->transport(bank, std::nullopt, &noise_bank,
+                                            &noise_maker);
   }
 
   if (next_gen.size() == 0) {
@@ -326,15 +436,15 @@ void Noise::power_iteration(bool sample_noise) {
   compute_pre_cancellation_entropy(next_gen);
 
   // Get new keff
-  tallies->calc_gen_values();
+  Tallies::instance().calc_gen_values();
 
   // Zero tallies for next generation
-  tallies->clear_generation();
+  Tallies::instance().clear_generation();
 
   mpi::synchronize();
 
   // Do weight cancelation
-  if (settings::regional_cancellation) {
+  if (regional_cancellation_) {
     perform_regional_cancellation(next_gen);
   }
 
@@ -376,7 +486,8 @@ void Noise::power_iteration(bool sample_noise) {
   zero_entropy();
 
   // Reset converged to original value
-  settings::converged = orig_converged;
+  converged = orig_converged;
+  Tallies::instance().set_scoring(converged);
 }
 
 inline void Noise::perform_regional_cancellation(
@@ -422,10 +533,10 @@ void Noise::noise_simulation() {
 
   // Need to keep copy of original so we can override garbage copy which
   // will be produced in this noise batch.
-  double original_kcol = tallies->kcol();
+  double original_kcol = Tallies::instance().kcol();
 
   double avg_wgt_mag = 1.;
-  if (settings::normalize_noise_source) {
+  if (normalize_noise_source_) {
     // Normalize particle weights by the average weight magnitude.
     double sum_wgt_mag = 0.;
     for (const auto& p : noise_bank) {
@@ -446,7 +557,7 @@ void Noise::noise_simulation() {
   // rectord_generation on tallies with a multiplier of avg_wgt_mag,
   // we get the correct answer (as if we hadn't normalized noise
   // particle weights).
-  tallies->score_noise_source(noise_bank, settings::converged);
+  Tallies::instance().score_noise_source(noise_bank);
 
   // Cancellation may be performed on noise_bank here
 
@@ -467,7 +578,7 @@ void Noise::noise_simulation() {
       mpi::node_nparticles_noise.begin(), mpi::node_nparticles_noise.end(), 0));
   noise_bank.clear();
 
-  int noise_gen = 0;
+  std::size_t noise_gen = 0;
   while (N_noise_tot != 0) {
     noise_gen += 1;
 
@@ -475,14 +586,14 @@ void Noise::noise_simulation() {
     output << "  -- " << noise_gen << " running " << N_noise_tot
            << " particles \n";
 
-    auto fission_bank = transporter->transport(nbank, true, nullptr, nullptr);
+    auto fission_bank =
+        particle_mover->transport(nbank, noise_params, nullptr, nullptr);
     if (noise_gen == 1) transported_histories += bank.size();
     mpi::synchronize();
 
     // Cancellation may be performed on fission_bank here if we have provided
     // a Cancelator instance.
-    if (settings::regional_cancellation_noise &&
-        noise_gen <= settings::n_cancel_noise_gens) {
+    if (regional_cancellation_noise_ && noise_gen <= ncancel_noise_gens) {
       noise_timer.stop();
       cancellation_timer.start();
       perform_regional_cancellation(fission_bank);
@@ -521,13 +632,13 @@ void Noise::noise_simulation() {
   }
 
   // Get new values
-  tallies->calc_gen_values();
+  Tallies::instance().calc_gen_values();
 
   // Keep values
-  tallies->record_generation(avg_wgt_mag);
+  Tallies::instance().record_generation(avg_wgt_mag);
 
   // Zero tallies for next generation
-  tallies->clear_generation();
+  Tallies::instance().clear_generation();
 
   // Clear particle banks
   nbank.clear();
@@ -537,7 +648,7 @@ void Noise::noise_simulation() {
 
   // So that a garbage kcol value isn't sent into PI and screws up the number
   // of particles to make a fissions.
-  tallies->set_kcol(original_kcol);
+  Tallies::instance().set_kcol(original_kcol);
 
   out.write(" -----------------------------------------------\n\n");
 
@@ -547,23 +658,23 @@ void Noise::noise_simulation() {
 void Noise::pi_generation_output() {
   std::stringstream output;
 
-  double kcol = tallies->kcol();
+  double kcol = Tallies::instance().kcol();
 
   // First get the number of columns required to print the max generation number
   int n_col_gen =
-      static_cast<int>(std::to_string(settings::ngenerations).size());
+      static_cast<int>(std::to_string(nbatches * nskip + nignored).size());
 
   output << " " << std::setw(std::max(n_col_gen, 3)) << std::setfill(' ');
   output << std::right << pi_gen << "   " << std::fixed << std::setprecision(5);
   output << kcol;
   output << "   ";
 
-  if (!settings::regional_cancellation && t_pre_entropy) {
+  if (regional_cancellation_ == false && t_pre_entropy) {
     output << std::setw(10) << std::scientific << std::setprecision(4);
     output << t_pre_entropy->calculate_entropy();
   }
 
-  if (settings::regional_cancellation && t_pre_entropy) {
+  if (regional_cancellation_ && t_pre_entropy) {
     output << std::setw(10) << std::scientific << std::setprecision(4)
            << p_pre_entropy->calculate_entropy() << "   ";
     output << n_pre_entropy->calculate_entropy() << "   ";
@@ -574,7 +685,7 @@ void Noise::pi_generation_output() {
     output << t_post_entropy->calculate_entropy() << "   ";
   }
 
-  if (settings::regional_cancellation) {
+  if (regional_cancellation_) {
     output << std::setw(7) << std::setfill(' ') << std::right;
     output << Nnet << "   ";
     output << std::setw(7) << std::setfill(' ') << std::right;
@@ -605,8 +716,7 @@ void Noise::noise_output() {
   output << "\n";
 
   // Write the current noise batch
-  output << " Simulated noise batch " << noise_batch << "/"
-         << settings::ngenerations << ".";
+  output << " Simulated noise batch " << noise_batch << "/" << nbatches << ".";
 
   output << "\n";
 
@@ -642,7 +752,7 @@ void Noise::normalize_weights(std::vector<BankedParticle>& next_gen) {
   Nnet = Npos - Nneg;
 
   // Re-Normalize particle weights
-  double w_per_part = static_cast<double>(settings::nparticles) / W;
+  double w_per_part = static_cast<double>(nparticles) / W;
   W *= w_per_part;
   W_neg *= w_per_part;
   W_pos *= w_per_part;
@@ -678,7 +788,7 @@ void Noise::premature_kill() {
 
     // Setting ngenerations to gen will cause us to exit the
     // transport loop as if we finished the simulation normally.
-    settings::ngenerations = noise_batch;
+    nbatches = noise_batch;
   }
 
   // They don't really want to kill it. Reset flag
@@ -688,7 +798,7 @@ void Noise::premature_kill() {
 
 void Noise::compute_pre_cancellation_entropy(
     std::vector<BankedParticle>& next_gen) {
-  if (t_pre_entropy && settings::regional_cancellation) {
+  if (t_pre_entropy && regional_cancellation_) {
     for (size_t i = 0; i < next_gen.size(); i++) {
       p_pre_entropy->add_point(next_gen[i].r, next_gen[i].wgt);
       n_pre_entropy->add_point(next_gen[i].r, next_gen[i].wgt);
@@ -707,7 +817,7 @@ void Noise::compute_pre_cancellation_entropy(
 
 void Noise::compute_post_cancellation_entropy(
     std::vector<BankedParticle>& next_gen) {
-  if (t_pre_entropy && settings::regional_cancellation) {
+  if (t_pre_entropy && regional_cancellation_) {
     for (size_t i = 0; i < next_gen.size(); i++) {
       p_post_entropy->add_point(next_gen[i].r, next_gen[i].wgt);
       n_post_entropy->add_point(next_gen[i].r, next_gen[i].wgt);

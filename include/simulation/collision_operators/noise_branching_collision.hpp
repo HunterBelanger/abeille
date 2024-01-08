@@ -30,6 +30,8 @@
 #include <simulation/collision_operators/noise_fission_operator.hpp>
 #include <simulation/particle.hpp>
 #include <tallies/tallies.hpp>
+#include <utils/mpi.hpp>
+#include <utils/output.hpp>
 #include <utils/russian_roulette.hpp>
 
 #include <cmath>
@@ -39,23 +41,32 @@ class NoiseBranchingCollision {
  public:
   NoiseBranchingCollision() = default;
 
+  void write_output_info(const std::string& base) const {
+    if (mpi::rank != 0) return;
+
+    auto& h5 = Output::instance().h5();
+    h5.createAttribute(base + "collision-operator", "noise-branching");
+  }
+
   void collision(Particle& p, MaterialHelper& mat,
                  ThreadLocalScores& thread_scores) const {
     // Sample a nuclide for the collision
-    std::pair<const Nuclide*, MicroXSs> nuclide_info = mat.sample_nuclide(p.E(), p.rng);
+    std::pair<const Nuclide*, MicroXSs> nuclide_info =
+        mat.sample_nuclide(p.E(), p.rng);
     const Nuclide* nuclide = nuclide_info.first;
     MicroXSs xs = nuclide_info.second;
 
     // Get noise parameters. We assume that the optional must be filled here
     const double eta = mat.noise_params()->eta;
     const double omega = mat.noise_params()->omega;
+    const double keff = mat.noise_params()->keff;
 
     // Score kabs
     const double k_abs_scr = p.wgt() * xs.nu_total * xs.fission / xs.total;
     thread_scores.k_abs_score += k_abs_scr;
 
     // Make all fission neutrons
-    fission_operator.fission(p, xs, *nuclide);
+    fission_operator.fission(p, xs, *nuclide, omega, keff);
 
     // Make a copy of the particle when doing noise transport, modifying
     // the weight of the copy as well

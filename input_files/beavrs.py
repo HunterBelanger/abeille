@@ -1546,6 +1546,20 @@ tallies[-1]["shape"] = [255,255,1]
 tallies[-1]['energy-bounds'] = [1.E-11, 20.]
 
 #=============================================================================
+# Settings
+settings = {}
+settings['dbrc-nuclides'] = ['U234', 'U235', 'U238']
+#settings['max-run-time'] = 2875 # 48hr 55min max run time
+
+#=============================================================================
+# Simulation
+simulation = {}
+simulation['mode'] = 'k-eigenvalue'
+simulation['nparticles'] = 100000
+simulation['ngenerations'] = 5300
+simulation['nignored'] = 300
+
+#=============================================================================
 # Sources
 sources = []
 
@@ -1557,22 +1571,15 @@ sources[0]["energy"] = {"type": "watt", "a": 0.977, "b": 2.546} # U235 Watt spec
 sources[0]["fissile-only"] = True
 sources[0]["weight"] = 1.
 
+simulation['sources'] = sources
+
 #=============================================================================
 # Entropy
 entropy = {"low": [-161.2773, -161.2773,  35.],
            "hi" : [ 161.2773,  161.2773, 410.],
            "shape": [8, 8, 8]}
 
-#=============================================================================
-# Settings
-settings = {}
-settings['nparticles'] = 100000
-settings['ngenerations'] = 5300
-settings['nignored'] = 300
-settings['simulation'] = 'k-eigenvalue'
-settings['transport'] = 'surface-tracking'
-settings['dbrc-nuclides'] = ['U234', 'U235', 'U238']
-#settings['max-run-time'] = 2875 # 48hr 55min max run time
+simulation['entropy'] = entropy
 
 #=============================================================================
 # Plots
@@ -1596,10 +1603,9 @@ beavrs['surfaces'] = surfaces
 beavrs['cells'] = cells
 beavrs['universes'] = universes
 beavrs['root-universe'] = CORE
-beavrs['sources'] = sources
 beavrs['tallies'] = tallies
-beavrs['entropy'] = entropy
 beavrs['settings'] = settings
+beabrs['simulation'] = simulation
 beavrs['plots'] = plots
 
 with open('beavrs.yaml', 'w') as input_file:

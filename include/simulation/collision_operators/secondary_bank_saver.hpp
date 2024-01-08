@@ -28,12 +28,12 @@
 #include <simulation/particle.hpp>
 
 class SecondaryBankSaver {
-  public:
-    SecondaryBankSaver() = default;
+ public:
+  SecondaryBankSaver() = default;
 
-    void save_fission_particle(Particle& p, BankedParticle& fp) const {
-      p.make_secondary(fp.u, fp.E, fp.wgt, fp.wgt2);
-    }
+  void save_fission_particle(Particle& p, BankedParticle& fp) const {
+    p.make_secondary(fp.u, fp.E, fp.wgt, fp.wgt2);
+  }
 };
 
 #endif

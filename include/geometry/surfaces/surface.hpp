@@ -31,8 +31,8 @@
 #include <yaml-cpp/yaml.h>
 
 #include <cstdint>
-#include <string>
 #include <memory>
+#include <string>
 
 enum BoundaryType { Vacuum, Reflective, Normal };
 

@@ -33,11 +33,11 @@
 
 inline double TrackLengthMeshTally::get_base_score(const Particle& p,
                                                    MaterialHelper& mat) const {
-  // Calculate base score, absed on the quantity
+  // Calculate base score, based on the quantity
   double base_score = 1. / net_weight;
   // Must multiply score by correct factor depending on the observed
   // quantity. q = 0 corresponds to just the flux, so no modification.
-  switch (quantity) {
+  switch (quantity_) {
     case Quantity::Flux:
       base_score *= p.wgt();
       break;
@@ -114,7 +114,7 @@ void TrackLengthMeshTally::score_flight(const Particle& p, double d,
     }
   }
 
-  // Calculate base score, absed on the quantity
+  // Calculate base score, based on the quantity
   double base_score = this->get_base_score(p, mat);
 
   // Get energy index with linear search
@@ -435,7 +435,7 @@ void TrackLengthMeshTally::update_indices(int key, int& i, int& j, int& k,
 }
 
 std::string TrackLengthMeshTally::quantity_str() const {
-  switch (quantity) {
+  switch (quantity_) {
     case Quantity::Flux:
       return "flux";
       break;
@@ -589,15 +589,6 @@ std::shared_ptr<TrackLengthMeshTally> make_track_length_mesh_tally(
     quantity = Quantity::ImgFlux;
   } else {
     fatal_error("Unkown tally quantity \"" + quant_str + "\".");
-  }
-
-  if ((settings::tracking == settings::TrackingMode::DELTA_TRACKING ||
-       settings::tracking == settings::TrackingMode::CARTER_TRACKING) &&
-      (quantity != Quantity::Flux && quantity != Quantity::RealFlux &&
-       quantity != Quantity::ImgFlux)) {
-    fatal_error(
-        "Cannot use track-length estimators for non-flux quantities with "
-        "delta-tracking or carter-tracking.");
   }
 
   return std::make_shared<TrackLengthMeshTally>(plow, phi, nx, ny, nz, ebounds,

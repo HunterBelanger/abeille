@@ -37,29 +37,31 @@ tallies:
     name: flux_UD2O-2-1-SL
     estimator: track-length
 
-entropy:
-  shape: [200, 1, 1]
-  low: [-929.45, -50., -50.]
-  hi:  [ 929.45,  50.,  50.]
+settings: 
+  energy-mode: multi-group
+  ngroups: 2
+  energy-bounds: [0, 1, 2]
 
-sources:
-  - spatial:
-      type: box
-      low: [-929., -49., -49.]
-      hi:  [ 929.,  49.,  49.]
-    direction:
-      type: isotropic
-    energy:
-      type: mono-energetic
-      energy: 0.5
-    weight: 1.
-
-settings:
+simulation:
+  mode: k-eigenvalue
   nparticles: 1000000
   ngenerations: 6000
   nignored: 1000
-  ngroups: 2
-  transport: surface-tracking
-  simulation: k-eigenvalue
-  energy-mode: multi-group
-  energy-bounds: [0, 1, 2]
+
+  entropy:
+    shape: [200, 1, 1]
+    low: [-929.45, -50., -50.]
+    hi:  [ 929.45,  50.,  50.]
+
+  sources:
+    - spatial:
+        type: box
+        low: [-929., -49., -49.]
+        hi:  [ 929.,  49.,  49.]
+      direction:
+        type: isotropic
+      energy:
+        type: mono-energetic
+        energy: 0.5
+      weight: 1.
+

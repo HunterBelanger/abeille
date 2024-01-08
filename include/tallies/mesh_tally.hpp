@@ -59,6 +59,8 @@ class MeshTally {
 
   void set_net_weight(double W);
 
+  const std::string& name() const { return fname; }
+
   // multiplier must be the same across ALL MPI processes, as it is
   // applied after the MPI reduction of the generation scores.
   void record_generation(double multiplier = 1.);

@@ -29,12 +29,21 @@
 #include <simulation/collision_operators/collision_operator.hpp>
 #include <simulation/particle.hpp>
 #include <tallies/tallies.hpp>
+#include <utils/mpi.hpp>
+#include <utils/output.hpp>
 #include <utils/russian_roulette.hpp>
 
 template <class FissOp>
 class BranchingCollision {
  public:
   BranchingCollision() = default;
+
+  void write_output_info(const std::string& base) const {
+    if (mpi::rank != 0) return;
+
+    auto& h5 = Output::instance().h5();
+    h5.createAttribute<std::string>(base + "collision-operator", "branching");
+  }
 
   void collision(Particle& p, MaterialHelper& mat,
                  ThreadLocalScores& thread_scores) const {

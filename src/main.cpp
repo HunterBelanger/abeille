@@ -23,6 +23,7 @@
  *
  * */
 #include <plotting/plotter.hpp>
+#include <simulation/simulation.hpp>
 #include <utils/constants.hpp>
 #include <utils/header.hpp>
 #include <utils/mpi.hpp>

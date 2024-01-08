@@ -22,24 +22,24 @@ universes:
 
 root-universe: 1
 
-sources:
-  - spatial:
-      type: box
-      low: [-0.7, -10., -10.]
-      hi: [0.7, 10., 10.]
-    direction:
-      type: isotropic
-    energy:
-      type: mono-energetic
-      energy: 0.5
-    weight: 1.
-
 settings:
+  energy-mode: multi-group
+  ngroups: 1
+  energy-bounds: [0, 1]
+
+simulation:
+  mode: k-eigenvalue
   nparticles: 1000000
   ngenerations: 5100
   nignored: 100
-  ngroups: 1
-  transport: surface-tracking
-  simulation: k-eigenvalue
-  energy-mode: multi-group
-  energy-bounds: [0, 1]
+  sources:
+    - spatial:
+        type: box
+        low: [-0.7, -10., -10.]
+        hi: [0.7, 10., 10.]
+      direction:
+        type: isotropic
+      energy:
+        type: mono-energetic
+        energy: 0.5
+      weight: 1.

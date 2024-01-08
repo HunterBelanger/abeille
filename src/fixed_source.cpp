@@ -34,11 +34,30 @@
 #include <iomanip>
 #include <iostream>
 
-void FixedSource::initialize() {}
+void FixedSource::initialize() {
+  this->write_output_info();
+  Tallies::instance().set_total_weight(static_cast<double>(nparticles));
+  Tallies::instance().allocate_batch_arrays(nbatches);
+  Tallies::instance().verify_track_length_tallies(
+      particle_mover->track_length_compatible());
+}
 
 void FixedSource::add_source(std::shared_ptr<Source> src) {
-  if (src) sources.push_back(src);
-  else fatal_error("Was provided a nullptr Source.");
+  if (src)
+    sources.push_back(src);
+  else
+    fatal_error("Was provided a nullptr Source.");
+}
+
+void FixedSource::write_output_info() const {
+  if (mpi::rank != 0) return;
+
+  auto& h5 = Output::instance().h5();
+
+  h5.createAttribute<std::string>("simulation-mode", "fixed-source");
+  h5.createAttribute("nparticles", nparticles);
+  h5.createAttribute("nbatches", nbatches);
+  particle_mover->write_output_info();
 }
 
 void FixedSource::print_header() {
@@ -106,7 +125,7 @@ void FixedSource::run() {
 
   for (batch = 1; batch <= nbatches; batch++) {
     // First, sample the sources and place into bank
-    bank = this->sample_sources(node_nparticles);
+    bank = this->sample_sources(sources, node_nparticles);
 
     // Now transport all particles. In fixed-source mode, this should
     // return and empty vector !
@@ -118,19 +137,19 @@ void FixedSource::run() {
     mpi::synchronize();
 
     // Get new values
-    tallies->calc_gen_values();
+    Tallies::instance().calc_gen_values();
 
     // Keep values
-    tallies->record_generation();
+    Tallies::instance().record_generation();
 
     // Zero tallies for next generation
-    tallies->clear_generation();
+    Tallies::instance().clear_generation();
 
     // Clear particle banks
     bank.clear();
 
     // Output
-    batch_output(b);
+    batch_output(batch);
 
     // Advance history counters so that each node starts at the right location
     // for the next batch.
@@ -142,7 +161,7 @@ void FixedSource::run() {
 
     // Check if we have enough time to finish the simulation. If not,
     // stop now.
-    check_time(g);
+    check_time(batch);
   }
 
   // Stop timer
@@ -154,8 +173,8 @@ void FixedSource::run() {
   out.write("\n");
   std::stringstream output;
   output << std::fixed << std::setprecision(6);
-  output << " leakage = " << tallies->leakage_avg() << " +/- "
-         << tallies->leakage_err() << "\n";
+  output << " leakage = " << Tallies::instance().leakage_avg() << " +/- "
+         << Tallies::instance().leakage_err() << "\n";
   out.write(output.str());
 
   // Write saved warnings
@@ -165,7 +184,7 @@ void FixedSource::run() {
   out.write("\n");
 
   // Write flux file
-  tallies->write_tallies();
+  Tallies::instance().write_tallies(particle_mover->track_length_compatible());
 }
 
 void FixedSource::batch_output(std::size_t batch) {
@@ -173,8 +192,10 @@ void FixedSource::batch_output(std::size_t batch) {
 
   if (batch == 1) print_header();
 
-  output << std::fixed << std::setw(5) << std::setfill(' ') << batch << "   " << std::setprecision(5) << tallies->leakage();
-  output << "   " << tallies->leakage_avg() << " +/- " << tallies->leakage_err() << "\n";
+  output << std::fixed << std::setw(5) << std::setfill(' ') << batch << "   "
+         << std::setprecision(5) << Tallies::instance().leakage();
+  output << "   " << Tallies::instance().leakage_avg() << " +/- "
+         << Tallies::instance().leakage_err() << "\n";
   Output::instance().write(output.str());
 }
 
@@ -236,25 +257,25 @@ void FixedSource::check_time(std::size_t batch) {
   if (should_stop_now) {
     // Setting nbatches to batch will cause us to exit the
     // transport loop as if we finished the simulation normally.
-    batches = batch;
+    nbatches = batch;
   }
 }
 
 std::shared_ptr<FixedSource> make_fixed_source(const YAML::Node& sim) {
   // Get the number of particles
-  if (sim["nparticles"] == false || sim["nparticles"].IsScalar() == false) {
-    fatal_error("No nparticles entry in fixed-source simulation."):
+  if (!sim["nparticles"] || sim["nparticles"].IsScalar() == false) {
+    fatal_error("No nparticles entry in fixed-source simulation.");
   }
   std::size_t nparticles = sim["nparticles"].as<std::size_t>();
 
   // Get the number of batches
-  if (sim["nbatches"] == false || sim["nbatches"].IsScalar() == false) {
-    fatal_error("No nbatches entry in fixed-source simulation."):
+  if (!sim["nbatches"] || sim["nbatches"].IsScalar() == false) {
+    fatal_error("No nbatches entry in fixed-source simulation.");
   }
   std::size_t nbatches = sim["nbatches"].as<std::size_t>();
 
   // Read all sources
-  if (sim["sources"] == false || sim["sources"].IsSequence() == false) {
+  if (!sim["sources"] || sim["sources"].IsSequence() == false) {
     fatal_error("No sources entry in fixed-source simulation.");
   }
   std::vector<std::shared_ptr<Source>> sources;
@@ -264,17 +285,18 @@ std::shared_ptr<FixedSource> make_fixed_source(const YAML::Node& sim) {
 
   // We now need to make the particle mover, which is the combination of the
   // transport operator and the collision operator.
-  std::shared_ptr<IParticleMover> mover = make_particle_mover(sim, settings::SimMode::FIXED_SOURCE);
+  std::shared_ptr<IParticleMover> mover =
+      make_particle_mover(sim, settings::SimMode::FIXED_SOURCE);
 
   // Create simulation
-  std::shared_ptr<FixedSource> sim = std::make_shared<FixedSource>(mover);   
+  std::shared_ptr<FixedSource> simptr = std::make_shared<FixedSource>(mover);
 
   // Set quantities
-  sim->set_nparticles(nparticles);
-  sim->set_nbatches(nbatches);
+  simptr->set_nparticles(nparticles);
+  simptr->set_nbatches(nbatches);
   for (const auto& src : sources) {
-    sim->add_source(src);
+    simptr->add_source(src);
   }
 
-  return sim;
+  return simptr;
 }

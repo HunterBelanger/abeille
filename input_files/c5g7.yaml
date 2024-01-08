@@ -338,6 +338,11 @@ simulation:
 
   transport-operator:
     type: delta-tracking
+    #type: carter-tracking
+    sampling-xs:
+      energy: [1, 2, 3, 4, 5]
+      xs:     [0.4, 32., 43., 2.]
+
 
   collisions-operator:
     type: branching
@@ -352,12 +357,12 @@ simulation:
       energy: {type: mono-energetic, energy: 6.5}
       weight: 1.
 
-  cancelator:
-    type: exact
-    shape: [170, 170, 765]
-    low: [-32.13, -32.13, -107.11]
-    hi: [10.71, 10.71, 85.69] 
-    nsamples: 20
+  #cancelator:
+  #  type: exact
+  #  shape: [170, 170, 765]
+  #  low: [-32.13, -32.13, -107.11]
+  #  hi: [10.71, 10.71, 85.69] 
+  #  nsamples: 20
 
 
 # Plots of the geometry may be created in the .ppm format.

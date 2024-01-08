@@ -37,7 +37,14 @@ class ImplicitLeakageDeltaTracker {
  public:
   ImplicitLeakageDeltaTracker();
 
-  void transport(Particle& p, Tracker& trkr, MaterialHelper& mat, ThreadLocalScores& thread_scores) const;
+  void transport(Particle& p, Tracker& trkr, MaterialHelper& mat,
+                 ThreadLocalScores& thread_scores) const;
+
+  bool exact_cancellation_compatible() const { return true; }
+
+  bool track_length_compatible() const { return false; }
+
+  void write_output_info(const std::string& base) const;
 
  private:
   std::shared_ptr<pndl::EnergyGrid> EGrid;

@@ -44,17 +44,43 @@
 #include <vector>
 
 class IParticleMover {
+ public:
   virtual ~IParticleMover() = default;
 
-  virtual std::vector<BankedParticle> transport(std::vector<Particle>& bank, std::optional<NoiseParameters> noise = std::nullopt, std::vector<BankedParticle>* noise_bank = nullptr, const NoiseMaker* = nullptr) = 0;
+  virtual std::vector<BankedParticle> transport(
+      std::vector<Particle>& bank,
+      std::optional<NoiseParameters> noise = std::nullopt,
+      std::vector<BankedParticle>* noise_bank = nullptr,
+      const NoiseMaker* = nullptr) = 0;
+  virtual bool exact_cancellation_compatible() const = 0;
+  virtual bool track_length_compatible() const = 0;
+  virtual void write_output_info(const std::string& base = "") const = 0;
 };
 
 template <TransportOperator TransportOp, CollisionOperator CollisionOp>
 class ParticleMover : public IParticleMover {
  public:
-  ParticleMover(TransportOp t, CollisionOp c) : transport_operator_(t), collision_operator_(c) {}
+  ParticleMover(TransportOp t, CollisionOp c)
+      : transport_operator_(t), collision_operator_(c) {}
 
-  std::vector<BankedParticle> transport(std::vector<Particle>& bank, std::optional<NoiseParameters> noise = std::nullopt, std::vector<BankedParticle>* noise_bank = nullptr, const NoiseMaker* noise_maker = nullptr) {
+  bool exact_cancellation_compatible() const override final {
+    return transport_operator_.exact_cancellation_compatible();
+  }
+
+  bool track_length_compatible() const override final {
+    return transport_operator_.track_length_compatible();
+  }
+
+  void write_output_info(const std::string& base = "") const {
+    transport_operator_.write_output_info(base);
+    collision_operator_.write_output_info(base);
+  }
+
+  std::vector<BankedParticle> transport(
+      std::vector<Particle>& bank,
+      std::optional<NoiseParameters> noise = std::nullopt,
+      std::vector<BankedParticle>* noise_bank = nullptr,
+      const NoiseMaker* noise_maker = nullptr) override final {
 #ifdef ABEILLE_USE_OMP
 #pragma omp parallel
 #endif
@@ -119,7 +145,7 @@ class ParticleMover : public IParticleMover {
             p.set_previous_collision_real();
           }
 
-          if (p.alive() == false) {
+          if (p.is_alive() == false) {
             // Particle was killed, either by the flight or collision.
             // Attempt a resurection
             resurection_ritual(p, trkr, mat);
@@ -201,6 +227,7 @@ class ParticleMover : public IParticleMover {
   }
 };
 
-std::shared_ptr<IParticleMover> make_particle_mover(const YAML::Node& sim, settings::SimMode mode);
+std::shared_ptr<IParticleMover> make_particle_mover(const YAML::Node& sim,
+                                                    settings::SimMode mode);
 
 #endif

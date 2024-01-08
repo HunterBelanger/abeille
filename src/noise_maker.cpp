@@ -284,9 +284,11 @@ void NoiseMaker::sample_noise_source(Particle& p, MaterialHelper& mat) const {
 
   // Now from this point on, we sample the oscillation and vibration
   // parts separately
-  this->sample_vibration_noise_source(p, mat, noise_params_.keff, noise_params_.omega);
+  this->sample_vibration_noise_source(p, mat, noise_params_.keff,
+                                      noise_params_.omega);
 
-  this->sample_oscillation_noise_source(p, mat, noise_params_.keff, noise_params_.omega);
+  this->sample_oscillation_noise_source(p, mat, noise_params_.keff,
+                                        noise_params_.omega);
 }
 
 void NoiseMaker::sample_oscillation_noise_source(Particle& p,

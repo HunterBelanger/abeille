@@ -22,8 +22,9 @@
  * along with Abeille. If not, see <https://www.gnu.org/licenses/>.
  *
  * */
-#include <simulation/simulation.hpp>
 #include <simulation/fixed_source.hpp>
+#include <simulation/power_iterator.hpp>
+#include <simulation/simulation.hpp>
 #include <utils/error.hpp>
 #include <utils/mpi.hpp>
 #include <utils/output.hpp>
@@ -34,12 +35,17 @@
 #include <functional>
 
 Simulation::Simulation(std::shared_ptr<IParticleMover> i_pm)
-    : particle_mover{i_pm},
-      simulation_timer() {
+    : particle_mover{i_pm}, simulation_timer() {
   settings::initialize_global_rng();
 }
 
-std::vector<Particle> Simulation::sample_sources(std::size_t N) {
+void Simulation::sync_signaled() {
+  mpi::Allreduce_or(signaled);
+  mpi::Allreduce_or(terminate);
+}
+
+std::vector<Particle> Simulation::sample_sources(
+    const std::vector<std::shared_ptr<Source>>& sources, std::size_t N) {
   // Vector of source weights
   std::vector<double> wgts;
   for (size_t i = 0; i < sources.size(); i++) wgts.push_back(sources[i]->wgt());
@@ -61,11 +67,6 @@ std::vector<Particle> Simulation::sample_sources(std::size_t N) {
   }
 
   return source_particles;
-}
-
-void Simulation::sync_signaled() {
-  mpi::Allreduce_or(signaled);
-  mpi::Allreduce_or(terminate);
 }
 
 void Simulation::sync_banks(std::vector<uint64_t>& nums,
@@ -198,7 +199,7 @@ void Simulation::write_source(std::vector<Particle>& bank) const {
 
 std::shared_ptr<Simulation> make_simulation(const YAML::Node& input) {
   // Get the simulation mode
-  if (input["simulation"] == false) {
+  if (!input["simulation"]) {
     fatal_error("No simulation entry provided in input.");
   } else if (input["simulation"] && input["simulation"].IsMap() == false) {
     fatal_error("Invalid simulation entry provided in input.");
@@ -206,8 +207,8 @@ std::shared_ptr<Simulation> make_simulation(const YAML::Node& input) {
   const YAML::Node& sim = input["simulation"];
 
   // First, get the string identifying the simulation mode
-  if (sim["mode"] == false) {
-    fatal_error("No mode entry in simulation definition."):
+  if (!sim["mode"]) {
+    fatal_error("No mode entry in simulation definition.");
   } else if (sim["mode"].IsScalar() == false) {
     fatal_error("Invalid mode entry in simulation.");
   }

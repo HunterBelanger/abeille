@@ -41,6 +41,8 @@ class ApproximateMeshCancelator : public Cancelator {
   void perform_cancellation() override final;
   std::vector<BankedParticle> get_new_particles(pcg32& rng) override final;
   void clear() override final;
+  void check_particle_mover_compatibility(
+      const std::shared_ptr<IParticleMover>& /*pmover*/) const override final {}
 
  private:
   std::unordered_map<int, std::vector<BankedParticle*>> bins;

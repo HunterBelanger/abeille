@@ -34,7 +34,7 @@ class TrackLengthMeshTally : public MeshTally {
   TrackLengthMeshTally(Position low, Position hi, uint64_t nx, uint64_t ny,
                        uint64_t nz, const std::vector<double>& ebounds,
                        Quantity q, std::string fname, uint32_t mt = 0)
-      : MeshTally(low, hi, nx, ny, nz, ebounds, fname), quantity(q), mt_(mt) {}
+      : MeshTally(low, hi, nx, ny, nz, ebounds, fname), quantity_(q), mt_(mt) {}
 
   void score_flight(const Particle& p, double d, MaterialHelper& mat);
 
@@ -42,10 +42,12 @@ class TrackLengthMeshTally : public MeshTally {
 
   std::string quantity_str() const override final;
 
+  Quantity quantity() const { return quantity_; }
+
   std::uint32_t mt() const override final { return mt_; }
 
  private:
-  Quantity quantity;
+  Quantity quantity_;
   uint32_t mt_;
 
   void initialize_indices(const Position& r, const Direction& u, int& i, int& j,

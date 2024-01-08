@@ -46,6 +46,12 @@ namespace H5 = HighFive;
 #include <vector>
 
 void PowerIterator::initialize() {
+  this->write_output_info();
+
+  if (in_source_file_name.empty() && sources.empty()) {
+    fatal_error("No sources or source file provided.");
+  }
+
   // If not using source file
   if (in_source_file_name.empty()) {
     sample_source_from_sources();
@@ -57,11 +63,47 @@ void PowerIterator::initialize() {
   // Assign History ID as family ID. At beginning, history IDs should start at
   // 1, so this SHOULD yield the desired results.
   for (auto& p : bank) p.set_family_id(p.history_id());
+
+  Tallies::instance().allocate_batch_arrays(ngenerations);
+  Tallies::instance().verify_track_length_tallies(
+      particle_mover->track_length_compatible());
+}
+
+void PowerIterator::write_output_info() const {
+  if (mpi::rank != 0) return;
+
+  auto& h5 = Output::instance().h5();
+
+  h5.createAttribute<std::string>("simulation-mode", "k-eigenvalue");
+  h5.createAttribute("nparticles", nparticles);
+  h5.createAttribute("ngenerations", ngenerations);
+  h5.createAttribute("nignored", nignored);
+  h5.createAttribute("combing", combing);
+  h5.createAttribute("families", calc_families);
+  h5.createAttribute("pair-distance-sqrd", pair_distance_sqrd);
+  h5.createAttribute("empty-entropy-bins-frac", empty_entropy_bins);
+
+  if (in_source_file_name.empty() == false)
+    h5.createAttribute("source-file", in_source_file_name);
+
+  if (cancelator) {
+    h5.createAttribute("regional-cancellation", true);
+  } else {
+    h5.createAttribute("regional-cancellation", false);
+  }
+
+  if (t_pre_entropy) {
+    h5.createAttribute("entropy", true);
+  } else {
+    h5.createAttribute("entropy", true);
+  }
+
+  particle_mover->write_output_info();
 }
 
 void PowerIterator::set_cancelator(std::shared_ptr<Cancelator> cncl) {
-  cancelator_ = cncl;
-  if (cancelator_ == nullptr) {
+  cancelator = cncl;
+  if (cancelator == nullptr) {
     fatal_error("Was given a nullptr for a Cancelator.");
   }
 
@@ -86,9 +128,9 @@ void PowerIterator::set_cancelator(std::shared_ptr<Cancelator> cncl) {
 
 void PowerIterator::set_entropy(const Entropy& entropy) {
   t_pre_entropy = std::make_shared<Entropy>(entropy);
-  t_pre_entropy->set_sign(Entropy::Sign::Total):
+  t_pre_entropy->set_sign(Entropy::Sign::Total);
 
-  if (cancelator_) {
+  if (cancelator) {
     p_pre_entropy = std::make_shared<Entropy>(*t_pre_entropy);
     p_pre_entropy->set_sign(Entropy::Sign::Positive);
 
@@ -107,8 +149,10 @@ void PowerIterator::set_entropy(const Entropy& entropy) {
 }
 
 void PowerIterator::add_source(std::shared_ptr<Source> src) {
-  if (src) sources.push_back(src);
-  else fatal_error("Was provided a nullptr Source.");
+  if (src)
+    sources.push_back(src);
+  else
+    fatal_error("Was provided a nullptr Source.");
 }
 
 void PowerIterator::load_source_from_file() {
@@ -183,7 +227,7 @@ void PowerIterator::load_source_from_file() {
   Output::instance().write(
       " Total Weight of System: " + std::to_string(std::round(tot_wgt)) + "\n");
   nparticles = static_cast<int>(std::round(tot_wgt));
-  tallies->set_total_weight(std::round(tot_wgt));
+  Tallies::instance().set_total_weight(std::round(tot_wgt));
 }
 
 void PowerIterator::sample_source_from_sources() {
@@ -212,11 +256,13 @@ void PowerIterator::sample_source_from_sources() {
   }
 
   // Go sample the particles for this node
-  bank =
-      sample_sources(mpi::node_nparticles[static_cast<std::size_t>(mpi::rank)]);
+  bank = sample_sources(
+      sources, mpi::node_nparticles[static_cast<std::size_t>(mpi::rank)]);
 
   global_histories_counter += static_cast<uint64_t>(std::accumulate(
       mpi::node_nparticles.begin(), mpi::node_nparticles.end(), 0));
+
+  Tallies::instance().set_total_weight(static_cast<double>(nparticles));
 }
 
 void PowerIterator::print_header() {
@@ -225,10 +271,9 @@ void PowerIterator::print_header() {
   std::stringstream output;
 
   // First get the number of columns required to print the max generation number
-  int n_col_gen =
-      static_cast<int>(std::to_string(ngenerations).size());
+  int n_col_gen = static_cast<int>(std::to_string(ngenerations).size());
 
-  if (cancelator_ && t_pre_entropy) {
+  if (cancelator && t_pre_entropy) {
     out.write(
         std::string(static_cast<std::size_t>(std::max(n_col_gen, 3) + 1), ' ') +
         "                                         Pre-Cancelation Entropies    "
@@ -244,16 +289,16 @@ void PowerIterator::print_header() {
   output << std::right << "Gen"
          << "      k         kavg +/- err    ";
 
-  if (cancelator_ == nullptr && t_pre_entropy) {
+  if (cancelator == nullptr && t_pre_entropy) {
     output << "    Entropy  ";
   }
 
-  if (cancelator_ && t_pre_entropy) {
+  if (cancelator && t_pre_entropy) {
     output << "     Positive     Nevative        Total     Positive     "
               "Negative        Total";
   }
 
-  if (cancelator_) {
+  if (cancelator) {
     output << "      Nnet      Ntot      Npos      Nneg      Wnet      Wtot    "
               "  Wpos      Wneg";
   }
@@ -262,7 +307,7 @@ void PowerIterator::print_header() {
     output << "      <r^2>  ";
   }
 
-  if (families) {
+  if (calc_families) {
     output << "   N_Families  ";
   }
 
@@ -279,13 +324,12 @@ void PowerIterator::print_header() {
 void PowerIterator::generation_output() {
   std::stringstream output;
 
-  double kcol = tallies->kcol();
+  double kcol = Tallies::instance().kcol();
 
   if (gen == 1) print_header();
 
   // First get the number of columns required to print the max generation number
-  int n_col_gen =
-      static_cast<int>(std::to_string(ngenerations).size());
+  int n_col_gen = static_cast<int>(std::to_string(ngenerations).size());
 
   output << " " << std::setw(std::max(n_col_gen, 3)) << std::setfill(' ');
   output << std::right << gen << "   " << std::fixed << std::setprecision(5);
@@ -293,18 +337,18 @@ void PowerIterator::generation_output() {
   if (gen <= nignored + 1) {
     output << "                      ";
   } else {
-    double kcol_avg = tallies->kcol_avg();
-    double kcol_err = tallies->kcol_err();
+    double kcol_avg = Tallies::instance().kcol_avg();
+    double kcol_err = Tallies::instance().kcol_err();
     output << "   " << kcol_avg << " +/- " << kcol_err;
   }
   output << "   ";
 
-  if (cancelator_ == nullptr && t_pre_entropy) {
+  if (cancelator == nullptr && t_pre_entropy) {
     output << std::setw(10) << std::scientific << std::setprecision(4);
     output << t_pre_entropy_vec.back();
   }
 
-  if (cancelator_ && t_pre_entropy) {
+  if (cancelator && t_pre_entropy) {
     output << std::setw(10) << std::scientific << std::setprecision(4)
            << p_pre_entropy_vec.back() << "   ";
     output << n_pre_entropy_vec.back() << "   ";
@@ -315,7 +359,7 @@ void PowerIterator::generation_output() {
     output << t_post_entropy_vec.back() << "   ";
   }
 
-  if (cancelator_) {
+  if (cancelator) {
     output << std::setw(7) << std::setfill(' ') << std::right;
     output << Nnet << "   ";
     output << std::setw(7) << std::setfill(' ') << std::right;
@@ -339,7 +383,7 @@ void PowerIterator::generation_output() {
            << r_sqrd;
   }
 
-  if (families) {
+  if (calc_families) {
     std::size_t nfamilies = families_set.size();
     mpi::Reduce_sum(nfamilies, 0);
     families_vec.push_back(nfamilies);
@@ -372,15 +416,13 @@ void PowerIterator::run() {
   simulation_timer.start();
 
   // Check for immediate convergence (i.e. we read source from file)
-  Tallies::instance()->set_scoring(false);
+  Tallies::instance().set_scoring(false);
   if (nignored == 0) {
-    Tallies::instance()->set_scoring(true);
+    Tallies::instance().set_scoring(true);
   }
 
-  for (std::size_t g = 1; g <= ngenerations; g++) {
-    gen = g;
-
-    if (families) {
+  for (gen = 1; gen <= ngenerations; gen++) {
+    if (calc_families) {
       // Before transport, we get the set of all families, so that we can know
       // how many particle families entered the generation.
       families_set.clear();
@@ -398,14 +440,14 @@ void PowerIterator::run() {
     compute_pre_cancellation_entropy(next_gen);
 
     // Get new keff
-    tallies->calc_gen_values();
+    Tallies::instance().calc_gen_values();
 
     mpi::synchronize();
 
     // Do weight cancelation
-    if (cancelator_) {
+    if (cancelator) {
       perform_regional_cancellation(next_gen);
-    } 
+    }
 
     // Calculate net positive and negative weight
     normalize_weights(next_gen);
@@ -421,12 +463,12 @@ void PowerIterator::run() {
 
     // Score the source and gen if passed nignored
     if (gen > nignored) {
-      tallies->score_source(next_gen);
-      tallies->record_generation();
+      Tallies::instance().score_source(next_gen);
+      Tallies::instance().record_generation();
     }
 
     // Zero tallies for next generation
-    tallies->clear_generation();
+    Tallies::instance().clear_generation();
 
     // Do all Post-Cancelation entropy calculations
     compute_post_cancellation_entropy(next_gen);
@@ -466,15 +508,15 @@ void PowerIterator::run() {
 
     // Check if we have enough time to finish the simulation. If not,
     // stop now.
-    check_time(g);
+    check_time(gen);
 
     // Zero all entropy bins
     zero_entropy();
 
     // Once ignored generations are finished, mark as true to start
     // doing tallies
-    if (g == nignored) {
-      Tallies::instance()->set_scoring(true);
+    if (gen == nignored) {
+      Tallies::instance().set_scoring(true);
     }
   }
 
@@ -487,22 +529,21 @@ void PowerIterator::run() {
     // Write the final results of all estimators
     out.write("\n");
     std::stringstream output;
-    output << " Results using " << gen - nignored
-           << " active generations:\n";
+    output << " Results using " << gen - nignored << " active generations:\n";
     output << " -----------------------------------\n";
     output << std::fixed << std::setprecision(6);
-    output << " | kcol    = " << tallies->kcol_avg() << " +/- "
-           << tallies->kcol_err() << " |\n";
+    output << " | kcol    = " << Tallies::instance().kcol_avg() << " +/- "
+           << Tallies::instance().kcol_err() << " |\n";
     if (settings::energy_mode == settings::EnergyMode::CE) {
-      output << " | kabs    = " << tallies->kabs_avg() << " +/- "
-             << tallies->kabs_err() << " |\n";
+      output << " | kabs    = " << Tallies::instance().kabs_avg() << " +/- "
+             << Tallies::instance().kabs_err() << " |\n";
     }
-    if (settings::tracking == settings::TrackingMode::SURFACE_TRACKING) {
-      output << " | ktrk    = " << tallies->ktrk_avg() << " +/- "
-             << tallies->ktrk_err() << " |\n";
+    if (particle_mover->track_length_compatible()) {
+      output << " | ktrk    = " << Tallies::instance().ktrk_avg() << " +/- "
+             << Tallies::instance().ktrk_err() << " |\n";
     }
-    output << " | leakage = " << tallies->leakage_avg() << " +/- "
-           << tallies->leakage_err() << " |\n";
+    output << " | leakage = " << Tallies::instance().leakage_avg() << " +/- "
+           << Tallies::instance().leakage_err() << " |\n";
     output << " -----------------------------------\n";
 
     out.write(output.str());
@@ -515,7 +556,7 @@ void PowerIterator::run() {
   }
 
   // Write results file
-  tallies->write_tallies();
+  Tallies::instance().write_tallies(particle_mover->track_length_compatible());
   write_entropy_families_etc_to_results();
 
   // write source
@@ -624,7 +665,7 @@ void PowerIterator::write_entropy_families_etc_to_results() const {
     h5.createDataSet("results/pair-dist-sqrd", r_sqrd_vec);
   }
 
-  if (t_pre_entropy_vec.size() > 0 && cancelator_ == nullptr) {
+  if (t_pre_entropy_vec.size() > 0 && cancelator == nullptr) {
     h5.createDataSet("results/entropy", t_pre_entropy_vec);
   } else if (t_pre_entropy_vec.size() > 0) {
     h5.createDataSet("results/total-pre-cancel-entropy", t_pre_entropy_vec);
@@ -722,7 +763,7 @@ void PowerIterator::normalize_weights(std::vector<BankedParticle>& next_gen) {
 
 void PowerIterator::compute_pre_cancellation_entropy(
     std::vector<BankedParticle>& next_gen) {
-  if (t_pre_entropy && cancelator_) {
+  if (t_pre_entropy && cancelator) {
     for (size_t i = 0; i < next_gen.size(); i++) {
       p_pre_entropy->add_point(next_gen[i].r, next_gen[i].wgt);
       n_pre_entropy->add_point(next_gen[i].r, next_gen[i].wgt);
@@ -752,7 +793,7 @@ void PowerIterator::compute_pre_cancellation_entropy(
 
 void PowerIterator::compute_post_cancellation_entropy(
     std::vector<BankedParticle>& next_gen) {
-  if (t_pre_entropy && cancelator_) {
+  if (t_pre_entropy && cancelator) {
     for (size_t i = 0; i < next_gen.size(); i++) {
       p_post_entropy->add_point(next_gen[i].r, next_gen[i].wgt);
       n_post_entropy->add_point(next_gen[i].r, next_gen[i].wgt);
@@ -863,7 +904,7 @@ void PowerIterator::premature_kill() {
   std::cout << "\n";
 }
 
-bool PowerIterator::out_of_time(int gen) {
+bool PowerIterator::out_of_time(std::size_t gen) {
   // Get the average time per generation
   double T_avg = simulation_timer.elapsed_time() / static_cast<double>(gen);
 
@@ -882,7 +923,7 @@ bool PowerIterator::out_of_time(int gen) {
   return false;
 }
 
-void PowerIterator::check_time(int gen) {
+void PowerIterator::check_time(std::size_t gen) {
   bool should_stop_now = false;
   if (mpi::rank == 0) should_stop_now = out_of_time(gen);
 
@@ -923,22 +964,22 @@ void PowerIterator::perform_regional_cancellation(
   cancelator->clear();
 }
 
-std::make_shared<PowerIterator> make_power_iterator(const YAML::Node& sim) {
+std::shared_ptr<PowerIterator> make_power_iterator(const YAML::Node& sim) {
   // Get the number of particles
-  if (sim["nparticles"] == false || sim["nparticles"].IsScalar() == false) {
-    fatal_error("No nparticles entry in fixed-source simulation."):
+  if (!sim["nparticles"] || sim["nparticles"].IsScalar() == false) {
+    fatal_error("No nparticles entry in fixed-source simulation.");
   }
   std::size_t nparticles = sim["nparticles"].as<std::size_t>();
 
   // Get the number of generations
-  if (sim["ngenerations"] == false || sim["ngenerations"].IsScalar() == false) {
-    fatal_error("No ngenerations entry in k-eigenvalue simulation."):
+  if (!sim["ngenerations"] || sim["ngenerations"].IsScalar() == false) {
+    fatal_error("No ngenerations entry in k-eigenvalue simulation.");
   }
   std::size_t ngenerations = sim["ngenerations"].as<std::size_t>();
 
   // Get the number of ignored generations
-  if (sim["nignored"] == false || sim["nignored"].IsScalar() == false) {
-    fatal_error("No nignored entry in k-eigenvalue simulation."):
+  if (!sim["nignored"] || sim["nignored"].IsScalar() == false) {
+    fatal_error("No nignored entry in k-eigenvalue simulation.");
   }
   std::size_t nignored = sim["nignored"].as<std::size_t>();
 
@@ -950,11 +991,11 @@ std::make_shared<PowerIterator> make_power_iterator(const YAML::Node& sim) {
   }
 
   // Read all sources if we don't have a source file
+  std::vector<std::shared_ptr<Source>> sources;
   if (in_source_file.empty()) {
-    if (sim["sources"] == false || sim["sources"].IsSequence() == false) {
+    if (!sim["sources"] || sim["sources"].IsSequence() == false) {
       fatal_error("No sources entry in k-eigenvalue simulation.");
     }
-    std::vector<std::shared_ptr<Source>> sources;
     for (std::size_t s = 0; s < sim["sources"].size(); s++) {
       sources.push_back(make_source(sim["sources"][s]));
     }
@@ -962,7 +1003,8 @@ std::make_shared<PowerIterator> make_power_iterator(const YAML::Node& sim) {
 
   // We now need to make the particle mover, which is the combination of the
   // transport operator and the collision operator.
-  std::shared_ptr<IParticleMover> mover = make_particle_mover(sim, settings::SimMode::KEFF);
+  std::shared_ptr<IParticleMover> mover =
+      make_particle_mover(sim, settings::SimMode::KEFF);
 
   // Combing
   bool combing = false;
@@ -1012,25 +1054,29 @@ std::make_shared<PowerIterator> make_power_iterator(const YAML::Node& sim) {
     fatal_error("Invalid cancelator entry in k-eigenvalue simulation.");
   }
 
+  // Make sure our transport operator is compatible with cancellation !
+  if (cancelator) cancelator->check_particle_mover_compatibility(mover);
+
   // Create simulation
-  std::shared_ptr<PowerIterator> sim = std::make_shared<PowerIterator>(mover);   
+  std::shared_ptr<PowerIterator> simptr =
+      std::make_shared<PowerIterator>(mover);
 
   // Set quantities
-  sim->set_nparticles(nparticles);
-  sim->set_ngenerations(ngenerations);
-  sim->set_nignored(nignored);
+  simptr->set_nparticles(nparticles);
+  simptr->set_ngenerations(ngenerations);
+  simptr->set_nignored(nignored);
   for (const auto& src : sources) {
-    sim->add_source(src);
+    simptr->add_source(src);
   }
   if (in_source_file.empty() == false) {
-    sim->set_in_source_file(in_source_file);
+    simptr->set_in_source_file(in_source_file);
   }
-  sim->set_combing(combing);
-  sim->set_families(families);
-  sim->set_pair_distance(pair_dist);
-  sim->set_empty_entropy_bins(empty_entropy_frac);
-  if (cancelator) sim->set_cancelator();
-  if (entropy) sim->set_entropy(*entropy);
+  simptr->set_combing(combing);
+  simptr->set_families(families);
+  simptr->set_pair_distance(pair_dist);
+  simptr->set_empty_entropy_bins(empty_entropy_frac);
+  if (cancelator) simptr->set_cancelator(cancelator);
+  if (entropy) simptr->set_entropy(*entropy);
 
-  return sim;
+  return simptr;
 }
