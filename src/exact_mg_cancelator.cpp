@@ -498,7 +498,7 @@ void ExactMGCancelator::perform_cancellation() {
 
   // Assign all the optimization parameters after doing reduction across nodes.
   // There is no need to do this if we only have 1 node.
-  if (mpi::size > 0) {
+  if (mpi::size > 1) {
 #ifdef ABEILLE_USE_OMP
 #pragma omp parallel for
 #endif
