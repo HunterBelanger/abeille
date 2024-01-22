@@ -61,10 +61,10 @@ class Lattice : public Universe {
   // coordinated to that element's frame, then asks that universe
   // for the cell of the local coordiante given.
   virtual UniqueCell get_cell(Position r, Direction u,
-                              int32_t on_surf) const = 0;
+                              int32_t on_surf) const override = 0;
 
   virtual UniqueCell get_cell(std::vector<GeoLilyPad>& stack, Position r,
-                              Direction u, int32_t on_surf) const = 0;
+                              Direction u, int32_t on_surf) const override = 0;
 
   virtual void set_elements(std::vector<int32_t> univs) = 0;
 

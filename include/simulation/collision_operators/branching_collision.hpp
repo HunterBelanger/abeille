@@ -50,8 +50,8 @@ class BranchingCollision {
     // Sample a nuclide for the collision
     std::pair<const Nuclide*, MicroXSs> nuclide_info =
         mat.sample_nuclide(p.E(), p.rng);
-    const Nuclide* nuclide = nuclide_info.first;
-    MicroXSs xs = nuclide_info.second;
+    const auto& nuclide = nuclide_info.first;
+    const auto& xs = nuclide_info.second;
 
     // Score kabs
     double k_abs_scr = p.wgt() * xs.nu_total * xs.fission / xs.total;

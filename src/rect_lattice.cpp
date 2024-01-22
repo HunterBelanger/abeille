@@ -207,33 +207,38 @@ UniqueCell RectLattice::get_cell(std::vector<GeoLilyPad>& stack, Position r,
 }
 
 std::array<int32_t, 3> RectLattice::get_tile(Position r, Direction u) const {
-  int32_t nx = static_cast<int32_t>(std::floor((r.x() - Xl) * Px_inv));
-  int32_t ny = static_cast<int32_t>(std::floor((r.y() - Yl) * Py_inv));
-  int32_t nz = static_cast<int32_t>(std::floor((r.z() - Zl) * Pz_inv));
+  std::array<int32_t, 3> tile_out{
+      static_cast<int32_t>(std::floor((r.x() - Xl) * Px_inv)),
+      static_cast<int32_t>(std::floor((r.y() - Yl) * Py_inv)),
+      static_cast<int32_t>(std::floor((r.z() - Zl) * Pz_inv))};
 
-  Position r_tile = tile_center(nx, ny, nz);
+  Position r_tile = tile_center(tile_out[0], tile_out[1], tile_out[2]);
 
   // Bounds of tile. Must check all to see if we are on them, then use
   // direction to see if we are in or out of tile.
-  double xl = r_tile.x() - Px * 0.5;
-  if (std::abs(xl - r.x()) < SURFACE_COINCIDENT && u.x() < 0.) nx--;
+  const double xl = r_tile.x() - Px * 0.5;
+  const double xh = xl + Px;
+  const double yl = r_tile.y() - Py * 0.5;
+  const double yh = yl + Py;
+  const double zl = r_tile.z() - Pz * 0.5;
+  const double zh = zl + Pz;
 
-  double xh = r_tile.x() + Px * 0.5;
-  if (std::abs(xh - r.x()) < SURFACE_COINCIDENT && u.x() >= 0.) nx++;
+  if (std::abs(xl - r.x()) < SURFACE_COINCIDENT && u.x() < 0.)
+    tile_out[0]--;
+  else if (std::abs(xh - r.x()) < SURFACE_COINCIDENT && u.x() >= 0.)
+    tile_out[0]++;
 
-  double yl = r_tile.y() - Py * 0.5;
-  if (std::abs(yl - r.y()) < SURFACE_COINCIDENT && u.y() < 0.) ny--;
+  if (std::abs(yl - r.y()) < SURFACE_COINCIDENT && u.y() < 0.)
+    tile_out[1]--;
+  else if (std::abs(yh - r.y()) < SURFACE_COINCIDENT && u.y() >= 0.)
+    tile_out[1]++;
 
-  double yh = r_tile.y() + Py * 0.5;
-  if (std::abs(yh - r.y()) < SURFACE_COINCIDENT && u.y() >= 0.) ny++;
+  if (std::abs(zl - r.z()) < SURFACE_COINCIDENT && u.z() < 0.)
+    tile_out[2]--;
+  else if (std::abs(zh - r.z()) < SURFACE_COINCIDENT && u.z() >= 0.)
+    tile_out[2]++;
 
-  double zl = r_tile.z() - Pz * 0.5;
-  if (std::abs(zl - r.z()) < SURFACE_COINCIDENT && u.z() < 0.) nz--;
-
-  double zh = r_tile.z() + Pz * 0.5;
-  if (std::abs(zh - r.z()) < SURFACE_COINCIDENT && u.z() >= 0.) nz++;
-
-  return {nx, ny, nz};
+  return tile_out;
 }
 
 double RectLattice::distance_to_tile_boundary(
