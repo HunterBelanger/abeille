@@ -459,10 +459,10 @@ ExactMGCancelator::sync_keys() {
     if (bins.find(key) != bins.end() &&
         bins.at(key).find(mat_id) != bins.at(key).end()) {
       for (const auto& p : bins.at(key).at(mat_id).particles) {
-        if (p->wgt >= 0.) particles_per_bin(0, i)++;
+        if (p->wgt > 0.) particles_per_bin(0, i)++;
         else particles_per_bin(1, i)++;
 
-        if (p->wgt2 >= 0.) particles_per_bin(2, i)++;
+        if (p->wgt2 > 0.) particles_per_bin(2, i)++;
         else particles_per_bin(3, i)++;
       }
     }
