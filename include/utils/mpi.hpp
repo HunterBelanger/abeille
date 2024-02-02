@@ -265,8 +265,7 @@ void Allreduce_sum(T& val,
 #ifdef ABEILLE_USE_MPI
   if (size > 1) {
     timer.start();
-    T tmp_send = val;
-    int err = MPI_Allreduce(&tmp_send, &val, 1, dtype<T>(), Sum, com);
+    int err = MPI_Allreduce(MPI_IN_PLACE, &val, 1, dtype<T>(), Sum, com);
     check_error(err, loc);
     timer.stop();
   }
@@ -282,9 +281,8 @@ void Allreduce_sum(std::vector<T>& vals,
 #ifdef ABEILLE_USE_MPI
   if (size > 1) {
     timer.start();
-    std::vector<T> tmp_send = vals;
     int err =
-        MPI_Allreduce(&tmp_send[0], &vals[0], static_cast<int>(vals.size()),
+        MPI_Allreduce(MPI_IN_PLACE, &vals[0], static_cast<int>(vals.size()),
                       dtype<T>(), Sum, com);
     check_error(err, loc);
     timer.stop();
@@ -301,8 +299,7 @@ void Allreduce_or(T& val,
 #ifdef ABEILLE_USE_MPI
   if (size > 1) {
     timer.start();
-    T tmp_send = val;
-    int err = MPI_Allreduce(&tmp_send, &val, 1, dtype<T>(), Or, com);
+    int err = MPI_Allreduce(MPI_IN_PLACE, &val, 1, dtype<T>(), Or, com);
     check_error(err, loc);
     timer.stop();
   }
@@ -318,9 +315,14 @@ void Reduce_sum(T& val, int root,
 #ifdef ABEILLE_USE_MPI
   if (size > 1) {
     timer.start();
-    T tmp_send = val;
-    int err = MPI_Reduce(&tmp_send, &val, 1, dtype<T>(), Sum, root, com);
+    int err;
+    if (mpi::rank == root) {
+      err = MPI_Reduce(MPI_IN_PLACE, &val, 1, dtype<T>(), Sum, root, com);
+    } else {
+      err = MPI_Reduce(&val, nullptr, 1, dtype<T>(), Sum, root, com);
+    }
     check_error(err, loc);
+
     timer.stop();
   }
 #else
@@ -336,20 +338,17 @@ void Reduce_sum(std::vector<T>& vals, int root,
 #ifdef ABEILLE_USE_MPI
   if (size > 1) {
     timer.start();
-    std::vector<T> tmp_rcv;
 
-    if (rank == root) {
-      // Only allocate the receving array if we are the reciever
-      tmp_rcv.resize(vals.size());
+    int err;
+    if (mpi::rank == root) {
+      err = MPI_Reduce(MPI_IN_PLACE, &vals[0], static_cast<int>(vals.size()),
+                       dtype<T>(), Sum, root, com);
+    } else {
+      err = MPI_Reduce(&vals[0], nullptr, static_cast<int>(vals.size()),
+                       dtype<T>(), Sum, root, com);
     }
-
-    int err = MPI_Reduce(&vals[0], &tmp_rcv[0], static_cast<int>(vals.size()),
-                         dtype<T>(), Sum, root, com);
     check_error(err, loc);
 
-    if (rank == root) {
-      vals.swap(tmp_rcv);
-    }
     timer.stop();
   }
 #else
