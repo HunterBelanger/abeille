@@ -186,9 +186,9 @@ bool Noise::out_of_time(int gen) {
   // See how much time we have left
   double T_remaining = settings::max_time - T_used;
 
-  // If the remaining time is less than 2*T_avg, than we just kill it
+  // If the remaining time is less than 3*T_avg, than we just kill it
   // it here, so that we are sure we don't run over.
-  if (T_remaining < 2. * T_avg) {
+  if (T_remaining < 3. * T_avg) {
     return true;
   }
 
@@ -306,23 +306,24 @@ void Noise::run() {
 }
 
 void Noise::power_iteration(bool sample_noise) {
-  std::vector<BankedParticle> next_gen;
+  // We set converged to false so that we don't waste time doing tallies in the
+  // power iteration portion of the simulation. We save a copy to reset after.
+  const bool orig_converged = settings::converged;
+  settings::converged = false;
 
+  std::vector<BankedParticle> next_gen;
   if (sample_noise == false) {
     next_gen = transporter->transport(bank, false, nullptr, nullptr);
   } else {
     next_gen = transporter->transport(bank, false, &noise_bank, &noise_maker);
   }
-  std::sort(next_gen.begin(), next_gen.end());
-  mpi::synchronize();
 
   if (next_gen.size() == 0) {
     fatal_error("No fission neutrons were produced.");
   }
 
-  // Synchronize the fission banks across all nodes, so that each node will
-  // now have the particles that it will be responsible for.
-  sync_banks(mpi::node_nparticles, next_gen);
+  // Do all Pre-Cancelation entropy calculations
+  compute_pre_cancellation_entropy(next_gen);
 
   // Get new keff
   tallies->calc_gen_values();
@@ -330,13 +331,16 @@ void Noise::power_iteration(bool sample_noise) {
   // Zero tallies for next generation
   tallies->clear_generation();
 
-  // Do all Pre-Cancelation entropy calculations
-  compute_pre_cancellation_entropy(next_gen);
+  mpi::synchronize();
 
   // Do weight cancelation
   if (settings::regional_cancellation) {
-    perform_regional_cancellation(mpi::node_nparticles, next_gen);
+    perform_regional_cancellation(next_gen);
   }
+
+  // Synchronize the fission banks across all nodes, so that each node will
+  // now have the particles that it will be responsible for.
+  sync_banks(mpi::node_nparticles, next_gen);
 
   // Calculate net positive and negative weight
   normalize_weights(next_gen);
@@ -371,54 +375,36 @@ void Noise::power_iteration(bool sample_noise) {
   // Zero all entropy bins
   zero_entropy();
 
-  // If we sampled a noise source, sort that too !
-  if (sample_noise) std::sort(noise_bank.begin(), noise_bank.end());
+  // Reset converged to original value
+  settings::converged = orig_converged;
 }
 
 inline void Noise::perform_regional_cancellation(
-    std::vector<uint64_t>& nums, std::vector<BankedParticle>& bank) {
-  // To perform cancellation with MPI, what we first do is send ALL of the
-  // banked particles back to master. Yes, I know, this is very inefficient. But
-  // cancellation works best with the highest density of particles possbile.
-  // The smpilest option to make this work without domain decomposition is
-  // sending all banked particles to master. Sending all particles to master
-  // also avoids some troubles with random number generator seeds, as we can
-  // just use the global settings::rng for performing cancellation.
-  mpi::Gatherv(bank, 0);
+    std::vector<BankedParticle>& bank) {
+  // Only perform cancellation if we are master !!
+  std::size_t n_lost_boys = 0;
 
-  if (mpi::rank != 0) bank.clear();
-
-  if (mpi::rank == 0) {
-    // Only perform cancellation if we are master !!
-    std::size_t n_lost_boys = 0;
-
-    // Distribute Particles to Cancellation Bins
-    for (auto& p : bank) {
-      if (!cancelator->add_particle(p)) n_lost_boys++;
-    }
-
-    if (n_lost_boys > 0)
-      std::cout << " There are " << n_lost_boys
-                << " particles with no cancellation bin.\n";
-
-    // Perform Cancellation for each Bin
-    cancelator->perform_cancellation(settings::rng);
-
-    // All particles which were placed into a cancellation bin from next_gen
-    // now have modified weights.
-    // Now we can get the uniform particles
-    auto tmp = cancelator->get_new_particles(settings::rng);
-    bank.insert(bank.end(), tmp.begin(), tmp.end());
-    nums[0] += tmp.size();
-
-    // All done ! Clear cancelator for next run
-    cancelator->clear();
+  // Distribute Particles to Cancellation Bins
+  for (auto& p : bank) {
+    if (!cancelator->add_particle(p)) n_lost_boys++;
   }
 
-  // Since we added some "uniform particles" to the global fission bank, we need
-  // to re-calculate how many particles each node should have, and re-sync all
-  // of the banks
-  sync_banks(nums, bank);
+  if (n_lost_boys > 0)
+    std::cout << " There are " << n_lost_boys
+              << " particles with no cancellation bin.\n";
+
+  // Perform Cancellation for each Bin
+  cancelator->perform_cancellation();
+
+  // All particles which were placed into a cancellation bin from next_gen
+  // now have modified weights.
+  // Now we can get the uniform particles
+  auto tmp = cancelator->get_new_particles(settings::rng);
+
+  if (tmp.size() > 0) bank.insert(bank.end(), tmp.begin(), tmp.end());
+
+  // All done ! Clear cancelator for next run
+  cancelator->clear();
 }
 
 void Noise::noise_simulation() {
@@ -491,12 +477,7 @@ void Noise::noise_simulation() {
 
     auto fission_bank = transporter->transport(nbank, true, nullptr, nullptr);
     if (noise_gen == 1) transported_histories += bank.size();
-    std::sort(fission_bank.begin(), fission_bank.end());
     mpi::synchronize();
-
-    // Synchronize the fission banks across all nodes, so that each node will
-    // now have the particles that it will be responsible for.
-    sync_banks(mpi::node_nparticles_noise, fission_bank);
 
     // Cancellation may be performed on fission_bank here if we have provided
     // a Cancelator instance.
@@ -504,10 +485,14 @@ void Noise::noise_simulation() {
         noise_gen <= settings::n_cancel_noise_gens) {
       noise_timer.stop();
       cancellation_timer.start();
-      perform_regional_cancellation(mpi::node_nparticles_noise, fission_bank);
+      perform_regional_cancellation(fission_bank);
       cancellation_timer.stop();
       noise_timer.start();
     }
+
+    // Synchronize the fission banks across all nodes, so that each node will
+    // now have the particles for which it will be responsible.
+    sync_banks(mpi::node_nparticles_noise, fission_bank);
 
     nbank.clear();
 

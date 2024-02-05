@@ -117,7 +117,7 @@ materials:
 # This entry is only used when carter-tracking is used as the transport method. When that is the case, it
 # sets the ratio of the sampling cross section, to the majorant cross section, for each energy group
 # i.e. E_smp / E_maj
-sampling-xs: [0.90, 1., 1., 1., 1., 1., 1.]
+sampling-xs-ratio: [0.90, 1., 1., 1., 1., 1., 1.]
 
 surfaces:
   # Surfaces for pin cells
@@ -327,12 +327,10 @@ sources:
     weight: 1.
 
 cancelator:
-  type: basic-exact
+  type: exact
   shape: [170, 170, 765]
   low: [-32.13, -32.13, -107.11]
   hi: [10.71, 10.71, 85.69] 
-  beta: average-g
-  sobol: true
   nsamples: 20
 
 # Here, the cartesian mesh for the flux tally is defined. The ebtries

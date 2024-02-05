@@ -106,10 +106,6 @@ class Simulation {
   void sync_banks(std::vector<uint64_t>& nums,
                   std::vector<BankedParticle>& bank);
 
-  void particles_to_master(std::vector<BankedParticle>& bank);
-  void distribute_particles(std::vector<uint64_t>& nums,
-                            std::vector<BankedParticle>& bank);
-
   void write_source(std::vector<Particle>& bank) const;
 
 };  // Simulation

@@ -37,7 +37,7 @@ class Cancelator {
   virtual ~Cancelator() = default;
 
   virtual bool add_particle(BankedParticle& p) = 0;
-  virtual void perform_cancellation(pcg32& rng) = 0;
+  virtual void perform_cancellation() = 0;
   virtual std::vector<BankedParticle> get_new_particles(pcg32& rng) = 0;
   virtual void clear() = 0;
 };

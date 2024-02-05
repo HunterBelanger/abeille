@@ -13,7 +13,6 @@ set(ABEILLE_SOURCE_FILES ${ABEILLE_SOURCE_FILES}
   src/implicit_leakage_delta_tracker.cpp
   src/transporter.cpp
   src/approximate_mesh_cancelator.cpp
-  src/basic_exact_mg_cancelator.cpp
   src/exact_mg_cancelator.cpp
   src/cancelator.cpp
   src/noise.cpp

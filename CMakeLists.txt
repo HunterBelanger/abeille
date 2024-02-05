@@ -143,7 +143,7 @@ target_compile_definitions(abeille PUBLIC ABEILLE_GIT_HASH=\"${ABEILLE_GIT_HASH_
 target_compile_definitions(abeille PUBLIC ABEILLE_COMPILER_NAME=\"${CMAKE_CXX_COMPILER_ID}\")
 target_compile_definitions(abeille PUBLIC ABEILLE_COMPILER_VERSION=\"${CMAKE_CXX_COMPILER_VERSION}\")
 
-if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC") # Comile options for Windows
+if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC") # Compile options for Windows
   target_compile_options(abeille PRIVATE /W3)
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU") # Compile options for GCC
   target_compile_options(abeille PRIVATE -W -Wall -Wextra -Wconversion -Wpedantic)
@@ -158,7 +158,7 @@ if(ABEILLE_USE_OMP)
   find_package(OpenMP REQUIRED)
   if(OpenMP_CXX_FOUND)
     target_link_libraries(abeille PUBLIC OpenMP::OpenMP_CXX)
-    if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC") # Comile options for Windows
+    if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC") # Compile options for Windows
       target_compile_options(abeille PRIVATE /openmp:llvm) 
     endif()
     target_compile_definitions(abeille PUBLIC ABEILLE_USE_OMP)

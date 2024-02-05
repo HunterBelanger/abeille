@@ -44,9 +44,49 @@ class ExactMGCancelator : public Cancelator {
                     uint32_t n_samples);
 
   bool add_particle(BankedParticle& p) override final;
-  void perform_cancellation(pcg32&) override final;
+  void perform_cancellation() override final;
   std::vector<BankedParticle> get_new_particles(pcg32& rng) override final;
   void clear() override final;
+
+  // Key which represents a unique cancellation bin for a
+  // given position and energy group.
+  // Key is public for MPI use
+  struct Key {
+    Key(uint64_t i, uint64_t j, uint64_t k, uint64_t e)
+        : i(i), j(j), k(k), e(e) {}
+
+    Key() : i(0), j(0), k(0), e(0) {}
+    uint64_t i, j, k, e;
+
+    std::size_t hash_key() const {
+      return e + shape[3] * (k + shape[2] * (j + shape[1] * i));
+    }
+
+    bool operator==(const Key& other) const {
+      return ((i == other.i) && (j == other.j) && (k == other.k) &&
+              (e == other.e));
+    }
+
+    auto operator<=>(const Key&) const = default;
+
+    // Contains the shape of the cancellation region mesh.
+    // shape[0] Number of regions in x
+    // shape[1] Number of regions in y
+    // shape[2] Number of regions in z
+    // shape[3] Number of regions in energy
+    static std::array<uint64_t, 4> shape;
+
+    // The width of each region in x, y, and z
+    static std::array<double, 3> pitch;
+
+    // Contains the groupings for the energy bins.
+    // goup_bin.size() == shape[3] should ALWAYS be true !
+    // group_bin[i] is then a vector containing the energy
+    // group indices which belong to the ith energy bin.
+    static std::vector<std::vector<std::size_t>> group_bins;
+
+    static Position r_low, r_hi;
+  };
 
  private:
   //==========================================================================
@@ -69,42 +109,6 @@ class ExactMGCancelator : public Cancelator {
     std::vector<Averages> averages;
   };
 
-  // Key which represents a unique cancellation bin for a
-  // given position and energy group.
-  struct Key {
-    Key(std::size_t i, std::size_t j, std::size_t k, std::size_t e)
-        : i(i), j(j), k(k), e(e) {}
-
-    std::size_t i, j, k, e;
-
-    std::size_t hash_key() const {
-      return e + shape[3] * (k + shape[2] * (j + shape[1] * i));
-    }
-
-    bool operator==(const Key& other) const {
-      return ((i == other.i) && (j == other.j) && (k == other.k) &&
-              (e == other.e));
-    }
-
-    // Contains the shape of the cancellation region mesh.
-    // shape[0] Number of regions in x
-    // shape[1] Number of regions in y
-    // shape[2] Number of regions in z
-    // shape[3] Number of regions in energy
-    static std::array<std::size_t, 4> shape;
-
-    // The width of each region in x, y, and z
-    static std::array<double, 3> pitch;
-
-    // Contains the groupings for the energy bins.
-    // goup_bin.size() == shape[3] should ALWAYS be true !
-    // group_bin[i] is then a vector containing the energy
-    // group indices which belong to the ith energy bin.
-    static std::vector<std::vector<std::size_t>> group_bins;
-
-    static Position r_low, r_hi;
-  };
-
   struct KeyHash {
     std::size_t operator()(const Key& key) const { return key.hash_key(); }
   };
@@ -113,7 +117,7 @@ class ExactMGCancelator : public Cancelator {
   // Data Members
 
   // All cancellation bins, organized first by Key has, then by material.
-  std::unordered_map<Key, std::unordered_map<Material*, CancelBin>, KeyHash>
+  std::unordered_map<Key, std::unordered_map<uint32_t, CancelBin>, KeyHash>
       bins;
 
   // False if we only have MG materials with a chi vector.
@@ -132,6 +136,8 @@ class ExactMGCancelator : public Cancelator {
   // Private Methods
 
   std::optional<Key> get_key(const Position& r, std::size_t g);
+
+  std::vector<std::pair<ExactMGCancelator::Key, uint32_t>> sync_keys();
 
   // Get's a pointer to the material at r
   Material* get_material(const Position& r) const;
@@ -154,7 +160,7 @@ class ExactMGCancelator : public Cancelator {
   void compute_averages(const Key& key, Material* mat, MGNuclide* nuclide,
                         CancelBin& bin);
 
-  void cancel_bin(CancelBin& bin, MGNuclide* nuclide, bool first_wgt);
+  void cancel_bin(CancelBin& bin, MGNuclide* nuclide);
 };
 
 std::shared_ptr<ExactMGCancelator> make_exact_mg_cancelator(
