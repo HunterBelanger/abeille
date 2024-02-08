@@ -185,10 +185,16 @@ std::vector<int> ApproximateMeshCancelator::sync_keys() {
   // For every Node starting at 1, send its keys to master and add to key_set
   for (int i = 1; i < mpi::size; i++) {
     if (mpi::rank == i) {
-      mpi::Send(keys, 0);
+      auto nkeys = keys.size();
+      mpi::Send(nkeys, 0);
+      mpi::Send(std::span<int>(keys.begin(), keys.end()), 0);
       keys.clear();
     } else if (mpi::rank == 0) {
-      mpi::Recv(keys, i);
+      std::size_t nkeys = 0;
+      mpi::Recv(nkeys, i);
+      keys.resize(nkeys);
+
+      mpi::Recv(std::span<int>(keys.begin(), keys.end()), i);
       std::copy(keys.begin(), keys.end(),
                 std::inserter(key_set, key_set.end()));
     }

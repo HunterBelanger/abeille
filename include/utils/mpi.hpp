@@ -30,6 +30,7 @@
 
 #include <cstdint>
 #include <source_location>
+#include <span>
 #include <vector>
 
 #ifdef ABEILLE_USE_MPI
@@ -193,18 +194,15 @@ void Send(T& val, int dest, int tag = 0,
 }
 
 template <typename T>
-void Send(std::vector<T>& vals, int dest, int tag = 0,
+void Send(std::span<T> vals, int dest, int tag = 0,
           std::source_location loc = std::source_location::current()) {
   if (size < 2) {
     fatal_error("mpi::Send cannot be called with mpi::size less than 2", loc);
   }
 #ifdef ABEILLE_USE_MPI
   timer.start();
-  std::size_t count = vals.size();
-  Send(count, dest, tag++);
-
-  int err =
-      MPI_Send(&vals[0], static_cast<int>(count), dtype<T>(), dest, tag, com);
+  int err = MPI_Send(&vals[0], static_cast<int>(vals.size()), dtype<T>(), dest,
+                     tag, com);
   check_error(err, loc);
   timer.stop();
 #else
@@ -235,20 +233,15 @@ void Recv(T& val, int src, int tag = 0,
 }
 
 template <typename T>
-void Recv(std::vector<T>& vals, int src, int tag = 0,
+void Recv(std::span<T> vals, int src, int tag = 0,
           std::source_location loc = std::source_location::current()) {
   if (size < 2) {
     fatal_error("mpi::Recv cannot be called with mpi::size less than 2", loc);
   }
 #ifdef ABEILLE_USE_MPI
   timer.start();
-  std::size_t count = 0;
-  Recv(count, src, tag++);
-
-  vals.resize(count);
-
-  int err = MPI_Recv(&vals[0], static_cast<int>(count), dtype<T>(), src, tag,
-                     com, MPI_STATUS_IGNORE);
+  int err = MPI_Recv(&vals[0], static_cast<int>(vals.size()), dtype<T>(), src,
+                     tag, com, MPI_STATUS_IGNORE);
   check_error(err, loc);
   timer.stop();
 #else
