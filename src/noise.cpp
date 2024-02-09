@@ -441,8 +441,6 @@ void Noise::power_iteration(bool sample_noise) {
   // Zero tallies for next generation
   Tallies::instance().clear_generation();
 
-  mpi::synchronize();
-
   // Do weight cancelation
   if (regional_cancellation_) {
     perform_regional_cancellation(next_gen);
@@ -589,7 +587,6 @@ void Noise::noise_simulation() {
     auto fission_bank =
         particle_mover->transport(nbank, noise_params, nullptr, nullptr);
     if (noise_gen == 1) transported_histories += bank.size();
-    mpi::synchronize();
 
     // Cancellation may be performed on fission_bank here if we have provided
     // a Cancelator instance.

@@ -116,7 +116,6 @@ void FixedSource::run() {
 
   // Start timer
   simulation_timer.reset();
-  mpi::synchronize();
   simulation_timer.start();
 
   // Get the number of particles that this node should run
@@ -134,7 +133,6 @@ void FixedSource::run() {
       fatal_error("Returned bank not empty on fixed-source transport.");
     }
     transported_histories += bank.size();
-    mpi::synchronize();
 
     // Get new values
     Tallies::instance().calc_gen_values();

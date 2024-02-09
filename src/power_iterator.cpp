@@ -412,7 +412,6 @@ void PowerIterator::run() {
 
   // Start timer
   simulation_timer.reset();
-  mpi::synchronize();
   simulation_timer.start();
 
   // Check for immediate convergence (i.e. we read source from file)
@@ -441,8 +440,6 @@ void PowerIterator::run() {
 
     // Get new keff
     Tallies::instance().calc_gen_values();
-
-    mpi::synchronize();
 
     // Do weight cancelation
     if (cancelator) {

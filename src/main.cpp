@@ -100,7 +100,6 @@ int main(int argc, char** argv) {
     output_filename = args["--output"].asString();
     Output::set_output_filename(output_filename);
   }
-  mpi::synchronize();
 
 #ifdef ABEILLE_GUI_PLOT
   if (args["--gui-plot"].asBool() || args["--plot"].asBool()) {
@@ -183,7 +182,6 @@ int main(int argc, char** argv) {
 #endif
 
     // Print output header if rank 0
-    mpi::synchronize();
     print_header();
     Output::instance().write("\n");
 
