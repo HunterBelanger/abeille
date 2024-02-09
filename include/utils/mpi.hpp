@@ -30,6 +30,7 @@
 
 #include <cstdint>
 #include <source_location>
+#include <span>
 #include <vector>
 
 #ifdef ABEILLE_USE_MPI
@@ -193,18 +194,15 @@ void Send(T& val, int dest, int tag = 0,
 }
 
 template <typename T>
-void Send(std::vector<T>& vals, int dest, int tag = 0,
+void Send(std::span<T> vals, int dest, int tag = 0,
           std::source_location loc = std::source_location::current()) {
   if (size < 2) {
     fatal_error("mpi::Send cannot be called with mpi::size less than 2", loc);
   }
 #ifdef ABEILLE_USE_MPI
   timer.start();
-  std::size_t count = vals.size();
-  Send(count, dest, tag++);
-
-  int err =
-      MPI_Send(&vals[0], static_cast<int>(count), dtype<T>(), dest, tag, com);
+  int err = MPI_Send(&vals[0], static_cast<int>(vals.size()), dtype<T>(), dest,
+                     tag, com);
   check_error(err, loc);
   timer.stop();
 #else
@@ -235,20 +233,15 @@ void Recv(T& val, int src, int tag = 0,
 }
 
 template <typename T>
-void Recv(std::vector<T>& vals, int src, int tag = 0,
+void Recv(std::span<T> vals, int src, int tag = 0,
           std::source_location loc = std::source_location::current()) {
   if (size < 2) {
     fatal_error("mpi::Recv cannot be called with mpi::size less than 2", loc);
   }
 #ifdef ABEILLE_USE_MPI
   timer.start();
-  std::size_t count = 0;
-  Recv(count, src, tag++);
-
-  vals.resize(count);
-
-  int err = MPI_Recv(&vals[0], static_cast<int>(count), dtype<T>(), src, tag,
-                     com, MPI_STATUS_IGNORE);
+  int err = MPI_Recv(&vals[0], static_cast<int>(vals.size()), dtype<T>(), src,
+                     tag, com, MPI_STATUS_IGNORE);
   check_error(err, loc);
   timer.stop();
 #else
@@ -265,8 +258,7 @@ void Allreduce_sum(T& val,
 #ifdef ABEILLE_USE_MPI
   if (size > 1) {
     timer.start();
-    T tmp_send = val;
-    int err = MPI_Allreduce(&tmp_send, &val, 1, dtype<T>(), Sum, com);
+    int err = MPI_Allreduce(MPI_IN_PLACE, &val, 1, dtype<T>(), Sum, com);
     check_error(err, loc);
     timer.stop();
   }
@@ -282,9 +274,8 @@ void Allreduce_sum(std::vector<T>& vals,
 #ifdef ABEILLE_USE_MPI
   if (size > 1) {
     timer.start();
-    std::vector<T> tmp_send = vals;
     int err =
-        MPI_Allreduce(&tmp_send[0], &vals[0], static_cast<int>(vals.size()),
+        MPI_Allreduce(MPI_IN_PLACE, &vals[0], static_cast<int>(vals.size()),
                       dtype<T>(), Sum, com);
     check_error(err, loc);
     timer.stop();
@@ -301,8 +292,7 @@ void Allreduce_or(T& val,
 #ifdef ABEILLE_USE_MPI
   if (size > 1) {
     timer.start();
-    T tmp_send = val;
-    int err = MPI_Allreduce(&tmp_send, &val, 1, dtype<T>(), Or, com);
+    int err = MPI_Allreduce(MPI_IN_PLACE, &val, 1, dtype<T>(), Or, com);
     check_error(err, loc);
     timer.stop();
   }
@@ -318,9 +308,14 @@ void Reduce_sum(T& val, int root,
 #ifdef ABEILLE_USE_MPI
   if (size > 1) {
     timer.start();
-    T tmp_send = val;
-    int err = MPI_Reduce(&tmp_send, &val, 1, dtype<T>(), Sum, root, com);
+    int err;
+    if (mpi::rank == root) {
+      err = MPI_Reduce(MPI_IN_PLACE, &val, 1, dtype<T>(), Sum, root, com);
+    } else {
+      err = MPI_Reduce(&val, nullptr, 1, dtype<T>(), Sum, root, com);
+    }
     check_error(err, loc);
+
     timer.stop();
   }
 #else
@@ -336,20 +331,17 @@ void Reduce_sum(std::vector<T>& vals, int root,
 #ifdef ABEILLE_USE_MPI
   if (size > 1) {
     timer.start();
-    std::vector<T> tmp_rcv;
 
-    if (rank == root) {
-      // Only allocate the receving array if we are the reciever
-      tmp_rcv.resize(vals.size());
+    int err;
+    if (mpi::rank == root) {
+      err = MPI_Reduce(MPI_IN_PLACE, &vals[0], static_cast<int>(vals.size()),
+                       dtype<T>(), Sum, root, com);
+    } else {
+      err = MPI_Reduce(&vals[0], nullptr, static_cast<int>(vals.size()),
+                       dtype<T>(), Sum, root, com);
     }
-
-    int err = MPI_Reduce(&vals[0], &tmp_rcv[0], static_cast<int>(vals.size()),
-                         dtype<T>(), Sum, root, com);
     check_error(err, loc);
 
-    if (rank == root) {
-      vals.swap(tmp_rcv);
-    }
     timer.stop();
   }
 #else

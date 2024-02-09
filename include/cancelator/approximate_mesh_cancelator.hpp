@@ -49,12 +49,14 @@ class ApproximateMeshCancelator : public Cancelator {
   std::vector<double> energy_edges;
   std::array<uint32_t, 4> shape;
   Position r_low, r_hi;
+  uint32_t Si, Sj, Sk, Sl;  // Strides for indexing
   double dx, dy, dz;
   bool loop;
 
   std::vector<int> sync_keys();
   void perform_cancellation_loop();
   void perform_cancellation_vector();
+  void perform_cancellation_full_vector();
 };
 
 std::shared_ptr<ApproximateMeshCancelator> make_approximate_mesh_cancelator(

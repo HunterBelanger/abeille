@@ -465,6 +465,11 @@ void make_settings(const YAML::Node& input) {
                           settings::energy_bounds.end())) {
         fatal_error("The energy-bounds for multi-group mode are not sorted.");
       }
+
+      // Make sure initial energy bound isn't exactly zero
+      if (settings::energy_bounds.front() == 0.) {
+        settings::energy_bounds.front() = 1.E-11;
+      }
     }
 
     // Get roulette settings

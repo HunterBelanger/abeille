@@ -439,11 +439,21 @@ ExactMGCancelator::sync_keys() {
   // For every Node starting at 1, send its keys to master and add to key_set
   for (int i = 1; i < mpi::size; i++) {
     if (mpi::rank == i) {
-      mpi::Send(key_matid_pairs, 0);
+      auto npairs = key_matid_pairs.size();
+      mpi::Send(npairs, 0);
+      mpi::Send(std::span<std::pair<Key, uint32_t>>(key_matid_pairs.begin(),
+                                                    key_matid_pairs.end()),
+                0);
       key_matid_pairs.clear();
     } else if (mpi::rank == 0) {
       key_matid_pairs.clear();
-      mpi::Recv(key_matid_pairs, i);
+      std::size_t npairs = 0;
+      mpi::Recv(npairs, i);
+      key_matid_pairs.resize(npairs);
+
+      mpi::Recv(std::span<std::pair<Key, uint32_t>>(key_matid_pairs.begin(),
+                                                    key_matid_pairs.end()),
+                i);
       key_set.insert(key_matid_pairs.begin(), key_matid_pairs.end());
     }
   }
@@ -457,7 +467,45 @@ ExactMGCancelator::sync_keys() {
   // Send keys to all nodes from Master
   mpi::Bcast(key_matid_pairs, 0);
 
-  return key_matid_pairs;
+  // From these keys, we need to see which bins have both positive and negative
+  // particles, and only those will then be canceled.
+  NDArray<uint16_t> particles_per_bin({4, key_matid_pairs.size()}, false);
+  particles_per_bin.fill(0);
+  for (std::size_t i = 0; i < key_matid_pairs.size(); i++) {
+    const auto& key = key_matid_pairs[i].first;
+    const auto& mat_id = key_matid_pairs[i].second;
+
+    if (bins.find(key) != bins.end() &&
+        bins.at(key).find(mat_id) != bins.at(key).end()) {
+      for (const auto& p : bins.at(key).at(mat_id).particles) {
+        if (p->wgt > 0.)
+          particles_per_bin(0, i)++;
+        else
+          particles_per_bin(1, i)++;
+
+        if (p->wgt2 > 0.)
+          particles_per_bin(2, i)++;
+        else
+          particles_per_bin(3, i)++;
+      }
+    }
+  }
+  mpi::Allreduce_sum(particles_per_bin.data_vector());
+
+  // Now, we only keep pairs with both a positive and negative particle
+  std::vector<std::pair<Key, uint32_t>> key_matid_pairs_to_keep;
+  key_matid_pairs_to_keep.reserve(key_matid_pairs.size());
+  for (std::size_t i = 0; i < key_matid_pairs.size(); i++) {
+    const bool pos_and_neg =
+        particles_per_bin(0, i) > 0 && particles_per_bin(1, i) > 0;
+    const bool pos2_and_neg2 =
+        particles_per_bin(2, i) > 0 && particles_per_bin(3, i) > 0;
+    if (pos_and_neg || pos2_and_neg2) {
+      key_matid_pairs_to_keep.push_back(key_matid_pairs[i]);
+    }
+  }
+
+  return key_matid_pairs_to_keep;
 }
 
 void ExactMGCancelator::perform_cancellation() {
@@ -507,7 +555,7 @@ void ExactMGCancelator::perform_cancellation() {
 
   // Assign all the optimization parameters after doing reduction across nodes.
   // There is no need to do this if we only have 1 node.
-  if (mpi::size > 0) {
+  if (mpi::size > 1) {
 #ifdef ABEILLE_USE_OMP
 #pragma omp parallel for
 #endif

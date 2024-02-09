@@ -79,6 +79,7 @@ CarterTracker::CarterTracker(const std::vector<double>& mgxs)
 
       xs.push_back(xsval);
       xs.push_back(xsval);
+      grp++;
     }
   }
 
@@ -202,18 +203,19 @@ void CarterTracker::transport(Particle& p, Tracker& trkr, MaterialHelper& mat,
       mat.set_material(trkr.material(), p.E());
 
       // Get true cross section here
-      double Et = mat.Et(p.E());
+      const double Et = mat.Et(p.E());
 
       if (Esample >= Et) {
-        if (RNG::rand(p.rng) < (Et / Esample)) {
+        const double Preal = Et / Esample;
+        if (RNG::rand(p.rng) < Preal) {
           // Flag real collision
           had_collision = true;
         }
       } else {
-        double D = Et / (2. * Et - Esample);
-        double F = Et / (D * Esample);
+        const double D = Et / (2. * Et - Esample);
+        const double F = Et / (D * Esample);
 
-        if ((D - RNG::rand(p.rng)) > 0.) {
+        if (RNG::rand(p.rng) < D) {
           p.set_weight(p.wgt() * F);
           had_collision = true;
         } else {

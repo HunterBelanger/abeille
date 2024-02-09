@@ -185,8 +185,8 @@ void PowerIterator::load_source_from_file() {
   mpi::node_nparticles.resize(static_cast<std::size_t>(mpi::size),
                               base_particles_per_node);
 
-  // Distribute the remainder particles amonst the nodes. There are at most
-  // mpi::size-1 remainder particles, so we will distribute them untill we
+  // Distribute the remainder particles amongst the nodes. There are at most
+  // mpi::size-1 remainder particles, so we will distribute them until we
   // have no more.
   for (std::size_t rank = 0; rank < remainder; rank++) {
     mpi::node_nparticles[rank]++;
@@ -500,7 +500,7 @@ void PowerIterator::run() {
     generation_output();
 
     // Check if signal has been sent after generation keff has been
-    // recorded, and cancellation has occured. Otherwize source file
+    // recorded, and cancellation has occurred. Otherwise source file
     // will be larger than necessary, and wrong number of gens will be
     // in output file based on number averaged for tallies.
     sync_signaled();

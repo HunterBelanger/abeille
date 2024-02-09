@@ -67,7 +67,7 @@ TransporterObjct make_transporter(const YAML::Node& sim) {
 
   // Check for the sampling xs data
   std::vector<double> xs, egrid;
-  if (type == "carter-tracker") {
+  if (type == "carter-tracking") {
     if (!to["sampling-xs"] || to["sampling-xs"].IsMap() == false) {
       fatal_error("No sampling-xs entry present for cater-tracker.");
     }

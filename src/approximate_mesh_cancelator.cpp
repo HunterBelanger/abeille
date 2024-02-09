@@ -39,6 +39,10 @@ ApproximateMeshCancelator::ApproximateMeshCancelator(Position low, Position hi,
       shape{Nx, Ny, Nz, 1},
       r_low(low),
       r_hi(hi),
+      Si(0),
+      Sj(0),
+      Sk(0),
+      Sl(0),
       dx(0.),
       dy(0.),
       dz(0.),
@@ -53,6 +57,12 @@ ApproximateMeshCancelator::ApproximateMeshCancelator(Position low, Position hi,
   dx = (r_hi.x() - r_low.x()) / static_cast<double>(shape[0]);
   dy = (r_hi.y() - r_low.y()) / static_cast<double>(shape[1]);
   dz = (r_hi.z() - r_low.z()) / static_cast<double>(shape[2]);
+
+  // Set strides
+  Si = shape[1] * shape[2] * shape[3];
+  Sj = shape[2] * shape[3];
+  Sk = shape[3];
+  Sl = 1;
 }
 
 ApproximateMeshCancelator::ApproximateMeshCancelator(
@@ -63,6 +73,10 @@ ApproximateMeshCancelator::ApproximateMeshCancelator(
       shape{Nx, Ny, Nz, 1},
       r_low(low),
       r_hi(hi),
+      Si(0),
+      Sj(0),
+      Sk(0),
+      Sl(0),
       dx(0.),
       dy(0.),
       dz(0.),
@@ -96,6 +110,12 @@ ApproximateMeshCancelator::ApproximateMeshCancelator(
   }
 
   shape[3] = static_cast<uint32_t>(energy_edges.size() - 1);
+
+  // Set strides
+  Si = shape[1] * shape[2] * shape[3];
+  Sj = shape[2] * shape[3];
+  Sk = shape[3];
+  Sl = 1;
 }
 
 bool ApproximateMeshCancelator::add_particle(BankedParticle& p) {
@@ -165,10 +185,16 @@ std::vector<int> ApproximateMeshCancelator::sync_keys() {
   // For every Node starting at 1, send its keys to master and add to key_set
   for (int i = 1; i < mpi::size; i++) {
     if (mpi::rank == i) {
-      mpi::Send(keys, 0);
+      auto nkeys = keys.size();
+      mpi::Send(nkeys, 0);
+      mpi::Send(std::span<int>(keys.begin(), keys.end()), 0);
       keys.clear();
     } else if (mpi::rank == 0) {
-      mpi::Recv(keys, i);
+      std::size_t nkeys = 0;
+      mpi::Recv(nkeys, i);
+      keys.resize(nkeys);
+
+      mpi::Recv(std::span<int>(keys.begin(), keys.end()), i);
       std::copy(keys.begin(), keys.end(),
                 std::inserter(key_set, key_set.end()));
     }
@@ -280,11 +306,74 @@ void ApproximateMeshCancelator::perform_cancellation_vector() {
   keys.clear();
 }
 
+void ApproximateMeshCancelator::perform_cancellation_full_vector() {
+  NDArray<double> wgts({2, shape[0], shape[1], shape[2], shape[3]});
+  NDArray<uint16_t> n_totals({shape[0], shape[1], shape[2], shape[3]});
+
+  for (auto& key_bin_pair : bins) {
+    uint32_t indx = key_bin_pair.first;
+    const auto& bin = key_bin_pair.second;
+
+    // Get ijkl from the indx using strides
+    uint32_t i = indx / Si;
+    uint32_t j = (indx - i * Si) / Sj;
+    uint32_t k = (indx - i * Si - j * Sj) / Sk;
+    uint32_t l = (indx - i * Si - j * Sj - k * Sk) / Sl;
+
+    std::uint16_t n_total = 0;
+    double sum_wgt = 0.;
+    double sum_wgt2 = 0.;
+
+    // Go through all particles in the bin and add up positives and negatives
+    // and get total sum
+    for (const auto& p : bin) {
+      n_total++;
+      sum_wgt += p->wgt;
+      sum_wgt2 += p->wgt2;
+    }
+
+    // Push the counts to the vectors
+    n_totals(i, j, k, l) = n_total;
+    wgts(0, i, j, k, l) = sum_wgt;
+    wgts(1, i, j, k, l) = sum_wgt2;
+  }
+
+  // Sum the vectors across all nodes
+  mpi::Allreduce_sum(wgts.data_vector());
+  mpi::Allreduce_sum(n_totals.data_vector());
+
+  // all the vectors have size keys.size() so we use variable x to index them
+  // since they should match to keys
+  for (auto& key_bin_pair : bins) {
+    uint32_t indx = key_bin_pair.first;
+    auto& bin = key_bin_pair.second;
+
+    // Get ijkl from the indx using strides
+    uint32_t i = indx / Si;
+    uint32_t j = (indx - i * Si) / Sj;
+    uint32_t k = (indx - i * Si - j * Sj) / Sk;
+    uint32_t l = (indx - i * Si - j * Sj - k * Sk) / Sl;
+
+    // Set the avg weights
+    const double inv_n = 1. / static_cast<double>(n_totals(i, j, k, l));
+    const double avg_wgt = wgts(0, i, j, k, l) * inv_n;
+    const double avg_wgt2 = wgts(1, i, j, k, l) * inv_n;
+
+    for (auto& p : bin) {
+      p->wgt = avg_wgt;
+      p->wgt2 = avg_wgt2;
+    }
+
+    bin.clear();
+  }
+}
+
 void ApproximateMeshCancelator::perform_cancellation() {
   if (loop) {
     this->perform_cancellation_loop();
   } else {
-    this->perform_cancellation_vector();
+    // this->perform_cancellation_vector();
+    this->perform_cancellation_full_vector();
   }
 }
 
