@@ -109,7 +109,7 @@ FetchContent_MakeAvailable(Boost)
 
 #===============================================================================
 # Get HighFive
-message(STATUS "Downloading HighFive")
+message(STATUS "Downloading HighFive v2.9.0")
 set(HIGHFIVE_USE_BOOST OFF)
 set(HIGHFIVE_EXAMPLES OFF)
 set(HIGHFIVE_BUILD_DOCS OFF)
