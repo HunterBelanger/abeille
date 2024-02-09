@@ -117,7 +117,7 @@ set(HIGHFIVE_STATIC_HDF5 ON)
 set(HighFive_FIND_QUIETLY ON)
 FetchContent_Declare(HighFive
   GIT_REPOSITORY https://github.com/BlueBrain/HighFive.git
-  GIT_TAG        master
+  GIT_TAG        v2.9.0 # There are some breaking changes after this version.
 )
 FetchContent_MakeAvailable(HighFive)
 
