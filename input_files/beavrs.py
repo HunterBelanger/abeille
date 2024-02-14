@@ -1605,7 +1605,7 @@ beavrs['universes'] = universes
 beavrs['root-universe'] = CORE
 beavrs['tallies'] = tallies
 beavrs['settings'] = settings
-beabrs['simulation'] = simulation
+beavrs['simulation'] = simulation
 beavrs['plots'] = plots
 
 with open('beavrs.yaml', 'w') as input_file:
