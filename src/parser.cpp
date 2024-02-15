@@ -552,7 +552,21 @@ void make_settings(const YAML::Node& input) {
           " RNG stride = " + std::to_string(settings::rng_seed) + " ...\n");
     }
   } else {
-    fatal_error("Not settings specified in input file.");
+    // Use default settings for everything.
+
+    // By default, we are in CE mode, so we can only get the ND directory
+    // from the environment variable
+    if (!std::getenv("ABEILLE_ND_DIRECTORY")) {
+      fatal_error(
+          "No \"nuclear-data\" entry in settings, and the environment "
+          "variable ABEILLE_ND_DIRECTORY is undefined.");
+    }
+    settings::nd_directory_fname = std::getenv("ABEILLE_ND_DIRECTORY");
+
+    Output::instance().write(" Nuclear Data Directory: " + settings::nd_directory_fname + "\n");
+
+    // Now we construct the global NDDirectory which lives in the settings
+    settings::nd_directory = std::make_unique<NDDirectory>(settings::nd_directory_fname, settings::temp_interpolation);
   }
 
   settings::write_settings_to_output();
