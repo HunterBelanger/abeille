@@ -39,7 +39,7 @@ class ApproximateMeshCancelator : public Cancelator {
 
   bool add_particle(BankedParticle& p) override final;
   void perform_cancellation() override final;
-  std::vector<BankedParticle> get_new_particles(pcg32& rng) override final;
+  std::vector<BankedParticle> get_new_particles(RNG& rng) override final;
   void clear() override final;
   void check_particle_mover_compatibility(
       const std::shared_ptr<IParticleMover>& /*pmover*/) const override final {}

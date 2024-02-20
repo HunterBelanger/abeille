@@ -563,10 +563,12 @@ void make_settings(const YAML::Node& input) {
     }
     settings::nd_directory_fname = std::getenv("ABEILLE_ND_DIRECTORY");
 
-    Output::instance().write(" Nuclear Data Directory: " + settings::nd_directory_fname + "\n");
+    Output::instance().write(
+        " Nuclear Data Directory: " + settings::nd_directory_fname + "\n");
 
     // Now we construct the global NDDirectory which lives in the settings
-    settings::nd_directory = std::make_unique<NDDirectory>(settings::nd_directory_fname, settings::temp_interpolation);
+    settings::nd_directory = std::make_unique<NDDirectory>(
+        settings::nd_directory_fname, settings::temp_interpolation);
   }
 
   settings::write_settings_to_output();

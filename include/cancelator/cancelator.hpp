@@ -39,7 +39,7 @@ class Cancelator {
 
   virtual bool add_particle(BankedParticle& p) = 0;
   virtual void perform_cancellation() = 0;
-  virtual std::vector<BankedParticle> get_new_particles(pcg32& rng) = 0;
+  virtual std::vector<BankedParticle> get_new_particles(RNG& rng) = 0;
   virtual void clear() = 0;
   virtual void check_particle_mover_compatibility(
       const std::shared_ptr<IParticleMover>& pmover) const = 0;

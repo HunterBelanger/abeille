@@ -37,8 +37,8 @@ TabulatedEnergy::TabulatedEnergy(const pndl::PCTable& table)
   }
 }
 
-double TabulatedEnergy::sample(pcg32& rng) const {
-  return table_.sample_value(RNG::rand(rng));
+double TabulatedEnergy::sample(RNG& rng) const {
+  return table_.sample_value(rng());
 }
 
 std::shared_ptr<TabulatedEnergy> make_tabulated_energy(const YAML::Node& node) {

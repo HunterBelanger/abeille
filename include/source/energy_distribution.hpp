@@ -36,7 +36,7 @@ class EnergyDistribution {
   EnergyDistribution() {}
   virtual ~EnergyDistribution() = default;
 
-  virtual double sample(pcg32& rng) const = 0;
+  virtual double sample(RNG& rng) const = 0;
 };
 
 // Helper function to build direction distribution

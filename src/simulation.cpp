@@ -54,12 +54,12 @@ std::vector<Particle> Simulation::sample_sources(
   std::vector<Particle> source_particles;
   for (std::size_t i = 0; i < N; i++) {
     uint64_t history_id = histories_counter++;
-    pcg32 rng(settings::rng_seed);
+    RNG rng(settings::rng_seed);
     uint64_t n_advance = settings::rng_stride * history_id;
     rng.advance(n_advance);
-    pcg32 initial_rng = rng;
+    RNG initial_rng = rng;
 
-    std::size_t indx = static_cast<std::size_t>(RNG::discrete(rng, wgts));
+    std::size_t indx = rng.discrete(wgts);
     source_particles.push_back(sources[indx]->generate_particle(rng));
     source_particles.back().set_history_id(history_id);
     source_particles.back().rng = rng;

@@ -39,16 +39,16 @@ class LegendreDistribution {
   // Anisotropic Constructor
   LegendreDistribution(const std::vector<double>& a);
 
-  double sample_mu(pcg32& rng) const {
+  double sample_mu(RNG& rng) const {
     // Check for isotropic scattering
     if (a_.size() == 1) {
-      return 2. * RNG::rand(rng) - 1.;
+      return 2. * rng() - 1.;
     }
 
     double mu = -2.;
     while (true) {
       // First, sample which term to use, then sample the angle
-      const double xi = RNG::rand(rng);
+      const double xi = rng();
       if (xi <= cdf_[0]) {
         mu = sample_term_1(rng);
       } else if (xi <= cdf_[1]) {
@@ -64,7 +64,7 @@ class LegendreDistribution {
 
       // Check if we accept or reject
       const double P_accept = pdf(mu) / h(mu);
-      if (RNG::rand(rng) < P_accept) break;
+      if (rng() < P_accept) break;
     }
 
     return mu;
@@ -130,26 +130,26 @@ class LegendreDistribution {
       mu = -1.;
   }
 
-  double sample_term_1(pcg32& rng) const {
-    const double xi = RNG::rand(rng);
+  double sample_term_1(RNG& rng) const {
+    const double xi = rng();
     return std::sin(PI * (xi - 0.5));
   }
 
-  double sample_term_2(pcg32& rng) const {
-    const double xi = RNG::rand(rng);
+  double sample_term_2(RNG& rng) const {
+    const double xi = rng();
     const double a = 1.;
     const double b = 2.;
     const double c = 1. - (4. * xi);
     return (-b + std::sqrt(b * b - (4. * a * c))) / (2. * a);
   }
 
-  double sample_term_3(pcg32& rng) const {
-    const double xi = RNG::rand(rng);
+  double sample_term_3(RNG& rng) const {
+    const double xi = rng();
     return 2. * xi - 1.;
   }
 
-  double sample_term_4(pcg32& rng) const {
-    const double xi = RNG::rand(rng);
+  double sample_term_4(RNG& rng) const {
+    const double xi = rng();
     const double a = 1.;
     const double b = -2.;
     const double c = (4. * xi) - 3.;

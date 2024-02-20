@@ -97,21 +97,19 @@ class Nuclide {
 
   virtual ScatterInfo sample_scatter(double Ein, const Direction& u,
                                      const MicroXSs& micro_xs,
-                                     pcg32& rng) const = 0;
+                                     RNG& rng) const = 0;
   virtual ScatterInfo sample_scatter_mt(uint32_t mt, double Ein,
                                         const Direction& u, std::size_t i,
-                                        pcg32& rng) const = 0;
+                                        RNG& rng) const = 0;
   virtual FissionInfo sample_fission(double Ein, const Direction& u,
                                      std::size_t i, double Pdelayed,
-                                     pcg32& rng) const = 0;
+                                     RNG& rng) const = 0;
   virtual FissionInfo sample_prompt_fission(double Ein, const Direction& u,
-                                            std::size_t i,
-                                            pcg32& rng) const = 0;
+                                            std::size_t i, RNG& rng) const = 0;
   // Samples an energy and direction from the delayed spectrum of delayed family
   // g.
   virtual FissionInfo sample_delayed_fission(double Ein, const Direction& u,
-                                             std::size_t g,
-                                             pcg32& rng) const = 0;
+                                             std::size_t g, RNG& rng) const = 0;
 
   virtual double max_energy() const = 0;
   virtual double min_energy() const = 0;

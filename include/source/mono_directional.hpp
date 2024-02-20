@@ -35,7 +35,7 @@ class MonoDirectional : public DirectionDistribution {
  public:
   MonoDirectional(Direction u) : direction_(u) {}
 
-  Direction sample(pcg32& /*rng*/) const override final { return direction_; }
+  Direction sample(RNG& /*rng*/) const override final { return direction_; }
 
   Direction direction() const { return direction_; }
 

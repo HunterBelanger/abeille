@@ -26,77 +26,97 @@
 #define RNG_H
 
 #include <utils/constants.hpp>
+#include <utils/error.hpp>
 
 #include <pcg_random.hpp>
 
-#include <random>
+#include <cmath>
+#include <span>
+#include <vector>
 
 class RNG {
  public:
-  // -----------------------------------------------------------------------
-  // rand()
-  //   This advances the pcg32 generator and produces a double
-  //   over the interval [0,1).
-  // -----------------------------------------------------------------------
-  static double rand(pcg32& rng) { return unit_dist(rng); }
+  RNG() : engn() {}
+  RNG(pcg32::state_type s) : engn(s) {}
+  explicit RNG(pcg32 s) : engn(s) {}
 
-  // -----------------------------------------------------------------------
-  // uniform(double a, double b)
-  //   Returns a random double with a uniform distribution over the
-  //   interval [a, b)
-  //
-  //   f(x|a,b) = 1 / (b - a)
-  // -----------------------------------------------------------------------
-  static double uniform(pcg32& rng, double a, double b) {
-    std::uniform_real_distribution<double> dist(a, b);
-    return dist(rng);
-  }
+  void seed(std::uint64_t s) { engn.seed(s); }
 
-  // -----------------------------------------------------------------------
-  // normal(double mu, double sigma)
-  //   Returns a random double from the normal (Gaussian) distribution,
-  //   defined by average value mu, and std sigma
-  //
-  //   f(x|mu,sigma) = (1/(sigma*sqrt(2*pi))) * exp(-0.5*((x - mu)/sigma)^2)
-  // -----------------------------------------------------------------------
-  static double normal(pcg32& rng, double mu, double sigma) {
-    std::normal_distribution<double> dist(mu, sigma);
-    return dist(rng);
-  }
+  void advance(std::uint64_t n) { engn.advance(n); }
 
-  // -----------------------------------------------------------------------
-  // exponential(double lambda)
-  //   Returns a random double from the exponential distribution,
-  //   defined by the average value 1/lambda.
-  //
-  //   f(x|lambda) = lambda * exp(-lambda * x)
-  // -----------------------------------------------------------------------
-  static double exponential(pcg32& rng, double lambda) {
+  void set_stream(std::uint32_t s) { engn.set_stream(s); }
+
+  double rand() { return pcg_to_double(engn()); }
+
+  double operator()() { return this->rand(); }
+
+  double uniform(double a, double b) { return (b - a) * this->rand() + a; }
+
+  double exponential(double lambda) {
+    if (lambda < 0.) {
+      fatal_error("Lambda must be >= 0.");
+    }
+
     if (lambda == 0.) return INF;
 
-    std::exponential_distribution<double> dist(lambda);
-    return dist(rng);
+    return -std::log(rand()) / lambda;
   }
 
-  // -----------------------------------------------------------------------
-  // discrete(std::vector<double> weights)
-  //   Returns an integer over range [0,weights.size() - 1]
-  //   where probability of each integer is defined by the weight
-  //
-  //   P(i|w_0, w_1, ... w_k) = w_i / Sum[j = 1 to k](w_j)
-  // -----------------------------------------------------------------------
-  static int discrete(pcg32& rng, const double* begin, const double* end) {
-    std::discrete_distribution<int> dist(begin, end);
-    return dist(rng);
+  std::size_t discrete(std::span<const double> weights) {
+    // If weights is empty, we can't sample an index. In this case, we
+    // return 0 like for the STL's discrete_distribution.
+    if (weights.empty()) {
+      return 0;
+    }
+
+    // Calculate the sum of all weights
+    double norm = 0.;
+    for (const auto& val : weights) {
+      // If a weight is < 0, the distribution is not well defined.
+      if (val < 0.) {
+        fatal_error("Weights must be >= 0.");
+      }
+
+      norm += val;
+    }
+
+    // If sum of weights is zero, we can't sample a value
+    if (norm == 0.) {
+      fatal_error("Sum of all weights must be > 0.");
+    }
+
+    // Sample the index
+    const double xi = rand() * norm;
+    double sum = 0.;
+    for (std::size_t i = 0; i < weights.size(); i++) {
+      sum += weights[i];
+
+      if (xi < sum) {
+        return i;
+      }
+    }
+
+    // Should never get here, but return last index
+    return weights.size() - 1;
   }
 
-  static int discrete(pcg32& rng, const std::vector<double>& weights) {
-    std::discrete_distribution<int> dist(weights.begin(), weights.end());
-    return dist(rng);
+  std::size_t discrete(const std::vector<double>& weights) {
+    std::span<const double> spn(weights.begin(), weights.end());
+    return this->discrete(spn);
   }
+
+  std::uint64_t operator-(const RNG& rhs) const { return engn - rhs.engn; }
+
+  static double max() { return pcg_to_double(pcg32::max()); }
+
+  static double min() { return pcg_to_double(pcg32::min()); }
 
  private:
-  static std::uniform_real_distribution<double> unit_dist;
-};  // RNG
+  pcg32 engn;
+
+  static double pcg_to_double(pcg32::result_type val) {
+    return std::ldexp(static_cast<double>(val), -32);
+  }
+};
 
 #endif

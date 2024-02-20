@@ -33,7 +33,7 @@ MonoEnergetic::MonoEnergetic(double energy) : energy_(energy) {
   }
 }
 
-double MonoEnergetic::sample(pcg32& /*rng*/) const { return energy_; }
+double MonoEnergetic::sample(RNG& /*rng*/) const { return energy_; }
 
 std::shared_ptr<MonoEnergetic> make_mono_energetic_distribution(
     const YAML::Node& node) {

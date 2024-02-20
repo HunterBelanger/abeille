@@ -378,7 +378,7 @@ void ApproximateMeshCancelator::perform_cancellation() {
 }
 
 std::vector<BankedParticle> ApproximateMeshCancelator::get_new_particles(
-    pcg32& /*rng*/) {
+    RNG& /*rng*/) {
   return {};
 }
 

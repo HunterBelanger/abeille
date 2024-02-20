@@ -41,7 +41,7 @@ class Source {
          std::shared_ptr<EnergyDistribution> energy, bool fissile_only,
          double weight);
 
-  Particle generate_particle(pcg32& rng) const;
+  Particle generate_particle(RNG& rng) const;
   double wgt() const { return weight_; }
   bool fissile_only() const { return fissile_only_; }
 

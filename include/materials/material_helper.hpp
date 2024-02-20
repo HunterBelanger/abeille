@@ -54,8 +54,8 @@ class MaterialHelper {
     this->set_energy(E);
   }
 
-  void set_urr_rand_vals(pcg32& rng) {
-    for (auto& rand : zaid_to_urr_rand_) rand.second = RNG::rand(rng);
+  void set_urr_rand_vals(RNG& rng) {
+    for (auto& rand : zaid_to_urr_rand_) rand.second = rng();
     this->clear_xs();
   }
 
@@ -205,7 +205,7 @@ class MaterialHelper {
    * be $N_i \sigma_i(E) / \Sigma_t(E)$. It can also be used for when performing
    * branchless collisions on the isotope.
    */
-  std::pair<const Nuclide*, MicroXSs> sample_nuclide(double E, pcg32& rng) {
+  std::pair<const Nuclide*, MicroXSs> sample_nuclide(double E, RNG& rng) {
     this->set_energy(E);
 
     // First, get total xs
@@ -215,7 +215,7 @@ class MaterialHelper {
     const double N_nuclides = static_cast<double>(mat->components().size());
 
     // Get our random variable
-    const double xi = RNG::rand(rng);
+    const double xi = rng();
 
     // Iterate through all nuclides, untill we find the right one
     double prob_sum = 0.;
@@ -253,7 +253,7 @@ class MaterialHelper {
   }
 
   std::pair<const Nuclide*, MicroXSs> sample_branchless_nuclide(
-      double E, pcg32& rng, BranchlessReaction reaction) {
+      double E, RNG& rng, BranchlessReaction reaction) {
     this->set_energy(E);
 
     // First, get the total probability, depending on reaction type
@@ -273,7 +273,7 @@ class MaterialHelper {
     }
 
     // Get our random variable
-    const double xi = RNG::rand(rng) * sum;
+    const double xi = rng() * sum;
 
     // Iterate through all nuclides, untill we find the right one
     double prob_sum = 0.;

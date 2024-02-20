@@ -31,7 +31,7 @@ class Point : public SpatialDistribution {
  public:
   Point(Position position) : position_(position) {}
 
-  Position sample(pcg32& /*rng*/) const override final { return position_; }
+  Position sample(RNG& /*rng*/) const override final { return position_; }
 
   Position position() const { return position_; }
 

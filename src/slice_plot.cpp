@@ -305,9 +305,9 @@ Position SlicePlot::get_pixel_position(uint64_t i, uint64_t j) const {
 }
 
 Pixel SlicePlot::get_random_color() {
-  uint8_t r = static_cast<uint8_t>(255.0 * RNG::rand(settings::rng));
-  uint8_t g = static_cast<uint8_t>(255.0 * RNG::rand(settings::rng));
-  uint8_t b = static_cast<uint8_t>(255.0 * RNG::rand(settings::rng));
+  uint8_t r = static_cast<uint8_t>(255.0 * settings::rng());
+  uint8_t g = static_cast<uint8_t>(255.0 * settings::rng());
+  uint8_t b = static_cast<uint8_t>(255.0 * settings::rng());
 
   return {r, g, b};
 }

@@ -62,7 +62,7 @@ class BranchlessMaterialCollision {
     // Sample wether we will scatter or fission
     MaterialHelper::BranchlessReaction reaction =
         MaterialHelper::BranchlessReaction::FISSION;
-    if (RNG::rand(p.rng) < Pscatter)
+    if (p.rng() < Pscatter)
       reaction = MaterialHelper::BranchlessReaction::SCATTER;
 
     // Sample nuclide based on reaction type

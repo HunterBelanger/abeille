@@ -104,7 +104,7 @@ void ImplicitLeakageDeltaTracker::transport(
           wgt_leak * (r_leak - p.r_birth()) * (r_leak - p.r_birth());
 
       // Sample flight distance
-      d_coll = -std::log(1. - P_no_leak * RNG::rand(p.rng)) / Emajorant;
+      d_coll = -std::log(1. - P_no_leak * p.rng()) / Emajorant;
 
       // Score the TLE for the portion which would have leaked
       p.set_weight(wgt_leak);
@@ -118,7 +118,7 @@ void ImplicitLeakageDeltaTracker::transport(
       // Score TLE for the portion which only goes to the collision site
       Tallies::instance().score_flight(p, d_coll, mat);
     } else {
-      d_coll = RNG::exponential(p.rng, Emajorant);
+      d_coll = p.rng.exponential(Emajorant);
 
       // Score track length tally for boundary distance.
       // This is here because flux-like tallies are allowed with DT.
@@ -187,7 +187,7 @@ void ImplicitLeakageDeltaTracker::transport(
         fatal_error(mssg.str());
       }
 
-      if (RNG::rand(p.rng) < (Et / Emajorant)) {
+      if (p.rng() < (Et / Emajorant)) {
         // Flag real collision
         had_collision = true;
       }

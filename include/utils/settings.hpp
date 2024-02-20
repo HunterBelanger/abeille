@@ -26,9 +26,8 @@
 #define SETTINGS_H
 
 #include <utils/nd_directory.hpp>
+#include <utils/rng.hpp>
 #include <utils/timer.hpp>
-
-#include <pcg_random.hpp>
 
 #include <algorithm>
 #include <memory>
@@ -58,7 +57,7 @@ extern bool use_urr_ptables;
 // Random Number Generator settings
 extern uint64_t rng_seed;
 extern uint64_t rng_stride;
-extern pcg32 rng;
+extern RNG rng;
 extern bool rng_stride_warnings;
 
 // Roulette and Splitting parameters

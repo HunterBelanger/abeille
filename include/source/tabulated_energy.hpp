@@ -38,7 +38,7 @@ class TabulatedEnergy : public EnergyDistribution {
  public:
   TabulatedEnergy(const pndl::PCTable& table);
 
-  double sample(pcg32& rng) const override final;
+  double sample(RNG& rng) const override final;
 
  private:
   pndl::PCTable table_;

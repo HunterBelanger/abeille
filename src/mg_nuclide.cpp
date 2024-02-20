@@ -441,16 +441,15 @@ double MGNuclide::awr() const {
 
 ScatterInfo MGNuclide::sample_scatter(double /*Ein*/, const Direction& u,
                                       const MicroXSs& micro_xs,
-                                      pcg32& rng) const {
+                                      RNG& rng) const {
   // Change particle energy
-  std::size_t ei =
-      static_cast<std::size_t>(RNG::discrete(rng, Ps_[micro_xs.energy_index]));
+  std::size_t ei = rng.discrete(Ps_[micro_xs.energy_index]);
   double E_out =
       0.5 * (settings::energy_bounds[ei] + settings::energy_bounds[ei + 1]);
 
   // Change direction
   double mu = angle_dists_[micro_xs.energy_index][ei].sample_mu(rng);
-  double phi = 2. * PI * RNG::rand(rng);
+  double phi = 2. * PI * rng();
   Direction u_out = rotate_direction(u, mu, phi);
 
   ScatterInfo info;
@@ -462,26 +461,24 @@ ScatterInfo MGNuclide::sample_scatter(double /*Ein*/, const Direction& u,
 
 ScatterInfo MGNuclide::sample_scatter_mt(uint32_t /*mt*/, double Ein,
                                          const Direction& u, std::size_t i,
-                                         pcg32& rng) const {
+                                         RNG& rng) const {
   MicroXSs micro_xs;
   micro_xs.energy_index = i;
   return this->sample_scatter(Ein, u, micro_xs, rng);
 }
 
 FissionInfo MGNuclide::sample_prompt_fission(double /*Ein*/, const Direction& u,
-                                             std::size_t i, pcg32& rng) const {
-  std::function<double()> rngfunc = std::bind(RNG::rand, std::ref(rng));
-
+                                             std::size_t i, RNG& rng) const {
   // First we sample the the energy index
-  std::size_t ei = static_cast<std::size_t>(RNG::discrete(rng, chi_[i]));
+  std::size_t ei = rng.discrete(chi_[i]);
 
   // Put fission energy in middle of sampled bin
   double E_out =
       0.5 * (settings::energy_bounds[ei] + settings::energy_bounds[ei + 1]);
 
   // Sample direction from mu, and random phi about z-axis
-  double mu = 2. * RNG::rand(rng) - 1.;
-  double phi = 2. * PI * RNG::rand(rng);
+  double mu = 2. * rng() - 1.;
+  double phi = 2. * PI * rng();
   Direction u_out = rotate_direction(u, mu, phi);
 
   FissionInfo info;
@@ -494,7 +491,7 @@ FissionInfo MGNuclide::sample_prompt_fission(double /*Ein*/, const Direction& u,
 }
 
 FissionInfo MGNuclide::sample_delayed_fission(double Ein, const Direction& u,
-                                              std::size_t g, pcg32& rng) const {
+                                              std::size_t g, RNG& rng) const {
   FissionInfo info = sample_prompt_fission(Ein, u, g, rng);
   info.delayed_family = static_cast<uint32_t>(g);
   info.precursor_decay_constant = this->delayed_group_decay_constants[g];
@@ -503,22 +500,19 @@ FissionInfo MGNuclide::sample_delayed_fission(double Ein, const Direction& u,
 
 FissionInfo MGNuclide::sample_fission(double /*Ein*/, const Direction& u,
                                       std::size_t energy_index, double Pdelayed,
-                                      pcg32& rng) const {
-  std::function<double()> rngfunc = std::bind(RNG::rand, std::ref(rng));
-
+                                      RNG& rng) const {
   FissionInfo info;
 
   // First we sample the the energy index
-  std::size_t ei =
-      static_cast<std::size_t>(RNG::discrete(rng, chi_[energy_index]));
+  std::size_t ei = rng.discrete(chi_[energy_index]);
 
   // Put fission energy in middle of sampled bin
   double E_out =
       0.5 * (settings::energy_bounds[ei] + settings::energy_bounds[ei + 1]);
 
   // Sample direction from mu, and random phi about z-axis
-  double mu = 2. * RNG::rand(rng) - 1.;
-  double phi = 2. * PI * RNG::rand(rng);
+  double mu = 2. * rng() - 1.;
+  double phi = 2. * PI * rng();
   Direction uout = rotate_direction(u, mu, phi);
 
   info.energy = E_out;
@@ -528,11 +522,10 @@ FissionInfo MGNuclide::sample_fission(double /*Ein*/, const Direction& u,
   info.precursor_decay_constant = 0.;
 
   // Next, we need to see if this is a delayed neutron or not.
-  if (rngfunc() < Pdelayed) {
+  if (rng() < Pdelayed) {
     // We have a delayed neutron. We now need to select a delayed group
     // and get the group decay constant.
-    std::size_t dgrp =
-        static_cast<std::size_t>(RNG::discrete(rng, P_delayed_group));
+    std::size_t dgrp = rng.discrete(P_delayed_group);
     double lambda = delayed_group_decay_constants[dgrp];
 
     info.delayed = true;

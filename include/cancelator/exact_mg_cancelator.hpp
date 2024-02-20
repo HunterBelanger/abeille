@@ -45,7 +45,7 @@ class ExactMGCancelator : public Cancelator {
 
   bool add_particle(BankedParticle& p) override final;
   void perform_cancellation() override final;
-  std::vector<BankedParticle> get_new_particles(pcg32& rng) override final;
+  std::vector<BankedParticle> get_new_particles(RNG& rng) override final;
   void clear() override final;
   void check_particle_mover_compatibility(
       const std::shared_ptr<IParticleMover>& pmover) const override final;
@@ -156,7 +156,7 @@ class ExactMGCancelator : public Cancelator {
       const Key& key, Material* mat, unsigned long long& i) const;
 
   std::optional<Position> sample_position(const Key& key, Material* mat,
-                                          pcg32& rng) const;
+                                          RNG& rng) const;
 
   // Computes <f> and <1/f> for all particles in all bins.
   void compute_averages(const Key& key, Material* mat, MGNuclide* nuclide,

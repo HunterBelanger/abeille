@@ -46,7 +46,7 @@ class Cone : public DirectionDistribution {
   // of HALF the beam.
   Cone(Direction u, double aperture);
 
-  Direction sample(pcg32& rng) const override final;
+  Direction sample(RNG& rng) const override final;
 
   Direction direction() const { return direction_; }
 

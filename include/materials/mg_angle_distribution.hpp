@@ -42,8 +42,8 @@ class MGAngleDistribution {
                       const std::vector<double>& pdf,
                       const std::vector<double>& cdf);
 
-  double sample_mu(pcg32& rng) const {
-    const double xi = RNG::rand(rng);
+  double sample_mu(RNG& rng) const {
+    const double xi = rng();
 
     auto cdf_it = std::lower_bound(cdf_.begin(), cdf_.end(), xi);
     std::size_t l =

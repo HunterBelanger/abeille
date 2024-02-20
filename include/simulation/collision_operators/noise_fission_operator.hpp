@@ -93,8 +93,7 @@ class NoiseFissionOperator {
     // generated particles by the weight ! We also scale by keff to make the
     // problem "critical".
     return static_cast<int>(
-        std::floor(xs.nu_total * xs.fission / (xs.total * keff)) +
-        RNG::rand(p.rng));
+        std::floor(xs.nu_total * xs.fission / (xs.total * keff)) + p.rng());
   }
 
   void save_fission_particle(Particle& p, BankedParticle& fp) const {

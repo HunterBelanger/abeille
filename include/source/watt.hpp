@@ -34,7 +34,7 @@ class Watt : public EnergyDistribution {
  public:
   Watt(double a, double b);
 
-  double sample(pcg32& rng) const override final;
+  double sample(RNG& rng) const override final;
 
  private:
   Maxwellian max_;

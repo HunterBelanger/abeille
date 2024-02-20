@@ -50,7 +50,7 @@ EnergyMode energy_mode = EnergyMode::CE;
 
 uint64_t rng_seed = 19073486328125;
 uint64_t rng_stride = 152917;
-pcg32 rng;
+RNG rng;
 bool rng_stride_warnings = false;
 
 // double wgt_cutoff = 0.8;  // Needs to be high for noise !

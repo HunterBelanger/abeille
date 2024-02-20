@@ -47,7 +47,7 @@ class KeffFissionOperator
     // keff of the previous generation, so that the number of particles per
     // generation stays approximately constant.
     return static_cast<int>(std::floor(
-        std::abs(k_abs_scr) / Tallies::instance().kcol() + RNG::rand(p.rng)));
+        std::abs(k_abs_scr) / Tallies::instance().kcol() + p.rng()));
   }
 };
 

@@ -35,7 +35,7 @@ class MonoEnergetic : public EnergyDistribution {
  public:
   MonoEnergetic(double energy);
 
-  double sample(pcg32& rng) const override final;
+  double sample(RNG& rng) const override final;
 
   double energy() const { return energy_; }
 

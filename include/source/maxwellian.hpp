@@ -33,7 +33,7 @@ class Maxwellian : public EnergyDistribution {
  public:
   Maxwellian(double a);
 
-  double sample(pcg32& rng) const override final;
+  double sample(RNG& rng) const override final;
 
  private:
   double a_;  // Temperature in MeV

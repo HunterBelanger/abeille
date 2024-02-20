@@ -35,7 +35,7 @@ void russian_roulette(Particle& p) {
   // Roulette first weight
   if (std::abs(p.wgt()) < settings::wgt_cutoff) {
     double P_kill = 1.0 - (std::abs(p.wgt()) / settings::wgt_survival);
-    if (RNG::rand(p.rng) < P_kill)
+    if (p.rng() < P_kill)
       p.set_weight(0.);
     else {
       p.set_weight(std::copysign(settings::wgt_survival, p.wgt()));
@@ -45,7 +45,7 @@ void russian_roulette(Particle& p) {
   // Roulette second weight
   if (std::abs(p.wgt2()) < settings::wgt_cutoff) {
     double P_kill = 1.0 - (std::abs(p.wgt2()) / settings::wgt_survival);
-    if (RNG::rand(p.rng) < P_kill)
+    if (p.rng() < P_kill)
       p.set_weight2(0.);
     else {
       p.set_weight2(std::copysign(settings::wgt_survival, p.wgt2()));
