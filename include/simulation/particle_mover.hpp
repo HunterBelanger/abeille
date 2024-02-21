@@ -27,10 +27,8 @@
 
 #include <materials/material_helper.hpp>
 #include <noise_source/noise_maker.hpp>
-#include <simulation/collision_operators/collision_operator.hpp>
 #include <simulation/particle.hpp>
 #include <simulation/tracker.hpp>
-#include <simulation/transport_operators/transport_operator.hpp>
 #include <tallies/tallies.hpp>
 #include <utils/error.hpp>
 #include <utils/noise_parameters.hpp>
@@ -57,7 +55,7 @@ class IParticleMover {
   virtual void write_output_info(const std::string& base = "") const = 0;
 };
 
-template <TransportOperator TransportOp, CollisionOperator CollisionOp>
+template <class TransportOp, class CollisionOp>
 class ParticleMover : public IParticleMover {
  public:
   ParticleMover(TransportOp t, CollisionOp c)

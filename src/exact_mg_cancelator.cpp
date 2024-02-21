@@ -441,8 +441,8 @@ ExactMGCancelator::sync_keys() {
     if (mpi::rank == i) {
       auto npairs = key_matid_pairs.size();
       mpi::Send(npairs, 0);
-      mpi::Send(std::span<std::pair<Key, uint32_t>>(key_matid_pairs.begin(),
-                                                    key_matid_pairs.end()),
+      mpi::Send(gsl::span<std::pair<Key, uint32_t>>(&key_matid_pairs[0],
+                                                    &key_matid_pairs[0] + key_matid_pairs.size()),
                 0);
       key_matid_pairs.clear();
     } else if (mpi::rank == 0) {
@@ -451,8 +451,8 @@ ExactMGCancelator::sync_keys() {
       mpi::Recv(npairs, i);
       key_matid_pairs.resize(npairs);
 
-      mpi::Recv(std::span<std::pair<Key, uint32_t>>(key_matid_pairs.begin(),
-                                                    key_matid_pairs.end()),
+      mpi::Recv(gsl::span<std::pair<Key, uint32_t>>(&key_matid_pairs[0],
+                                                    &key_matid_pairs[0] + key_matid_pairs.size()),
                 i);
       key_set.insert(key_matid_pairs.begin(), key_matid_pairs.end());
     }

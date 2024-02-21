@@ -25,7 +25,6 @@
 #ifndef IMPLICIT_LEAKAGE_DELTA_TRACKER_H
 #define IMPLICIT_LEAKAGE_DELTA_TRACKER_H
 
-#include <simulation/transport_operators/transport_operator.hpp>
 #include <tallies/tallies.hpp>
 
 #include <PapillonNDL/cross_section.hpp>

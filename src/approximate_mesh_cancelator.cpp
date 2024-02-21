@@ -187,14 +187,14 @@ std::vector<int> ApproximateMeshCancelator::sync_keys() {
     if (mpi::rank == i) {
       auto nkeys = keys.size();
       mpi::Send(nkeys, 0);
-      mpi::Send(std::span<int>(keys.begin(), keys.end()), 0);
+      mpi::Send(gsl::span<int>(&keys[0], &keys[0]+keys.size()), 0);
       keys.clear();
     } else if (mpi::rank == 0) {
       std::size_t nkeys = 0;
       mpi::Recv(nkeys, i);
       keys.resize(nkeys);
 
-      mpi::Recv(std::span<int>(keys.begin(), keys.end()), i);
+      mpi::Recv(gsl::span<int>(&keys[0], &keys[0]+keys.size()), i);
       std::copy(keys.begin(), keys.end(),
                 std::inserter(key_set, key_set.end()));
     }

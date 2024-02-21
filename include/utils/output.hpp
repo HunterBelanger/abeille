@@ -36,7 +36,6 @@ namespace H5 = HighFive;
 #include <memory>
 #include <mutex>
 #include <optional>
-#include <source_location>
 #include <string>
 #include <vector>
 
@@ -71,8 +70,7 @@ class Output {
   void write_error(const std::string& message);
 
   // Only master (i.e. mpi::rank == 0) can call this method without error !
-  H5::File& h5(
-      const std::source_location& loc = std::source_location::current());
+  H5::File& h5();
 
  private:
   Output();

@@ -42,11 +42,20 @@ set(YAML_CPP_INSTALL OFF CACHE BOOL "Enable generation of install target")
 FetchContent_MakeAvailable(yaml-cpp)
 
 #===============================================================================
+# Get gsl-lite
+message(STATUS "Downloading GSL v0.41.0")
+FetchContent_Declare(GSL
+  GIT_REPOSITORY https://github.com/gsl-lite/gsl-lite
+  GIT_TAG        v0.41.0
+)
+FetchContent_MakeAvailable(GSL)
+
+#===============================================================================
 # Get PapillonNDL develop
-message(STATUS "Downloading PapillonNDL feature/sab branch")
+message(STATUS "Downloading PapillonNDL feature/c++17 branch")
 FetchContent_Declare(PapillonNDL
   GIT_REPOSITORY https://github.com/HunterBelanger/papillon-ndl.git
-  GIT_TAG        feature/sab
+  GIT_TAG        feature/c++17
 )
 set(PNDL_SHARED OFF CACHE BOOL "Build PapillonNDL as a shared library")
 set(PNDL_INSTALL OFF CACHE BOOL "Install the PapillonNDL library and header files")
@@ -138,7 +147,7 @@ execute_process(COMMAND git describe --dirty --always
 add_executable(abeille src/main.cpp ${ABEILLE_SOURCE_FILES})
 target_include_directories(abeille PRIVATE include)
 target_compile_features(abeille PRIVATE cxx_std_17)
-target_link_libraries(abeille PUBLIC docopt_s yaml-cpp PapillonNDL::PapillonNDL NDArray::NDArray PCG::PCG_CXX sobol Boost::unordered HighFive)
+target_link_libraries(abeille PUBLIC docopt_s yaml-cpp PapillonNDL::PapillonNDL NDArray::NDArray PCG::PCG_CXX sobol Boost::unordered HighFive gsl::gsl-lite-v1)
 target_compile_definitions(abeille PUBLIC ABEILLE_GIT_HASH=\"${ABEILLE_GIT_HASH_RAW}\")
 target_compile_definitions(abeille PUBLIC ABEILLE_COMPILER_NAME=\"${CMAKE_CXX_COMPILER_ID}\")
 target_compile_definitions(abeille PUBLIC ABEILLE_COMPILER_VERSION=\"${CMAKE_CXX_COMPILER_VERSION}\")

@@ -26,7 +26,6 @@
 #define BRANCHLESS_MATERIAL_COLLISION_H
 
 #include <materials/material.hpp>
-#include <simulation/collision_operators/collision_operator.hpp>
 #include <simulation/particle.hpp>
 #include <tallies/tallies.hpp>
 #include <utils/mpi.hpp>

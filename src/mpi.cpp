@@ -82,10 +82,10 @@ void register_key_type() {
   }
 
   err = MPI_Type_create_struct(KEY_NUM_MEMBERS, sizes, disps, dtypes, &KeyType);
-  check_error(err, std::source_location::current());
+  check_error(err);
 
   err = MPI_Type_commit(&KeyType);
-  check_error(err, std::source_location::current());
+  check_error(err);
 #endif
 }
 
@@ -110,10 +110,10 @@ void register_key_uint32_pair() {
 
   err = MPI_Type_create_struct(PAIR_NUM_MEMBERS, sizes, disps, dtypes,
                                &KeyUInt32Pair);
-  check_error(err, std::source_location::current());
+  check_error(err);
 
   err = MPI_Type_commit(&KeyUInt32Pair);
-  check_error(err, std::source_location::current());
+  check_error(err);
 #endif
 }
 
@@ -151,10 +151,10 @@ void register_banked_particle_type() {
 
   err =
       MPI_Type_create_struct(BP_NUM_MEMBERS, sizes, disps, dtypes, &BParticle);
-  check_error(err, std::source_location::current());
+  check_error(err);
 
   err = MPI_Type_commit(&BParticle);
-  check_error(err, std::source_location::current());
+  check_error(err);
 #endif
 }
 
@@ -166,14 +166,14 @@ void initialize_mpi(int* argc, char*** argv) {
 
   // Initialize MPI
   err = MPI_Init(argc, argv);
-  check_error(err, std::source_location::current());
+  check_error(err);
 
   // Get worls size and our rank
   err = MPI_Comm_size(com, &size);
-  check_error(err, std::source_location::current());
+  check_error(err);
 
   err = MPI_Comm_rank(com, &rank);
-  check_error(err, std::source_location::current());
+  check_error(err);
 
   // Register required custom types.
   // !!! MUST BE DONE IN CERTAIN ORDER !!!
@@ -208,7 +208,7 @@ void synchronize() {
 #endif
 }
 
-void check_error(int err, const std::source_location& loc) {
+void check_error(int err) {
 #ifdef ABEILLE_USE_MPI
   if (err != MPI_SUCCESS) {
     // First, we should get the error string
@@ -216,11 +216,10 @@ void check_error(int err, const std::source_location& loc) {
     int str_len = 0;
     MPI_Error_string(err, err_str, &str_len);
     std::string mssg(err_str, static_cast<std::size_t>(str_len));
-    fatal_error(mssg, loc);
+    fatal_error(mssg);
   }
 #else
   (void)err;
-  (void)loc;
 #endif
 }
 }  // namespace mpi

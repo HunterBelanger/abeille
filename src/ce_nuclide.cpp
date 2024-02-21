@@ -211,7 +211,7 @@ ScatterInfo CENuclide::sample_scatter(double Ein, const Direction& u,
 
     // Sample the reaction
     MT = MT_LIST[rng.discrete(
-                     std::span<const double>(&XS[1], &XS[XS.size() - 1])) +
+                     gsl::span<const double>(&XS[1], &XS[XS.size() - 1])) +
                  1];
 
     // If we don't have that reaction, something probably went wrong.

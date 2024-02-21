@@ -203,7 +203,7 @@ Material::Material(double temperature, double density, DensityUnits dunits,
 
         // If this is a new zaid with a URR, add it to the zaids with urr set
         if (temp_frac.nuclide->has_urr() &&
-            zaids_with_urr.contains(temp_frac.nuclide->zaid()) == false) {
+            zaids_with_urr.find(temp_frac.nuclide->zaid()) == zaids_with_urr.end()) {
           zaids_with_urr.insert(temp_frac.nuclide->zaid());
         }
 
@@ -221,7 +221,7 @@ Material::Material(double temperature, double density, DensityUnits dunits,
 
         // If this is a new zaid with a URR, add it to the zaids with urr set
         if (temp_frac.nuclide->has_urr() &&
-            zaids_with_urr.contains(temp_frac.nuclide->zaid()) == false) {
+            zaids_with_urr.find(temp_frac.nuclide->zaid()) == zaids_with_urr.end()) {
           zaids_with_urr.insert(temp_frac.nuclide->zaid());
         }
 

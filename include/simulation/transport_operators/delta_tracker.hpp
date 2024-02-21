@@ -25,7 +25,6 @@
 #ifndef DELTA_TRACKER_H
 #define DELTA_TRACKER_H
 
-#include <simulation/transport_operators/transport_operator.hpp>
 #include <tallies/tallies.hpp>
 
 #include <PapillonNDL/cross_section.hpp>

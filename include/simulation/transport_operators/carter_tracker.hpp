@@ -25,7 +25,6 @@
 #ifndef CARTER_TRACKER_H
 #define CARTER_TRACKER_H
 
-#include <simulation/transport_operators/transport_operator.hpp>
 #include <tallies/tallies.hpp>
 
 #include <PapillonNDL/cross_section.hpp>

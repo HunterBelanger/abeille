@@ -26,7 +26,6 @@
 #define NOISE_BRANCHING_COLLISION_H
 
 #include <materials/material.hpp>
-#include <simulation/collision_operators/collision_operator.hpp>
 #include <simulation/collision_operators/noise_fission_operator.hpp>
 #include <simulation/particle.hpp>
 #include <tallies/tallies.hpp>

@@ -93,11 +93,11 @@ void Simulation::sync_banks(std::vector<uint64_t>& nums,
     if (mpi::rank == R) {
       sendBank = {bank.begin(), bank.begin() + nts};
       bank.erase(bank.begin(), bank.begin() + nts);
-      mpi::Send(std::span<BankedParticle>(sendBank.begin(), sendBank.end()),
+      mpi::Send(gsl::span<BankedParticle>(&sendBank[0], &sendBank[0]+sendBank.size()),
                 R - 1);
     } else if (mpi::rank == (R - 1)) {
       sendBank.resize(nts);
-      mpi::Recv(std::span<BankedParticle>(sendBank.begin(), sendBank.end()), R);
+      mpi::Recv(gsl::span<BankedParticle>(&sendBank[0], &sendBank[0]+sendBank.size()), R);
       bank.insert(bank.end(), sendBank.begin(), sendBank.end());
     }
     nums[R] -= nts;
@@ -112,11 +112,11 @@ void Simulation::sync_banks(std::vector<uint64_t>& nums,
     if (mpi::rank == L) {
       sendBank = {bank.end() - nts, bank.end()};
       bank.erase(bank.end() - nts, bank.end());
-      mpi::Send(std::span<BankedParticle>(sendBank.begin(), sendBank.end()),
+      mpi::Send(gsl::span<BankedParticle>(&sendBank[0], &sendBank[0]+sendBank.size()),
                 L + 1);
     } else if (mpi::rank == (L + 1)) {
       sendBank.resize(nts);
-      mpi::Recv(std::span<BankedParticle>(sendBank.begin(), sendBank.end()), L);
+      mpi::Recv(gsl::span<BankedParticle>(&sendBank[0], &sendBank[0]+sendBank.size()), L);
       bank.insert(bank.begin(), sendBank.begin(), sendBank.end());
     }
     nums[L] -= nts;

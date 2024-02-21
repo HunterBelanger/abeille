@@ -69,7 +69,45 @@ class ExactMGCancelator : public Cancelator {
               (e == other.e));
     }
 
-    auto operator<=>(const Key&) const = default;
+    bool operator!=(const Key& other) const {
+      return !this->operator==(other);
+    }
+
+    bool operator<(const Key& other) const {
+      if (i < other.i) return true;
+      if (i > other.i) return false;
+
+      if (j < other.j) return true;
+      if (j > other.j) return false;
+      
+      if (k < other.k) return true;
+      if (k > other.k) return false;
+
+      if (e < other.e) return true;
+      return false;
+    }
+
+    bool operator>(const Key& other) const {
+      if (i > other.i) return true;
+      if (i < other.i) return false;
+
+      if (j > other.j) return true;
+      if (j < other.j) return false;
+      
+      if (k > other.k) return true;
+      if (k < other.k) return false;
+
+      if (e > other.e) return true;
+      return false;
+    }
+
+    bool operator>=(const Key& other) const {
+      return this->operator>(other) || this->operator==(other);
+    }
+
+    bool operator<=(const Key& other) const {
+      return this->operator<(other) || this->operator==(other);
+    }
 
     // Contains the shape of the cancellation region mesh.
     // shape[0] Number of regions in x

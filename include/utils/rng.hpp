@@ -29,9 +29,9 @@
 #include <utils/error.hpp>
 
 #include <pcg_random.hpp>
+#include <gsl/gsl-lite.hpp>
 
 #include <cmath>
-#include <span>
 #include <vector>
 
 class RNG {
@@ -62,7 +62,7 @@ class RNG {
     return -std::log(rand()) / lambda;
   }
 
-  std::size_t discrete(std::span<const double> weights) {
+  std::size_t discrete(gsl::span<const double> weights) {
     // If weights is empty, we can't sample an index. In this case, we
     // return 0 like for the STL's discrete_distribution.
     if (weights.empty()) {
@@ -82,7 +82,8 @@ class RNG {
 
     // If sum of weights is zero, we can't sample a value
     if (norm == 0.) {
-      fatal_error("Sum of all weights must be > 0.");
+      return 0;
+      //fatal_error("Sum of all weights must be > 0.");
     }
 
     // Sample the index
@@ -101,7 +102,7 @@ class RNG {
   }
 
   std::size_t discrete(const std::vector<double>& weights) {
-    std::span<const double> spn(weights.begin(), weights.end());
+    gsl::span<const double> spn(&weights[0], &weights[0]+weights.size());
     return this->discrete(spn);
   }
 
