@@ -31,10 +31,10 @@ Maxwellian::Maxwellian(double a) : EnergyDistribution(), a_(a) {
   }
 }
 
-double Maxwellian::sample(pcg32& rng) const {
-  const double xi1 = RNG::rand(rng);
-  const double xi2 = RNG::rand(rng);
-  const double xi3 = RNG::rand(rng);
+double Maxwellian::sample(RNG& rng) const {
+  const double xi1 = rng();
+  const double xi2 = rng();
+  const double xi3 = rng();
 
   const double c = std::cos(PI * xi3 / 2.);
 

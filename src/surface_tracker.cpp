@@ -47,7 +47,7 @@ void SurfaceTracker::transport(Particle& p, Tracker& trkr, MaterialHelper& mat,
   bool had_collision = false;
 
   while (p.is_alive() && had_collision == false) {
-    double d_coll = RNG::exponential(p.rng, mat.Et(p.E()));
+    double d_coll = p.rng.exponential(mat.Et(p.E()));
     auto bound = trkr.get_nearest_boundary();
 
     // score track length tally for boundary distance,

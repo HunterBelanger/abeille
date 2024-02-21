@@ -512,9 +512,9 @@ void GuiPlotter::render_image() {
 }
 
 ImApp::Pixel GuiPlotter::get_random_color() {
-  uint8_t r = static_cast<uint8_t>(255.0 * RNG::rand(settings::rng));
-  uint8_t g = static_cast<uint8_t>(255.0 * RNG::rand(settings::rng));
-  uint8_t b = static_cast<uint8_t>(255.0 * RNG::rand(settings::rng));
+  uint8_t r = static_cast<uint8_t>(255.0 * settings::rng());
+  uint8_t g = static_cast<uint8_t>(255.0 * settings::rng());
+  uint8_t b = static_cast<uint8_t>(255.0 * settings::rng());
 
   return ImApp::Pixel(r, g, b);
 }

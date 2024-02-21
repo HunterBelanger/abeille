@@ -39,11 +39,11 @@ Watt::Watt(double a, double b) : EnergyDistribution(), max_(a), a_(a), b_(b) {
   }
 }
 
-double Watt::sample(pcg32& rng) const {
+double Watt::sample(RNG& rng) const {
   const double w = max_.sample(rng);
 
   return w + 0.25 * a_ * a_ * b_ +
-         (2. * RNG::rand(rng) - 1.) * std::sqrt(a_ * a_ * b_ * w);
+         (2. * rng() - 1.) * std::sqrt(a_ * a_ * b_ * w);
 }
 
 std::shared_ptr<Watt> make_watt(const YAML::Node& node) {

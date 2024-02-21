@@ -37,7 +37,7 @@ class SpatialDistribution {
   SpatialDistribution() {}
   virtual ~SpatialDistribution() = default;
 
-  virtual Position sample(pcg32& rng) const = 0;
+  virtual Position sample(RNG& rng) const = 0;
 };
 
 // Helper function to build spatial distribution

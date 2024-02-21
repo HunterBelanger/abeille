@@ -31,7 +31,7 @@ class Box : public SpatialDistribution {
  public:
   Box(Position low, Position hi);
 
-  Position sample(pcg32& rng) const override final;
+  Position sample(RNG& rng) const override final;
 
   Position low() const { return low_; }
   Position hi() const { return hi_; }

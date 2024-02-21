@@ -129,7 +129,7 @@ class NoiseBranchingCollision {
 
   void noise_copy(Particle& p, const MicroXSs& xs, double eta) const {
     std::complex<double> weight_copy{p.wgt(), p.wgt2()};
-    if (xs.noise_copy / xs.total + RNG::rand(p.rng) >= 1.) {
+    if (xs.noise_copy / xs.total + p.rng() >= 1.) {
       std::complex<double> yield{1., -1. / eta};
       weight_copy *= yield;
       p.make_secondary(p.u(), p.E(), weight_copy.real(), weight_copy.imag());

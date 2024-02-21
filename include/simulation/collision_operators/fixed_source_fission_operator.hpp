@@ -45,7 +45,7 @@ class FixedSourceFissionOperator
 
     // In fixed-source problems, we don't normalize the number of fission
     // particles produced. Problem must be sub critical !
-    return static_cast<int>(std::floor(std::abs(k_abs_scr) + RNG::rand(p.rng)));
+    return static_cast<int>(std::floor(std::abs(k_abs_scr) + p.rng()));
   }
 };
 

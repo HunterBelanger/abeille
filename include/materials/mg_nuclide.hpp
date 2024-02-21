@@ -67,17 +67,17 @@ class MGNuclide : public Nuclide {
 
   ScatterInfo sample_scatter(double Ein, const Direction& u,
                              const MicroXSs& micro_xs,
-                             pcg32& rng) const override final;
+                             RNG& rng) const override final;
   ScatterInfo sample_scatter_mt(uint32_t mt, double Ein, const Direction& u,
-                                std::size_t i, pcg32& rng) const override final;
+                                std::size_t i, RNG& rng) const override final;
   FissionInfo sample_fission(double Ein, const Direction& u, std::size_t i,
-                             double Pdelayed, pcg32& rng) const override final;
+                             double Pdelayed, RNG& rng) const override final;
   FissionInfo sample_prompt_fission(double Ein, const Direction& u,
                                     std::size_t i,
-                                    pcg32& rng) const override final;
+                                    RNG& rng) const override final;
   FissionInfo sample_delayed_fission(double Ein, const Direction& u,
                                      std::size_t g,
-                                     pcg32& rng) const override final;
+                                     RNG& rng) const override final;
 
   double max_energy() const override final;
   double min_energy() const override final;

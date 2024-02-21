@@ -31,12 +31,12 @@
 Cone::Cone(Direction u, double aperture)
     : direction_(u), aperture_(std::cos(aperture)) {}
 
-Direction Cone::sample(pcg32& rng) const {
+Direction Cone::sample(RNG& rng) const {
   // Sample mu in [aperture_, 1]
-  double mu = (1. - aperture_) * RNG::rand(rng) + aperture_;
+  double mu = (1. - aperture_) * rng() + aperture_;
 
   // Sample phi in [0, 2pi]
-  double phi = 2. * PI * RNG::rand(rng);
+  double phi = 2. * PI * rng();
 
   return rotate_direction(direction_, mu, phi);
 }

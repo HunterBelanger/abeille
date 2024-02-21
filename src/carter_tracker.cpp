@@ -145,7 +145,7 @@ void CarterTracker::transport(Particle& p, Tracker& trkr, MaterialHelper& mat,
     auto maj_indx = EGrid->get_lower_index(p.E());
     double Esample = Esmp->evaluate(p.E(), maj_indx) + mat.Ew(p.E());
     p.set_Esmp(Esample);  // Sampling XS saved for cancellation
-    double d_coll = RNG::exponential(p.rng, Esample);
+    double d_coll = p.rng.exponential(Esample);
     Boundary bound(INF, -1, BoundaryType::Normal);
 
     // Try moving the distance to collision, and see if we land in a valid
@@ -207,7 +207,7 @@ void CarterTracker::transport(Particle& p, Tracker& trkr, MaterialHelper& mat,
 
       if (Esample >= Et) {
         const double Preal = Et / Esample;
-        if (RNG::rand(p.rng) < Preal) {
+        if (p.rng() < Preal) {
           // Flag real collision
           had_collision = true;
         }
@@ -215,7 +215,7 @@ void CarterTracker::transport(Particle& p, Tracker& trkr, MaterialHelper& mat,
         const double D = Et / (2. * Et - Esample);
         const double F = Et / (D * Esample);
 
-        if (RNG::rand(p.rng) < D) {
+        if (p.rng() < D) {
           p.set_weight(p.wgt() * F);
           had_collision = true;
         } else {

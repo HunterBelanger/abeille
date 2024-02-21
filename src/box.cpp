@@ -33,10 +33,10 @@ Box::Box(Position low, Position hi) : low_(low), hi_(hi) {
   }
 }
 
-Position Box::sample(pcg32& rng) const {
-  double x = (hi_.x() - low_.x()) * RNG::rand(rng) + low_.x();
-  double y = (hi_.y() - low_.y()) * RNG::rand(rng) + low_.y();
-  double z = (hi_.z() - low_.z()) * RNG::rand(rng) + low_.z();
+Position Box::sample(RNG& rng) const {
+  double x = (hi_.x() - low_.x()) * rng() + low_.x();
+  double y = (hi_.y() - low_.y()) * rng() + low_.y();
+  double z = (hi_.z() - low_.z()) * rng() + low_.z();
   return {x, y, z};
 }
 

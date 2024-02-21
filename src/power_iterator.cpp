@@ -599,8 +599,8 @@ void PowerIterator::comb_particles(std::vector<BankedParticle>& next_gen) {
   double comb_position_neg = 0.;
   if (mpi::rank == 0) {
     // The initial random offset of the comb is sampled on the master node.
-    comb_position_pos = RNG::rand(settings::rng) * avg_pos_wgt;
-    comb_position_neg = RNG::rand(settings::rng) * avg_neg_wgt;
+    comb_position_pos = settings::rng() * avg_pos_wgt;
+    comb_position_neg = settings::rng() * avg_neg_wgt;
   }
   mpi::Bcast(comb_position_pos, 0);
   mpi::Bcast(comb_position_neg, 0);

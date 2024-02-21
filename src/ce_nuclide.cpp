@@ -181,8 +181,9 @@ static const std::array<uint32_t, 106> MT_LIST{
 
 ScatterInfo CENuclide::sample_scatter(double Ein, const Direction& u,
                                       const MicroXSs& micro_xs,
-                                      pcg32& rng) const {
-  std::function<double()> rngfunc = std::bind(RNG::rand, std::ref(rng));
+                                      RNG& rng) const {
+  auto rngfunc = [&rng]() { return rng(); };
+
   std::array<double, 106> XS;
   XS.fill(0.);
 
@@ -196,7 +197,7 @@ ScatterInfo CENuclide::sample_scatter(double Ein, const Direction& u,
   uint32_t MT = 0;
 
   // First, sample the reaction type
-  const double xi_elastic = RNG::rand(rng);
+  const double xi_elastic = rng();
   if (xi_elastic <= P_elastic || P_elastic > 1. - 1.E-9) {
     MT = 2;
   } else {
@@ -209,8 +210,8 @@ ScatterInfo CENuclide::sample_scatter(double Ein, const Direction& u,
     }
 
     // Sample the reaction
-    MT = MT_LIST[static_cast<std::size_t>(
-                     RNG::discrete(rng, &XS[1], &XS[XS.size() - 1])) +
+    MT = MT_LIST[rng.discrete(
+                     std::span<const double>(&XS[1], &XS[XS.size() - 1])) +
                  1];
 
     // If we don't have that reaction, something probably went wrong.
@@ -230,7 +231,7 @@ ScatterInfo CENuclide::sample_scatter(double Ein, const Direction& u,
         cedata_->reaction(MT).sample_neutron_angle_energy(Ein, rngfunc);
 
     Eout = ae_out.energy;
-    uout = rotate_direction(u, ae_out.cosine_angle, 2. * PI * rngfunc());
+    uout = rotate_direction(u, ae_out.cosine_angle, 2. * PI * rng());
   }
 
   // Retturn the reaction iformation
@@ -244,8 +245,8 @@ ScatterInfo CENuclide::sample_scatter(double Ein, const Direction& u,
 
 ScatterInfo CENuclide::sample_scatter_mt(uint32_t mt, double Ein,
                                          const Direction& u, std::size_t /*i*/,
-                                         pcg32& rng) const {
-  std::function<double()> rngfunc = std::bind(RNG::rand, std::ref(rng));
+                                         RNG& rng) const {
+  auto rngfunc = [&rng]() { return rng(); };
 
   if (mt != 2 && cedata_->has_reaction(mt) == false) {
     std::stringstream mssg;
@@ -270,7 +271,7 @@ ScatterInfo CENuclide::sample_scatter_mt(uint32_t mt, double Ein,
         cedata_->reaction(mt).sample_neutron_angle_energy(Ein, rngfunc);
 
     E_out = ae_out.energy;
-    u_out = rotate_direction(u, ae_out.cosine_angle, 2. * PI * rngfunc());
+    u_out = rotate_direction(u, ae_out.cosine_angle, 2. * PI * rng());
   }
 
   ScatterInfo info;
@@ -283,8 +284,8 @@ ScatterInfo CENuclide::sample_scatter_mt(uint32_t mt, double Ein,
 
 FissionInfo CENuclide::sample_fission(double Ein, const Direction& u,
                                       std::size_t i, double Pdelayed,
-                                      pcg32& rng) const {
-  if (RNG::rand(rng) < Pdelayed) {
+                                      RNG& rng) const {
+  if (rng() < Pdelayed) {
     // Make delayed neutron
     // Must first sample the delayed family
     const std::size_t ngroups = cedata_->fission().n_delayed_families();
@@ -292,8 +293,7 @@ FissionInfo CENuclide::sample_fission(double Ein, const Direction& u,
     for (size_t g = 0; g < ngroups; g++) {
       group_probs[g] = cedata_->fission().delayed_family(g).probability()(Ein);
     }
-    std::size_t group =
-        static_cast<std::size_t>(RNG::discrete(rng, group_probs));
+    std::size_t group = rng.discrete(group_probs);
 
     return this->sample_delayed_fission(Ein, u, group, rng);
   } else {
@@ -304,8 +304,8 @@ FissionInfo CENuclide::sample_fission(double Ein, const Direction& u,
 
 FissionInfo CENuclide::sample_prompt_fission(double Ein, const Direction& u,
                                              std::size_t /*i*/,
-                                             pcg32& rng) const {
-  std::function<double()> rngfunc = std::bind(RNG::rand, std::ref(rng));
+                                             RNG& rng) const {
+  auto rngfunc = [&rng]() { return rng(); };
   pndl::AngleEnergyPacket ae_out;
 
   bool sampled = false;
@@ -319,7 +319,7 @@ FissionInfo CENuclide::sample_prompt_fission(double Ein, const Direction& u,
 
   FissionInfo info;
   info.energy = ae_out.energy;
-  double phi = 2. * PI * rngfunc();
+  double phi = 2. * PI * rng();
   info.direction = rotate_direction(u, ae_out.cosine_angle, phi);
   info.delayed = false;
   info.delayed_family = 0;
@@ -328,8 +328,8 @@ FissionInfo CENuclide::sample_prompt_fission(double Ein, const Direction& u,
 }
 
 FissionInfo CENuclide::sample_delayed_fission(double Ein, const Direction& u,
-                                              std::size_t g, pcg32& rng) const {
-  std::function<double()> rngfunc = std::bind(RNG::rand, std::ref(rng));
+                                              std::size_t g, RNG& rng) const {
+  auto rngfunc = [&rng]() { return rng(); };
   double Eout = 0.;
   bool sampled = false;
 
@@ -339,8 +339,8 @@ FissionInfo CENuclide::sample_delayed_fission(double Ein, const Direction& u,
     if (Eout < settings::max_energy) sampled = true;
   }
 
-  double mu = 2 * rngfunc() - 1.;
-  double phi = 2. * PI * rngfunc();
+  double mu = 2 * rng() - 1.;
+  double phi = 2. * PI * rng();
 
   FissionInfo info;
   info.energy = Eout;
@@ -353,7 +353,7 @@ FissionInfo CENuclide::sample_delayed_fission(double Ein, const Direction& u,
 }
 
 void CENuclide::elastic_scatter(double Ein, const Direction& uin, double& Eout,
-                                Direction& uout, pcg32& rng) const {
+                                Direction& uout, RNG& rng) const {
   // Check if we need to use the thermal scattering law
   if (tsl_ && Ein < tsl_->max_energy()) {
     thermal_scatter(Ein, uin, Eout, uout, rng);
@@ -361,20 +361,20 @@ void CENuclide::elastic_scatter(double Ein, const Direction& uin, double& Eout,
   }
 
   // Not using thermal scattering law, use whatever the STNeutron instance has
-  std::function<double()> rngfunc = std::bind(RNG::rand, std::ref(rng));
+  auto rngfunc = [&rng]() { return rng(); };
   auto ae = cedata_->elastic().sample_angle_energy(Ein, rngfunc);
   Eout = ae.energy;
   double mu = ae.cosine_angle;
-  uout = rotate_direction(uin, mu, 2. * PI * rngfunc());
+  uout = rotate_direction(uin, mu, 2. * PI * rng());
 }
 
 void CENuclide::thermal_scatter(double Ein, const Direction& uin, double& Eout,
-                                Direction& uout, pcg32& rng) const {
-  std::function<double()> rngfunc = std::bind(RNG::rand, std::ref(rng));
+                                Direction& uout, RNG& rng) const {
+  auto rngfunc = [&rng]() { return rng(); };
 
   // Must first grab all xs values to compute probabilities.
   // This algo should be mixed-elastic ready !
-  const double xi = RNG::rand(rng);
+  const double xi = rng();
   const double ii_xs = tsl_->incoherent_inelastic().xs(Ein);
   const double ie_xs = tsl_->incoherent_elastic().xs(Ein);
   const double ce_xs = tsl_->coherent_elastic().xs(Ein);
@@ -400,6 +400,6 @@ void CENuclide::thermal_scatter(double Ein, const Direction& uin, double& Eout,
     ae_out = tsl_->incoherent_inelastic().sample_angle_energy(Ein, rngfunc);
   }
 
-  uout = rotate_direction(uin, ae_out.cosine_angle, 2. * PI * rngfunc());
+  uout = rotate_direction(uin, ae_out.cosine_angle, 2. * PI * rng());
   Eout = ae_out.energy;
 }

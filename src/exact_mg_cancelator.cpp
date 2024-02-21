@@ -661,7 +661,7 @@ void ExactMGCancelator::perform_cancellation() {
 
 std::optional<Position> ExactMGCancelator::sample_position(const Key& key,
                                                            Material* mat,
-                                                           pcg32& rng) const {
+                                                           RNG& rng) const {
   // Get bin positions
   double Xl = Key::r_low.x() + static_cast<double>(key.i) * Key::pitch[0];
   double Yl = Key::r_low.y() + static_cast<double>(key.j) * Key::pitch[1];
@@ -671,9 +671,9 @@ std::optional<Position> ExactMGCancelator::sample_position(const Key& key,
   bool position_sampled = false;
   Position r_smp;
   while (N_TRIES < N_MAX_POS && !position_sampled) {
-    double x = Xl + RNG::rand(rng) * Key::pitch[0];
-    double y = Yl + RNG::rand(rng) * Key::pitch[1];
-    double z = Zl + RNG::rand(rng) * Key::pitch[2];
+    double x = Xl + rng() * Key::pitch[0];
+    double y = Yl + rng() * Key::pitch[1];
+    double z = Zl + rng() * Key::pitch[2];
     r_smp = Position(x, y, z);
     Material* mat_smp = get_material(r_smp);
 
@@ -692,7 +692,7 @@ std::optional<Position> ExactMGCancelator::sample_position(const Key& key,
   return std::make_optional(r_smp);
 }
 
-std::vector<BankedParticle> ExactMGCancelator::get_new_particles(pcg32& rng) {
+std::vector<BankedParticle> ExactMGCancelator::get_new_particles(RNG& rng) {
   // Only master should have non-zero uniform weights
   if (mpi::rank != 0) {
     return {};
@@ -751,7 +751,7 @@ std::vector<BankedParticle> ExactMGCancelator::get_new_particles(pcg32& rng) {
         std::size_t e_index = 0;
         if (CHI_MATRIX) {
           // We need to select a random energy group from our bin.
-          const double xi_E = RNG::rand(rng);
+          const double xi_E = rng();
           std::size_t g_index = static_cast<std::size_t>(std::floor(
               xi_E * static_cast<double>(Key::group_bins[key.e].size())));
           e_index = Key::group_bins[key.e][g_index];
@@ -759,14 +759,13 @@ std::vector<BankedParticle> ExactMGCancelator::get_new_particles(pcg32& rng) {
           // Fission spectrum is independent of incident energy.
           // We can just sample an energy from the first row
           // of the chi matrix.
-          e_index =
-              static_cast<std::size_t>(RNG::discrete(rng, nuclide->chi()[0]));
+          e_index = rng.discrete(nuclide->chi()[0]);
         }
         double E_smp = 0.5 * (settings::energy_bounds[e_index] +
                               settings::energy_bounds[e_index + 1]);
 
         // Sample Direction
-        Direction u_smp(2. * RNG::rand(rng) - 1., 2. * PI * RNG::rand(rng));
+        Direction u_smp(2. * rng() - 1., 2. * PI * rng());
 
         // Construct uniform_particle
         BankedParticle uniform_particle;

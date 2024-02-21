@@ -443,9 +443,9 @@ void make_cell(const YAML::Node& cell_node, const YAML::Node& input) {
     geometry::cells.push_back(cell_pntr);
 
     // Generate a random color for the cell
-    uint8_t r = static_cast<uint8_t>(255.0 * RNG::rand(settings::rng));
-    uint8_t g = static_cast<uint8_t>(255.0 * RNG::rand(settings::rng));
-    uint8_t b = static_cast<uint8_t>(255.0 * RNG::rand(settings::rng));
+    uint8_t r = static_cast<uint8_t>(255.0 * settings::rng());
+    uint8_t g = static_cast<uint8_t>(255.0 * settings::rng());
+    uint8_t b = static_cast<uint8_t>(255.0 * settings::rng());
     plotter::Pixel cell_color(r, g, b);
     plotter::cell_id_to_color[cell_pntr->id()] = cell_color;
   }

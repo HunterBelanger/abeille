@@ -77,7 +77,7 @@ void DeltaTracker::transport(Particle& p, Tracker& trkr, MaterialHelper& mat,
     auto maj_indx = EGrid->get_lower_index(p.E());
     double Emajorant = Emaj->evaluate(p.E(), maj_indx) + mat.Ew(p.E());
     p.set_Esmp(Emajorant);  // Sampling XS saved for cancellation
-    double d_coll = RNG::exponential(p.rng, Emajorant);
+    double d_coll = p.rng.exponential(Emajorant);
     Boundary bound(INF, -1, BoundaryType::Normal);
 
     // Try moving the distance to collision, and see if we land in a valid
@@ -146,7 +146,7 @@ void DeltaTracker::transport(Particle& p, Tracker& trkr, MaterialHelper& mat,
         fatal_error(mssg.str());
       }
 
-      if (RNG::rand(p.rng) < (Et / Emajorant)) {
+      if (p.rng() < (Et / Emajorant)) {
         // Flag real collision
         had_collision = true;
       }

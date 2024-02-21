@@ -27,8 +27,7 @@
 
 #include <utils/direction.hpp>
 #include <utils/position.hpp>
-
-#include <pcg_random.hpp>
+#include <utils/rng.hpp>
 
 #include <vector>
 
@@ -192,9 +191,7 @@ class Particle {
     histories_initial_rng = rng;
   }
 
-  void set_initial_rng(pcg32 initial_rng) {
-    histories_initial_rng = initial_rng;
-  }
+  void set_initial_rng(RNG initial_rng) { histories_initial_rng = initial_rng; }
 
   bool previous_collision_virtual() const {
     return this->previous_collision_virtual_;
@@ -210,7 +207,7 @@ class Particle {
 
   uint64_t number_of_rng_calls() const { return rng - histories_initial_rng; }
 
-  pcg32 rng;
+  RNG rng;
 
  private:
   ParticleState state;
@@ -238,7 +235,7 @@ class Particle {
 
   Position r_birth_ = Position();
 
-  pcg32 histories_initial_rng;
+  RNG histories_initial_rng;
 };  // Particle
 
 #endif  // MG_PARTICLE_H

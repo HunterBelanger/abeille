@@ -25,12 +25,12 @@
 #include <source/isotropic.hpp>
 #include <utils/constants.hpp>
 
-Direction Isotropic::sample(pcg32& rng) const {
+Direction Isotropic::sample(RNG& rng) const {
   // Sample mu in [-1, 1]
-  double mu = 2. * RNG::rand(rng) - 1.;
+  double mu = 2. * rng() - 1.;
 
   // Sample phi in [0, 2pi]
-  double phi = 2. * PI * RNG::rand(rng);
+  double phi = 2. * PI * rng();
 
   return Direction(mu, phi);
 }

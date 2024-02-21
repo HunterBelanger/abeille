@@ -444,9 +444,9 @@ void make_material(const YAML::Node& mat, bool plotting_mode) {
     mat_color = plotter::Pixel(R, G, B);
   } else {
     // Generate a random color for the material
-    uint8_t r = static_cast<uint8_t>(255.0 * RNG::rand(settings::rng));
-    uint8_t g = static_cast<uint8_t>(255.0 * RNG::rand(settings::rng));
-    uint8_t b = static_cast<uint8_t>(255.0 * RNG::rand(settings::rng));
+    uint8_t r = static_cast<uint8_t>(255.0 * settings::rng());
+    uint8_t g = static_cast<uint8_t>(255.0 * settings::rng());
+    uint8_t b = static_cast<uint8_t>(255.0 * settings::rng());
     mat_color = plotter::Pixel(r, g, b);
   }
   plotter::material_id_to_color[material->id()] = mat_color;

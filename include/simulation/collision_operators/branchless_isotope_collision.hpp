@@ -75,7 +75,7 @@ class BranchlessIsotopeCollision {
     russian_roulette(p);
 
     if (p.is_alive()) {
-      if (RNG::rand(p.rng) < Pscatter) {
+      if (p.rng() < Pscatter) {
         // Do scatter
         ScatterInfo sinfo =
             nuclide.sample_scatter(p.E(), p.u(), microxs, p.rng);

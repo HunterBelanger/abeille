@@ -37,7 +37,7 @@ class DirectionDistribution {
   DirectionDistribution() {}
   virtual ~DirectionDistribution() = default;
 
-  virtual Direction sample(pcg32& rng) const = 0;
+  virtual Direction sample(RNG& rng) const = 0;
 };
 
 // Helper function to build direction distribution

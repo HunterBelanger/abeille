@@ -41,7 +41,7 @@ Source::Source(std::shared_ptr<SpatialDistribution> spatial,
   }
 }
 
-Particle Source::generate_particle(pcg32& rng) const {
+Particle Source::generate_particle(RNG& rng) const {
   // Sample Direction
   Direction u = direction_->sample(rng);
 
