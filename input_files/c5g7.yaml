@@ -344,7 +344,7 @@ simulation:
       xs:     [0.4, 32., 43., 2.]
 
 
-  collisions-operator:
+  collision-operator:
     type: branching
   
   # Any number of particle sources may be defined to begin the simulation.
