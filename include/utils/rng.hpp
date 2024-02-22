@@ -80,9 +80,10 @@ class RNG {
       norm += val;
     }
 
-    // If sum of weights is zero, we can't sample a value
+    // If sum of weights is zero, we can't sample a value. The STL
+    // distributions seems to just return 0 in this case.
     if (norm == 0.) {
-      fatal_error("Sum of all weights must be > 0.");
+      return 0;
     }
 
     // Sample the index
