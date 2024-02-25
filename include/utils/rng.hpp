@@ -26,10 +26,13 @@
 #define RNG_H
 
 #include <utils/constants.hpp>
+#include <utils/error.hpp>
 
 #include <pcg_random.hpp>
+#include <gsl/gsl-lite.hpp>
 
-#include <random>
+#include <cmath>
+#include <vector>
 
 class RNG {
  public:
@@ -38,7 +41,9 @@ class RNG {
   //   This advances the pcg32 generator and produces a double
   //   over the interval [0,1).
   // -----------------------------------------------------------------------
-  static double rand(pcg32& rng) { return unit_dist(rng); }
+  static double rand(pcg32& rng) {
+    return pcg_to_double(rng());
+  }
 
   // -----------------------------------------------------------------------
   // uniform(double a, double b)
@@ -48,20 +53,7 @@ class RNG {
   //   f(x|a,b) = 1 / (b - a)
   // -----------------------------------------------------------------------
   static double uniform(pcg32& rng, double a, double b) {
-    std::uniform_real_distribution<double> dist(a, b);
-    return dist(rng);
-  }
-
-  // -----------------------------------------------------------------------
-  // normal(double mu, double sigma)
-  //   Returns a random double from the normal (Gaussian) distribution,
-  //   defined by average value mu, and std sigma
-  //
-  //   f(x|mu,sigma) = (1/(sigma*sqrt(2*pi))) * exp(-0.5*((x - mu)/sigma)^2)
-  // -----------------------------------------------------------------------
-  static double normal(pcg32& rng, double mu, double sigma) {
-    std::normal_distribution<double> dist(mu, sigma);
-    return dist(rng);
+    return (b - a) * rand(rng) + a;
   }
 
   // -----------------------------------------------------------------------
@@ -72,10 +64,13 @@ class RNG {
   //   f(x|lambda) = lambda * exp(-lambda * x)
   // -----------------------------------------------------------------------
   static double exponential(pcg32& rng, double lambda) {
+    if (lambda < 0.) {
+      fatal_error("Lambda must be >= 0.");
+    }
+
     if (lambda == 0.) return INF;
 
-    std::exponential_distribution<double> dist(lambda);
-    return dist(rng);
+    return -std::log(rand(rng)) / lambda;
   }
 
   // -----------------------------------------------------------------------
@@ -85,18 +80,57 @@ class RNG {
   //
   //   P(i|w_0, w_1, ... w_k) = w_i / Sum[j = 1 to k](w_j)
   // -----------------------------------------------------------------------
-  static int discrete(pcg32& rng, const double* begin, const double* end) {
-    std::discrete_distribution<int> dist(begin, end);
-    return dist(rng);
+  static std::size_t discrete(pcg32& rng, gsl::span<const double> weights) {
+    // If weights is empty, we can't sample an index. In this case, we
+    // return 0 like for the STL's discrete_distribution.
+    if (weights.empty()) {
+      return 0;
+    }
+
+    // Calculate the sum of all weights
+    double norm = 0.;
+    for (const auto& val : weights) {
+      // If a weight is < 0, the distribution is not well defined.
+      if (val < 0.) {
+        fatal_error("Weights must be >= 0.");
+      }
+
+      norm += val;
+    }
+
+    // If sum of weights is zero, we can't sample a value
+    if (norm == 0.) {
+      return 0;
+      //fatal_error("Sum of all weights must be > 0.");
+    }
+
+    // Sample the index
+    const double xi = rand(rng) * norm;
+    double sum = 0.;
+    for (std::size_t i = 0; i < weights.size(); i++) {
+      sum += weights[i];
+
+      if (xi < sum) {
+        return i;
+      }
+    }
+
+    // Should never get here, but return last index
+    return weights.size() - 1;
   }
 
-  static int discrete(pcg32& rng, const std::vector<double>& weights) {
-    std::discrete_distribution<int> dist(weights.begin(), weights.end());
-    return dist(rng);
+  static std::size_t discrete(pcg32& rng, const double* begin, const double* end) {
+    return discrete(rng, gsl::span<const double>(begin, end));
   }
 
- private:
-  static std::uniform_real_distribution<double> unit_dist;
+  static std::size_t discrete(pcg32& rng, const std::vector<double>& weights) {
+    gsl::span<const double> spn(&weights[0], &weights[0]+weights.size());
+    return discrete(rng, spn);
+  }
+
+  static double pcg_to_double(pcg32::result_type val) {
+    return std::ldexp(static_cast<double>(val), -32);
+  }
 };  // RNG
 
 #endif

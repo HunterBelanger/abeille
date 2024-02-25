@@ -30,7 +30,6 @@
 
 #include <filesystem>
 #include <iostream>
-#include <source_location>
 #include <sstream>
 #include <string>
 
@@ -53,12 +52,9 @@ Output::Output() : output(std::nullopt), warnings_for_latter() {
       bool did_rm = std::filesystem::remove(output_filename);
       if (did_rm == false) {
         // Cannot use fatal_error here, because that calls Output !
-        auto loc = std::source_location::current();
         std::cerr
             << "\n FATAL ERROR: Could not delete pre-existing file/directory "
             << output_filename << ".\n";
-        std::cerr << " Location: " << loc.file_name() << ":" << loc.line()
-                  << "\n";
         std::cerr << std::flush;
         std::exit(1);
       }
@@ -68,11 +64,8 @@ Output::Output() : output(std::nullopt), warnings_for_latter() {
       output = H5::File(output_filename, H5::File::Create);
     } catch (...) {
       // Cannot use fatal_error here, because that calls Output !
-      auto loc = std::source_location::current();
       std::cerr << "\n FATAL ERROR: Error creating output file "
                 << output_filename << ".\n";
-      std::cerr << " Location: " << loc.file_name() << ":" << loc.line()
-                << "\n";
       std::cerr << std::flush;
       std::exit(1);
     }
@@ -117,12 +110,11 @@ void Output::write_error(const std::string& message) {
   write_mutex.unlock();
 }
 
-H5::File& Output::h5(const std::source_location& loc) {
+H5::File& Output::h5() {
   if (mpi::rank != 0) {
     std::cerr << " FATAL ERROR: Only master can write to output file.\n";
-    std::cerr << " Location: " << loc.file_name() << ':' << loc.line() << '\n';
     std::exit(1);
-    fatal_error("Only master can write to output file.", loc);
+    fatal_error("Only master can write to output file.");
   }
 
   return *output;

@@ -26,7 +26,6 @@
 #include <utils/error.hpp>
 #include <utils/mpi.hpp>
 
-#include <source_location>
 #include <sstream>
 
 void Entropy::add_point(const Position& r, const double& w) {

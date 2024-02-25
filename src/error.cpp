@@ -26,17 +26,13 @@
 #include <utils/mpi.hpp>
 #include <utils/output.hpp>
 
-void error(std::string mssg, std::source_location loc) {
+void error(std::string mssg) {
   std::string message = "\n ERROR: " + mssg + "\n";
-  message += " Location: " + std::string(loc.file_name()) + ":" +
-             std::to_string(loc.line()) + "\n";
   Output::instance().write_error(message);
 }
 
-void fatal_error(std::string mssg, std::source_location loc) {
+void fatal_error(std::string mssg) {
   std::string message = "\n FATAL ERROR: " + mssg + "\n";
-  message += " Location: " + std::string(loc.file_name()) + ":" +
-             std::to_string(loc.line()) + "\n";
   Output::instance().write_error(message);
 
   // Exit
@@ -44,9 +40,7 @@ void fatal_error(std::string mssg, std::source_location loc) {
   std::exit(1);
 }
 
-void warning(std::string mssg, std::source_location loc) {
+void warning(std::string mssg) {
   std::string message = "\n WARNING: " + mssg + "\n";
-  message += " Location: " + std::string(loc.file_name()) + ":" +
-             std::to_string(loc.line()) + "\n";
   Output::instance().write_error(message);
 }

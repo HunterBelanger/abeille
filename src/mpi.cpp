@@ -27,6 +27,7 @@
 #include <utils/mpi.hpp>
 
 #include <type_traits>
+#include <utility>
 
 #ifdef ABEILLE_USE_MPI
 #include <mpi.h>
@@ -41,8 +42,12 @@ const Com com = MPI_COMM_WORLD;
 const DType Bool = MPI_C_BOOL;
 const DType Int = MPI_INT;
 const DType Double = MPI_DOUBLE;
+const DType UInt16 = MPI_UINT16_T;
+const DType UInt32 = MPI_UINT32_T;
 const DType UInt64 = MPI_UINT64_T;
 DType BParticle;
+DType KeyType;
+DType KeyUInt32Pair;
 
 const OpType Sum = MPI_SUM;
 const OpType And = MPI_LAND;
@@ -87,20 +92,12 @@ void register_banked_particle_type() {
     disps[i] -= disps[0];
   }
 
-  DType tmp_BParticle;
-  err = MPI_Type_create_struct(BP_NUM_MEMBERS, sizes, disps, dtypes,
-                               &tmp_BParticle);
-  check_error(err, std::source_location::current());
-
-  MPI_Aint lb, extnt;
-  err = MPI_Type_get_extent(tmp_BParticle, &lb, &extnt);
-  check_error(err, std::source_location::current());
-
-  err = MPI_Type_create_resized(tmp_BParticle, lb, extnt, &BParticle);
-  check_error(err, std::source_location::current());
+  err =
+      MPI_Type_create_struct(BP_NUM_MEMBERS, sizes, disps, dtypes, &BParticle);
+  check_error(err);
 
   err = MPI_Type_commit(&BParticle);
-  check_error(err, std::source_location::current());
+  check_error(err);
 #endif
 }
 
@@ -112,16 +109,17 @@ void initialize_mpi(int* argc, char*** argv) {
 
   // Initialize MPI
   err = MPI_Init(argc, argv);
-  check_error(err, std::source_location::current());
+  check_error(err);
 
   // Get worls size and our rank
   err = MPI_Comm_size(com, &size);
-  check_error(err, std::source_location::current());
+  check_error(err);
 
   err = MPI_Comm_rank(com, &rank);
-  check_error(err, std::source_location::current());
+  check_error(err);
 
-  // Register baked particle type
+  // Register required custom types.
+  // !!! MUST BE DONE IN CERTAIN ORDER !!!
   register_banked_particle_type();
 #else
   (void)argc;
@@ -151,7 +149,7 @@ void synchronize() {
 #endif
 }
 
-void check_error(int err, const std::source_location& loc) {
+void check_error(int err) {
 #ifdef ABEILLE_USE_MPI
   if (err != MPI_SUCCESS) {
     // First, we should get the error string
@@ -159,11 +157,10 @@ void check_error(int err, const std::source_location& loc) {
     int str_len = 0;
     MPI_Error_string(err, err_str, &str_len);
     std::string mssg(err_str, static_cast<std::size_t>(str_len));
-    fatal_error(mssg, loc);
+    fatal_error(mssg);
   }
 #else
   (void)err;
-  (void)loc;
 #endif
 }
 }  // namespace mpi

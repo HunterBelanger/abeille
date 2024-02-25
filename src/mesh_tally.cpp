@@ -80,7 +80,7 @@ MeshTally::MeshTally(Position low, Position hi, uint64_t nx, uint64_t ny,
       tally_avg(),
       tally_var() {
   // Make sure the name is allowed.
-  if (disallowed_tally_names.contains(this->fname)) {
+  if (disallowed_tally_names.find(this->fname) != disallowed_tally_names.end()) {
     fatal_error("The tally name " + this->fname + " is reserved.");
   }
 

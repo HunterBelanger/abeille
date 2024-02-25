@@ -43,10 +43,10 @@ FetchContent_MakeAvailable(yaml-cpp)
 
 #===============================================================================
 # Get PapillonNDL develop
-message(STATUS "Downloading PapillonNDL feature/sab branch")
+message(STATUS "Downloading PapillonNDL feature/cpp17 branch")
 FetchContent_Declare(PapillonNDL
   GIT_REPOSITORY https://github.com/HunterBelanger/papillon-ndl.git
-  GIT_TAG        feature/sab
+  GIT_TAG        feature/cpp17
 )
 set(PNDL_SHARED OFF CACHE BOOL "Build PapillonNDL as a shared library")
 set(PNDL_INSTALL OFF CACHE BOOL "Install the PapillonNDL library and header files")
@@ -117,7 +117,7 @@ set(HIGHFIVE_STATIC_HDF5 ON)
 set(HighFive_FIND_QUIETLY ON)
 FetchContent_Declare(HighFive
   GIT_REPOSITORY https://github.com/BlueBrain/HighFive.git
-  GIT_TAG        master
+  GIT_TAG        v2.9.0
 )
 FetchContent_MakeAvailable(HighFive)
 
