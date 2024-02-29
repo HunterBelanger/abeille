@@ -430,42 +430,27 @@ ExactMGCancelator::sync_keys() {
 
   // Initialize the empty set
   std::set<std::pair<Key, uint32_t>> key_set;
+  // Put keys into the keyset
+  key_set.insert(key_matid_pairs.begin(), key_matid_pairs.end());
 
-  // Put master keys into the keyset
-  if (mpi::rank == 0) {
-    key_set.insert(key_matid_pairs.begin(), key_matid_pairs.end());
-  }
+  // For every Node sends its keys to all other nodes
+  for (int i = 0; i < mpi::size; i++) {
+    std::vector<std::pair<Key, uint32_t>> recv_key_matid_pairs;
 
-  // For every Node starting at 1, send its keys to master and add to key_set
-  for (int i = 1; i < mpi::size; i++) {
     if (mpi::rank == i) {
-      auto npairs = key_matid_pairs.size();
-      mpi::Send(npairs, 0);
-      mpi::Send(gsl::span<std::pair<Key, uint32_t>>(&key_matid_pairs[0],
-                                                    &key_matid_pairs[0] + key_matid_pairs.size()),
-                0);
-      key_matid_pairs.clear();
-    } else if (mpi::rank == 0) {
-      key_matid_pairs.clear();
-      std::size_t npairs = 0;
-      mpi::Recv(npairs, i);
-      key_matid_pairs.resize(npairs);
-
-      mpi::Recv(gsl::span<std::pair<Key, uint32_t>>(&key_matid_pairs[0],
-                                                    &key_matid_pairs[0] + key_matid_pairs.size()),
-                i);
-      key_set.insert(key_matid_pairs.begin(), key_matid_pairs.end());
+      mpi::Bcast(key_matid_pairs, i);
+    } else {
+      mpi::Bcast(recv_key_matid_pairs, i);
+      
+      // Save the keys into the set
+      key_set.insert(recv_key_matid_pairs.begin(), recv_key_matid_pairs.end());
     }
   }
 
-  // Move keys from key_set back to keys in master
-  if (mpi::rank == 0) {
-    key_matid_pairs.clear();
-    key_matid_pairs.assign(key_set.begin(), key_set.end());
-  }
-
-  // Send keys to all nodes from Master
-  mpi::Bcast(key_matid_pairs, 0);
+  // Move keys from key_set back to keys
+  key_matid_pairs.clear();
+  key_matid_pairs.assign(key_set.begin(), key_set.end());
+  key_set.clear();
 
   // From these keys, we need to see which bins have both positive and negative
   // particles, and only those will then be canceled.
