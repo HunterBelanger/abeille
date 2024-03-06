@@ -36,12 +36,6 @@ void CollisionMeshTally::score_collision(const Particle& p,
 
   double scr = 1. / (Et * net_weight);
 
-  /*if (p.wgt() == 0. && p.wgt2() == 0.) {
-    std::stringstream out;
-    out << " Zero collision weights.\n";
-    std::cout << out.str();
-  }*/
-
   int i = static_cast<int>(std::floor((p.r().x() - r_low.x()) * dx_inv));
   int j = static_cast<int>(std::floor((p.r().y() - r_low.y()) * dy_inv));
   int k = static_cast<int>(std::floor((p.r().z() - r_low.z()) * dz_inv));
