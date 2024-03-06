@@ -709,6 +709,10 @@ void PowerIterator::write_entropy_families_etc_to_results() const {
   if (Wneg_vec.size() > 0) {
     h5.createDataSet("results/Wneg", Wneg_vec);
   }
+
+  // Write simulation time and number of particle transported
+  h5.createAttribute("simulation-time", simulation_timer.elapsed_time());
+  h5.createAttribute("nparticles-transported", histories_counter);
 }
 
 void PowerIterator::normalize_weights(std::vector<BankedParticle>& next_gen) {

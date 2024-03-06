@@ -178,6 +178,13 @@ void FixedSource::run() {
   // Write saved warnings
   out.write_saved_warnings();
 
+  // Write simulation time and number of particle transported
+  if (mpi::rank == 0) {
+    auto& h5 = Output::instance().h5();
+    h5.createAttribute("simulation-time", simulation_timer.elapsed_time());
+    h5.createAttribute("nparticles-transported", histories_counter);
+  }
+
   // Save other outputs
   out.write("\n");
 
