@@ -592,9 +592,11 @@ void Noise::noise_simulation() {
     // a Cancelator instance.
     if (regional_cancellation_noise_ && noise_gen <= ncancel_noise_gens) {
       noise_timer.stop();
+      cancelator->set_cancel_dual_weights(true);
       cancellation_timer.start();
       perform_regional_cancellation(fission_bank);
       cancellation_timer.stop();
+      cancelator->set_cancel_dual_weights(false);
       noise_timer.start();
     }
 
