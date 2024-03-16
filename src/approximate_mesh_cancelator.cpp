@@ -232,7 +232,9 @@ void ApproximateMeshCancelator::perform_cancellation_loop() {
     }
     // Sum weights of all particles in each bin across all nodes
     mpi::Allreduce_sum(sum_wgt);
-    mpi::Allreduce_sum(sum_wgt2);
+    if (this->cancel_dual_weights()) {
+      mpi::Allreduce_sum(sum_wgt2);
+    }
 
     // Sum total number of positive and negative particles across all nodes
     mpi::Allreduce_sum(n_total);
@@ -258,8 +260,13 @@ void ApproximateMeshCancelator::perform_cancellation_vector() {
   std::vector<int> keys = sync_keys();
 
   // change to uint16
-  NDArray<double> wgts({2, keys.size()});
+  NDArray<double> wgts({0});
   std::vector<uint16_t> n_totals(keys.size(), 0);
+  if (this->cancel_dual_weights()) {
+    wgts.reallocate({2, keys.size()});
+  } else {
+    wgts.reallocate({keys.size()});
+  }
 
   for (std::size_t i = 0; i < keys.size(); i++) {
     const auto key = keys[i];
@@ -277,8 +284,12 @@ void ApproximateMeshCancelator::perform_cancellation_vector() {
 
     // Push the counts to the vectors
     n_totals[i] = static_cast<uint16_t>(n_total);
-    wgts(0, i) = sum_wgt;
-    wgts(1, i) = sum_wgt2;
+    if (this->cancel_dual_weights()) {
+      wgts(0, i) = sum_wgt;
+      wgts(1, i) = sum_wgt2;
+    } else {
+      wgts(i) = sum_wgt;
+    }
   }
 
   // Sum the vectors across all nodes
@@ -292,8 +303,14 @@ void ApproximateMeshCancelator::perform_cancellation_vector() {
 
     // Set the avg weights
     const double inv_n = 1. / static_cast<double>(n_totals[i]);
-    const double avg_wgt = wgts(0, i) * inv_n;
-    const double avg_wgt2 = wgts(1, i) * inv_n;
+    double avg_wgt = 0.;
+    double avg_wgt2 = 0.;
+    if (this->cancel_dual_weights()) {
+      avg_wgt = wgts(0, i) * inv_n;
+      avg_wgt2 = wgts(1, i) * inv_n;
+    } else {
+      avg_wgt = wgts(i) * inv_n;
+    }
 
     for (auto& p : bins[key]) {
       p->wgt = avg_wgt;
@@ -307,8 +324,14 @@ void ApproximateMeshCancelator::perform_cancellation_vector() {
 }
 
 void ApproximateMeshCancelator::perform_cancellation_full_vector() {
-  NDArray<double> wgts({2, shape[0], shape[1], shape[2], shape[3]});
   NDArray<uint16_t> n_totals({shape[0], shape[1], shape[2], shape[3]});
+  NDArray<double> wgts({0});
+  if (this->cancel_dual_weights()) {
+    wgts.reallocate({2, shape[0], shape[1], shape[2], shape[3]});
+  } else {
+    wgts.reallocate({shape[0], shape[1], shape[2], shape[3]});
+  }
+  wgts.fill(0.);
 
   for (auto& key_bin_pair : bins) {
     uint32_t indx = key_bin_pair.first;
@@ -334,8 +357,13 @@ void ApproximateMeshCancelator::perform_cancellation_full_vector() {
 
     // Push the counts to the vectors
     n_totals(i, j, k, l) = n_total;
-    wgts(0, i, j, k, l) = sum_wgt;
-    wgts(1, i, j, k, l) = sum_wgt2;
+
+    if (this->cancel_dual_weights()) {
+      wgts(0, i, j, k, l) = sum_wgt;
+      wgts(1, i, j, k, l) = sum_wgt2;
+    } else {
+      wgts(i, j, k, l) = sum_wgt;
+    }
   }
 
   // Sum the vectors across all nodes
@@ -356,8 +384,14 @@ void ApproximateMeshCancelator::perform_cancellation_full_vector() {
 
     // Set the avg weights
     const double inv_n = 1. / static_cast<double>(n_totals(i, j, k, l));
-    const double avg_wgt = wgts(0, i, j, k, l) * inv_n;
-    const double avg_wgt2 = wgts(1, i, j, k, l) * inv_n;
+    double avg_wgt = 0.;
+    double avg_wgt2 = 0.;
+    if (this->cancel_dual_weights()) {
+      avg_wgt = wgts(0, i, j, k, l) * inv_n;
+      avg_wgt2 = wgts(1, i, j, k, l) * inv_n;
+    } else {
+      avg_wgt = wgts(i, j, k, l) * inv_n;
+    }
 
     for (auto& p : bin) {
       p->wgt = avg_wgt;

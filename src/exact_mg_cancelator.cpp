@@ -490,7 +490,7 @@ ExactMGCancelator::sync_keys() {
     }
   }
 
-  return key_matid_pairs_to_keep;
+  return key_matid_pairs_to_keep; 
 }
 
 void ExactMGCancelator::perform_cancellation() {
@@ -498,7 +498,12 @@ void ExactMGCancelator::perform_cancellation() {
   std::vector<std::pair<Key, uint32_t>> key_matid_pairs = sync_keys();
 
   // Initialize array for transfer of needed bits for cancellation
-  NDArray<double> sum_c_and_c_wgts({3, key_matid_pairs.size()});
+  NDArray<double> sum_c_and_c_wgts({0});
+  if (this->cancel_dual_weights()) {
+    sum_c_and_c_wgts.reallocate({3, key_matid_pairs.size()});
+  } else {
+    sum_c_and_c_wgts.reallocate({2, key_matid_pairs.size()});
+  }
 
   // Go through all bins and get the averages. This is done in parallel when
   // possible, as this part of cancellation is very expensive.
@@ -532,7 +537,9 @@ void ExactMGCancelator::perform_cancellation() {
 
     sum_c_and_c_wgts(0, i) = bin.sum_c;
     sum_c_and_c_wgts(1, i) = bin.sum_c_wgt;
-    sum_c_and_c_wgts(2, i) = bin.sum_c_wgt2;
+    if (this->cancel_dual_weights()) {
+      sum_c_and_c_wgts(2, i) = bin.sum_c_wgt2;
+    }
   }
 
   // Get sum of cancellation parameters across all nodes for optimization
@@ -557,7 +564,9 @@ void ExactMGCancelator::perform_cancellation() {
 
       bin.sum_c = sum_c_and_c_wgts(0, i);
       bin.sum_c_wgt = sum_c_and_c_wgts(1, i);
-      bin.sum_c_wgt2 = sum_c_and_c_wgts(2, i);
+      if (this->cancel_dual_weights()) {
+        bin.sum_c_wgt2 = sum_c_and_c_wgts(2, i);
+      }
     }
   }
 
@@ -566,7 +575,12 @@ void ExactMGCancelator::perform_cancellation() {
   sum_c_and_c_wgts.reallocate({0});
 
   // Initialize array for transfer of uniform weights which will happen later
-  NDArray<double> uniform_wgts({2, key_matid_pairs.size()});
+  NDArray<double> uniform_wgts({0});
+  if (this->cancel_dual_weights()) {
+    uniform_wgts.reallocate({2, key_matid_pairs.size()});
+  } else {
+    uniform_wgts.reallocate({key_matid_pairs.size()});
+  }
 
   // Go through all bins and get uniform/point-wise parts
 #ifdef ABEILLE_USE_OMP
@@ -603,8 +617,12 @@ void ExactMGCancelator::perform_cancellation() {
     bin.sum_c_wgt = 0.;
     bin.sum_c_wgt2 = 0.;
 
-    uniform_wgts(0, i) = bin.uniform_wgt;
-    uniform_wgts(1, i) = bin.uniform_wgt2;
+    if (this->cancel_dual_weights()) {
+      uniform_wgts(0, i) = bin.uniform_wgt;
+      uniform_wgts(1, i) = bin.uniform_wgt2;
+    } else {
+      uniform_wgts(i) = bin.uniform_wgt;
+    }
   }
 
   // Get total uniform weights on ONLY master node. Only the master will
@@ -631,8 +649,13 @@ void ExactMGCancelator::perform_cancellation() {
       }
 
       CancelBin& bin = bins.at(key).at(mat_id);
-      bin.uniform_wgt = uniform_wgts(0, i);
-      bin.uniform_wgt2 = uniform_wgts(1, i);
+      if (this->cancel_dual_weights()) {
+        bin.uniform_wgt = uniform_wgts(0, i);
+        bin.uniform_wgt2 = uniform_wgts(1, i);
+      } else {
+        bin.uniform_wgt = uniform_wgts(i);
+        bin.uniform_wgt2 = 0.;
+      }
     }
   } else {
     for (auto& key_matbin_pair : bins) {
