@@ -451,7 +451,8 @@ ExactMGCancelator::sync_keys() {
   key_matid_pairs.clear();
   key_matid_pairs.assign(key_set.begin(), key_set.end());
   key_set.clear();
-
+  
+  /*
   // From these keys, we need to see which bins have both positive and negative
   // particles, and only those will then be canceled.
   NDArray<uint16_t> particles_per_bin({4, key_matid_pairs.size()}, false);
@@ -490,7 +491,8 @@ ExactMGCancelator::sync_keys() {
     }
   }
 
-  return key_matid_pairs_to_keep; 
+  return key_matid_pairs_to_keep;*/
+  return key_matid_pairs;
 }
 
 void ExactMGCancelator::perform_cancellation() {
