@@ -43,6 +43,12 @@ class Cancelator {
   virtual void clear() = 0;
   virtual void check_particle_mover_compatibility(
       const std::shared_ptr<IParticleMover>& pmover) const = 0;
+
+  bool cancel_dual_weights() const { return dual_weights_; }
+  void set_cancel_dual_weights(bool dw) { dual_weights_ = dw; }
+
+ protected:
+  bool dual_weights_ {false};
 };
 
 std::shared_ptr<Cancelator> make_cancelator(const YAML::Node& node);
