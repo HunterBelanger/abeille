@@ -2,8 +2,9 @@
 #define LEGENDRE_H
 
 #include <iostream>
-double lengendre_orthonormalization_constant(int order){
-    return 2.0 / ( 2.0 * order + 1);
+inline
+double lengendre_orthonormalization(int order, double xmin = -1.0, double xmax = 1.0){
+    return ( 2.0 * order + 1) / (xmax - xmin);
 }
 
 double legendre(unsigned order, double x){
