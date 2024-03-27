@@ -1,0 +1,94 @@
+#Case of negative scattring distribution
+# Analytical Benchmark Test set for criticallity test
+# Problem No 71 URRa-2-1-SL
+# k_eff = 1.0
+
+materials:
+  - name: U-235
+    id: 1
+    total: [0.65696, 2.52025]
+    absorption: [0.002053, 0.07642]
+    fission: [0.0010484, 0.050632]
+    nu: [2.5, 2.5]
+    chi: [[1.0, 0.0],
+          [1.0, 0.0]]
+    scatter: [[0.62568, 0.029227],
+              [0.00000, 2.44383]]
+    P1: [[0.4388665132, 0.2591336778],
+        [0.0000000000, 0.3409320616]]
+  
+surfaces:
+  - {type: xplane, x0: -9.491600, boundary: vacuum, id: 1}
+  - {type: xplane, x0: 9.491600, boundary: vacuum, id: 2}
+  - {type: yplane, y0: -100, boundary: reflective, id: 3}
+  - {type: yplane, y0: 100, boundary: reflective, id: 4}
+  - {type: zplane, z0: -100, boundary: reflective, id: 5}
+  - {type: zplane, z0: 100, boundary: reflective, id: 6}
+
+cells:
+  - {region: "+1 & -2 & +3 & -4 & +5 & -6", material: 1, id: 1}
+
+universes:
+  - {cells: [1], id: 1}
+
+root-universe: 1
+
+tallies:
+  - shape: [1, 1, 1]
+    low: [-9.491600, -100, -100]
+    hi: [9.491600, 100, 100] 
+    name: fission
+    quantity: fission
+    estimator: collision
+    energy-bounds: [0, 2]
+
+  - shape: [1, 1, 1]
+    low: [-9.491600, -100, -100]
+    hi: [9.491600, 100, 100] 
+    name: flux
+    quantity: flux
+    estimator: collision
+    energy-bounds: [0, 2]
+
+
+settings:
+  ngroups: 2
+  energy-mode: multi-group
+  energy-bounds: [0, 1, 2]
+
+simulation:
+  mode: k-eigenvalue
+  nparticles: 50000
+  ngenerations: 2200
+  nignored: 200
+  combing: true
+
+  transport-operator:
+    type: delta-tracking
+
+  collision-operator:
+    type: branchless-material
+    splitting: true
+
+  cancelator:
+    type: approximate
+    low: [-9.491600, -100., -100.]
+    hi: [ 9.491600,  100.,  100.]
+    shape: [100, 1, 1]
+
+  entropy:
+    shape: [10, 1, 1]
+    low: [-9.491600, -100., -100.]
+    hi:  [ 9.491600,  100.,  100.]
+
+  sources:
+    - spatial:
+        type: box
+        low: [-9.491600, -100., -100.]
+        hi: [ 9.491600,  100.,  100.]
+      direction:
+        type: isotropic
+      energy:
+        type: mono-energetic
+        energy: 0.5
+      weight: 1.0
