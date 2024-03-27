@@ -96,8 +96,8 @@ class BranchlessMaterialCollision {
 
       p.set_energy(sinfo.energy);
       p.set_direction(sinfo.direction);
-      p.set_weight(p.wgt() * m * sinfo.yield);
-      p.set_weight2(p.wgt2() * m * sinfo.yield);
+      p.set_weight(p.wgt() * m * sinfo.yield * sinfo.weight_modifier);
+      p.set_weight2(p.wgt2() * m * sinfo.yield * sinfo.weight_modifier);
 
       // Kill if energy is too low
       if (p.E() < settings::min_energy) {

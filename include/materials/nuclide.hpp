@@ -59,6 +59,7 @@ struct ScatterInfo {
   Direction direction = Direction(1., 0., 0.);
   uint32_t mt = 0;
   bool thermal = false;
+  double weight_modifier = 1.0;
 };
 
 struct FissionInfo {

@@ -448,7 +448,9 @@ ScatterInfo MGNuclide::sample_scatter(double /*Ein*/, const Direction& u,
       0.5 * (settings::energy_bounds[ei] + settings::energy_bounds[ei + 1]);
 
   // Change direction
-  double mu = angle_dists_[micro_xs.energy_index][ei].sample_mu(rng);
+  std::pair<double, double> mu_and_weight_modifier = angle_dists_[micro_xs.energy_index][ei].sample_mu(rng);
+  double mu = mu_and_weight_modifier.first;
+
   double phi = 2. * PI * rng();
   Direction u_out = rotate_direction(u, mu, phi);
 
@@ -456,6 +458,7 @@ ScatterInfo MGNuclide::sample_scatter(double /*Ein*/, const Direction& u,
   info.energy = E_out;
   info.direction = u_out;
   info.mt = 2;
+  info.weight_modifier = mu_and_weight_modifier.second;
   return info;
 }
 

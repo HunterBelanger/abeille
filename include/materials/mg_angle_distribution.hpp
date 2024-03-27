@@ -32,6 +32,8 @@
 #include <cmath>
 #include <vector>
 
+#include <PapillonNDL/pctable.hpp>
+
 class MGAngleDistribution {
  public:
   // Isotropic Constructor
@@ -42,21 +44,40 @@ class MGAngleDistribution {
                       const std::vector<double>& pdf,
                       const std::vector<double>& cdf);
 
-  double sample_mu(RNG& rng) const {
-    const double xi = rng();
+  std::pair<double, double> sample_mu(RNG& rng) const {
+    if (pdf_is_neg == false){
+      const double xi = rng();
 
-    auto cdf_it = std::lower_bound(cdf_.begin(), cdf_.end(), xi);
-    std::size_t l =
-        static_cast<std::size_t>(std::distance(cdf_.begin(), cdf_it));
-    if (xi == *cdf_it) return mu_[l];
+      auto cdf_it = std::lower_bound(cdf_.begin(), cdf_.end(), xi);
+      std::size_t l =
+          static_cast<std::size_t>(std::distance(cdf_.begin(), cdf_it));
+      if (xi == *cdf_it) return {mu_[l], 1.0};
 
-    l--;
+      l--;
 
-    // Must account for case where pdf_[l] = pdf_[l+1], which means  that
-    // the slope is zero, and m=0. This results in nan for the linear alg.
-    if (pdf_[l] == pdf_[l + 1]) return histogram_interp(xi, l);
+      // Must account for case where pdf_[l] = pdf_[l+1], which means  that
+      // the slope is zero, and m=0. This results in nan for the linear alg.
+      if (pdf_[l] == pdf_[l + 1]) return {histogram_interp(xi, l), 1.0};
 
-    return linear_interp(xi, l);
+      return {linear_interp(xi, l), 1.0};
+
+    } else {
+      // In the case of negative distribution, sampling will be done from
+      // normalized distribution of absoulte values of given negative
+      // distribution
+
+      const double xi = rng();
+      const double sampled_mu = abs_pdf_.sample_value(xi);
+      const double pdf_xi = pdf(sampled_mu);
+
+      // weight modifer should be wm = pdf/g; where g = abs(pdf)/M; leading to
+      // wm = +/- M
+      if (pdf_xi < 0.0) {
+        return {sampled_mu, -abs_weight_mod_};
+      }
+
+      return {sampled_mu, abs_weight_mod_};
+    }
   }
 
   double pdf(double mu) const {
@@ -88,6 +109,10 @@ class MGAngleDistribution {
   std::vector<double> mu_;
   std::vector<double> pdf_;
   std::vector<double> cdf_;
+  pndl::PCTable abs_pdf_;  // PCTable for sampling negative distribution
+  double abs_weight_mod_ = 1.0;  // area under abs distribution of negative pdf,
+                                 // will used for normalization.
+  bool pdf_is_neg = false;       // Make it true, if pdf is negative.
 
   double histogram_interp(double xi, std::size_t l) const {
     return mu_[l] + ((xi - cdf_[l]) / pdf_[l]);
