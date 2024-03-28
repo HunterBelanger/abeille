@@ -5,7 +5,7 @@
 
 
 
-CollisionEstimator_FET::CollisionEstimator_FET(size_t FET_order_, Quantity quantity_,
+CollisionEstimatorFET::CollisionEstimatorFET(size_t FET_order_, Quantity quantity_,
     std::vector<Axis> axes_,
     std::shared_ptr<PositionFilter> position_filter_, 
     std::shared_ptr<EnergyFilter> energy_in_,
@@ -14,7 +14,7 @@ CollisionEstimator_FET::CollisionEstimator_FET(size_t FET_order_, Quantity quant
     FET_order(FET_order_), ITally(FET_order_, quantity_, axes_, position_filter_, energy_in_, energy_out_)
     {}
 
-void CollisionEstimator_FET::score_particle(const Particle& p, const Tracker& tktr, MaterialHelper& mat ){
+void CollisionEstimatorFET::score_particle(const Particle& p, const Tracker& tktr, MaterialHelper& mat ){
     std::array<int, 3> index_position;
     std::size_t index_E;
 
@@ -100,7 +100,7 @@ void CollisionEstimator_FET::score_particle(const Particle& p, const Tracker& tk
 }
 
 
-void CollisionEstimator_FET::record_variance(double multiplier){
+void CollisionEstimatorFET::record_variance(double multiplier){
         gen++;
         const double dg = static_cast<double>(gen);
         const double invs_dg = 1. / dg;

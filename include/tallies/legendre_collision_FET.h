@@ -20,7 +20,7 @@
 #include <simulation/tracker.hpp>
 #include <materials/material_helper.hpp>
 
-class CollisionEstimator_FET : public ITally{
+class CollisionEstimatorFET : public ITally{
     public: 
     CollisionEstimator_FET(size_t FET_order_, Quantity quantity_,
         std::vector<Axis> axes_,
@@ -30,7 +30,7 @@ class CollisionEstimator_FET : public ITally{
 
     
     
-    ~CollisionEstimator_FET() = default;
+    ~CollisionEstimatorFET() = default;
 
     void score_particle(const Particle& p, const Tracker& tktr, MaterialHelper& mat );
     
