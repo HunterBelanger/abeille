@@ -29,7 +29,8 @@ class Mesh_Position_Filter : public PositionFilter{
 
     ~Mesh_Position_Filter() = default;
 
-    bool get_index(const Position& r, std::array<int, 3>& indices )override final {
+    bool get_index(const Tracker& tktr, std::array<int, 3>& indices )override final {
+        const Position r = tktr.r();
 
         int index_x = static_cast<int> (std::floor( (r.x() - r_low.x()) * dx_inv) );
         int index_y = static_cast<int> (std::floor( (r.y() - r_low.y()) * dy_inv) );

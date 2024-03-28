@@ -3,6 +3,7 @@
 
 #include "filter.h"
 #include <utils/position.hpp>
+#include <simulation/tracker.hpp>
 
 class PositionFilter : public Filter{
     public:
@@ -11,7 +12,7 @@ class PositionFilter : public Filter{
     virtual ~PositionFilter () = default;
 
     
-    virtual bool get_index(const Position& r, std::array<int, 3>& indices) = 0;
+    virtual bool get_index(const Tracker& tktr, std::array<int, 3>& indices) = 0;
     virtual int get_Nx()const = 0;
     virtual int get_Ny()const = 0;
     virtual int get_Nz()const = 0;

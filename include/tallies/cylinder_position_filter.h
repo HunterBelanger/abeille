@@ -11,11 +11,12 @@ class CylinderPositionFilter : public PositionFilter{
     public:
         enum class Orientation {X, Y, Z};
 
-        CylinderPositionFilter(Position origin_, double radius_,  double dx, double dy, double dz, 
+        CylinderPositionFilter(Position origin_, double radius_,  double dx, double dy, double dz_, 
             int Nx_ = 1, int Ny_ = 1, int Nz_ = 1, Orientation z_ = Orientation::Z)
-            : origin(), radius(radius_), pitch_x(dx), pitch_y(dy), 
+            : origin(), radius(radius_), pitch_x(dx), pitch_y(dy), dz(dz_)
             inv_pitch_x(), inv_pitch_y(), inv_dz(),
-            Nx(Nx_), Ny(Ny_), Nz(Nz_), z(z_)
+            Nx(Nx_), Ny(Ny_), Nz(Nz_), z(z_),
+            new_origin()
             {   
                 // Mapping the orientation to make the length direction to
                 origin = map_corrdinate(origin_);
@@ -66,9 +67,9 @@ class CylinderPositionFilter : public PositionFilter{
         std::string type_str()const override { return "cylinderpostionfilter"; }
 
 
-        bool get_index(const Position& r1, std::array<int, 3>& indices)override final{
+        bool get_index(onst Tracker& tktr, std::array<int, 3>& indices)override final{
 
-            Position r = map_corrdinate(r1);
+            const Position r = map_corrdinate(tktr.r());
             std::cout<<"Position --> "<<r.x()<<", "<<r.y()<<", "<<r.z()<<"\n";
             int nx = 0, ny = 0;
 
@@ -99,6 +100,9 @@ class CylinderPositionFilter : public PositionFilter{
                     indices[1] = static_cast<int> (ny);
                     indices[2] = static_cast<int> (nz);
                     map_indexes(indices);
+
+                    new_origin = Position(new_orign_x, new_origin_y, (origin.z() + nz*dz) );
+
                     return true;
                 }
                 else{
@@ -119,10 +123,25 @@ class CylinderPositionFilter : public PositionFilter{
         int get_Nx()const override{ return Nx; }
         int get_Ny()const override { return Ny; }
         int get_Nz()const override { return Nz; }
+
+        double get_radius()const { return radius; }
+        
+        double get_dx()const { return pitch_x; }
+        double get_dy()const { return pitch_y; }
+        double get_dz()const { return 1.0 / inv_dz;}
+
+        double inv_dz()const { return inv_dz;}
+
+        Position new_origin()const { return new_origin; } // to get the new_rogin for zernike; z() will zmin
+        double z_min()const override { return new_origin.z(); }
+
+
+
     private:
-        Position origin;
-        double pitch_x, pitch_y, inv_pitch_x, inv_pitch_y, inv_dz;// dz; // dz is not required to store, neither length_z, only inv_dz is sufficient
-        double  radius; //,length_z;  
+        Position origin, new_origin;
+
+        double pitch_x, pitch_y, inv_pitch_x, inv_pitch_y, inv_dz, dz; // dz is not required to store, neither length_z, only inv_dz is sufficient
+        double  radius; //,length_z;
         
         int Nx, Ny, Nz;
         Orientation z;
