@@ -66,6 +66,7 @@ class Mesh_Position_Filter : public PositionFilter{
 
     double x_min()const override { return xmin; }
     double x_max()const override { return (xmin + dx); }
+
     double y_min()const override { return ymin; }
     double y_max()const override { return (ymin + dy); }
     double z_min()const override { return zmin; }

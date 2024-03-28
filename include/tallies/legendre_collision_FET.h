@@ -5,7 +5,7 @@
 #include <vector>
 #include <memory>
 
-#include "/Users/parthsingh/MonteCarlo/abeille/build/_deps/ndarray-src/include/ndarray.hpp"
+#include "ndarray.hpp"
 #include "box_position_filter.h"
 #include "mesh_position_filter.h"
 #include "cylinder_position_filter.h"
@@ -20,34 +20,32 @@
 class CollisionEstimator_FET{
     public: 
     enum class Quantity{
-        flux,
-        fission,
-        absorption,
-        elastic, 
+        Flux,
+        Fission,
+        Absorption,
+        Elastic, 
     };
 
-    enum class PolynomialType{
-        legendre,
-        zernike
-    };
     enum class Axis{
         X, Y, Z
     };
 
-    CollisionEstimator_FET(int FET_order_, Quantity quanitity_,
+    CollisionEstimator_FET(size_t FET_order_, Quantity quanitity_,
         std::vector<Axis> axes_,
         std::shared_ptr<PositionFilter> position_filter_, 
         std::shared_ptr<EnergyFilter> energy_in_,
         std::shared_ptr<EnergyFilter> energy_out_ = nullptr) 
         :
-        FET_order(FET_order_), FET_coeff(), FET_std(), quanitity(quanitity_),
+        FET_order(FET_order_), FET_coeff(), FET_std(), score_gen(), quanitity(quanitity_),
         axes(axes_), position_filter(position_filter_), 
         energy_in(energy_in_), energy_out(energy_out_)
         {
             //for legendre, check the size of axis vector should be between than 3.
             if ( axes.size() >= 1 && axes.size()<=3 )
                 std::cout<<"Fatal error, the no. of given axis is not between 1 to 3.\n";
-
+            else{
+                
+            }
             
             uint64_t Nx = static_cast<uint64_t> (position_filter->get_Nx());
             uint64_t Ny = static_cast<uint64_t> (position_filter->get_Ny());
@@ -59,6 +57,9 @@ class CollisionEstimator_FET{
 
             FET_coeff.reallocate({NE, Nx, Ny, Nz, ND, N_FET_element});
             FET_coeff.fill(0.0);
+
+            score_gen.reallocate({NE, Nx, Ny, Nz, ND, N_FET_element});
+            score_gen.fill(0.0);
 
             FET_std.reallocate({NE, Nx, Ny, Nz});
             FET_std.fill( UpperTriangularMatrix(FET_order + 1) );
@@ -80,19 +81,19 @@ class CollisionEstimator_FET{
             double collision_score = 1.0 / Et;
 
             switch(quanitity){
-                case Quantity::flux:
+                case Quantity::Flux:
                     collision_score *= p.wgt();
                     break;
 
-                case Quantity::fission:
+                case Quantity::Fission:
                     collision_score *= p.wgt() * mat.Ef(p.E());
                     break;
 
-                case Quantity::absorption:
+                case Quantity::Absorption:
                     collision_score *= p.wgt() * mat.Ea(p.E());
                     break;
 
-                case Quantity::elastic:
+                case Quantity::Elastic:
                     collision_score *= p.wgt() * mat.Eelastic(p.E());
                     break;
             }
@@ -100,54 +101,72 @@ class CollisionEstimator_FET{
             // adding the scores
             
             double beta_n;
-            double x, y, z;
-            for ( auto& c : axes){
-                std::vector<double> temp_p_scr;
-                temp_p_scr.reserve( FET_order + 1);
-                for (int i = 0; i<FET_order+1; i++){
-
+            size_t it_axis = 0;
+            for ( auto& c : axes){  // Loop over the different axis
+                for (size_t i = 0; i<FET_order+1; i++){    // loop over differnt FET order
                     if (c == Axis::X){
-                        x = 2 * (tktr.r().x() - position_filter->x_min()) 
-                        / ( position_filter->x_max() - position_filter->x_min() ) - 1;
-                        beta_n = collision_score * legendre(x, i) 
-                            * lengendre_orthonormalization(i, position_filter->x_min(), position_filter->x_max());
+                        const double xmin_ = position_filter->x_min();
+                        const double xmax_ = position_filter->x_max();
+                        const double x = 2 * (tktr.r().x() - xmin_) / (xmax_ - xmin_);
 
-                        temp_p_scr.   
+                        const double beta_n = collision_score * legendre(i ,x); // score for i-th order's basis function
+                        FET_coeff(index_E, 
+                                index_position[0], index_position[1], index_position[2],
+                                it_axis, i );
 
+                        
+                        score_gen(index_E, 
+                                index_position[0], index_position[1], index_position[2],
+                                it_axis, i ) += beta_n;
+                                
+
+                        it_axis++;
                     }
                 }
             }
         }
     }
 
-    void score_into_tally(){
+    void record_variance(){
+        gen++;
+        const double  inv_gen = 1.0 / ( static_cast<double> (gen));
+
+        for( auto &c : axes){
+            for( size_t i = 0; i < FET_coeff.size(); i++){
+                double old_avg = score_gen[i];
+                double temp_value = FET_coeff[i];
+
+                
+            }
+        }
 
         
     }
+
     double polynomial_calc(Position R){
         
         return;
     }
-    int get_FET_order() { return FET_order; } 
+    
+    size_t get_FET_order() { return FET_order; } 
 
     private:
         std::shared_ptr<PositionFilter> position_filter {nullptr};
         std::shared_ptr<EnergyFilter> energy_in {nullptr};
         std::shared_ptr<EnergyFilter> energy_out {nullptr};
         
-        NDArray<double> FET_coeff;
+        NDArray<double> FET_coeff; // N-energy, N-x, N-y, N-z, N-axis for legendre, N_FET_order
+        NDArray<double> score_gen;
         NDArray<UpperTriangularMatrix> FET_std;
+        
         std::vector<Axis> axes;
 
-        std::vector<std::vector<double>> particle_score_x; // in-x,for calculating the std deviation after particle death
-        std::vector<std::vector<double>> particle_score_y; // in-y, for calculating the std deviation after particle death
-        std::vector<std::vector<double>> particle_score_z; // in-z, for calculating the std deviation after particle death
-
-        std::vector<std::vector<int>> particle_bin_index; // for storing the index
-
-        int FET_order;  // Note that the number of coefficient will be one more than the order.
+        size_t FET_order;  // Note that the number of coefficient will be one more than the order.
         Quantity quanitity; 
-        PolynomialType poly_type = PolynomialType::legendre;
+
+    protected:
+        size_t gen = 0;
+        
 
 };
 

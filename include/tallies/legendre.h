@@ -3,11 +3,12 @@
 
 #include <iostream>
 inline
-double lengendre_orthonormalization(int order, double xmin = -1.0, double xmax = 1.0){
+double lengendre_orthonormalization(const int& order, const double& xmin = -1.0, const double& xmax = 1.0){
     return ( 2.0 * order + 1) / (xmax - xmin);
 }
 
-double legendre(unsigned order, double x){
+inline
+double legendre(const unsigned& order, const double& x){
     switch(order){
         case 0:
             return 1.0;
