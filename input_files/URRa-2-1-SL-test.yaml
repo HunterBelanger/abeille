@@ -68,8 +68,12 @@ simulation:
   nparticles: 50000
   ngenerations: 2200
   nignored: 200
+  combing: true
   transport-operator:
     type: delta-tracking
+  collision-operator:
+    type: branchless-material
+    splitting: true
   cancelator:
     type: approximate
     low: [-9.491600, -100., -100.]

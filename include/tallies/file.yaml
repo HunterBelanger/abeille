@@ -1,0 +1,7 @@
+person:
+  - name: Parth Singh
+    age: 23
+  - name: Harshita Kanwar
+    age: 21
+
+list: [ 1, 2, 3, 4]
