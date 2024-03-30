@@ -29,6 +29,7 @@
 #include <simulation/entropy.hpp>
 #include <simulation/simulation.hpp>
 #include <source/source.hpp>
+#include <utils/timer.hpp>
 
 #include <yaml-cpp/yaml.h>
 
@@ -73,6 +74,8 @@ class PowerIterator : public Simulation {
   std::vector<double> empty_entropy_frac_vec{};
   std::string in_source_file_name{};
   std::unordered_set<uint64_t> families_set{};
+  std::vector<double> generation_times{};
+  Timer generation_timer;
   std::shared_ptr<Cancelator> cancelator = nullptr;
   std::shared_ptr<Entropy> t_pre_entropy = nullptr;
   std::shared_ptr<Entropy> p_pre_entropy = nullptr;
