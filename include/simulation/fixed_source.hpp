@@ -27,6 +27,7 @@
 
 #include <simulation/simulation.hpp>
 #include <source/source.hpp>
+#include <utils/timer.hpp>
 
 #include <yaml-cpp/yaml.h>
 
@@ -48,6 +49,8 @@ class FixedSource : public Simulation {
 
  private:
   std::vector<std::shared_ptr<Source>> sources{};
+  std::vector<double> batch_times{};
+  Timer batch_timer;
   std::size_t batch = 0;
   std::size_t nparticles, nbatches;
 
