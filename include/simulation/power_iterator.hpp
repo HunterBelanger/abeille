@@ -27,6 +27,7 @@
 
 #include <simulation/cancelator.hpp>
 #include <simulation/simulation.hpp>
+#include <utils/timer.hpp>
 
 #include <unordered_set>
 #include <vector>
@@ -53,6 +54,8 @@ class PowerIterator : public Simulation {
   std::shared_ptr<Cancelator> cancelator = nullptr;
   std::unordered_set<uint64_t> families = {};
   std::vector<std::size_t> families_vec = {};
+  std::vector<double> generation_times{};
+  Timer generation_timer;
   int Nnet = 0, Npos = 0, Nneg = 0, Ntot = 0;
   int Wnet = 0, Wpos = 0, Wneg = 0, Wtot = 0;
   std::vector<int> Nnet_vec{}, Npos_vec{}, Nneg_vec{}, Ntot_vec{};

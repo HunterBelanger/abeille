@@ -26,6 +26,9 @@
 #define FIXED_SOURCE_H
 
 #include <simulation/simulation.hpp>
+#include <utils/timer.hpp>
+
+#include <vector>
 
 class FixedSource : public Simulation {
  public:
@@ -39,6 +42,8 @@ class FixedSource : public Simulation {
   void premature_kill() override final;
 
  private:
+  std::vector<double> batch_times{};
+  Timer batch_timer;
   int gen = 0;
   void check_time(int gen);
   bool out_of_time(int gen);

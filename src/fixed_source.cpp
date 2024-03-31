@@ -99,11 +99,16 @@ void FixedSource::run() {
   mpi::synchronize();
   simulation_timer.start();
 
+  // Make sure we have enough space for times
+  batch_times.reserve(settings::ngenerations);
+
   // Get the number of particles that this node should run
   uint64_t node_nparticles =
       mpi::node_nparticles[static_cast<std::size_t>(mpi::rank)];
 
   for (int g = 1; g <= settings::ngenerations; g++) {
+    batch_timer.start();
+
     gen = g;
 
     // First, sample the sources and place into bank
@@ -147,6 +152,10 @@ void FixedSource::run() {
     // Check if we have enough time to finish the simulation. If not,
     // stop now.
     check_time(g);
+
+    batch_timer.stop();
+    batch_times.push_back(batch_timer.elapsed_time());
+    batch_timer.reset();
   }
 
   // Stop timer
@@ -164,6 +173,14 @@ void FixedSource::run() {
 
   // Write saved warnings
   out.write_saved_warnings();
+
+  // Write simulation time and number of particle transported
+  if (mpi::rank == 0) {
+    auto& h5 = Output::instance().h5();
+    h5.createAttribute("simulation-time", simulation_timer.elapsed_time());
+    h5.createAttribute("nparticles-transported", histories_counter);
+    h5.createAttribute("batch-times", batch_times);
+  }
 
   // Save other outputs
   out.write("\n");

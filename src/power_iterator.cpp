@@ -317,10 +317,15 @@ void PowerIterator::run() {
   mpi::synchronize();
   simulation_timer.start();
 
+  // Make sure we have room for the generation times
+  generation_times.reserve(settings::ngenerations);
+
   // Check for imediate convergence (i.e. we read source from file)
   if (settings::nignored == 0) settings::converged = true;
 
   for (int g = 1; g <= settings::ngenerations; g++) {
+    generation_timer.start();
+
     gen = g;
 
     if (settings::families) {
@@ -426,6 +431,10 @@ void PowerIterator::run() {
     // Once ignored generations are finished, mark as true to start
     // doing tallies
     if (g == settings::nignored) settings::converged = true;
+
+    generation_timer.stop();
+    generation_times.push_back(generation_timer.elapsed_time());
+    generation_timer.reset();
   }
 
   // Stop timer
@@ -533,6 +542,11 @@ void PowerIterator::write_entropy_families_etc_to_results() const {
   if (Wneg_vec.size() > 0) {
     h5.createDataSet("results/Wneg", Wneg_vec);
   }
+
+  // Write simulation time and number of particle transported
+  h5.createAttribute("simulation-time", simulation_timer.elapsed_time());
+  h5.createAttribute("nparticles-transported", histories_counter);
+  h5.createAttribute("generation-times", generation_times);
 }
 
 void PowerIterator::normalize_weights(std::vector<BankedParticle>& next_gen) {
