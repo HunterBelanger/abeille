@@ -42,7 +42,7 @@ class EnergyFilter{
         }
 
         std::size_t size() { return energy_bounds_.size()-1; }
-        std::vector<double> energy_bounds() { return energy_bounds_; }
+        std::vector<double>& energy_bounds()const { return energy_bounds_; }
 
         //Perhaps Not Needed
         FilterType type() { return FilterType::Energy_Filter; }
