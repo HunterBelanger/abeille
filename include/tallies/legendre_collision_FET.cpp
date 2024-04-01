@@ -12,7 +12,16 @@ CollisionEstimatorFET::CollisionEstimatorFET(size_t FET_order_, Quantity quantit
     std::shared_ptr<EnergyFilter> energy_out_)
     :
     FET_order(FET_order_), ITally(FET_order_, quantity_, axes_, position_filter_, energy_in_, energy_out_)
-    {}
+    {
+    
+    //for legendre, check the size of axis vector should be between than 3.
+    if ( axes.size() >= 1 && axes.size()<=3 )
+        std::cout<<"Fatal error, the no. of given axis is not between 1 to 3.\n";
+    else{
+        
+    }
+
+    }
 
 void CollisionEstimatorFET::score_particle(const Particle& p, const Tracker& tktr, MaterialHelper& mat ){
     std::array<int, 3> index_position;

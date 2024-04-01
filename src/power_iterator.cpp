@@ -45,6 +45,8 @@ namespace H5 = HighFive;
 #include <sstream>
 #include <vector>
 
+#include <tallies/general_tally.h>
+
 void PowerIterator::initialize() {
   this->write_output_info();
 
@@ -462,6 +464,8 @@ void PowerIterator::run() {
     if (gen > nignored) {
       Tallies::instance().score_source(next_gen);
       Tallies::instance().record_generation();
+      temp_tally->start_scoring();
+      temp_tally->record_tally();
     }
 
     // Zero tallies for next generation

@@ -71,4 +71,5 @@ set(ABEILLE_SOURCE_FILES ${ABEILLE_SOURCE_FILES}
   src/mpi.cpp
   src/settings.cpp
   src/header.cpp
+  src/itally.cpp
 )

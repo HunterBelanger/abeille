@@ -1,49 +1,44 @@
 #ifndef TESTING_H
 #define TESTING_H
 
-#include <tallies/box_position_filter.h>
 #include <memory>
 #include <array>
+#include <vector>
+
+#include <tallies/box_position_filter.h>
 #include <tallies/energy_filter.h>
 #include <vector>
 #include <simulation/tracker.hpp>
 #include <tallies/cylinder_position_filter.h>
 #include <tallies/cartesian_filter.h>
 #include <tallies/mesh_position_filter.h>
-
+#include <tallies/ITally.h>
+#include <tallies/general_tally.h>
 #include <ndarray.hpp>
 
-class parent{
-    protected:
-        NDArray<int> FF;
-    public:
-    parent() = default;
-    parent( size_t i) : FF(){
-        FF.reallocate({i});
-        FF.fill(0);
-    }
-
-    ~parent()= default;
-
-    virtual void info(){
-        std::cout<<"+++\n";
-        for (size_t i = 0; i< FF.size(); i++)
-            std::cout<<FF[i]<<"\t";
-                std::cout<<"+++\n";
-    }
-};
-
-class child : public parent{
-    public:
-        child( size_t i) {
-            FF.reallocate({i});
-            FF.fill(2);
-        }
-        ~child() = default;
-
-};
 
 void test_function(){
+    std::cout<<"*********---- Starting of Testing Mode -----*********\n";
+    Position LOW1(0. ,0., 0.);
+    Position HIGH1(1., 1.0, 1.0);
+    std::shared_ptr<PositionFilter> pos_f = 
+        std::make_shared<BoxPositionFilter>(LOW1, HIGH1);
+    
+    std::vector<double> ebound {1., 2., 3.};
+    std::shared_ptr<EnergyFilter> ef = std::make_shared<EnergyFilter>(ebound);
+
+    std::shared_ptr<ITally> ta = 
+        std::make_shared<GeneralTally>(ITally::Quantity::Absorption, 
+                                ITally::Estimator::Collision,
+                                pos_f, ef);
+    //ta->score_tally();
+    std::cout<<"*********---- End of Testing Mode -----*********\n\n";
+    
+}
+
+
+
+void test_function2(){
     std::cout<<"*********---- Starting of Testing Mode -----*********\n";
     Position LOW1(0. ,0., 0.);
     Position HIGH1(1., 1.0, 1.0);
@@ -70,10 +65,17 @@ void test_function(){
     }
     std::cout<<"-------\n";
 
-    std::cout<<"Upper class nd array reallocation";
-    std::shared_ptr<parent> ch = std::make_shared<child>(2);
-    ch->info();
+    
     std::cout<<"*********---- End of Testing Mode -----*********\n\n";
 }
+
+
+/*void test_function(){
+    std::cout<<"*********---- Starting of Testing Mode -----*********\n";
+    
+
+    std::cout<<"*********---- End of Testing Mode -----*********\n\n";
+    
+}*/
 
 #endif

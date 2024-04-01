@@ -43,6 +43,8 @@
 #include <sstream>
 #include <vector>
 
+#include <tallies/general_tally.h>
+
 class IParticleMover {
  public:
   virtual ~IParticleMover() = default;
@@ -123,6 +125,8 @@ class ParticleMover : public IParticleMover {
 
             // Score flux collision estimator with Sigma_t
             Tallies::instance().score_collision(p, mat);
+            temp_tally->start_scoring();
+            temp_tally->score_tally(p, trkr, mat);
 
             // Contribute to keff collision estimator and migration area scores
             thread_scores.k_col_score +=
@@ -153,7 +157,7 @@ class ParticleMover : public IParticleMover {
         }  // While alive
       }    // For all particles
 
-      // Send all thread local scores to tallies instance
+      // Send all thread local std::cout<<"ek barr\n";scores to tallies instance
       Tallies::instance().score_k_col(thread_scores.k_col_score);
       Tallies::instance().score_k_abs(thread_scores.k_abs_score);
       Tallies::instance().score_k_trk(thread_scores.k_trk_score);
