@@ -1,34 +1,37 @@
 #ifndef POSITION_FILTER_H
 #define POSITION_FILTER_H
 
-#include "filter.h"
+#include <utils/error.hpp>
 #include <utils/position.hpp>
 #include <simulation/tracker.hpp>
 
-class PositionFilter : public Filter{
-    public:
-    PositionFilter () = default;
+enum class FilterType{
+    Energy_Filter,
+    Position_Filter,
+    Cartesian_Filter,
+    Box_Position_Filter,
+    Mesh_Positin_Filter,
+    Cylinder_Position_Filter,
+    Cylinder_Array_Filter
+};
 
+class PositionFilter{
+    public:
+    PositionFilter() = default;
+    
     virtual ~PositionFilter () = default;
 
+    virtual bool get_indices(const Tracker& tktr, std::array<int, 3>& indices) = 0;
     
-    virtual bool get_index(const Tracker& tktr, std::array<int, 3>& indices) = 0;
-    virtual int get_Nx()const = 0;
-    virtual int get_Ny()const = 0;
-    virtual int get_Nz()const = 0;
-
-    virtual double x_min()const = 0;
-    virtual double x_max()const = 0;
+    virtual size_t Nx()const = 0;
+    virtual size_t Ny()const = 0;
+    virtual size_t Nz()const = 0;
     
-    virtual double y_min()const = 0;
-    virtual double y_max()const = 0;
+    //Perhaps Not Needed
+    virtual FilterType type()const { return FilterType::Position_Filter; }
+    virtual std::string type_str() const = 0;
+    
 
-    virtual double z_min()const = 0;
-    virtual double z_max()const = 0;
-
-    virtual FilterType type() const override { return FilterType::Position_Filter; };
-    virtual std::string type_str() const override = 0;
-       
 };
 
 #endif

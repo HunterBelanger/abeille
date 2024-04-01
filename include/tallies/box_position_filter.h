@@ -3,23 +3,27 @@
 
 #include <array>
 
-#include "position_filter.h"
+#include <tallies/cartesian_filter.h>
 #include <utils/position.hpp>
 
 
-class BoxPositionFilter : public PositionFilter{
+class BoxPositionFilter : public CartesianFilter{
     public:
-    BoxPositionFilter(const Position& r_low_, const Position& r_high_)
-    : r_low(r_low_), r_high(r_high_) {}
+    BoxPositionFilter(const Position r_low_, const Position r_high_)
+    :CartesianFilter(1, 1, 1), r_low(r_low_), r_high(r_high_) {
+
+    if ( (r_low.x() > r_high.x()) || (r_low.y() > r_high.y()) || (r_low.z() > r_high.z()) )
+        fatal_error(" Corrdinates of \"low\" position are higher than \"high\" position.\n");
+    }
 
     ~BoxPositionFilter() = default;
 
-    bool get_index(const Tracker& tktr, std::array<int, 3>& indices)override final {
+    bool get_indices(const Tracker& tktr, std::array<int, 3>& indices)  {
         const Position r = tktr.r();
         if ( (r_low.x() <= r.x() && r_high.x() >= r.x())
         && (r_low.y() <= r.y() && r_high.y() >= r.y())
         && (r_low.z() <= r.z() && r_high.z() >= r.z())){
-            indices.fill(static_cast<int> (0));
+            indices.fill(static_cast<size_t> (0));
             return true;
         }
         else{
@@ -28,20 +32,17 @@ class BoxPositionFilter : public PositionFilter{
         }
     }
 
-    int get_Nx()const override { return 1; }
-    int get_Ny()const override { return 1; }
-    int get_Nz()const override { return 1; }
-
     double x_min()const override { return r_low.x(); }
     double x_max()const override { return r_high.x(); }
     
     double y_min()const override { return r_low.y(); }
     double y_max()const override { return r_high.y(); }
+    
     double z_min()const override { return r_low.z(); }
     double z_max()const override { return r_high.z(); }
 
+    //Perhaps Not Needed
     FilterType type()const override { return FilterType::Box_Position_Filter; }
-
     std::string type_str()const override { return "box_position_filter"; }
 
     private:

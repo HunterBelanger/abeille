@@ -5,25 +5,34 @@
 #include <vector>
 #include <string>
 
-#include "filter.h"
+#include <tallies/position_filter.h>
+#include <utils/error.hpp>
 
-
-class EnergyFilter : public Filter{
+class EnergyFilter{
     public:
-        EnergyFilter(const std::vector<double>& energy_bounds_) : energy_bounds(energy_bounds_) {
+        EnergyFilter(const std::vector<double> energy_bounds) : energy_bounds_(energy_bounds) {
             // Check the size of energy_bounds should be multiple of 2
             // since any bounds has 2 end-point-boundary-elements to define the range. 
             if ( energy_bounds.size() < 2){
-                std::cout<<"Fatal error, Size of energy bounds is less than 2.\n";
+                fatal_error("Size of energy bounds is less than 2 in EnergyFilter.");
             }
+
+            if ( std::is_sorted(energy_bounds_.begin(), energy_bounds_.end()) == false ){
+                fatal_error("Energy bounds must be sorted on EnergyFilter.");
+            }
+
+            if (energy_bounds_[0] < 0.0){
+                fatal_error("First element of energy bounds is less than zero in EnergyFilter.");
+            }
+
         }
         
         ~EnergyFilter() = default;
 
         bool get_index(const double& E, std::size_t& index_E)const {
             //index_E = -1;
-            for ( std::size_t i = 0; i<energy_bounds.size() - 1; i++){
-                if (E >= energy_bounds[i] && E<= energy_bounds[i+1]){
+            for ( std::size_t i = 0; i<energy_bounds_.size() - 1; i++){
+                if (E >= energy_bounds_[i] && E<= energy_bounds_[i+1]){
                     index_E = i;
                     return true;
                     break;
@@ -32,16 +41,15 @@ class EnergyFilter : public Filter{
             return false;
         }
 
-        unsigned int get_size() { return static_cast<unsigned int> (energy_bounds.size()-1); }
+        std::size_t size() { return energy_bounds_.size()-1; }
+        std::vector<double> energy_bounds() { return energy_bounds_; }
 
-        FilterType type()const override { return FilterType::Energy_Filter; }
-
-        std::string type_str() const override { return "energyfilter"; }
-
-        std::vector<double> get_energy_bounds() { return energy_bounds; }
+        //Perhaps Not Needed
+        FilterType type() { return FilterType::Energy_Filter; }
+        std::string type_str() { return "energyfilter"; }
 
     private:
-        std::vector<double>energy_bounds;
+        std::vector<double>energy_bounds_;
 };
 
 #endif

@@ -41,6 +41,14 @@
 #include <stdexcept>
 #include <string>
 
+#include <tallies/box_position_filter.h>
+#include <memory>
+#include <array>
+#include <tallies/energy_filter.h>
+#include <vector>
+#include <simulation/tracker.hpp>
+#include <tallies/cylinder_position_filter.h>
+
 #ifdef ABEILLE_USE_OMP
 #include <omp.h>
 #endif
@@ -80,7 +88,43 @@ bool exists(std::string fname) {
   return file.good();
 }
 
+
 int main(int argc, char** argv) {
+  Position LOW1(0. ,0., 0.);
+  Position HIGH1(1., 1.0, 1.0);
+  
+  std::shared_ptr<BoxPositionFilter> B1 = 
+      std::make_shared<BoxPositionFilter>(LOW1, HIGH1);
+  std::cout<<"-------\n";
+  
+  
+  Direction D1( 1.0,1.0, 1.0);
+  std::cout<<"D-------\n";
+  Position R(0.5, 0.5, 0.5);
+  std::cout<<"P-------\n";
+  int32_t tot = 32;
+  Tracker tktr(R, D1, true);
+  std::cout<<"tktr-------\n";
+  std::array<int, 3> index;
+  std::cout<<B1->x_min()<<", "<<B1->Nx()<<"\n";
+  if ( B1->get_indices(tktr, index)){
+      std::cout<<"Nx = "<<index[0]<<", Ny - "<<index[1]<<", Nz = "<<index[2]<<"\n";
+  }
+
+  std::vector<double> ene{ 1.0, 3.0, 5.0, 6.0 };
+  std::shared_ptr<EnergyFilter> E1 = std::make_shared<EnergyFilter>(ene);
+  double xx = 7.0; std::size_t inded;
+  if (E1->get_index(xx, inded)){
+    std::cout<<"Energy "<<inded<<"\n";
+  }else{
+    std::cout<<"Nit found\n";
+  }
+
+  CylinderPositionFilter C1(LOW1, 1, 1,1,1);
+  /*  std::shared_ptr<par> nun = std::make_shared<par>(1);
+  std::cout<<nun->n()<<"\n";*/
+  std::cout<<"-------\n";
+
   settings::alpha_omega_timer.start();
 
   mpi::initialize_mpi(&argc, &argv);
