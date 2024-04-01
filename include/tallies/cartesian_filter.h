@@ -9,8 +9,8 @@
 
 class CartesianFilter : public PositionFilter{
     public:
-    CartesianFilter(size_t nx, size_t ny, size_t nz)
-    : Nx_(nx), Ny_(ny), Nz_(nz)
+    CartesianFilter(size_t nx_, size_t ny_, size_t nz_)
+    : Nx_(nx_), Ny_(ny_), Nz_(nz_)
     {
     if ( Nx_ == 0 || Ny_ == 0 || Nz_ == 0)
         fatal_error("The number of bins in any direction cannot be zero.\n");

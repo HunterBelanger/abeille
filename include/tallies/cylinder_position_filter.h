@@ -13,22 +13,22 @@ class CylinderPositionFilter : public PositionFilter{
         enum class Orientation {X, Y, Z}; // update this
 
         CylinderPositionFilter(Position origin_, double radius_,  double dx, double dy, double dz_, 
-            std::size_t nx_ = 1, std::size_t ny_ = 1, std::size_t nz_ = 1, Orientation z_ = Orientation::Z)
+            size_t nx_ = 1, size_t ny_ = 1, size_t nz_ = 1, Orientation z_ = Orientation::Z)
             : origin(origin_),  new_origin_(),
-            Nx_(nx_), Ny_(ny_), Nz_(nz_), z(z_),
+            Nx_(nx_), Ny_(ny_), Nz_(nz_), axial_dir(z_),
             radius(radius_), pitch_x(dx), pitch_y(dy), dz(dz_),
             inv_pitch_x(), inv_pitch_y(), inv_dz()
             {   
                 // Mapping the orientation to make the length direction to
                 origin = map_corrdinate(origin_);
-                if (z == Orientation::X){
+                if (axial_dir == Orientation::X){
                     pitch_x = dz;
                     dz = dx;
                     Nz_ = nx_;
                     Nx_ = nz_;
                 }
 
-                if (z == Orientation::Y){
+                if (axial_dir == Orientation::Y){
                     pitch_y = dz;
                     dz = dy;
                     Nz_ = ny_;
@@ -36,61 +36,56 @@ class CylinderPositionFilter : public PositionFilter{
                 }
                 
                 // Check for the valid inputs
-                if (radius <= 0.0)      std::cout<<"Fatal Error, Incorrect value of radius is provided.\n";
-                if ( (pitch_x == 0.0) &&  (Nx_ != 0) ){
+                if (radius <= 0.0)      
+                    fatal_error("Incorrect value of radius is provided.");
+
+                if ( (pitch_x == 0.0) &&  (Nx_ != 1) ){
                     warning("x-direction pitch is zero, Only one will be considered in x-direction.");
-                    Nx_ = static_cast<int> (1);
+                    Nx_ = static_cast<size_t> (1);
                     inv_pitch_x = 0.0;
                 }
-                else
-                    inv_pitch_x = 1.0 / pitch_x;
+                else{
+                    if ( pitch_x < (2*radius) )
+                        fatal_error("Pitch is less than the radius");
+                    inv_pitch_x = 1.0 / pitch_x;}
                 
                 if ((pitch_y == 0.0) && (Ny_ != 1)){
                     warning("y-direction pitch is zero, Only one will be considered in y-direction.");
-                    Ny_ = static_cast<int> (1);
+                    Ny_ = static_cast<size_t> (1);
                     inv_pitch_y = 0.0;
                 }
-                else    
-                    inv_pitch_y = 1.0 / pitch_y;
+                else{
+                    if ( pitch_y < (2*radius) )
+                        fatal_error("Pitch is less than the radius ");
+                    inv_pitch_y = 1.0 / pitch_y;}
                 
-                if (dz == 0.0)  std::cout<<"Fatal Error, length of the cylinder is zero.\n";
-
-                //const double dz = length/ static_cast<double> (Nz);
-                // inv_dz = 1.0 / dz;
-                inv_dz = (static_cast<double>(Nz_)) / dz;
-                std::cout<<"N "<<Nx_<<", "<<Ny_<<", "<<Nz_<<", "<<inv_dz<<"\n";
+                if (dz == 0.0)  
+                    fatal_error("Length of the cylinder shouldn't zero.");
+                else
+                    inv_dz = 1.0 / dz;
         }
 
         ~CylinderPositionFilter() = default;
 
         std::size_t Nx()const override{
-            if ( z == Orientation::Z)
-                return Nx_;
-
-            if ( z == Orientation::X)
+            if ( axial_dir == Orientation::X)
                 return Nz_;   
-            
+
             return Nx_;
         }
 
         std::size_t Ny()const override{
-            if ( z == Orientation::Z)
-                return Ny_;
-
-            if ( z == Orientation::Y)
+            if ( axial_dir == Orientation::Y)
                 return Nz_;  
 
             return Ny_; 
         }
 
         std::size_t Nz()const override{
-            if ( z == Orientation::Z)
-                return Nz_;
-
-            if ( z == Orientation::X)
+            if ( axial_dir == Orientation::X)
                 return Nx_;
 
-            if ( z == Orientation::Y)
+            if ( axial_dir == Orientation::Y)
                 return Ny_;   
 
             return Nz_;  
@@ -102,11 +97,12 @@ class CylinderPositionFilter : public PositionFilter{
         
         double get_dx()const { return pitch_x; }
         double get_dy()const { return pitch_y; }
-        double get_dz()const { return 1.0 / inv_dz;}
+        double get_dz()const { return dz;}
 
         
-        Position new_origin()const { return new_origin_; } // to get the new_rogin for zernike; z() will zmin
-        double z_min(){ return new_origin_.z(); }
+        Position new_origin()const { return new_origin_; } // to get the new_origin for zernike; z() will zmin
+        double axial_min(){ return new_origin_.z(); }
+        double axial_max(){ return new_origin_.z() + dz; }
 
         //perhaps not needed
         FilterType type()const override { return FilterType::Cylinder_Position_Filter; }
@@ -115,25 +111,23 @@ class CylinderPositionFilter : public PositionFilter{
 
     private:
         Position origin, new_origin_;
-        std::size_t Nx_, Ny_, Nz_;
-        Orientation z;
+        size_t Nx_, Ny_, Nz_;
+        Orientation axial_dir;
         double radius, pitch_x, pitch_y, dz, inv_pitch_x, inv_pitch_y, inv_dz; // dz is not required to store, neither length_z, only inv_dz is sufficient
-        
-        
         
 
         // To map the indexes to either converting into class co-ordinate or into original
         void map_indexes(std::array<int, 3>& indexes)const {
-            if (z == Orientation::Z)
+            if (axial_dir == Orientation::Z)
                 return;
             
-            if (z == Orientation::Y){
+            if (axial_dir == Orientation::Y){
                 int nz = indexes[2];
                 indexes[2] = indexes[1];
-                indexes[2] = nz;
+                indexes[1] = nz;
             }
 
-            if (z == Orientation::X){
+            if (axial_dir == Orientation::X){
                 int nz = indexes[2];
                 indexes[2] = indexes[0];
                 indexes[0] = nz;
@@ -141,9 +135,9 @@ class CylinderPositionFilter : public PositionFilter{
         }
         // To map the positions to either converting into class co-ordinate or into original
         Position map_corrdinate(const Position& point) const{
-            if ( z == Orientation::Z ) { return point; }
-            if ( z == Orientation::Y ) { return Position( point.x(), point.z(), point.y() ); }
-            if ( z== Orientation::X ){ return Position( point.z(), point.y(), point.x() ); }
+            if ( axial_dir == Orientation::Z ) { return point; }
+            if ( axial_dir == Orientation::Y ) { return Position( point.x(), point.z(), point.y() ); }
+            if ( axial_dir == Orientation::X ){ return Position( point.z(), point.y(), point.x() ); }
             return point;
         }
 
@@ -152,7 +146,6 @@ class CylinderPositionFilter : public PositionFilter{
 bool CylinderPositionFilter::get_indices(const Tracker& tktr, std::array<int, 3>& indices){
 
     const Position r = map_corrdinate(tktr.r());
-    std::cout<<"Position --> "<<r.x()<<", "<<r.y()<<", "<<r.z()<<"\n";
     int nx = 0, ny = 0;
 
     if (pitch_x != 0)
@@ -163,19 +156,14 @@ bool CylinderPositionFilter::get_indices(const Tracker& tktr, std::array<int, 3>
 
     int nz = static_cast<int> (std::floor( (r.z() - origin.z()) * inv_dz ));
 
-    std::cout<<"Nx = "<<nx<<", "<<ny<<", "<<nz<<".."<<std::floor( (r.z() - origin.z()) * inv_dz )<<" .\n";
-
     double new_origin_x = origin.x() + pitch_x * static_cast<double> (nx);
     double new_origin_y = origin.y() + pitch_y * static_cast<double> (ny);
 
-   
+    //std::cout<<">>>>> "<<nx<<", "<<ny<<", "<<nz<<"\n";
     if (  nx >= 0 && nx < static_cast<int>(Nx_)
     && ny >= 0 && ny < static_cast<int>(Ny_)
     && nz >= 0 && nz < static_cast<int>(Nz_) )
     {
-        std::cout<<"<<< "<<sqrt( (new_origin_x - r.x()) * (new_origin_x - r.x()) 
-        + (new_origin_y - r.y()) * (new_origin_y - r.y()) )<<"\n";
-
         if ( sqrt( (new_origin_x - r.x()) * (new_origin_x - r.x()) 
         + (new_origin_y - r.y()) * (new_origin_y - r.y()) ) <= ( radius + 1E-15) ){
             
@@ -189,9 +177,8 @@ bool CylinderPositionFilter::get_indices(const Tracker& tktr, std::array<int, 3>
             return true;
         }
         else{
-        std::cout<<"<<< "<<indices[0]<<", "<<indices[1]<<", "<<indices[2]<<"\n";
+
         indices.fill(static_cast<int> (-1));
-        std::cout<<"<<< "<<indices[0]<<", "<<indices[1]<<", "<<indices[2]<<"\n";
         return false;
         }
     }
@@ -202,5 +189,7 @@ bool CylinderPositionFilter::get_indices(const Tracker& tktr, std::array<int, 3>
 
     return false;
 }
+
+
 
 #endif

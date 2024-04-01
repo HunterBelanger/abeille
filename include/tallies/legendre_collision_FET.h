@@ -46,7 +46,7 @@ class CollisionEstimatorFET : public ITally{
 
     private:
         size_t FET_order;  // Note that the number of coefficient will be one more than the order.
-
+        std::vector<Axis> axes;
         
 
 };

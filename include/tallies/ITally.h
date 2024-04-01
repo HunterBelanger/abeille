@@ -3,10 +3,9 @@
 
 #include <memory>
 
-#include "position_filter.h"
-#include "energy_filter.h"
-#include "ndarray.hpp"
-
+#include <position_filter.h>
+#include <energy_filter.h>
+#include <ndarray.hpp>
 
 class ITally{
     public: 
@@ -22,8 +21,7 @@ class ITally{
     };
 
 
-    ITally(size_t FET_order_, Quantity quantity_, std::vector<Axis> axes_,
-        std::shared_ptr<PositionFilter> position_filter_, 
+    ITally(Quantity quantity_,
         std::shared_ptr<EnergyFilter> energy_in_,
         std::shared_ptr<EnergyFilter> energy_out_ = nullptr) 
         :
@@ -62,24 +60,63 @@ class ITally{
     
     ~ITally() = default;
 
+    //For collision estmator
+    virtual score_collision(const Particle& p, const Tracker& tktr, MaterialHelper& mat );
 
+    //For track-length estimator
+    virtual score_flight(const Particle& p, const Tracker& tktr, MaterialHelper& mat );
 
+    //Record the avg and variance for the generation
+    void record_tally(double mulitplier);
 
      protected:
-        std::shared_ptr<PositionFilter> position_filter {nullptr};
+
         std::shared_ptr<EnergyFilter> energy_in {nullptr};
         std::shared_ptr<EnergyFilter> energy_out {nullptr};
         
-        NDArray<double> FET_coeff; // N-energy, N-x, N-y, N-z, N-axis for legendre, N_FET_order
-        NDArray<double> score_gen;
-        NDArray<double> FET_var;
+        NDArray<double> tally_avg;
+        NDArray<double> talley_gen_score;
+        NDArray<double> tally_var;
 
-        size_t gen = 0;
+        size_t gen_ = 0;
 
         Quantity quantity;
-        std::vector<Axis> axes;
+        
         
 };
 
+void ITally::record_tally(double multiplier){
+    gen_++;
+    const double dg = static_cast<double>(gen_);
+    const double invs_dg = 1. / dg;
+
+    // All worker threads must send their generation score to the master.
+    // Master must recieve all generations scores from workers and add
+    // them to it's own generation score.
+    mpi::Reduce_sum(talley_gen_score.data_vector(), 0);
+
+    // Only try to update average and variance is we are master, as worker
+    // processes don't have copies of this data, so it will seg-fault.
+    if (mpi::rank == 0) {
+    #ifdef ABEILLE_USE_OMP
+    #pragma omp parallel for schedule(static)
+    #endif
+        for (size_t i = 0; i < tally_avg.size(); i++) {
+            // Get new average
+            double old_avg = tally_avg[i];
+            double val = talley_gen_score[i] * multiplier;
+            double avg = old_avg + (val - old_avg) * invs_dg;
+            tally_avg[i] = avg;
+
+            // Get new variance
+            double var = tally_var[i];
+            var = var + ((val - old_avg) * (val - avg) - (var)) * invs_dg;
+            tally_var[i] = var;
+            }
+    }
+
+    // Clear the entry for the tally_gen
+    talley_gen_score.fill(0.0);    
+}
 
 #endif
