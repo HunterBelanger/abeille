@@ -1045,7 +1045,7 @@ std::shared_ptr<PowerIterator> make_power_iterator(const YAML::Node& sim) {
   bool empty_entropy_frac = false;
   if (sim["empty-entropy-bins"] && sim["empty-entropy-bins"].IsScalar()) {
     empty_entropy_frac = sim["empty-entropy-bins"].as<bool>();
-  } else if (sim[""]) {
+  } else if (sim["empty-entropy-bins"]) {
     fatal_error("Invalid empty-entropy-bins entry in k-eigenvalue simulation.");
   }
 
