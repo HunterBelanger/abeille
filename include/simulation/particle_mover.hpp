@@ -71,7 +71,7 @@ class ParticleMover : public IParticleMover {
     return transport_operator_.track_length_compatible();
   }
 
-  void write_output_info(const std::string& base = "") const {
+  void write_output_info(const std::string& base = "") const override final {
     transport_operator_.write_output_info(base);
     collision_operator_.write_output_info(base);
   }

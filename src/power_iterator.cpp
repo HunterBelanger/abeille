@@ -226,7 +226,7 @@ void PowerIterator::load_source_from_file() {
 
   Output::instance().write(
       " Total Weight of System: " + std::to_string(std::round(tot_wgt)) + "\n");
-  nparticles = static_cast<int>(std::round(tot_wgt));
+  nparticles = static_cast<std::size_t>(std::round(tot_wgt));
   Tallies::instance().set_total_weight(std::round(tot_wgt));
 }
 
@@ -234,8 +234,9 @@ void PowerIterator::sample_source_from_sources() {
   Output::instance().write(" Generating source particles...\n");
   // Calculate the base number of particles per node to run
   uint64_t base_particles_per_node =
-      static_cast<uint64_t>(nparticles / mpi::size);
-  uint64_t remainder = static_cast<uint64_t>(nparticles % mpi::size);
+      static_cast<uint64_t>(nparticles / static_cast<std::size_t>(mpi::size));
+  uint64_t remainder =
+      static_cast<uint64_t>(nparticles % static_cast<std::size_t>(mpi::size));
 
   // Set the base number of particles per node in the node_nparticles vector
   mpi::node_nparticles.resize(static_cast<std::size_t>(mpi::size),
@@ -577,13 +578,13 @@ void PowerIterator::comb_particles(std::vector<BankedParticle>& next_gen) {
       kahan_bank(next_gen.begin(), next_gen.end());
 
   // Get total weights for all nodes
-  std::vector<double> Wpos_each_node(mpi::size, 0.);
-  Wpos_each_node[mpi::rank] = Wpos_node;
+  std::vector<double> Wpos_each_node(static_cast<std::size_t>(mpi::size), 0.);
+  Wpos_each_node[static_cast<std::size_t>(mpi::rank)] = Wpos_node;
   mpi::Allreduce_sum(Wpos_each_node);
   const double Wpos = kahan(Wpos_each_node.begin(), Wpos_each_node.end(), 0.);
 
-  std::vector<double> Wneg_each_node(mpi::size, 0.);
-  Wneg_each_node[mpi::rank] = Wneg_node;
+  std::vector<double> Wneg_each_node(static_cast<std::size_t>(mpi::size), 0.);
+  Wneg_each_node[static_cast<std::size_t>(mpi::rank)] = Wneg_node;
   mpi::Allreduce_sum(Wneg_each_node);
   const double Wneg = kahan(Wneg_each_node.begin(), Wneg_each_node.end(), 0.);
 

@@ -81,13 +81,15 @@ void Simulation::sync_banks(std::vector<uint64_t>& nums,
   // the minimum number of particles that all ranks should have. Remainder is
   // the number of particles which are left if each rank has base particles. If
   // rank < remainder, then that rank gets one extra particle.
-  const int Ntot = std::accumulate(nums.begin(), nums.end(), 0);
-  const int base = static_cast<int>(Ntot) / mpi::size;
-  const int remainder = static_cast<int>(Ntot) - (mpi::size * base);
+  const uint64_t Ntot =
+      std::accumulate(nums.begin(), nums.end(), static_cast<uint64_t>(0));
+  const uint64_t base = Ntot / static_cast<uint64_t>(mpi::size);
+  const uint64_t remainder = Ntot - (static_cast<uint64_t>(mpi::size) * base);
 
   // This lambda sends nts particles to the LEFT from rank R to rank R-1.
   // It also updates nums for each rank.
   auto SendLeft = [&bank, &nums](const int R, const int nts) {
+    const uint64_t unts = static_cast<uint64_t>(nts);
     // nts is Number to send
     std::vector<BankedParticle> sendBank;
     if (mpi::rank == R) {
@@ -96,17 +98,18 @@ void Simulation::sync_banks(std::vector<uint64_t>& nums,
       mpi::Send(std::span<BankedParticle>(sendBank.begin(), sendBank.end()),
                 R - 1);
     } else if (mpi::rank == (R - 1)) {
-      sendBank.resize(nts);
+      sendBank.resize(unts);
       mpi::Recv(std::span<BankedParticle>(sendBank.begin(), sendBank.end()), R);
       bank.insert(bank.end(), sendBank.begin(), sendBank.end());
     }
-    nums[R] -= nts;
-    nums[R - 1] += nts;
+    nums[static_cast<std::size_t>(R)] -= unts;
+    nums[static_cast<std::size_t>(R - 1)] += unts;
   };
 
   // This lambda sends nts particles to the RIGHT from rank L to rank L+1.
   // It also updates nums for each rank.
   auto SendRight = [&bank, &nums](const int L, const int nts) {
+    const uint64_t unts = static_cast<uint64_t>(nts);
     // nts is Number to send
     std::vector<BankedParticle> sendBank;
     if (mpi::rank == L) {
@@ -115,33 +118,35 @@ void Simulation::sync_banks(std::vector<uint64_t>& nums,
       mpi::Send(std::span<BankedParticle>(sendBank.begin(), sendBank.end()),
                 L + 1);
     } else if (mpi::rank == (L + 1)) {
-      sendBank.resize(nts);
+      sendBank.resize(unts);
       mpi::Recv(std::span<BankedParticle>(sendBank.begin(), sendBank.end()), L);
       bank.insert(bank.begin(), sendBank.begin(), sendBank.end());
     }
-    nums[L] -= nts;
-    nums[L + 1] += nts;
+    nums[static_cast<std::size_t>(L)] -= unts;
+    nums[static_cast<std::size_t>(L + 1)] += unts;
   };
 
   std::function<void(int, int)> SendParticles =
       [&nums, base, remainder, SendRight, SendLeft, &SendParticles](
           const int i, const int ntr_left) {
         // Number of particles on ranks i and i+1
-        int nums_i = static_cast<int>(nums[i]);
-        int nums_i1 = static_cast<int>(nums[i + 1]);
+        int nums_i = static_cast<int>(nums[static_cast<std::size_t>(i)]);
+        int nums_i1 = static_cast<int>(nums[static_cast<std::size_t>(i + 1)]);
 
         // ntr is of particles that rank i needs to receive. This includes the
         // particles i needs, in addition to any particles previous ranks might
         // need (ntr_left).
-        int ntr = ntr_left + base + (i < remainder ? 1 : 0) - nums_i;
+        int ntr = ntr_left + static_cast<int>(base) +
+                  (i < static_cast<int>(remainder) ? 1 : 0) - nums_i;
 
         if (ntr > 0 && ntr > nums_i1) {
           SendParticles(i + 1, ntr);
 
           // Update Nums after recursive call
-          nums_i = static_cast<int>(nums[i]);
-          nums_i1 = static_cast<int>(nums[i + 1]);
-          ntr = ntr_left + base + (i < remainder ? 1 : 0) - nums_i;
+          nums_i = static_cast<int>(nums[static_cast<std::size_t>(i)]);
+          nums_i1 = static_cast<int>(nums[static_cast<std::size_t>(i + 1)]);
+          ntr = ntr_left + static_cast<int>(base) +
+                (i < static_cast<int>(remainder) ? 1 : 0) - nums_i;
         }
 
         if (ntr > 0) {

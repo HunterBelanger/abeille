@@ -156,7 +156,7 @@ bool ApproximateMeshCancelator::add_particle(BankedParticle& p) {
                             (j + static_cast<int>(shape[1]) * i));
   };
 
-  int bin_key = key(i, j, k, l);
+  uint32_t bin_key = static_cast<uint32_t>(key(i, j, k, l));
 
   if (bins.find(bin_key) == bins.end()) {
     bins[bin_key] = std::vector<BankedParticle*>();
@@ -167,14 +167,14 @@ bool ApproximateMeshCancelator::add_particle(BankedParticle& p) {
   return true;
 }
 
-std::vector<int> ApproximateMeshCancelator::sync_keys() {
+std::vector<uint32_t> ApproximateMeshCancelator::sync_keys() {
   // Each node collects all keys
-  std::vector<int> keys;
+  std::vector<uint32_t> keys;
   keys.reserve(bins.size());
   for (auto& key_bin_pair : bins) {
     keys.push_back(key_bin_pair.first);
   }
-  std::set<int> key_set;
+  std::set<uint32_t> key_set;
 
   // Put master keys into the keyset
   if (mpi::rank == 0) {
@@ -187,14 +187,14 @@ std::vector<int> ApproximateMeshCancelator::sync_keys() {
     if (mpi::rank == i) {
       auto nkeys = keys.size();
       mpi::Send(nkeys, 0);
-      mpi::Send(std::span<int>(keys.begin(), keys.end()), 0);
+      mpi::Send(std::span<uint32_t>(keys.begin(), keys.end()), 0);
       keys.clear();
     } else if (mpi::rank == 0) {
       std::size_t nkeys = 0;
       mpi::Recv(nkeys, i);
       keys.resize(nkeys);
 
-      mpi::Recv(std::span<int>(keys.begin(), keys.end()), i);
+      mpi::Recv(std::span<uint32_t>(keys.begin(), keys.end()), i);
       std::copy(keys.begin(), keys.end(),
                 std::inserter(key_set, key_set.end()));
     }
@@ -215,7 +215,7 @@ std::vector<int> ApproximateMeshCancelator::sync_keys() {
 
 void ApproximateMeshCancelator::perform_cancellation_loop() {
   // Get keys of all non empty bins
-  std::vector<int> keys = sync_keys();
+  std::vector<uint32_t> keys = sync_keys();
 
   for (const auto key : keys) {
     std::uint64_t n_total = 0;
@@ -257,7 +257,7 @@ void ApproximateMeshCancelator::perform_cancellation_loop() {
 
 void ApproximateMeshCancelator::perform_cancellation_vector() {
   // Get keys of all non empty bins
-  std::vector<int> keys = sync_keys();
+  std::vector<uint32_t> keys = sync_keys();
 
   // change to uint16
   NDArray<double> wgts({0});

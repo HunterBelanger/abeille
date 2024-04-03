@@ -137,7 +137,8 @@ void MeshTally::record_generation(double multiplier) {
       if (g > 1) {
         const double old_var = tally_var[i];
         const double diff = val - old_avg;
-        tally_var[i] = old_var + (diff*diff*invs_dg) - (old_var * invs_dg_m1);
+        tally_var[i] =
+            old_var + (diff * diff * invs_dg) - (old_var * invs_dg_m1);
       }
     }
   }

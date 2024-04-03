@@ -299,7 +299,7 @@ void Tallies::update_avg_and_var(double x, double& x_avg, double& x_var) {
   // Update variance
   if (gen > 1) {
     const double diff = x - x_avg_old;
-    x_var = x_var_old + ((diff * diff)/dgen) - (x_var_old / (dgen - 1.));
+    x_var = x_var_old + ((diff * diff) / dgen) - (x_var_old / (dgen - 1.));
   }
 }
 

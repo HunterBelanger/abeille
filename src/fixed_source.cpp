@@ -30,7 +30,6 @@
 #include <utils/settings.hpp>
 #include <utils/timer.hpp>
 
-#include <fstream>
 #include <iomanip>
 #include <iostream>
 
@@ -74,8 +73,9 @@ void FixedSource::print_header() {
 void FixedSource::mpi_setup() {
   // Calculate the base number of particles per node to run
   uint64_t base_particles_per_node =
-      static_cast<uint64_t>(nparticles / mpi::size);
-  uint64_t remainder = static_cast<uint64_t>(nparticles % mpi::size);
+      static_cast<uint64_t>(nparticles / static_cast<std::size_t>(mpi::size));
+  uint64_t remainder =
+      static_cast<uint64_t>(nparticles % static_cast<std::size_t>(mpi::size));
 
   // Set the base number of particles per node in the node_nparticles vector
   mpi::node_nparticles.resize(static_cast<std::size_t>(mpi::size),

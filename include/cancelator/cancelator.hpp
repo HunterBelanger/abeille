@@ -48,7 +48,7 @@ class Cancelator {
   void set_cancel_dual_weights(bool dw) { dual_weights_ = dw; }
 
  protected:
-  bool dual_weights_ {false};
+  bool dual_weights_{false};
 };
 
 std::shared_ptr<Cancelator> make_cancelator(const YAML::Node& node);
