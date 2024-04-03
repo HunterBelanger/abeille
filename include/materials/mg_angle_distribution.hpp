@@ -45,7 +45,7 @@ class MGAngleDistribution {
                       const std::vector<double>& cdf);
 
   std::pair<double, double> sample_mu(RNG& rng) const {
-    if (pdf_is_neg == false){
+    if (pdf_is_neg == false) {
       const double xi = rng();
 
       auto cdf_it = std::lower_bound(cdf_.begin(), cdf_.end(), xi);
@@ -109,7 +109,7 @@ class MGAngleDistribution {
   std::vector<double> mu_;
   std::vector<double> pdf_;
   std::vector<double> cdf_;
-  pndl::PCTable abs_pdf_;  // PCTable for sampling negative distribution
+  pndl::PCTable abs_pdf_;        // PCTable for sampling negative distribution
   double abs_weight_mod_ = 1.0;  // area under abs distribution of negative pdf,
                                  // will used for normalization.
   bool pdf_is_neg = false;       // Make it true, if pdf is negative.
