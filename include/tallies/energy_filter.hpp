@@ -5,7 +5,7 @@
 #include <vector>
 #include <string>
 
-#include <tallies/position_filter.h>
+#include <tallies/position_filter.hpp>
 #include <utils/error.hpp>
 
 class EnergyFilter{

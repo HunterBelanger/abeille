@@ -3,7 +3,7 @@
 
 #include <array>
 
-#include <tallies/position_filter.h>
+#include <tallies/position_filter.hpp>
 #include <utils/position.hpp>
 #include <utils/error.hpp>
 

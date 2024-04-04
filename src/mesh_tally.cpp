@@ -30,6 +30,8 @@
 #include <utils/output.hpp>
 #include <utils/settings.hpp>
 
+#include <tallies/general_tally.hpp>
+
 #include <set>
 #include <vector>
 
@@ -112,6 +114,7 @@ void MeshTally::set_net_weight(double W) { net_weight = W; }
 void MeshTally::record_generation(double multiplier) {
   // Advance the number of generations
   g++;
+  std::cout<<">>> gen "<<g<<"\n";
   const double dg = static_cast<double>(g);
   const double invs_dg = 1. / dg;
 
@@ -137,6 +140,8 @@ void MeshTally::record_generation(double multiplier) {
       double var = tally_var[i];
       var = var + ((val - old_avg) * (val - avg) - (var)) * invs_dg;
       tally_var[i] = var;
+
+      std::cout<<"Given :"<<tally_avg[i]<<"\n";
     }
   }
 }
@@ -196,4 +201,7 @@ void MeshTally::write_tally() {
   auto std_dset =
       tally_grp.createDataSet<double>("std", H5::DataSpace(tally_var.shape()));
   std_dset.write_raw(&tally_var[0]);
+
+  std::cout<<"Writing ITally\n";
+  temp_tally->write_tally();
 }

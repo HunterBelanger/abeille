@@ -1,7 +1,7 @@
 #ifndef CARTESIAN_FILTER_H
 #define CARTESIAN_FILTER_H
 
-#include <tallies/position_filter.h>
+#include <tallies/position_filter.hpp>
 #include <utils/position.hpp>
 #include <simulation/tracker.hpp>
 #include <utils/error.hpp>

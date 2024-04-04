@@ -72,4 +72,5 @@ set(ABEILLE_SOURCE_FILES ${ABEILLE_SOURCE_FILES}
   src/settings.cpp
   src/header.cpp
   src/itally.cpp
+  src/general_tally.cpp
 )

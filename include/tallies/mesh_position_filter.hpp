@@ -2,7 +2,7 @@
 #define MESH_POSITION_FILTER_H
 
 
-#include <tallies/cartesian_filter.h>
+#include <tallies/cartesian_filter.hpp>
 #include <utils/position.hpp>
 
 #include <array>

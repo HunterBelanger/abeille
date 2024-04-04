@@ -1,4 +1,4 @@
-#include "legendre_collision_FET.h"
+#include "legendre_collision_FET.hpp"
 #include "utils/mpi.hpp"
 
 #include "ITally.h"

@@ -584,6 +584,30 @@ void make_tallies(const YAML::Node& input) {
     fatal_error("Tallies entry must be provided as a sequence.");
   }
 
+  if(input["general-tally"]){
+    std::cout<<"found<<<<<<<<<<<<<<<<<\n";
+    
+    if (input["general-tally"]){
+
+      const YAML::Node& g_tally_input = input["general-tally"][0];
+      std::string name = input["general-tally"][0]["Position-Filter"].as<std::string>();
+      std::string type_ = g_tally_input["Position-Filter"].as<std::string>();
+      std::vector<double> r_low = g_tally_input["low"].as<std::vector<double>>();
+      std::vector<double> r_high = g_tally_input["high"].as<std::vector<double>>();
+      std::string quant = g_tally_input["quantity"].as<std::string>();
+      //std::string name = g_tally_input["Position-Filter"]["type"].as<std::string>();
+     // std::string esti = g_tally_input["Position-Filter"]["type"].as<std::string>();
+
+      for (size_t ite = 0; ite <3; ite++){
+        std::cout<<"Low" << r_low[ite]<<"\tHigh"<<r_high[ite]<<"\n";
+      }
+      std::cout<<type_<<"\t"<<quant<<"\n";
+    
+   }
+    std::cout<<"found<<<<<<<<<<<<<<<<<\n";
+  }
+
+
   // Add all spatial mesh tallies to the tallies instance
   for (size_t t = 0; t < input["tallies"].size(); t++) {
     add_mesh_tally(tallies, input["tallies"][t]);

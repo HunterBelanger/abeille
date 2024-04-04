@@ -67,7 +67,8 @@ Tallies::Tallies()
       collision_mesh_tallies_(),
       track_length_mesh_tallies_(),
       source_mesh_tallies_(),
-      noise_source_mesh_tallies_() {}
+      noise_source_mesh_tallies_(),
+      new_I_tallies() {}
 
 Tallies& Tallies::instance() {
   static Tallies tallies;
@@ -224,6 +225,9 @@ void Tallies::record_generation(double multiplier) {
 
   for (auto& tally : noise_source_mesh_tallies_)
     tally->record_generation(multiplier);
+
+  for (auto new_tally : new_I_tallies)
+    new_tally->record_generation(multiplier);
 }
 
 void Tallies::write_tallies(bool track_length_compatible) {
@@ -285,6 +289,8 @@ void Tallies::write_tallies(bool track_length_compatible) {
     for (auto& tally : source_mesh_tallies_) tally->write_tally();
 
     for (auto& tally : noise_source_mesh_tallies_) tally->write_tally();
+
+    for (auto& new_tally : new_I_tallies) new_tally->write_tally();
   }
 }
 

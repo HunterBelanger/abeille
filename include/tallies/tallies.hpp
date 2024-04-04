@@ -35,6 +35,9 @@
 
 #include <string>
 
+#include <tallies/itally.hpp>
+#include <simulation/tracker.hpp>
+
 struct ThreadLocalScores {
   double k_col_score = 0.;
   double k_abs_score = 0.;
@@ -64,6 +67,11 @@ class Tallies {
 
   static Tallies& instance();
 
+  void add_ITally(std::shared_ptr<ITally> new_tally){
+    new_tally->set_net_weight(total_weight);
+    new_I_tallies.push_back(new_tally);
+  }
+
   void add_collision_mesh_tally(std::shared_ptr<CollisionMeshTally> cetally);
   void add_track_length_mesh_tally(
       std::shared_ptr<TrackLengthMeshTally> tltally);
@@ -79,6 +87,14 @@ class Tallies {
     if (scoring_ && !collision_mesh_tallies_.empty()) {
       for (auto& tally : collision_mesh_tallies_)
         tally->score_collision(p, mat);
+    }
+  }
+
+  void score_collision(const Particle& p, const Tracker& tktr, MaterialHelper& mat){     
+    if (scoring_ && !new_I_tallies.empty()){
+      for( auto& new_tally : new_I_tallies){
+        new_tally->score_collision(p, tktr, mat);
+      }
     }
   }
 
@@ -175,6 +191,8 @@ class Tallies {
     for (auto& t : collision_mesh_tallies_) t->set_net_weight(total_weight);
     for (auto& t : source_mesh_tallies_) t->set_net_weight(total_weight);
     for (auto& t : noise_source_mesh_tallies_) t->set_net_weight(total_weight);
+
+    for (auto& new_tally : new_I_tallies)  new_tally->set_net_weight(total_weight);
   }
 
   int generations() const { return gen; }
@@ -214,6 +232,8 @@ class Tallies {
   std::vector<std::shared_ptr<TrackLengthMeshTally>> track_length_mesh_tallies_;
   std::vector<std::shared_ptr<SourceMeshTally>> source_mesh_tallies_;
   std::vector<std::shared_ptr<SourceMeshTally>> noise_source_mesh_tallies_;
+
+  std::vector<std::shared_ptr<ITally>> new_I_tallies;
 
   void update_avg_and_var(double x, double& x_avg, double& x_var);
 

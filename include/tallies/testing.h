@@ -5,15 +5,15 @@
 #include <array>
 #include <vector>
 
-#include <tallies/box_position_filter.h>
-#include <tallies/energy_filter.h>
+#include <tallies/box_position_filter.hpp>
+#include <tallies/energy_filter.hpp>
 #include <vector>
 #include <simulation/tracker.hpp>
-#include <tallies/cylinder_position_filter.h>
-#include <tallies/cartesian_filter.h>
-#include <tallies/mesh_position_filter.h>
-#include <tallies/ITally.h>
-#include <tallies/general_tally.h>
+#include <tallies/cylinder_position_filter.hpp>
+#include <tallies/cartesian_filter.hpp>
+#include <tallies/mesh_position_filter.hpp>
+#include <tallies/itally.hpp>
+#include <tallies/general_tally.hpp>
 #include <ndarray.hpp>
 
 

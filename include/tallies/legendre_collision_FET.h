@@ -29,7 +29,9 @@ class CollisionEstimatorFET : public ITally{
         std::shared_ptr<EnergyFilter> energy_out_ = nullptr) ;
 
     
-    
+    enum class Axis{
+        X, Y, Z
+    };
     ~CollisionEstimatorFET() = default;
 
     void score_particle(const Particle& p, const Tracker& tktr, MaterialHelper& mat );

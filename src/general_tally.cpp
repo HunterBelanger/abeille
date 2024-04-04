@@ -1,23 +1,15 @@
-#include <tallies/general_tally.h>
+#include <tallies/general_tally.hpp>
 #include <utils/error.hpp>
 
 void GeneralTally::score_collision(const Particle& p, const Tracker& tktr, MaterialHelper& mat ) {
     std::array<int, 3> index_position;
     std::size_t index_E;
-    std::cout<<"Please come here.";
-    fatal_error("Comes here.\n");
 
     if ( position_filter_->get_indices(tktr, index_position) 
     && energy_in_->get_index(p.E(), index_E) ){
 
         const double Et = mat.Et(p.E());
-        double collision_score = 1.0 / ( Et * 1000);
-        if (flag){
-            fatal_error("Maybe coming.");
-        }
-        if (quantity_ == Quantity::Flux && flag3){
-            fatal_error("BOOM.");
-        }
+        double collision_score = 1.0 / ( Et * net_weight_);
 
         switch(quantity_){
             case Quantity::Flux:
@@ -42,12 +34,32 @@ void GeneralTally::score_collision(const Particle& p, const Tracker& tktr, Mater
         #endif
             tally_gen_score( index_E,
                 index_position[0], index_position[1], index_position[2]) += collision_score;
-            /*if (flag){
-                std::cout<<"scored --->"<<tally_gen_score(index_E,
-                index_position[0], index_position[1], index_position[2])<<"\n";
-                flag = false;
-            }  */
     }
+}
+
+std::shared_ptr<ITally> temp_tally;
+
+void make_temp_tally() {
+    static bool init = false;
+
+    if (!init) {
+Position Low_pos(-0.77032, -100., -100.);
+Position High_pos(0.77032, 100., 100.);
+
+std::shared_ptr<PositionFilter> const_pos = 
+    std::make_shared<BoxPositionFilter>(Low_pos, High_pos);
+
+std::vector<double> energy_f{0.0, 1.0, 2.0};
+std::shared_ptr<EnergyFilter> const_ef = std::make_shared<EnergyFilter>(energy_f);
+
+temp_tally
+    = std::make_shared<GeneralTally>(GeneralTally::Quantity::Flux,
+        GeneralTally::Estimator::Collision, "temp_tally",
+            const_pos, const_ef);
+temp_tally->set_net_weight(1000.0);
+      init = true;
+    }
+
 }
 
 

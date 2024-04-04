@@ -3,7 +3,7 @@
 
 #include <array>
 
-#include <tallies/cartesian_filter.h>
+#include <tallies/cartesian_filter.hpp>
 #include <utils/position.hpp>
 
 

@@ -43,7 +43,7 @@
 #include <sstream>
 #include <vector>
 
-#include <tallies/general_tally.h>
+#include <tallies/general_tally.hpp>
 
 class IParticleMover {
  public:
@@ -83,6 +83,7 @@ class ParticleMover : public IParticleMover {
       std::optional<NoiseParameters> noise = std::nullopt,
       std::vector<BankedParticle>* noise_bank = nullptr,
       const NoiseMaker* noise_maker = nullptr) override final {
+      make_temp_tally();
 #ifdef ABEILLE_USE_OMP
 #pragma omp parallel
 #endif
@@ -125,8 +126,14 @@ class ParticleMover : public IParticleMover {
 
             // Score flux collision estimator with Sigma_t
             Tallies::instance().score_collision(p, mat);
-            temp_tally->start_scoring();
-            temp_tally->score_tally(p, trkr, mat);
+            
+            Tallies::instance().score_collision(p,trkr, mat);
+            //if( temp_tally->scoring_tally() ){
+              temp_tally->score_collision(p, trkr, mat);
+            //}
+
+              
+            
 
             // Contribute to keff collision estimator and migration area scores
             thread_scores.k_col_score +=

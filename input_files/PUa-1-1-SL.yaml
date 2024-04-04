@@ -27,8 +27,19 @@ tallies:
     hi:  [ 0.77032,  100.,  100.]
     energy-bounds: [0., 1., 2.]
     quantity: flux
-    name: flux_UD2O-2-1-SL
+    name: flux_PUa
     estimator: collision
+  
+general-tally:
+  - Position-Filter: Box
+    low: [-0.77032, -100., -100.]
+    high:  [ 0.77032,  100.,  100.]
+    energy-bounds: [0., 1., 2.]
+    quantity: flux
+    name: flux
+    estimator: collision
+
+
 
 settings:
   energy-mode: multi-group
@@ -38,8 +49,8 @@ settings:
 simulation:
   mode: k-eigenvalue
   nparticles: 1000
-  ngenerations: 200
-  nignored: 198
+  ngenerations: 20
+  nignored: 0
   sources:
     - spatial:
         type: box

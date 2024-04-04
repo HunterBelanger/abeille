@@ -5,8 +5,8 @@
 
 #include <ndarray.hpp>
 
-#include <tallies/position_filter.h>
-#include <tallies/energy_filter.h>
+#include <tallies/position_filter.hpp>
+#include <tallies/energy_filter.hpp>
 #include <utils/mpi.hpp>
 #include <simulation/particle.hpp>
 #include <simulation/tracker.hpp>
@@ -24,30 +24,16 @@ class ITally{
         Elastic, 
     };
 
-    enum class Axis{
-        X, Y, Z
-    };
-
     enum class Estimator{
         Collision,
         TrackLength
     };
 
-    ITally(Quantity quantity, Estimator estimator)
-        :   quantity_(quantity), estimator_(estimator)
+    ITally(Quantity quantity, Estimator estimator, std::string name_)
+        :   quantity_(quantity), estimator_(estimator), tally_name(name_)
         {}
     
     virtual ~ITally() = default;
-
-    virtual void score_tally(const Particle& p, const Tracker& tktr, MaterialHelper& mat){
-        if(start_scoring_ == true){
-
-            if ( estimator_ == Estimator::Collision){
-                score_collision(p, tktr, mat );
-            }
-            //if ( estimator_ == Estimator::TrackLength){}
-        }
-    }
 
     //For collision estmator
     virtual void score_collision(const Particle& p, const Tracker& tktr, MaterialHelper& mat ) = 0;
@@ -56,12 +42,13 @@ class ITally{
     //virtual score_flight(const Particle& p, const Tracker& tktr, MaterialHelper& mat );
 
     //Record the avg and variance for the generation
-    void record_tally(double mulitplier = 1.0);
+    void record_generation(double mulitplier = 1.0);
 
     void set_net_weight(double weight_){ net_weight_ = weight_;}
+    
+    std::string estimator_str();
 
-    void start_scoring() { start_scoring_ = true;}
-     //void end_scoring() { start_scoring_ = false;}
+    void write_tally();
 
     protected:
         
@@ -70,14 +57,13 @@ class ITally{
         NDArray<double> tally_var;
 
         size_t gen_ = 0;
-        double net_weight_;
-
+        
         Quantity quantity_;
         Estimator estimator_;
-    private:
-        bool start_scoring_ = false;
-        
-        
+        std::string tally_name;
+
+        double net_weight_;   
+
 };
 
 
