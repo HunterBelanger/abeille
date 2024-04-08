@@ -2,38 +2,53 @@
 #include <utils/error.hpp>
 
 void GeneralTally::score_collision(const Particle& p, const Tracker& tktr, MaterialHelper& mat ) {
-    std::array<int, 3> index_position;
-    std::size_t index_E;
+    
+    if (estimator_ == GeneralTally::Estimator::Collision){
+        //std::array<int, 3> index_position;
+        
+        std::size_t index_E;
 
-    if ( position_filter_->get_indices(tktr, index_position) 
-    && energy_in_->get_index(p.E(), index_E) ){
+        if (energy_in_->get_index(p.E(), index_E) ){
+        
+            std::vector<size_t> indexes_;
+            indexes_.reserve(4);
 
-        const double Et = mat.Et(p.E());
-        double collision_score = 1.0 / ( Et * net_weight_);
+            indexes_ = position_filter_->get_indices(tktr);
+            
+            indexes_.insert(indexes_.begin(), index_E);
+            
+            if (indexes_.empty()){
+                return;
+            }
 
-        switch(quantity_){
-            case Quantity::Flux:
-                collision_score *= p.wgt();
-                break;
+            
 
-            case Quantity::Fission:
-                collision_score *= p.wgt() * mat.Ef(p.E());
-                break;
+            const double Et = mat.Et(p.E());
+            double collision_score = 1.0 / ( Et * net_weight_);
 
-            case Quantity::Absorption:
-                collision_score *= p.wgt() * mat.Ea(p.E());
-                break;
+            switch(quantity_){
+                case Quantity::Flux:
+                    collision_score *= p.wgt();
+                    break;
 
-            case Quantity::Elastic:
-                collision_score *= p.wgt() * mat.Eelastic(p.E());
-                break;
-        }
+                case Quantity::Fission:
+                    collision_score *= p.wgt() * mat.Ef(p.E());
+                    break;
 
-        #ifdef ABEILLE_USE_OMP
-        #pragma omp atomic
-        #endif
-            tally_gen_score( index_E,
-                index_position[0], index_position[1], index_position[2]) += collision_score;
+                case Quantity::Absorption:
+                    collision_score *= p.wgt() * mat.Ea(p.E());
+                    break;
+
+                case Quantity::Elastic:
+                    collision_score *= p.wgt() * mat.Eelastic(p.E());
+                    break;
+            }
+
+            #ifdef ABEILLE_USE_OMP
+            #pragma omp atomic
+            #endif
+                tally_gen_score(indexes_) += collision_score;
+        }   
     }
 }
 

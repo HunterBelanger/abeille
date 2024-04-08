@@ -82,19 +82,23 @@ class Tallies {
 
   void verify_track_length_tallies(bool track_length_transporter) const;
 
-  void score_collision(const Particle& p, MaterialHelper& mat) {
-    // Only do spacial tallies if scoring is on
-    if (scoring_ && !collision_mesh_tallies_.empty()) {
-      for (auto& tally : collision_mesh_tallies_)
-        tally->score_collision(p, mat);
-    }
-  }
-
+  //===============================================
+  // NEW TALLY INTERFACE
   void score_collision(const Particle& p, const Tracker& tktr, MaterialHelper& mat){     
     if (scoring_ && !new_I_tallies.empty()){
       for( auto& new_tally : new_I_tallies){
         new_tally->score_collision(p, tktr, mat);
       }
+    }
+  }
+
+  //===============================================
+  // OLD TALLY INTERFACE
+  void score_collision(const Particle& p, MaterialHelper& mat) {
+    // Only do spacial tallies if scoring is on
+    if (scoring_ && !collision_mesh_tallies_.empty()) {
+      for (auto& tally : collision_mesh_tallies_)
+        tally->score_collision(p, mat);
     }
   }
 
@@ -240,5 +244,7 @@ class Tallies {
 };  // Tallies
 
 void add_mesh_tally(Tallies& tallies, const YAML::Node& node);
+
+void make_itally(Tallies& tallies, const YAML::Node& node);
 
 #endif  // MG_TALLIES_H

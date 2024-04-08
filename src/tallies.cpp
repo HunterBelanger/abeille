@@ -310,23 +310,27 @@ void Tallies::update_avg_and_var(double x, double& x_avg, double& x_var) {
 
 void add_mesh_tally(Tallies& tallies, const YAML::Node& node) {
   // First get type of estimator. Default is collision
-  std::string estimator_str = "collision";
-  if (node["estimator"]) {
-    estimator_str = node["estimator"].as<std::string>();
-  }
-
-  if (estimator_str == "collision") {
-    tallies.add_collision_mesh_tally(make_collision_mesh_tally(node));
-  } else if (estimator_str == "track-length") {
-    tallies.add_track_length_mesh_tally(make_track_length_mesh_tally(node));
-  } else if (estimator_str == "source") {
-    auto stally = make_source_mesh_tally(node);
-    if (stally->noise_like_score()) {
-      tallies.add_noise_source_mesh_tally(stally);
-    } else {
-      tallies.add_source_mesh_tally(stally);
+  if (!node["type"]){
+    std::string estimator_str = "collision";
+    if (node["estimator"]) {
+      estimator_str = node["estimator"].as<std::string>();
     }
-  } else {
-    fatal_error("Unknown estimator type of \"" + estimator_str + "\".");
+
+    if (estimator_str == "collision") {
+      tallies.add_collision_mesh_tally(make_collision_mesh_tally(node));
+    } else if (estimator_str == "track-length") {
+      tallies.add_track_length_mesh_tally(make_track_length_mesh_tally(node));
+    } else if (estimator_str == "source") {
+      auto stally = make_source_mesh_tally(node);
+      if (stally->noise_like_score()) {
+        tallies.add_noise_source_mesh_tally(stally);
+      } else {
+        tallies.add_source_mesh_tally(stally);
+      }
+    } else {
+      fatal_error("Unknown estimator type of \"" + estimator_str + "\".");
+    }
+  }else{
+    make_itally(tallies, node);
   }
 }

@@ -18,19 +18,38 @@ class BoxPositionFilter : public CartesianFilter{
 
     ~BoxPositionFilter() = default;
 
-    bool get_indices(const Tracker& tktr, std::array<int, 3>& indices)  {
+    /*bool get_indices(const Tracker& tktr, std::vector<std::size_t> indices)  {
         const Position r = tktr.r();
         if ( (r_low.x() <= r.x() && r_high.x() >= r.x())
         && (r_low.y() <= r.y() && r_high.y() >= r.y())
         && (r_low.z() <= r.z() && r_high.z() >= r.z())){
-            indices.fill(static_cast<size_t> (0));
+            //indices.fill(static_cast<size_t> (0));
+            indices.push_back(0);
             return true;
         }
         else{
-            indices.fill(-1);
+            indices.push_back(-1);
             return false;
         }
+    }*/
+
+    std::vector<size_t> get_indices(const Tracker& tktr) override final{
+        std::vector<size_t> indexes;
+        indexes.reserve(1);
+        const Position r = tktr.r();
+        if ( (r_low.x() <= r.x() && r_high.x() >= r.x())
+        && (r_low.y() <= r.y() && r_high.y() >= r.y())
+        && (r_low.z() <= r.z() && r_high.z() >= r.z())){
+            
+            indexes.push_back(0);
+
+        }
+        return indexes;
     }
+
+    std::vector<TracklengthDistance> get_indices_tracklength(const Tracker& tktr, double d_flight) override final;
+
+
 
     double x_min()const override { return r_low.x(); }
     double x_max()const override { return r_high.x(); }

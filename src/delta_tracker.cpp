@@ -99,6 +99,7 @@ void DeltaTracker::transport(Particle& p, Tracker& trkr, MaterialHelper& mat,
     // No other quantity should be scored with a TLE, as an error
     // should have been thrown when building all tallies.
     Tallies::instance().score_flight(p, std::min(d_coll, bound.distance), mat);
+    //Tallies::instance().score_flight(p, trkr, std::min(d_coll, bound.distance), mat);
 
     if (crossed_boundary) {
       if (bound.boundary_type == BoundaryType::Vacuum) {

@@ -33,7 +33,18 @@ class MeshPositionFilter : public CartesianFilter{
 
     ~MeshPositionFilter() = default;
 
-    bool get_indices(const Tracker& tktr, std::array<int, 3>& indices )override final;
+    std::vector<size_t> get_indices(const Tracker& tktr)override final;//override final;
+
+    std::vector<TracklengthDistance> get_indices_tracklength(const Tracker& tktr, double d_flight){
+        std::vector<TracklengthDistance> indexes_tracklength;
+
+        Position r = tktr.r();
+        const Direction u_ = tktr.u();
+        const Position final_loc = r + d_flight * u_;
+        //bool inside_bin = false;
+
+        return indexes_tracklength;
+    }
 
     double x_min()const override { return xmin; }
     double x_max()const override { return (xmin + dx); }
@@ -52,35 +63,6 @@ class MeshPositionFilter : public CartesianFilter{
     Position r_low, r_high;
     double dx_inv, dy_inv, dz_inv, dx, dy, dz;
     double xmin, ymin, zmin;
-};
-
-
-bool MeshPositionFilter::get_indices(const Tracker& tktr, 
-                                    std::array<int, 3>& indices ){
-    
-    const Position r = tktr.r();
-    int index_x = static_cast<int> (std::floor( (r.x() - r_low.x()) * dx_inv) );
-    int index_y = static_cast<int> (std::floor( (r.y() - r_low.y()) * dy_inv) );
-    int index_z = static_cast<int> (std::floor( (r.z() - r_low.z()) * dz_inv) );
-
-    if ( (index_x >= 0 && index_x < static_cast<int>(Nx_) ) 
-    && ( index_y >= 0 && index_y < static_cast<int>(Ny_) ) 
-    && (index_z >= 0 && index_z < static_cast<int>(Nz_) )){
-        indices[0] = index_x;
-        indices[1] = index_y;
-        indices[2] = index_z;
-
-        xmin = index_x * dx;
-        ymin = index_y * dy;
-        zmin = index_z * dz;
-
-        return true;
-    }
-    else{
-        indices.fill(-1);
-        return false;
-    }
-}        
-        
+};       
 
 #endif

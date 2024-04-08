@@ -30,13 +30,22 @@ tallies:
     name: flux_PUa
     estimator: collision
   
-general-tally:
-  - Position-Filter: Box
+  - type: ITally
+    Position-Filter: box
     low: [-0.77032, -100., -100.]
     high:  [ 0.77032,  100.,  100.]
     energy-bounds: [0., 1., 2.]
     quantity: flux
-    name: flux
+    name: flux-2
+    estimator: collision
+  
+  - type: ITally
+    Position-Filter: box
+    low: [-0.77032, -100., -100.]
+    high:  [ 0.77032,  100.,  100.]
+    energy-bounds: [0., 1., 2.]
+    quantity: flux
+    name: flux-3
     estimator: collision
 
 
@@ -51,6 +60,8 @@ simulation:
   nparticles: 1000
   ngenerations: 20
   nignored: 0
+  transport-operator:
+    type: delta-tracking
   sources:
     - spatial:
         type: box

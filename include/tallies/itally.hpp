@@ -4,16 +4,18 @@
 #include <memory>
 
 #include <ndarray.hpp>
+#include <yaml-cpp/yaml.h>
 
 #include <tallies/position_filter.hpp>
+#include <tallies/box_position_filter.hpp>
+#include <tallies/mesh_position_filter.hpp>
 #include <tallies/energy_filter.hpp>
 #include <utils/mpi.hpp>
 #include <simulation/particle.hpp>
 #include <simulation/tracker.hpp>
 #include <materials/material_helper.hpp>
 #include <utils/error.hpp>
-
-
+#include <utils/position.hpp>
 
 class ITally{
     public: 
@@ -29,6 +31,8 @@ class ITally{
         TrackLength
     };
 
+    ITally() = default;
+
     ITally(Quantity quantity, Estimator estimator, std::string name_)
         :   quantity_(quantity), estimator_(estimator), tally_name(name_)
         {}
@@ -36,10 +40,10 @@ class ITally{
     virtual ~ITally() = default;
 
     //For collision estmator
-    virtual void score_collision(const Particle& p, const Tracker& tktr, MaterialHelper& mat ) = 0;
+    virtual void score_collision(const Particle& p, const Tracker& tktr, MaterialHelper& mat) = 0;
 
     //For track-length estimator
-    //virtual score_flight(const Particle& p, const Tracker& tktr, MaterialHelper& mat );
+    //virtual void score_flight(const Particle& p, const Tracker& tktr, double d_flight ,MaterialHelper& mat ) = 0;
 
     //Record the avg and variance for the generation
     void record_generation(double mulitplier = 1.0);
@@ -65,6 +69,7 @@ class ITally{
         double net_weight_;   
 
 };
+
 
 
 #endif

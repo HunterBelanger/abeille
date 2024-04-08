@@ -1,6 +1,11 @@
 #include <tallies/itally.hpp>
 #include <utils/output.hpp>
 
+#include <tallies/tallies.hpp>
+#include <tallies/general_tally.hpp>
+#include <tallies/box_position_filter.hpp>
+#include <tallies/mesh_position_filter.hpp>
+
 //#include <boost/container/static_vector.hpp>
 
 void ITally::record_generation(double multiplier){
@@ -34,7 +39,7 @@ void ITally::record_generation(double multiplier){
             var = var + ((val - old_avg) * (val - avg) - (var)) * invs_dg;
             tally_var[i] = var;
             std::cout<<"In record tally "<<tally_avg[i]<<"\n";
-            }
+        }
     }
         
     // Clear the entry for the tally_gen
@@ -49,10 +54,11 @@ std::string ITally::estimator_str(){
         break;
     
     case Estimator::TrackLength:
-        return "tracklength";
+        return "track-length";
         break;
 
     default:
+        return "unkown";
         break;
     }
 }
@@ -112,4 +118,83 @@ void ITally::write_tally(){
       tally_grp.createDataSet<double>("std", H5::DataSpace(tally_var.shape()));
   std_dset.write_raw(&tally_var[0]);
 
+}
+
+
+
+
+void make_itally(Tallies& tallies, const YAML::Node& node){
+    std::string tally_name_;
+    if( !node["name"] ){
+        fatal_error("No valid name is provided.");
+    }
+    tally_name_ = node["name"].as<std::string>();
+
+    std::string quant;
+    
+    if (!node["quantity"])
+        fatal_error("No, quantity is given for evaluation.");
+    
+    quant = node["quantity"].as<std::string>();
+
+
+    std::string estimator_ = "collision";
+    if (!node["estimator"])
+        warning("No, estimator is given for \""+tally_name_
+                +"\", therefore, collision estimator will be taken, by default.");
+    else
+        estimator_ = node["estimator"].as<std::string>();
+    
+    std::string pos_filter_name= "box";
+    Position r_low_, r_high_;
+    std::vector<size_t> pos_dime;
+    
+    if( node["Position-Filter"]){
+        pos_filter_name =  node["Position-Filter"].as<std::string>();
+
+        if (pos_filter_name == "box" || pos_filter_name == "reactangular-mesh"){
+        std::vector<double> loc = node["low"].as<std::vector<double>>();
+        // if (loc.size() != 3) { fatal_error("Low has not three elements.")}
+        r_low_ = Position(loc[0], loc[1], loc[2]);
+
+        std::vector<double> hi = node["high"].as<std::vector<double>>();
+        // if (hi.size() != 3) { fatal_error("High has not three elements.")}
+        r_high_ = Position( hi[0], hi[1], hi[2]);
+        }
+        if(node["shape"]){
+            pos_dime = node["shape"].as<std::vector<size_t>>();
+        }  
+    }
+
+    std::shared_ptr<PositionFilter> pos_filter;
+
+    if (pos_filter_name == "box" ){
+        pos_filter= std::make_shared<BoxPositionFilter>(r_low_, r_high_);
+    }else if (pos_filter_name == "reactangular-mesh"){
+        pos_filter= std::make_shared<MeshPositionFilter>(r_low_, r_high_, pos_dime[0], pos_dime[1], pos_dime[2]);
+    }
+
+    std::vector<double> ebounds;
+    if (node["energy-bounds"]){
+        ebounds = node["energy-bounds"].as<std::vector<double>>();
+    }
+
+    std::shared_ptr<EnergyFilter> energy_filter_ = std::make_shared<EnergyFilter>(ebounds);
+
+    if ( estimator_ == "collision" ){
+      std::shared_ptr<ITally> new_tally 
+        = std::make_shared<GeneralTally>(GeneralTally::Quantity::Flux, GeneralTally::Estimator::Collision, tally_name_,
+                                        pos_filter, energy_filter_);
+
+    if ( estimator_ == "track-length" ){
+      std::shared_ptr<ITally> new_tally 
+        = std::make_shared<GeneralTally>(GeneralTally::Quantity::Flux, GeneralTally::Estimator::TrackLength, tally_name_,
+                                        pos_filter, energy_filter_);
+    }
+      
+      tallies.add_ITally(new_tally);
+      std::cout<<">>>>>>> "<< new_tally->estimator_str()<<"\n";
+    }
+    
+    
 }
