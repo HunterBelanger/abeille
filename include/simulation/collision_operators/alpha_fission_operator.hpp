@@ -22,8 +22,8 @@
  * along with Abeille. If not, see <https://www.gnu.org/licenses/>.
  *
  * */
-#ifndef NOISE_FISSION_OPERATOR_H
-#define NOISE_FISSION_OPERATOR_H
+#ifndef ALPHA_FISSION_OPERATOR_H
+#define ALPHA_FISSION_OPERATOR_H
 
 #include <materials/nuclide.hpp>
 #include <simulation/particle.hpp>
@@ -32,16 +32,14 @@
 #include <utils/settings.hpp>
 
 #include <cmath>
-#include <complex>
-#include <memory>
 
-class NoiseFissionOperator {  // Copy for alphafissionoperator
+class AlphaFissionOperator {
  public:
-  NoiseFissionOperator() = default;
+  AlphaFissionOperator() = default;
 
   void fission(Particle& p, const MicroXSs& xs, const Nuclide& nuc,
-               double omega, double keff) const {
-    const int n_new = this->n_fission_neutrons(p, xs, keff);
+               double alpha) const {
+    const int n_new = this->n_fission_neutrons(p, xs);
 
     // Probability of a fission neutron being a delayed neutron.
     const double P_delayed = xs.nu_delayed / xs.nu_total;
@@ -50,21 +48,12 @@ class NoiseFissionOperator {  // Copy for alphafissionoperator
       auto finfo =
           nuc.sample_fission(p.E(), p.u(), xs.energy_index, P_delayed, p.rng);
 
-      // If parent was a noise particle, we start with their weight
+      // If parent was an alpha particle, we start with their weight
       double wgt = p.wgt();
-      double wgt2 = p.wgt2();
 
       if (finfo.delayed) {
-        // If the sampled fission neutron was delayed, we need to apply a
-        // complex yield based on the precursor decay constant.
-        std::complex<double> wgt_cmpx{wgt, wgt2};
-        double lambda = finfo.precursor_decay_constant;
-        double denom = (lambda * lambda) + (omega * omega);
-        std::complex<double> mult{lambda * lambda / denom,
-                                  -lambda * omega / denom};
-        wgt_cmpx *= mult;
-        wgt = wgt_cmpx.real();
-        wgt2 = wgt_cmpx.imag();
+        const double lambda = finfo.precursor_decay_constant;
+        wgt *= lambda / (lambda + alpha);
       }
 
       // Construct the new fission particle
@@ -72,7 +61,7 @@ class NoiseFissionOperator {  // Copy for alphafissionoperator
                                    finfo.direction,
                                    finfo.energy,
                                    wgt,
-                                   wgt2,
+                                   p.wgt2(),
                                    p.history_id(),
                                    p.daughter_counter(),
                                    p.family_id(),
@@ -88,15 +77,15 @@ class NoiseFissionOperator {  // Copy for alphafissionoperator
   }
 
  private:
-  int n_fission_neutrons(Particle& p, const MicroXSs& xs, double keff) const {
-    // When transporting noise particles, we don't normalize the number of
-    // generated particles by the weight ! We also scale by keff to make the
-    // problem "critical".
-    return static_cast<int>(std::floor(xs.nu_total * xs.fission / (xs.total * keff) + p.rng()));
+  int n_fission_neutrons(Particle& p, const MicroXSs& xs) const {
+    // Since we are American, we cannot scale by keff here. Neutron production
+    // is already scaled by keff
+    return static_cast<int>(
+        std::floor(xs.nu_total * xs.fission / xs.total + p.rng()));
   }
 
   void save_fission_particle(Particle& p, BankedParticle& fp) const {
-    p.make_secondary(fp.u, fp.E, fp.wgt, fp.wgt2);
+    p.add_fission_particle(fp);
   }
 };
 

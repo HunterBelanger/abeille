@@ -200,6 +200,7 @@ void Tallies::calc_gen_values() {
   k_col_vec.push_back(k_col);
   k_abs_vec.push_back(k_abs);
   k_trk_vec.push_back(k_trk);
+  alpha_vec.push_back(alpha_);
   leak_vec.push_back(leak);
   mig_vec.push_back(mig);
 }
@@ -210,6 +211,8 @@ void Tallies::record_generation(double multiplier) {
   update_avg_and_var(k_col, k_col_avg, k_col_var);
   update_avg_and_var(k_abs, k_abs_avg, k_abs_var);
   update_avg_and_var(k_trk, k_trk_avg, k_trk_var);
+  update_avg_and_var(alpha_, alpha_avg_, alpha_var_);
+  update_avg_and_var(k_alpha_, k_alpha_avg_, k_alpha_var_);
   update_avg_and_var(leak, leak_avg, leak_var);
   update_avg_and_var(k_tot, k_tot_avg, k_tot_var);
   update_avg_and_var(mig, mig_avg, mig_var);
@@ -266,6 +269,17 @@ void Tallies::write_tallies(bool track_length_compatible) {
       }
     }
   }
+
+  if (settings::sim_mode == settings::SimMode::ALPHA) {
+    if (gen > 0) {
+      results.createAttribute("alpha-avg", alpha_avg());
+      results.createAttribute("alpha-std", alpha_err());
+    }
+    results.createDataSet("alpha", alpha_vec);
+
+    results.createDataSet("k_alpha", k_alpha_vec);
+  }
+
   results.createDataSet("leakage", leak_vec);
   results.createDataSet("mig-area", mig_vec);
   if (gen > 0) {

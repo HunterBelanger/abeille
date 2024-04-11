@@ -49,6 +49,7 @@ struct MicroXSs {
   double energy = 0.;
   double concentration = 0.;
   double noise_copy = 0.;
+  double alpha = 0.;
   std::size_t energy_index = 0;
   bool urr = false;
 };

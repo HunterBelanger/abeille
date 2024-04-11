@@ -301,6 +301,8 @@ void make_settings(const YAML::Node& input) {
     settings::sim_mode = settings::SimMode::FIXED_SOURCE;
   } else if (mode == "noise") {
     settings::sim_mode = settings::SimMode::NOISE;
+  } else if (mode == "a-eigenvalue") {
+    settings::sim_mode = settings::SimMode::ALPHA;
   } else {
     fatal_error("Unknown simulation mode " + mode + ".");
   }

@@ -1,6 +1,5 @@
 /*
- * Abeille Monte Carlo Code
- * Copyright 2019-2023, Hunter Belanger
+ * Abeille Monte Carlo Code Copyright 2019-2023, Hunter Belanger
  * Copyright 2021-2022, Commissariat à l'Energie Atomique et aux Energies
  * Alternatives
  *
@@ -22,8 +21,9 @@
  * along with Abeille. If not, see <https://www.gnu.org/licenses/>.
  *
  * */
+#include <simulation/alpha_power_iterator.hpp>
 #include <simulation/fixed_source.hpp>
-#include <simulation/power_iterator.hpp>
+#include <simulation/k_power_iterator.hpp>
 #include <simulation/simulation.hpp>
 #include <utils/error.hpp>
 #include <utils/mpi.hpp>
@@ -225,13 +225,15 @@ std::shared_ptr<Simulation> make_simulation(const YAML::Node& input) {
 
   std::shared_ptr<Simulation> simulation = nullptr;
   if (mode == "k-eigenvalue") {
-    simulation = make_power_iterator(sim);
+    simulation = make_k_power_iterator(sim);
   } else if (mode == "fixed-source") {
     simulation = make_fixed_source(sim);
   } else if (mode == "modified-fixed-source") {
     fatal_error("Simulation mode modified-fixed-source not yet implemented.");
   } else if (mode == "noise") {
     fatal_error("Simulation mode noise not yet implemented.");
+  } else if (mode == "a-eigenvalue") {
+    simulation = make_alpha_power_iterator(sim);
   } else {
     fatal_error("Unknown simulation mode " + mode + ".");
   }

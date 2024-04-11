@@ -22,6 +22,7 @@
  * along with Abeille. If not, see <https://www.gnu.org/licenses/>.
  *
  * */
+#include <simulation/collision_operators/alpha_branching_collision.hpp>
 #include <simulation/collision_operators/branching_collision.hpp>
 #include <simulation/collision_operators/branchless_isotope_collision.hpp>
 #include <simulation/collision_operators/branchless_material_collision.hpp>
@@ -138,6 +139,8 @@ std::shared_ptr<IParticleMover> make_particle_mover(const YAML::Node& sim,
   // operator at the moment, so nothing to check other than the mode.
   if (mode == settings::SimMode::NOISE) {
     return make_concrete_mover(sim, NoiseBranchingCollision());
+  } else if (mode == settings::SimMode::ALPHA) {
+    return make_concrete_mover(sim, AlphaBranchingCollision());
   }
 
   // Next, we get the collision operator type

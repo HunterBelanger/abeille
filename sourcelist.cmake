@@ -16,7 +16,8 @@ set(ABEILLE_SOURCE_FILES ${ABEILLE_SOURCE_FILES}
   src/exact_mg_cancelator.cpp
   src/cancelator.cpp
   src/noise.cpp
-  src/power_iterator.cpp
+  src/k_power_iterator.cpp
+  src/alpha_power_iterator.cpp
   src/entropy.cpp
   src/fixed_source.cpp
   src/modified_fixed_source.cpp

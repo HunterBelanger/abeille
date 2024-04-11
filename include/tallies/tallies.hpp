@@ -161,6 +161,20 @@ class Tallies {
     return std::sqrt(k_tot_var / static_cast<double>(gen));
   }
 
+  double alpha() const { return alpha_; }
+  void set_alpha(double a) { alpha_ = a; }  // Only used for noise !
+  double alpha_avg() const { return alpha_avg_; }
+  double alpha_err() const {
+    return std::sqrt(alpha_var_ / static_cast<double>(gen));
+  }
+
+  double k_alpha() const { return k_alpha_; }
+  void set_k_alpha(double a) { k_alpha_ = a; }  // Only used for noise !
+  double k_alpha_avg() const { return k_alpha_avg_; }
+  double k_alpha_err() const {
+    return std::sqrt(k_alpha_var_ / static_cast<double>(gen));
+  }
+
   double mig_area() const { return mig; }
   double mig_area_avg() const { return mig_avg; }
   double mig_area_err() const {
@@ -200,12 +214,16 @@ class Tallies {
   std::vector<double> k_col_vec;
   std::vector<double> k_abs_vec;
   std::vector<double> k_trk_vec;
+  std::vector<double> alpha_vec;
+  std::vector<double> k_alpha_vec;
   std::vector<double> leak_vec;
   std::vector<double> mig_vec;
 
   double k_col, k_col_avg, k_col_var;
   double k_abs, k_abs_avg, k_abs_var;
   double k_trk, k_trk_avg, k_trk_var;
+  double alpha_, alpha_avg_, alpha_var_;
+  double k_alpha_, k_alpha_avg_, k_alpha_var_;
   double leak, leak_avg, leak_var;
   double k_tot, k_tot_avg, k_tot_var;  // Weird keff for NWDT
   double mig, mig_avg, mig_var;

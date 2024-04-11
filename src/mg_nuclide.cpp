@@ -448,9 +448,11 @@ ScatterInfo MGNuclide::sample_scatter(double /*Ein*/, const Direction& u,
       0.5 * (settings::energy_bounds[ei] + settings::energy_bounds[ei + 1]);
 
   // Change direction
-  double mu = angle_dists_[micro_xs.energy_index][ei].sample_mu(rng);
-  double phi = 2. * PI * rng();
-  Direction u_out = rotate_direction(u, mu, phi);
+  // double mu = angle_dists_[micro_xs.energy_index][ei].sample_mu(rng);
+  // double phi = 2. * PI * rng();
+  // Direction u_out = rotate_direction(u, mu, phi);
+  Direction u_out =
+      (rng() < 0.5) ? Direction{1., 0., 0.} : Direction{-1., 0., 0.};
 
   ScatterInfo info;
   info.energy = E_out;
@@ -477,9 +479,11 @@ FissionInfo MGNuclide::sample_prompt_fission(double /*Ein*/, const Direction& u,
       0.5 * (settings::energy_bounds[ei] + settings::energy_bounds[ei + 1]);
 
   // Sample direction from mu, and random phi about z-axis
-  double mu = 2. * rng() - 1.;
-  double phi = 2. * PI * rng();
-  Direction u_out = rotate_direction(u, mu, phi);
+  // double mu = 2. * rng() - 1.;
+  // double phi = 2. * PI * rng();
+  // Direction u_out = rotate_direction(u, mu, phi);
+  Direction u_out =
+      (rng() < 0.5) ? Direction{1., 0., 0.} : Direction{-1., 0., 0.};
 
   FissionInfo info;
   info.energy = E_out;
@@ -511,9 +515,11 @@ FissionInfo MGNuclide::sample_fission(double /*Ein*/, const Direction& u,
       0.5 * (settings::energy_bounds[ei] + settings::energy_bounds[ei + 1]);
 
   // Sample direction from mu, and random phi about z-axis
-  double mu = 2. * rng() - 1.;
-  double phi = 2. * PI * rng();
-  Direction uout = rotate_direction(u, mu, phi);
+  // double mu = 2. * rng() - 1.;
+  // double phi = 2. * PI * rng();
+  // Direction uout = rotate_direction(u, mu, phi);
+  Direction uout =
+      (rng() < 0.5) ? Direction{1., 0., 0.} : Direction{-1., 0., 0.};
 
   info.energy = E_out;
   info.direction = uout;
@@ -897,7 +903,8 @@ std::shared_ptr<MGNuclide> make_mg_nuclide(const YAML::Node& mat, uint32_t id) {
       fatal_error(mssg.str());
     }
     grp_speeds = mat["group-speeds"].as<std::vector<double>>();
-  } else if (settings::sim_mode == settings::SimMode::NOISE) {
+  } else if (settings::sim_mode == settings::SimMode::NOISE ||
+             settings::sim_mode == settings::SimMode::ALPHA) {
     std::stringstream mssg;
     mssg << "Missing group-speeds entry in material " << id << ".";
     fatal_error(mssg.str());
