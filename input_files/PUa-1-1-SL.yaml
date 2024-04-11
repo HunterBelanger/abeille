@@ -22,31 +22,27 @@ universes:
 root-universe: 1
 
 tallies:
-  - shape: [1, 1, 1]
+  - #shape: [1, 1, 1]
+    shape: [2, 2, 2]
     low: [-0.77032, -100., -100.]
     hi:  [ 0.77032,  100.,  100.]
-    energy-bounds: [0., 1., 2.]
+    energy-bounds: [0., 1.]
     quantity: flux
     name: flux_PUa
-    estimator: collision
+    estimator: track-length
+
   
   - type: ITally
-    Position-Filter: box
+    Position-Filter: reactangular-mesh
+    #Position-Filter: box
+    shape: [2, 2, 2]
     low: [-0.77032, -100., -100.]
     high:  [ 0.77032,  100.,  100.]
-    energy-bounds: [0., 1., 2.]
-    quantity: flux
-    name: flux-2
-    estimator: collision
-  
-  - type: ITally
-    Position-Filter: box
-    low: [-0.77032, -100., -100.]
-    high:  [ 0.77032,  100.,  100.]
-    energy-bounds: [0., 1., 2.]
+    energy-bounds: [0., 1.]
     quantity: flux
     name: flux-3
-    estimator: collision
+    estimator: track-length
+
 
 
 
@@ -58,8 +54,8 @@ settings:
 simulation:
   mode: k-eigenvalue
   nparticles: 1000
-  ngenerations: 20
-  nignored: 0
+  ngenerations: 50
+  nignored: 10
   transport-operator:
     type: delta-tracking
   sources:

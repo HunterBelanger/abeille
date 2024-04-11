@@ -35,7 +35,7 @@ void test_function(){
     Position R(-0.1, 0.9, 0.2);//<<<<<
     Tracker tktr(R, D1, true);
 
-    auto temp__ = B1->get_indices_tracklength(tktr, 1.0);
+    //auto temp__ = B1->get_indices_tracklength(tktr, 1.0);
     
     std::cout<<"*********---- End of Testing Mode -----*********\n\n";
 }

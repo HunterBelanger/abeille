@@ -114,7 +114,7 @@ void MeshTally::set_net_weight(double W) { net_weight = W; }
 void MeshTally::record_generation(double multiplier) {
   // Advance the number of generations
   g++;
-  std::cout<<">>> gen "<<g<<"\n";
+
   const double dg = static_cast<double>(g);
   const double invs_dg = 1. / dg;
 
@@ -141,7 +141,7 @@ void MeshTally::record_generation(double multiplier) {
       var = var + ((val - old_avg) * (val - avg) - (var)) * invs_dg;
       tally_var[i] = var;
 
-      std::cout<<"Given :"<<tally_avg[i]<<"\n";
+      //std::cout<<"Given :"<<tally_avg[i]<<"\n";
     }
   }
 }

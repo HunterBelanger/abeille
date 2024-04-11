@@ -10,10 +10,19 @@
 class BoxPositionFilter : public CartesianFilter{
     public:
     BoxPositionFilter(const Position r_low_, const Position r_high_)
-    :CartesianFilter(1, 1, 1), r_low(r_low_), r_high(r_high_) {
+    :CartesianFilter(r_low_, r_high_) {
 
     if ( (r_low.x() > r_high.x()) || (r_low.y() > r_high.y()) || (r_low.z() > r_high.z()) )
         fatal_error(" Corrdinates of \"low\" position are higher than \"high\" position.\n");
+    
+    dx = (r_high.x() - r_low.x());
+    dy = (r_high.y() - r_low.y());
+    dz = (r_high.z() - r_low.z());
+    
+    dx_inv = 1. / dx;
+    dy_inv = 1. / dy;
+    dz_inv = 1. / dz;
+
     }
 
     ~BoxPositionFilter() = default;
@@ -47,9 +56,19 @@ class BoxPositionFilter : public CartesianFilter{
         return indexes;
     }
 
-    std::vector<TracklengthDistance> get_indices_tracklength(const Tracker& tktr, double d_flight) override final;
+    //std::vector<TracklengthDistance> get_indices_tracklength(Position r, const Direction& u_, double d_flight) override final;
+    std::vector<TracklengthDistance> get_indices_tracklength(const Tracker& trkr, double d_flight) override final;
 
+    void check_on_boundary(const Tracker tktr, std::array<int, 3> on);
 
+    size_t Nx()const override final { return 1;}
+    size_t Ny()const override final { return 1;}
+    size_t Nz()const override final { return 1;}
+
+    std::vector<size_t> get_dimension() override final{
+        std::vector<size_t> pos_filter_dim{1};
+        return pos_filter_dim;
+    }
 
     double x_min()const override { return r_low.x(); }
     double x_max()const override { return r_high.x(); }
@@ -64,8 +83,6 @@ class BoxPositionFilter : public CartesianFilter{
     FilterType type()const override { return FilterType::Box_Position_Filter; }
     std::string type_str()const override { return "box_position_filter"; }
 
-    private:
-    Position r_low, r_high;
 };
 
 

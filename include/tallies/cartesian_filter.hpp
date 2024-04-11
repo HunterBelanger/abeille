@@ -9,11 +9,11 @@
 
 class CartesianFilter : public PositionFilter{
     public:
-    CartesianFilter(size_t nx_, size_t ny_, size_t nz_)
-    : Nx_(nx_), Ny_(ny_), Nz_(nz_)
+    CartesianFilter(Position r_low_, Position r_high_)
+    : r_low(r_low_), r_high(r_high_)
     {
-    if ( Nx_ == 0 || Ny_ == 0 || Nz_ == 0)
-        fatal_error("The number of bins in any direction cannot be zero.\n");
+    if ( (r_low.x() > r_high.x()) || (r_low.y() > r_high.y()) || (r_low.z() > r_high.z()) )
+        fatal_error(" Corrdinates of \"low\" position are higher than \"high\" position.\n");
     }
 
     virtual ~CartesianFilter() = default;
@@ -27,36 +27,26 @@ class CartesianFilter : public PositionFilter{
     virtual double z_min()const = 0;
     virtual double z_max()const = 0;
 
-    size_t Nx()const override { return Nx_; }
-    size_t Ny()const override { return Ny_; }
-    size_t Nz()const override { return Nz_; }
+    virtual size_t Nx()const = 0;
+    virtual size_t Ny()const = 0;
+    virtual size_t Nz()const = 0;
 
-    std::vector<size_t> get_dimension() override final{
-        std::vector<size_t> pos_filter_dim{Nx_, Ny_, Nz_};
-        reduce_dimension(pos_filter_dim, 1);
-        return pos_filter_dim;
-    }
+
+    // required for track-length
+    bool find_entry_point(Position& r, const Direction& u, double& d_flight) const;
+    void initialize_indices(const Position& r, const Direction& u, int& i, int& j, int& k, std::array<int, 3>& on);
+    void update_indices(int key, int& i, int& j, int& k, std::array<int, 3>& on);
+    std::pair<double, int> distance_to_next_index(const Position& r, const Direction& u, const std::array<int, 3>& on, 
+                                            int i, int j, int k);
+
 
     //Perhaps Not Needed
     FilterType type()const override { return FilterType::Cartesian_Filter; }
     std::string type_str() const override { return "Cartesian_Filter"; };       
 
     protected:
-        size_t Nx_, Ny_, Nz_;
-
-        //function will reduce the dimsion, if there is only one bin in the direction 
-        void reduce_dimension(std::vector<size_t>& dimension_, const std::size_t remove_num = 1){
-            std::size_t it_ = 0;
-            while(it_ < dimension_.size()){
-                
-                if( (dimension_[it_] == remove_num) && (dimension_.size() > 1) ){
-                    auto dimen_begin_ = dimension_.begin();
-                    dimension_.erase(dimen_begin_+ static_cast<std::ptrdiff_t>(it_));
-                    continue;
-                }
-                it_++;
-            }
-        }
+        Position r_low, r_high;
+        double dx_inv, dy_inv, dz_inv, dx, dy, dz;
 };
 
 #endif

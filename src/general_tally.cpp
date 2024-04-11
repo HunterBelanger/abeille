@@ -16,7 +16,7 @@ void GeneralTally::score_collision(const Particle& p, const Tracker& tktr, Mater
             indexes_ = position_filter_->get_indices(tktr);
             
             indexes_.insert(indexes_.begin(), index_E);
-            
+
             if (indexes_.empty()){
                 return;
             }
@@ -49,6 +49,57 @@ void GeneralTally::score_collision(const Particle& p, const Tracker& tktr, Mater
             #endif
                 tally_gen_score(indexes_) += collision_score;
         }   
+    }
+}
+
+
+//void GeneralTally::score_flight(const Particle& p,
+//                                double d_flight ,MaterialHelper& mat ){
+
+void GeneralTally::score_flight(const Particle& p, const Tracker& trkr, 
+                                double d_flight ,MaterialHelper& mat ){
+
+
+    if (estimator_ == GeneralTally::Estimator::TrackLength){
+        std::size_t index_E;
+
+        if (energy_in_->get_index(p.E(), index_E) ){
+
+            double flight_score = 1.0 / ( net_weight_);
+
+            switch(quantity_){
+                case Quantity::Flux:
+                    flight_score *= p.wgt();
+                    break;
+
+                case Quantity::Fission:
+                    flight_score *= p.wgt() * mat.Ef(p.E());
+                    break;
+
+                case Quantity::Absorption:
+                    flight_score *= p.wgt() * mat.Ea(p.E());
+                    break;
+
+                case Quantity::Elastic:
+                    flight_score *= p.wgt() * mat.Eelastic(p.E());
+                    break;
+            }
+
+            std::vector<TracklengthDistance> pos_indexes_ = position_filter_->get_indices_tracklength(trkr, d_flight);
+
+            for (size_t iter = 0; iter < pos_indexes_.size(); iter++){
+                std::vector<size_t> all_indexes_ = pos_indexes_[iter].indexes_;
+                const double d_ = pos_indexes_[iter].distance_in_bin;
+
+                all_indexes_.insert(all_indexes_.begin(), index_E);
+
+                #ifdef ABEILLE_USE_OMP
+                #pragma omp atomic
+                #endif
+                    tally_gen_score(all_indexes_) += d_ * flight_score;
+            }
+
+        }
     }
 }
 

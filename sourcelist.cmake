@@ -75,4 +75,5 @@ set(ABEILLE_SOURCE_FILES ${ABEILLE_SOURCE_FILES}
   src/general_tally.cpp
   src/mesh_position_filter.cpp
   src/box_position_filter.cpp
+  src/cartesian_filter.cpp
 )

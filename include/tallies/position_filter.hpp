@@ -32,7 +32,7 @@ class PositionFilter{
     
     virtual std::vector<size_t> get_indices(const Tracker& tktr) = 0;
 
-    virtual std::vector<TracklengthDistance> get_indices_tracklength(const Tracker& tktr, double d_flight) = 0;
+    virtual std::vector<TracklengthDistance> get_indices_tracklength(const Tracker& trkr, double d_flight) = 0;
 
     virtual size_t Nx()const = 0;
     virtual size_t Ny()const = 0;

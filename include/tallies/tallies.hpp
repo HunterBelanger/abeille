@@ -92,6 +92,16 @@ class Tallies {
     }
   }
 
+  //void score_flight(const Particle& p, double d_flight, MaterialHelper& mat, bool new_tally_flight){
+  void score_flight(const Particle& p, const Tracker& trkr, double d_flight, MaterialHelper& mat){
+    if ( scoring_ && !new_I_tallies.empty() ){
+      for( auto& new_tally : new_I_tallies){
+        //new_tally->score_flight(p, d_flight, mat);
+        new_tally->score_flight(p, trkr, d_flight, mat);
+      }
+    }
+  }
+
   //===============================================
   // OLD TALLY INTERFACE
   void score_collision(const Particle& p, MaterialHelper& mat) {

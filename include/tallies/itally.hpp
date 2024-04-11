@@ -43,7 +43,8 @@ class ITally{
     virtual void score_collision(const Particle& p, const Tracker& tktr, MaterialHelper& mat) = 0;
 
     //For track-length estimator
-    //virtual void score_flight(const Particle& p, const Tracker& tktr, double d_flight ,MaterialHelper& mat ) = 0;
+    //virtual void score_flight(const Particle& p, double d_flight ,MaterialHelper& mat ) = 0;
+    virtual void score_flight(const Particle& p, const Tracker& trkr, double d_flight, MaterialHelper& mat) = 0;
 
     //Record the avg and variance for the generation
     void record_generation(double mulitplier = 1.0);

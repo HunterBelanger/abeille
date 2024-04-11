@@ -10,7 +10,6 @@
 
 void ITally::record_generation(double multiplier){
     gen_++;
-    std::cout<<"Itally gen = "<<gen_<<"\n";
     
     const double dg = static_cast<double>(gen_);
     const double invs_dg = 1. / dg;
@@ -38,7 +37,7 @@ void ITally::record_generation(double multiplier){
             double var = tally_var[i];
             var = var + ((val - old_avg) * (val - avg) - (var)) * invs_dg;
             tally_var[i] = var;
-            std::cout<<"In record tally "<<tally_avg[i]<<"\n";
+            //std::cout<<"In record tally "<<tally_avg[i]<<"\n";
         }
     }
         
@@ -181,20 +180,22 @@ void make_itally(Tallies& tallies, const YAML::Node& node){
 
     std::shared_ptr<EnergyFilter> energy_filter_ = std::make_shared<EnergyFilter>(ebounds);
 
+    std::shared_ptr<ITally> new_tally;
     if ( estimator_ == "collision" ){
-      std::shared_ptr<ITally> new_tally 
-        = std::make_shared<GeneralTally>(GeneralTally::Quantity::Flux, GeneralTally::Estimator::Collision, tally_name_,
+       
+        new_tally = std::make_shared<GeneralTally>(GeneralTally::Quantity::Flux, GeneralTally::Estimator::Collision, tally_name_,
                                         pos_filter, energy_filter_);
+    }
 
     if ( estimator_ == "track-length" ){
-      std::shared_ptr<ITally> new_tally 
-        = std::make_shared<GeneralTally>(GeneralTally::Quantity::Flux, GeneralTally::Estimator::TrackLength, tally_name_,
+        new_tally 
+            = std::make_shared<GeneralTally>(GeneralTally::Quantity::Flux, GeneralTally::Estimator::TrackLength, tally_name_,
                                         pos_filter, energy_filter_);
     }
       
-      tallies.add_ITally(new_tally);
-      std::cout<<">>>>>>> "<< new_tally->estimator_str()<<"\n";
-    }
+    tallies.add_ITally(new_tally);
+    std::cout<<">>>>>>> "<< new_tally->estimator_str()<<"\n";
+    
     
     
 }

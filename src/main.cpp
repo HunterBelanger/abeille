@@ -84,7 +84,7 @@ bool exists(std::string fname) {
 
 
 int main(int argc, char** argv) {
-  test_function();
+  //test_function();
   settings::alpha_omega_timer.start();
 
   mpi::initialize_mpi(&argc, &argv);

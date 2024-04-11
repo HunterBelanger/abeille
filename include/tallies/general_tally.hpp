@@ -31,12 +31,12 @@ class GeneralTally : public ITally{
                 tally_var.reallocate({ne, nx, ny, nz});
                 tally_var.fill(0.0);*/
 
-                std::cout<<"---+++--------------------\n";
+                //std::cout<<"---+++--------------------\n";
                 const std::vector<size_t> dimen = position_filter_->get_dimension();
                 for (auto& c : dimen){
                     std::cout<<c<<"\t";
                 }
-                std::cout<<"\n-----------------------\n";
+                //std::cout<<"\n-----------------------\n";
                 // New constructor defination
                 std::vector<size_t> tally_dimensions_;
                 tally_dimensions_.reserve(4);
@@ -44,7 +44,7 @@ class GeneralTally : public ITally{
                 size_t ne = energy_in_->size();
                 tally_dimensions_.insert(tally_dimensions_.begin(), ne);
 
-                std::cout<<"---+++--------------------\n";
+                //std::cout<<"---+++--------------------\n";
                 for (auto& c : tally_dimensions_){
                     std::cout<<c<<"\t";
                 }
@@ -58,12 +58,15 @@ class GeneralTally : public ITally{
 
                 tally_var.reallocate(temp_it);
                 tally_var.fill(0.0);
-                std::cout<<"\n-----------------------\n";
+                //std::cout<<"\n-----------------------\n";
 
     }
     ~GeneralTally() = default;
 
     void score_collision(const Particle& p, const Tracker& tktr, MaterialHelper& mat ) override final;
+
+    //void score_flight(const Particle& p, double d_flight ,MaterialHelper& mat ) override final;
+    void score_flight(const Particle& p, const Tracker& trkr, double d_flight, MaterialHelper& mat) override final;
 
     private:
         std::shared_ptr<PositionFilter> position_filter_;

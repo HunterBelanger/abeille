@@ -1,37 +1,116 @@
 #include <tallies/box_position_filter.hpp>
+#include <utils/constants.hpp>
+#include <utils/output.hpp>
 
-std::vector<TracklengthDistance> BoxPositionFilter::get_indices_tracklength(const Tracker& tktr, double d_flight){
+//std::vector<TracklengthDistance> BoxPositionFilter::get_indices_tracklength(Position r, const Direction& u_, double d_flight)
+std::vector<TracklengthDistance> BoxPositionFilter::get_indices_tracklength(const Tracker& trkr, double d_flight){
 
-        std::vector<TracklengthDistance> indexes_tracklength;
+    std::vector<TracklengthDistance> indexes_tracklength;
+    TracklengthDistance trlen_d;
 
-        Position r = tktr.r();
-        const Direction u_ = tktr.u();
-        const Position final_loc = r + d_flight * u_;
-        bool inside_bin = false;
+    //const Position final_loc = r + d_flight * u_;
 
-        // Check if particle inside the bin
-        if ( (r_low.x() <= r.x() && r_high.x() >= r.x())
-        && (r_low.y() <= r.y() && r_high.y() >= r.y())
-        && (r_low.z() <= r.z() && r_high.z() >= r.z())){
+    Position r = trkr.r();
+    const Direction u_ = trkr.u();
+    bool inside_bin = false;
 
-            inside_bin = true;
-        }
-            
-        // it is possible that particle is not inside the box, but can intersect
-        if ( inside_bin == false){
-            bool cross_in_x = ( r.x() < r_low.x() && final_loc.x() > r_low.x() ) || ( r.x() > r_high.x() && final_loc.x() < r_high.x() );
-            bool cross_in_y = ( r.y() < r_low.y() && final_loc.y() > r_low.y() ) || ( r.y() > r_high.y() && final_loc.y() < r_high.y() );
-            bool cross_in_z = ( r.z() < r_low.z() && final_loc.z() > r_low.z() ) || ( r.z() > r_high.z() && final_loc.z() < r_high.z() );
+    int i =0, j=0, k=0;
+    std::array<int, 3> on;
+    on.fill(0.0);
 
-            inside_bin = cross_in_x || cross_in_y || cross_in_z ;
+    // Check if particle inside the bin
+    if ( (r_low.x() <= r.x() && r_high.x() >= r.x())
+    && (r_low.y() <= r.y() && r_high.y() >= r.y())
+    && (r_low.z() <= r.z() && r_high.z() >= r.z())){
 
-        }
-
-        if (inside_bin){
-
-            
-
-        }
-
-        return indexes_tracklength;
+        inside_bin = true;
     }
+        
+    // it is possible that particle is not inside the box, but can intersect
+    if ( inside_bin == false){
+        if ( find_entry_point(r, u_, d_flight) == false ) {
+            return indexes_tracklength;
+
+        //check_on_boundary(tktr, on);
+        }
+        initialize_indices(r, u_, i, j, k, on);
+        if ( i == 0 && j == 0 && k ==0 ){
+            inside_bin = true;
+        } else {
+        // This is a problem, in theory, we should now be inside the tally
+        // region. We will therefore spew a warning here.
+        warning("Could not locate tile after fast forward to mesh entry.\n");
+        }
+    } 
+ 
+    // Distance remaining to tally
+    double distance_remaining = d_flight;
+
+    auto next_tile = distance_to_next_index(r, u_, on, i, j, k );
+
+    if (next_tile.first == INF) {
+    // Something went wrong.... Don't score.
+        Output::instance().save_warning("Problem encountered with mesh tally in box_tally.\n");
+        return indexes_tracklength;
+        
+    } else if (next_tile.first < 0.) {
+    // Something went wrong.... Don't score.
+    warning("Negative distance encountered with mesh tally.");
+    }
+
+    double d_tile = std::min(next_tile.first, distance_remaining);
+
+    // Make the score if we are in a valid cell
+    if ( i == 0 && j == 0 && k ==0  ) {
+        trlen_d.indexes_ = std::vector<size_t>{0};
+        trlen_d.distance_in_bin = d_tile;
+        indexes_tracklength.push_back(trlen_d);
+    }
+    return indexes_tracklength;
+}
+
+void BoxPositionFilter::check_on_boundary(const Tracker tktr, std::array<int, 3> on){
+        const Position r = tktr.r();
+        const Direction u = tktr.u();
+        if (std::abs(r_low.x() - r.x()) < SURFACE_COINCIDENT) {
+            if (u.x() < 0.) {
+                on[0] = 1;
+            } else {
+                on[0] = -1;
+            }
+        } else if (std::abs(r_high.x()- r.x()) < SURFACE_COINCIDENT) {
+            if (u.x() < 0.) {
+                on[0] = 1;
+            } else {
+                on[0] = -1;
+            }
+        }
+
+        if (std::abs(r_low.y() - r.y()) < SURFACE_COINCIDENT) {
+            if (u.y() < 0.) {
+                on[1] = 1;
+            } else {
+                on[1] = -1;
+            }
+        } else if (std::abs(r_high.y() - r.y()) < SURFACE_COINCIDENT) {
+            if (u.y() < 0.) {
+                on[1] = 1;
+            } else {
+                on[1] = -1;
+            }
+        }
+
+        if (std::abs(r_low.z() - r.z()) < SURFACE_COINCIDENT) {
+            if (u.z() < 0.) {
+                on[2] = 1;
+            } else {
+               on[2] = -1;
+            }
+        } else if (std::abs(r_high.z() - r.z()) < SURFACE_COINCIDENT) {
+            if (u.z() < 0.) {
+                on[2] = 1;
+            } else {
+                on[2] = -1;
+            }
+        }
+}
