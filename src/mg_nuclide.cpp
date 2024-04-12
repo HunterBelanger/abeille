@@ -448,11 +448,9 @@ ScatterInfo MGNuclide::sample_scatter(double /*Ein*/, const Direction& u,
       0.5 * (settings::energy_bounds[ei] + settings::energy_bounds[ei + 1]);
 
   // Change direction
-  // double mu = angle_dists_[micro_xs.energy_index][ei].sample_mu(rng);
-  // double phi = 2. * PI * rng();
-  // Direction u_out = rotate_direction(u, mu, phi);
-  Direction u_out =
-      (rng() < 0.5) ? Direction{1., 0., 0.} : Direction{-1., 0., 0.};
+  double mu = angle_dists_[micro_xs.energy_index][ei].sample_mu(rng);
+  double phi = 2. * PI * rng();
+  Direction u_out = rotate_direction(u, mu, phi);
 
   ScatterInfo info;
   info.energy = E_out;
@@ -479,11 +477,9 @@ FissionInfo MGNuclide::sample_prompt_fission(double /*Ein*/, const Direction& u,
       0.5 * (settings::energy_bounds[ei] + settings::energy_bounds[ei + 1]);
 
   // Sample direction from mu, and random phi about z-axis
-  // double mu = 2. * rng() - 1.;
-  // double phi = 2. * PI * rng();
-  // Direction u_out = rotate_direction(u, mu, phi);
-  Direction u_out =
-      (rng() < 0.5) ? Direction{1., 0., 0.} : Direction{-1., 0., 0.};
+  double mu = 2. * rng() - 1.;
+  double phi = 2. * PI * rng();
+  Direction u_out = rotate_direction(u, mu, phi);
 
   FissionInfo info;
   info.energy = E_out;
@@ -515,11 +511,9 @@ FissionInfo MGNuclide::sample_fission(double /*Ein*/, const Direction& u,
       0.5 * (settings::energy_bounds[ei] + settings::energy_bounds[ei + 1]);
 
   // Sample direction from mu, and random phi about z-axis
-  // double mu = 2. * rng() - 1.;
-  // double phi = 2. * PI * rng();
-  // Direction uout = rotate_direction(u, mu, phi);
-  Direction uout =
-      (rng() < 0.5) ? Direction{1., 0., 0.} : Direction{-1., 0., 0.};
+  double mu = 2. * rng() - 1.;
+  double phi = 2. * PI * rng();
+  Direction uout = rotate_direction(u, mu, phi);
 
   info.energy = E_out;
   info.direction = uout;

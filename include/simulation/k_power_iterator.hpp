@@ -88,7 +88,6 @@ class KPowerIterator : public Simulation {
   int Nnet = 0, Npos = 0, Nneg = 0, Ntot = 0;
   int Wnet = 0, Wpos = 0, Wneg = 0, Wtot = 0;
   double r_sqrd = 0.;
-  bool converged = false;
   bool combing = false;
   bool calc_families = false;
   bool pair_distance_sqrd = false;
