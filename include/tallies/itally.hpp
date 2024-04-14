@@ -17,6 +17,8 @@
 #include <utils/error.hpp>
 #include <utils/position.hpp>
 
+#include <boost/container/static_vector.hpp>
+
 class ITally{
     public: 
     enum class Quantity{

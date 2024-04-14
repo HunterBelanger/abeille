@@ -33,9 +33,7 @@ class GeneralTally : public ITally{
 
                 //std::cout<<"---+++--------------------\n";
                 const std::vector<size_t> dimen = position_filter_->get_dimension();
-                for (auto& c : dimen){
-                    std::cout<<c<<"\t";
-                }
+                
                 //std::cout<<"\n-----------------------\n";
                 // New constructor defination
                 std::vector<size_t> tally_dimensions_;
@@ -44,10 +42,6 @@ class GeneralTally : public ITally{
                 size_t ne = energy_in_->size();
                 tally_dimensions_.insert(tally_dimensions_.begin(), ne);
 
-                //std::cout<<"---+++--------------------\n";
-                for (auto& c : tally_dimensions_){
-                    std::cout<<c<<"\t";
-                }
                 
                 const std::vector<size_t> temp_it = tally_dimensions_;
                 tally_avg.reallocate(temp_it);

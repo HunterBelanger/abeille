@@ -76,4 +76,5 @@ set(ABEILLE_SOURCE_FILES ${ABEILLE_SOURCE_FILES}
   src/mesh_position_filter.cpp
   src/box_position_filter.cpp
   src/cartesian_filter.cpp
+  src/legendre_fet.cpp
 )

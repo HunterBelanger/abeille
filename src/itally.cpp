@@ -3,6 +3,7 @@
 
 #include <tallies/tallies.hpp>
 #include <tallies/general_tally.hpp>
+#include <tallies/legendre_fet.hpp>
 #include <tallies/box_position_filter.hpp>
 #include <tallies/mesh_position_filter.hpp>
 
@@ -129,6 +130,59 @@ void make_itally(Tallies& tallies, const YAML::Node& node){
     }
     tally_name_ = node["name"].as<std::string>();
 
+    std::string tally_type = "general";
+    size_t tally_fet_order = 0;
+
+    std::vector<std::string> legendre_fet_vec;
+    legendre_fet_vec.reserve(3);
+
+    std::vector<LegendreFET::Axis> axes_vec;
+    axes_vec.reserve(3);
+    
+    if (node["tally-type"]){
+        tally_type = node["tally-type"].as<std::string>();
+        // Check for the correct input
+        if ( !(tally_type == "general" || 
+            tally_type == "legendre-FET" || tally_type == "zernike-FET") ){
+            fatal_error("No valid tally-type is provided.");
+        }
+    }
+
+    if ( tally_type == "legendre-FET" || tally_type == "zernike-FET"){
+        if (node["FET-order"]){
+              tally_fet_order = node["FET-order"].as<std::size_t>();
+        }
+        else{    fatal_error("FET order is not provided.");
+        }
+
+        if (node["FET-axis"]){
+            legendre_fet_vec = node["FET-axis"].as<std::vector<std::string>>();
+            bool check_axes = false;
+            for(auto& c_ : legendre_fet_vec){
+                if ( c_ == "X"){
+                    axes_vec.push_back(LegendreFET::Axis::X);
+                    check_axes = true;
+                }
+                
+                if ( c_ == "Y"){
+                    axes_vec.push_back(LegendreFET::Axis::Y);
+                    check_axes = true;
+                }
+                
+                if ( c_ == "Z"){
+                    axes_vec.push_back(LegendreFET::Axis::Z);
+                    check_axes = true;
+                }
+                    
+            }
+            
+            if (check_axes == false)    fatal_error("FET evaluation axis is not provided.");
+
+        }
+        else    fatal_error("FET evaluation axis is not provided.");
+
+    }
+
     std::string quant;
     
     if (!node["quantity"])
@@ -166,11 +220,14 @@ void make_itally(Tallies& tallies, const YAML::Node& node){
     }
 
     std::shared_ptr<PositionFilter> pos_filter;
+    std::shared_ptr<CartesianFilter> cart_filter;
 
     if (pos_filter_name == "box" ){
-        pos_filter= std::make_shared<BoxPositionFilter>(r_low_, r_high_);
+        pos_filter = std::make_shared<BoxPositionFilter>(r_low_, r_high_);
+        cart_filter = std::make_shared<BoxPositionFilter>(r_low_, r_high_);
     }else if (pos_filter_name == "reactangular-mesh"){
-        pos_filter= std::make_shared<MeshPositionFilter>(r_low_, r_high_, pos_dime[0], pos_dime[1], pos_dime[2]);
+        pos_filter = std::make_shared<MeshPositionFilter>(r_low_, r_high_, pos_dime[0], pos_dime[1], pos_dime[2]);
+        cart_filter = std::make_shared<MeshPositionFilter>(r_low_, r_high_, pos_dime[0], pos_dime[1], pos_dime[2]);
     }
 
     std::vector<double> ebounds;
@@ -183,19 +240,27 @@ void make_itally(Tallies& tallies, const YAML::Node& node){
     std::shared_ptr<ITally> new_tally;
     if ( estimator_ == "collision" ){
        
-        new_tally = std::make_shared<GeneralTally>(GeneralTally::Quantity::Flux, GeneralTally::Estimator::Collision, tally_name_,
+        if(tally_type == "general"){
+                new_tally = std::make_shared<GeneralTally>(GeneralTally::Quantity::Flux, GeneralTally::Estimator::Collision, tally_name_,
                                         pos_filter, energy_filter_);
+        }
+
+        if(tally_type == "legendre-FET"){
+                
+                new_tally = std::make_shared<LegendreFET>(tally_fet_order, LegendreFET::Quantity::Flux, LegendreFET::Estimator::Collision, tally_name_,
+                                        axes_vec, cart_filter, energy_filter_);
+        }
+
     }
 
     if ( estimator_ == "track-length" ){
         new_tally 
             = std::make_shared<GeneralTally>(GeneralTally::Quantity::Flux, GeneralTally::Estimator::TrackLength, tally_name_,
-                                        pos_filter, energy_filter_);
+                                             pos_filter, energy_filter_);
     }
       
     tallies.add_ITally(new_tally);
     std::cout<<">>>>>>> "<< new_tally->estimator_str()<<"\n";
-    
     
     
 }

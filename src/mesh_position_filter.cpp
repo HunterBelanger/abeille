@@ -16,10 +16,10 @@ std::vector<size_t> MeshPositionFilter::get_indices(const Tracker& tktr){
         indexes.push_back(index_x);
         indexes.push_back(index_y);
         indexes.push_back(index_z);
-        reduce_dimension(indexes);
         xmin = index_x * dx;
         ymin = index_y * dy;
         zmin = index_z * dz;
+        reduce_dimension(indexes);
     }
 
     return indexes;
