@@ -57,8 +57,6 @@ simulation:
   collision-operator:
     type: branchless-material
     splitting: true
-    #branchiing
-    #branchless-isotopes
 
   cancelator:
     type: approximate
