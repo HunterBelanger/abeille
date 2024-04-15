@@ -4,6 +4,7 @@
 # k_eff = 1.0
 
 # Original anisotropic xs
+
 materials:
   - name: Pu-239-b
     id: 1
@@ -14,26 +15,10 @@ materials:
     chi: [[1.]]
     scatter: [[0.733333]]
     P1: [[0.4545452066]]
-    #P1: [[0.272727]]
-
-# Transport corrected xs
-#materials:
-#  - name: Pu-239-b
-#    id: 1
-#    total: [0.666667]
-#    absorption: [0.266667]
-#    fission: [0.266667]
-#    nu: [2.5]
-#    chi: [[1.]]
-#    scatter: [[0.4]]
-
-#sampling-xs: [0.90]
 
 surfaces:
   - {type: xplane, x0: -0.79606, boundary: vacuum, id: 1}
   - {type: xplane, x0:  0.79606, boundary: vacuum, id: 2}
-  #- {type: xplane, x0: -0.77032, boundary: vacuum, id: 1}
-  #- {type: xplane, x0:  0.77032, boundary: vacuum, id: 2}
   - {type: yplane, y0: -100., boundary: reflective, id: 3}
   - {type: yplane, y0:  100., boundary: reflective, id: 4}
   - {type: zplane, z0: -100., boundary: reflective, id: 5}
@@ -57,6 +42,16 @@ tallies:
     energy-bounds: [0, 1]
 
 settings:
+<<<<<<< HEAD:input_files/PUb-1-1-SL-c1.yaml
+=======
+  nparticles: 1000000
+  ngenerations: 2500
+  nignored: 500
+  ngroups: 1
+  transport: delta-tracking
+  simulation: k-eigenvalue
+  cancellation: true
+>>>>>>> 7063ee1 (Changes in the Input Files):input_files/PUb-1-1-SL.yaml
   energy-mode: multi-group
   energy-bounds: [0, 1]
   ngroups: 1
