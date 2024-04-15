@@ -114,3 +114,23 @@ void BoxPositionFilter::check_on_boundary(const Tracker tktr, std::array<int, 3>
             }
         }
 }
+
+
+//template<typename T>
+std::shared_ptr<PositionFilter> make_box_position_filter(const YAML::Node &node){
+    if (!node["low"])
+        fatal_error("For box position-filter \"low\" co-ordinates is not provided.");
+    if (!node["high"])
+        fatal_error("For box position-filter \"high\" co-ordinates is not provided.");
+
+    std::vector<double> low_point = node["low"].as<std::vector<double>>();
+    std::vector<double> high_point = node["high"].as<std::vector<double>>();
+
+    Position r_low_(low_point[0], low_point[1], low_point[2]);
+    Position r_high_(high_point[0], high_point[1] , high_point[2]);
+
+    std::shared_ptr<PositionFilter> box_type_filter 
+                    = std::make_shared<BoxPositionFilter>(r_low_, r_high_);
+
+    return box_type_filter;
+}

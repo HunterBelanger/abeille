@@ -9,6 +9,7 @@
 
 class CartesianFilter : public PositionFilter{
     public:
+
     CartesianFilter(Position r_low_, Position r_high_)
     : r_low(r_low_), r_high(r_high_)
     {
@@ -48,5 +49,7 @@ class CartesianFilter : public PositionFilter{
         Position r_low, r_high;
         double dx_inv, dy_inv, dz_inv, dx, dy, dz;
 };
+
+//std::shared_ptr<CartesianFilter> make_cartesian_filter(const YAML::Node& node);
 
 #endif

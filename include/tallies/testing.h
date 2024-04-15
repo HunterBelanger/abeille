@@ -17,8 +17,23 @@
 #include <tallies/legendre_fet.hpp>
 #include <ndarray.hpp>
 
+#include <boost/container/static_vector.hpp>
+
 
 void test_function(){
+  std::cout<<"*********---- Starting of Testing Mode -----*********\n";
+  boost::container::static_vector<int, 3> parth{1, 2, 3};
+  std::cout<<"Made the static vector.\n";
+  for ( int x : parth){
+    std::cout<<x<<"\t";
+  }
+  std::cout<<std::endl;
+  //parth.push_back(4);
+  std::cout<<"*********---- End of Testing Mode -----*********\n";
+}
+
+
+void test_function2(){
     std::cout<<"*********---- Starting of Testing Mode -----*********\n";
     Position LOW1(0. ,0., 0.);
     Position HIGH1(1., 1.0, 1.0);

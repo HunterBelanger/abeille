@@ -193,7 +193,6 @@ void CartesianFilter::update_indices(int key, int& i, int& j, int& k,
 }
 
 
-
 std::pair<double, int> CartesianFilter::distance_to_next_index(const Position& r, const Direction& u, const std::array<int, 3>& on, 
                                                 int i , int j, int k) {
 
@@ -261,3 +260,9 @@ std::pair<double, int> CartesianFilter::distance_to_next_index(const Position& r
 
   return {dist, key};
 }
+
+
+// make the cartesian filter
+/*std::shared_ptr<CartesianFilter> make_cartesian_filter(const YAML::Node &node){
+    return std::make_shared<CartesianFilter>(); 
+}*/

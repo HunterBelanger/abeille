@@ -6,6 +6,7 @@
 #include <tallies/cartesian_filter.hpp>
 #include <utils/position.hpp>
 
+#include <yaml-cpp/yaml.h>
 
 class BoxPositionFilter : public CartesianFilter{
     public:
@@ -84,6 +85,11 @@ class BoxPositionFilter : public CartesianFilter{
     std::string type_str()const override { return "box_position_filter"; }
 
 };
+
+
+//make the cartesian filter or position filter
+//template<typename T>
+std::shared_ptr<PositionFilter> make_box_position_filter(const YAML::Node &node);
 
 
 #endif

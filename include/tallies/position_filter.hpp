@@ -2,10 +2,12 @@
 #define POSITION_FILTER_H
 
 #include <vector>
+#include <memory>
 
 #include <utils/error.hpp>
 #include <utils/position.hpp>
 #include <simulation/tracker.hpp>
+#include <yaml-cpp/yaml.h>
 
 enum class FilterType{
     Energy_Filter,
@@ -46,5 +48,7 @@ class PositionFilter{
     
 
 };
+
+std::shared_ptr<PositionFilter> make_position_filter(const YAML::Node& node);
 
 #endif
