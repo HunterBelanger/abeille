@@ -3,8 +3,6 @@
 # PUb-1-1-SL
 # k_eff = 1.0
 
-# Original anisotropic xs
-
 materials:
   - name: Pu-239-b
     id: 1
@@ -42,16 +40,6 @@ tallies:
     energy-bounds: [0, 1]
 
 settings:
-<<<<<<< HEAD:input_files/PUb-1-1-SL-c1.yaml
-=======
-  nparticles: 1000000
-  ngenerations: 2500
-  nignored: 500
-  ngroups: 1
-  transport: delta-tracking
-  simulation: k-eigenvalue
-  cancellation: true
->>>>>>> 7063ee1 (Changes in the Input Files):input_files/PUb-1-1-SL.yaml
   energy-mode: multi-group
   energy-bounds: [0, 1]
   ngroups: 1
@@ -74,7 +62,6 @@ simulation:
 
   cancelator:
     type: approximate
-
     low: [-0.79606, -100., -100.]
     hi: [0.79606, 100., 100.]
     shape: [1, 1, 1]
