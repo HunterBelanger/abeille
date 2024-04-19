@@ -103,6 +103,68 @@ void GeneralTally::score_flight(const Particle& p, const Tracker& trkr,
     }
 }
 
+
+std::shared_ptr<ITally> make_general_tally(const YAML::Node &node){
+
+    
+    if( !node["name"] ){
+        fatal_error("No valid name is provided.");
+    }
+    std::string general_tally_name = node["name"].as<std::string>();
+
+    if ( !node["estimator"]){
+        fatal_error("No, estimator is given for \"" + general_tally_name
+            + "\", therefore, collision estimator will be taken, by default.");
+    }
+    std::string estimator_name = node["estimator"].as<std::string>();
+
+    
+    std::shared_ptr<EnergyFilter> energy_filter_ = nullptr;
+
+    if (node["energy-bounds"]){
+        std::vector<double> energy_bounds = node["energy-bounds"].as<std::vector<double>>();
+        energy_filter_ = std::make_shared<EnergyFilter>(energy_bounds);
+    }
+
+    std::cout<<"energy-filter is made.\n";
+
+    std::shared_ptr<PositionFilter> position_filter_ 
+                                    = make_position_filter(node);
+    
+    std::cout<<"Position-filter is made."<<position_filter_->type_str()<<"\n";
+
+    std::cout<<"general tally is made is made."<<estimator_name<<"\n";
+
+    std::shared_ptr<ITally> itally_genral_tally = nullptr;
+
+    if ( estimator_name == "collision" ){
+        std::cout<<"general tally is made is made."<<estimator_name<<"\n";
+        itally_genral_tally = std::make_shared<GeneralTally>(GeneralTally::Quantity::Flux, 
+                                        GeneralTally::Estimator::Collision, general_tally_name,
+                                             position_filter_, energy_filter_);
+        std::cout<<"general tally is made is made.\n";
+    }
+
+    if ( estimator_name == "track-length" )
+        itally_genral_tally = std::make_shared<GeneralTally>(GeneralTally::Quantity::Flux, 
+                                        GeneralTally::Estimator::TrackLength, general_tally_name,
+                                             position_filter_, energy_filter_);
+
+    if ( itally_genral_tally == nullptr )
+        fatal_error("Incorrect \"estimator\" is given.");
+
+    return itally_genral_tally;
+
+}
+
+
+
+
+
+
+
+
+
 std::shared_ptr<ITally> temp_tally;
 
 void make_temp_tally() {
@@ -127,6 +189,8 @@ temp_tally->set_net_weight(1000.0);
     }
 
 }
+
+
 
 
 

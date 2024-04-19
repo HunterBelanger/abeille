@@ -19,16 +19,31 @@
 
 #include <boost/container/static_vector.hpp>
 
+#include <ndarray.hpp>
+
 
 void test_function(){
   std::cout<<"*********---- Starting of Testing Mode -----*********\n";
-  boost::container::static_vector<int, 3> parth{1, 2, 3};
+  boost::container::static_vector<size_t, 3> parth{1, 2, 3};
   std::cout<<"Made the static vector.\n";
-  for ( int x : parth){
+
+  for ( size_t x : parth){
     std::cout<<x<<"\t";
   }
   std::cout<<std::endl;
   //parth.push_back(4);
+  NDArray<double> temp_nd_parth;
+  std::vector<size_t> id{1, 2,3};
+  temp_nd_parth.reallocate(id);
+  std::cout<<"We got it here.\n";
+  NDArray<double> temp_nd;
+  temp_nd.reallocate(parth);
+  temp_nd.fill(1.0);
+  temp_nd({0,0,0}) = 10;
+
+  boost::container::static_vector<size_t, 3> num{0, 0, 0};
+  //std::cout<<"Value = "<<temp_nd(num)<<"\n";
+
   std::cout<<"*********---- End of Testing Mode -----*********\n";
 }
 

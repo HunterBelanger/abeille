@@ -131,6 +131,7 @@ void make_itally(Tallies& tallies, const YAML::Node& node){
     tally_name_ = node["name"].as<std::string>();
 
     std::string tally_type = "general";
+
     size_t tally_fet_order = 0;
 
     std::vector<std::string> legendre_fet_vec;
@@ -205,7 +206,7 @@ void make_itally(Tallies& tallies, const YAML::Node& node){
     if( node["Position-Filter"]){
         pos_filter_name =  node["Position-Filter"].as<std::string>();
 
-        if (pos_filter_name == "box" || pos_filter_name == "reactangular-mesh"){
+        if (pos_filter_name == "box" || pos_filter_name == "regular-reactangular-mesh"){
         std::vector<double> loc = node["low"].as<std::vector<double>>();
         // if (loc.size() != 3) { fatal_error("Low has not three elements.")}
         r_low_ = Position(loc[0], loc[1], loc[2]);
@@ -222,13 +223,16 @@ void make_itally(Tallies& tallies, const YAML::Node& node){
     std::shared_ptr<PositionFilter> pos_filter;
     std::shared_ptr<CartesianFilter> cart_filter;
 
-    if (pos_filter_name == "box" ){
+    /*if (pos_filter_name == "box" ){
         pos_filter = std::make_shared<BoxPositionFilter>(r_low_, r_high_);
         cart_filter = std::make_shared<BoxPositionFilter>(r_low_, r_high_);
     }else if (pos_filter_name == "reactangular-mesh"){
         pos_filter = std::make_shared<MeshPositionFilter>(r_low_, r_high_, pos_dime[0], pos_dime[1], pos_dime[2]);
         cart_filter = std::make_shared<MeshPositionFilter>(r_low_, r_high_, pos_dime[0], pos_dime[1], pos_dime[2]);
-    }
+    }*/
+
+    pos_filter = make_position_filter(node);
+
 
     std::vector<double> ebounds;
     if (node["energy-bounds"]){
@@ -241,12 +245,14 @@ void make_itally(Tallies& tallies, const YAML::Node& node){
     if ( estimator_ == "collision" ){
        
         if(tally_type == "general"){
-                new_tally = std::make_shared<GeneralTally>(GeneralTally::Quantity::Flux, GeneralTally::Estimator::Collision, tally_name_,
-                                        pos_filter, energy_filter_);
+                //new_tally = std::make_shared<GeneralTally>(GeneralTally::Quantity::Flux, GeneralTally::Estimator::Collision, tally_name_,
+                //                        pos_filter, energy_filter_);
+                new_tally = make_general_tally(node);
+                std::cout<<"weis made.\n";
         }
 
         if(tally_type == "legendre-FET"){
-                
+                cart_filter = make_cartesian_filter(node);
                 new_tally = std::make_shared<LegendreFET>(tally_fet_order, LegendreFET::Quantity::Flux, LegendreFET::Estimator::Collision, tally_name_,
                                         axes_vec, cart_filter, energy_filter_);
         }

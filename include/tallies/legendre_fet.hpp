@@ -37,7 +37,7 @@ class LegendreFET : public ITally{
 
     void score_collision(const Particle& p, const Tracker& tktr, MaterialHelper& mat );
 
-    void score_flight(const Particle& p, const Tracker& trkr, double d_flight, MaterialHelper& mat){
+    void score_flight(const Particle& /*p*/, const Tracker& /*trkr*/, double /*d_flight*/, MaterialHelper& /*mat*/){
 
     }
 

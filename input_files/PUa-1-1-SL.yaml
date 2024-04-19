@@ -34,9 +34,9 @@ tallies:
   
   - type: ITally
     tally-type: general
-    #Position-Filter: reactangular-mesh
-    Position-Filter: box
-    shape: [2, 2, 2]
+    Position-Filter: regular-reactangular-mesh
+    #Position-Filter: box
+    shape: [2, 1, 1]
     low: [-0.77032, -100., -100.]
     high:  [ 0.77032,  100.,  100.]
     energy-bounds: [0., 1.]
@@ -46,7 +46,7 @@ tallies:
 
   - type: ITally
     tally-type: legendre-FET
-    Position-Filter: reactangular-mesh
+    Position-Filter: regular-reactangular-mesh
     #Position-Filter: box
     shape: [2, 1, 1]
     low: [-0.77032, -100., -100.]

@@ -90,4 +90,33 @@ class MeshPositionFilter : public CartesianFilter{
     }
 };       
 
+// Make the cartesian or position filter class
+template <typename T>
+std::shared_ptr<T> make_mesh_position_filter(const YAML::Node &node){
+    if (!node["low"])
+        fatal_error("For mesh position-filter \"low\" co-ordinates is not provided.");
+    if (!node["high"])
+        fatal_error("For mesh position-filter \"high\" co-ordinates is not provided.");
+    if (!node["shape"])
+        fatal_error("For mesh position-filter \"shape\" is not provided.");
+
+    std::vector<double> low_point = node["low"].as<std::vector<double>>();
+    std::vector<double> high_point = node["high"].as<std::vector<double>>();
+    std::vector<std::size_t> shape_ = node["shape"].as<std::vector<std::size_t>>();
+    
+    if ( shape_.size() != 3)
+        fatal_error("Element in the shape must be 3.");
+
+    Position r_low_(low_point[0], low_point[1], low_point[2]);
+    Position r_high_(high_point[0], high_point[1] , high_point[2]);
+
+    std::shared_ptr<T> mesh_type_filter 
+                    = std::make_shared<MeshPositionFilter>(r_low_, r_high_, 
+                                                            shape_[0], shape_[1], shape_[2]);
+
+    return mesh_type_filter;
+}
+
+
+
 #endif

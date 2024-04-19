@@ -116,8 +116,8 @@ void BoxPositionFilter::check_on_boundary(const Tracker tktr, std::array<int, 3>
 }
 
 
-//template<typename T>
-std::shared_ptr<PositionFilter> make_box_position_filter(const YAML::Node &node){
+/*template <typename BT>
+std::shared_ptr<BT> make_box_position_filter(const YAML::Node &node){
     if (!node["low"])
         fatal_error("For box position-filter \"low\" co-ordinates is not provided.");
     if (!node["high"])
@@ -133,4 +133,4 @@ std::shared_ptr<PositionFilter> make_box_position_filter(const YAML::Node &node)
                     = std::make_shared<BoxPositionFilter>(r_low_, r_high_);
 
     return box_type_filter;
-}
+}*/

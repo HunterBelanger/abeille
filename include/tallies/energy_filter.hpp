@@ -4,7 +4,9 @@
 #include <iostream>
 #include <vector>
 #include <string>
+#include <memory>
 
+#include <yaml-cpp/yaml.h>
 #include <tallies/position_filter.hpp>
 #include <utils/error.hpp>
 
@@ -51,5 +53,6 @@ class EnergyFilter{
     private:
         std::vector<double>energy_bounds_;
 };
+
 
 #endif

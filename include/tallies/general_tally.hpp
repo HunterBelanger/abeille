@@ -1,6 +1,10 @@
 #ifndef GENERAL_TALLY_H
 #define GENERAL_TALLY_H
 
+#include <memory>
+
+#include <yaml-cpp/yaml.h>
+
 #include <tallies/itally.hpp>
 #include <tallies/position_filter.hpp>
 #include <tallies/energy_filter.hpp>
@@ -32,18 +36,26 @@ class GeneralTally : public ITally{
                 tally_var.fill(0.0);*/
 
                 //std::cout<<"---+++--------------------\n";
+                std::cout<<"--++tally_dimensions_.size()"<<"\t";
                 const std::vector<size_t> dimen = position_filter_->get_dimension();
+                std::cout<<"--==tally_dimensions_.size()"<<"\t";
                 
                 //std::cout<<"\n-----------------------\n";
                 // New constructor defination
                 std::vector<size_t> tally_dimensions_;
                 tally_dimensions_.reserve(4);
                 tally_dimensions_ = position_filter_->get_dimension();
+                std::cout<<"--tally_dimensions_.size()"<<"\t";
+                
                 size_t ne = energy_in_->size();
                 tally_dimensions_.insert(tally_dimensions_.begin(), ne);
 
+                std::cout<<"tally_dimensions_.size()"<<"\t";
                 
                 const std::vector<size_t> temp_it = tally_dimensions_;
+                
+                std::cout<<tally_dimensions_.size()<<"\t";
+
                 tally_avg.reallocate(temp_it);
                 tally_avg.fill(0.0);
 
@@ -67,6 +79,8 @@ class GeneralTally : public ITally{
         std::shared_ptr<EnergyFilter> energy_in_;
         std::shared_ptr<EnergyFilter> energy_out_;
 };
+
+std::shared_ptr<ITally> make_general_tally(const YAML::Node &node);
 
 
 extern std::shared_ptr<ITally> temp_tally;

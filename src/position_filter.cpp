@@ -8,7 +8,8 @@
 
 // make_position_filter will be usded for general tally system
 std::shared_ptr<PositionFilter> make_position_filter(const YAML::Node& node){
-    std::shared_ptr<PositionFilter> position_filter_;
+    
+    std::shared_ptr<PositionFilter> position_filter_ = nullptr;
 
     if (!node["Position-Filter"]){
         fatal_error("Position-Filter is not given.");
@@ -16,7 +17,11 @@ std::shared_ptr<PositionFilter> make_position_filter(const YAML::Node& node){
     const std::string position_filter_type = node["Position-Filter"].as<std::string>();
 
     if ( position_filter_type == "box"){
-        position_filter_ = make_box_position_filter(node);
+        position_filter_ = make_box_position_filter<PositionFilter>(node);
+    }
+
+    if ( position_filter_type == "regular-reactangular-mesh"){
+        position_filter_ = make_mesh_position_filter<PositionFilter>(node);
     }
 
     return position_filter_;

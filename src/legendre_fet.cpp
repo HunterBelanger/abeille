@@ -17,8 +17,8 @@ LegendreFET::LegendreFET(size_t FET_order_, LegendreFET::Quantity quantity_, Leg
     {
     
     //for legendre, check the size of axis vector should be between than 3.
-    if ( axes.size() >= 1 && axes.size()<=3 )
-        std::cout<<"Fatal error, the no. of given axis is not between 1 to 3.\n";
+    if ( axes.size() <= 1 && axes.size() >=3 )
+        fatal_error("The no. of given axis for legendre-FET is not between 1 to 3.");
 
     std::vector<size_t> tally_dimensions_ = cartesian_filter_->get_dimension();
     tally_dimensions_.reserve(6);
@@ -27,7 +27,6 @@ LegendreFET::LegendreFET(size_t FET_order_, LegendreFET::Quantity quantity_, Leg
     tally_dimensions_.push_back(axes.size());
     tally_dimensions_.push_back(FET_order_+1);
 
-    std::cout<<"FET Dimensions = "<<tally_dimensions_.size()<<"\n";
 
     tally_avg.reallocate(tally_dimensions_);
     tally_avg.fill(0.0);

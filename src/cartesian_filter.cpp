@@ -1,4 +1,6 @@
 #include <tallies/cartesian_filter.hpp>
+#include <tallies/box_position_filter.hpp>
+#include <tallies/mesh_position_filter.hpp>
 #include <utils/constants.hpp>
 
 bool CartesianFilter::find_entry_point(Position& r, const Direction& u,
@@ -263,6 +265,22 @@ std::pair<double, int> CartesianFilter::distance_to_next_index(const Position& r
 
 
 // make the cartesian filter
-/*std::shared_ptr<CartesianFilter> make_cartesian_filter(const YAML::Node &node){
-    return std::make_shared<CartesianFilter>(); 
-}*/
+std::shared_ptr<CartesianFilter> make_cartesian_filter(const YAML::Node& node){
+    
+    std::shared_ptr<CartesianFilter> cartesian_filter_ = nullptr;
+
+    if (!node["Position-Filter"]){
+        fatal_error("Position-Filter is not given.");
+    }
+    const std::string cartesian_filter_type = node["Position-Filter"].as<std::string>();
+
+    if ( cartesian_filter_type == "box"){
+        cartesian_filter_ = make_box_position_filter<CartesianFilter>(node);
+    }
+
+    if ( cartesian_filter_type == "regular-reactangular-mesh"){
+        cartesian_filter_ = make_mesh_position_filter<CartesianFilter>(node);
+    }
+
+    return cartesian_filter_;
+}
