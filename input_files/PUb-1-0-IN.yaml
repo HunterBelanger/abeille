@@ -34,8 +34,8 @@ settings:
 
 simulation:
   mode: k-eigenvalue
-  nparticles: 1000000
-  ngenerations: 2100
+  nparticles: 10000
+  ngenerations: 210
   nignored: 100
   sources:
     - spatial:

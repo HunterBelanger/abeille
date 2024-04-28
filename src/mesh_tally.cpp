@@ -202,6 +202,4 @@ void MeshTally::write_tally() {
       tally_grp.createDataSet<double>("std", H5::DataSpace(tally_var.shape()));
   std_dset.write_raw(&tally_var[0]);
 
-  std::cout<<"Writing ITally\n";
-  temp_tally->write_tally();
 }

@@ -12,7 +12,9 @@ std::shared_ptr<PositionFilter> make_position_filter(const YAML::Node& node){
     std::shared_ptr<PositionFilter> position_filter_ = nullptr;
 
     if (!node["Position-Filter"]){
-        fatal_error("Position-Filter is not given.");
+        std::string name_ = node["name"].as<std::string>();
+        warning("Position-Filter is not given for the \""+ name_ + "\".");
+        return position_filter_;
     }
     const std::string position_filter_type = node["Position-Filter"].as<std::string>();
 

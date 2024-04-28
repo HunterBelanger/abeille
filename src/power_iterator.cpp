@@ -464,7 +464,6 @@ void PowerIterator::run() {
     if (gen > nignored) {
       Tallies::instance().score_source(next_gen);
       Tallies::instance().record_generation();
-      temp_tally->record_generation();
     }
 
     // Zero tallies for next generation

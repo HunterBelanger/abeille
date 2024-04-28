@@ -5,6 +5,8 @@
 #include <vector>
 #include <memory>
 
+#include <yaml-cpp/yaml.h>
+
 #include <tallies/itally.hpp>
 #include <tallies/cartesian_filter.hpp>
 #include <tallies/energy_filter.hpp>
@@ -54,5 +56,6 @@ class LegendreFET : public ITally{
 
 };
 
+std::shared_ptr<ITally> make_legendre_fet(const YAML::Node& node);
 
 #endif

@@ -83,7 +83,7 @@ class ParticleMover : public IParticleMover {
       std::optional<NoiseParameters> noise = std::nullopt,
       std::vector<BankedParticle>* noise_bank = nullptr,
       const NoiseMaker* noise_maker = nullptr) override final {
-      make_temp_tally();
+        
 #ifdef ABEILLE_USE_OMP
 #pragma omp parallel
 #endif
@@ -129,7 +129,7 @@ class ParticleMover : public IParticleMover {
             
             Tallies::instance().score_collision(p,trkr, mat);
             //if( temp_tally->scoring_tally() ){
-              temp_tally->score_collision(p, trkr, mat);
+              //temp_tally->score_collision(p, trkr, mat);
             //}
 
               

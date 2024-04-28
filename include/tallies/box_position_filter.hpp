@@ -71,14 +71,39 @@ class BoxPositionFilter : public CartesianFilter{
         return pos_filter_dim;
     }
 
-    double x_min()const override { return r_low.x(); }
-    double x_max()const override { return r_high.x(); }
+    double x_min(const std::vector<size_t>& index_)const override { 
+        return r_low.x(); 
+        if (index_.empty())
+            return r_low.x();
+    }
+    double x_max(const std::vector<size_t>& index_)const override { 
+        return r_high.x(); 
+        if (index_.empty())
+            return r_high.x();
+    }
     
-    double y_min()const override { return r_low.y(); }
-    double y_max()const override { return r_high.y(); }
+    double y_min(const std::vector<size_t>& index_)const override { 
+        return r_low.y();
+        if (index_.empty())
+            return r_low.y();
+    }
+    double y_max(const std::vector<size_t>& index_)const override { 
+        return r_high.y();
+        if (index_.empty())
+            return r_high.y();
+    }
     
-    double z_min()const override { return r_low.z(); }
-    double z_max()const override { return r_high.z(); }
+    double z_min(const std::vector<size_t>& index_)const override { 
+        return r_low.z();
+        if (index_.empty())
+            return r_low.z();
+    }
+
+    double z_max(const std::vector<size_t>& index_)const override { 
+        return r_high.z();
+        if (index_.empty())
+            return r_high.z();
+    }
 
     //Perhaps Not Needed
     FilterType type()const override { return FilterType::Box_Position_Filter; }

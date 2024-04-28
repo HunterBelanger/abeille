@@ -120,9 +120,41 @@ void ITally::write_tally(){
 
 }
 
+void make_itally(Tallies& tallies, const YAML::Node& node){
 
+    if ( !node["name"] ){
+        fatal_error("Tally name is not given.");
+    }
+    std::string tally_name_ = node["name"].as<std::string>();
+    std::string tally_type_ = "general";
+    if (!node["tally-type"]){
+        warning("The tally-type is not given therefore, \"general\" will be assumed.");
+    }
+    tally_type_ = node["tally-type"].as<std::string>();
 
+    std::shared_ptr<ITally> new_ITally = nullptr;
+    if ( tally_type_ == "general" ){
+        new_ITally =  make_general_tally(node);
+    }
 
+    if ( tally_type_ == "legendre-FET" ){
+        new_ITally = make_legendre_fet(node);
+    }
+
+    if ( tally_type_ == "zernike-FET" ){
+        fatal_error("The zernike-FET for " + tally_name_ + " is not supported yet.");
+    }
+
+    if ( new_ITally == nullptr ){
+        fatal_error("For the " + tally_name_ + ", something went worng in the input.");
+    }
+
+    // Add the new_ITally of type ITally into the "tallies"
+    tallies.add_ITally(new_ITally);
+
+}
+
+/*
 void make_itally(Tallies& tallies, const YAML::Node& node){
     std::string tally_name_;
     if( !node["name"] ){
@@ -229,7 +261,7 @@ void make_itally(Tallies& tallies, const YAML::Node& node){
     }else if (pos_filter_name == "reactangular-mesh"){
         pos_filter = std::make_shared<MeshPositionFilter>(r_low_, r_high_, pos_dime[0], pos_dime[1], pos_dime[2]);
         cart_filter = std::make_shared<MeshPositionFilter>(r_low_, r_high_, pos_dime[0], pos_dime[1], pos_dime[2]);
-    }*/
+    }
 
     pos_filter = make_position_filter(node);
 
@@ -253,8 +285,10 @@ void make_itally(Tallies& tallies, const YAML::Node& node){
 
         if(tally_type == "legendre-FET"){
                 cart_filter = make_cartesian_filter(node);
-                new_tally = std::make_shared<LegendreFET>(tally_fet_order, LegendreFET::Quantity::Flux, LegendreFET::Estimator::Collision, tally_name_,
+                /*new_tally = std::make_shared<LegendreFET>(tally_fet_order, LegendreFET::Quantity::Flux, LegendreFET::Estimator::Collision, tally_name_,
                                         axes_vec, cart_filter, energy_filter_);
+                
+                new_tally = make_legendre_fet(node);
         }
 
     }
@@ -270,3 +304,4 @@ void make_itally(Tallies& tallies, const YAML::Node& node){
     
     
 }
+*/

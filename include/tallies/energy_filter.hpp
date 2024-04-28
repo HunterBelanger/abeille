@@ -7,6 +7,7 @@
 #include <memory>
 
 #include <yaml-cpp/yaml.h>
+
 #include <tallies/position_filter.hpp>
 #include <utils/error.hpp>
 
@@ -54,5 +55,6 @@ class EnergyFilter{
         std::vector<double>energy_bounds_;
 };
 
+std::shared_ptr<EnergyFilter> make_energy_filter(const YAML::Node &node);
 
 #endif

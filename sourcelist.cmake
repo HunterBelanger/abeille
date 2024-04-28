@@ -78,4 +78,5 @@ set(ABEILLE_SOURCE_FILES ${ABEILLE_SOURCE_FILES}
   src/cartesian_filter.cpp
   src/legendre_fet.cpp
   src/position_filter.cpp
+  src/energy_filter.cpp
 )

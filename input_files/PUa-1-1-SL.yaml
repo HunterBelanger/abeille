@@ -22,43 +22,30 @@ universes:
 root-universe: 1
 
 tallies:
-  - shape: [2, 1, 1]
-    #shape: [2, 2, 2]
+  - #shape: [1, 1, 1]
+    shape: [1, 1, 1]
     low: [-0.77032, -100., -100.]
     hi:  [ 0.77032,  100.,  100.]
     energy-bounds: [0., 1.]
     quantity: flux
     name: flux_PUa
-    estimator: collision
+    estimator: track-length
 
   
   - type: ITally
     tally-type: general
+    #tally-type: legendre-FET
+    FET-order: 3
     Position-Filter: regular-reactangular-mesh
     #Position-Filter: box
-    shape: [2, 1, 1]
-    low: [-0.77032, -100., -100.]
-    high:  [ 0.77032,  100.,  100.]
-    energy-bounds: [0., 1.]
+    shape: [1, 1, 1]
+    low: [ -0.77032,  -100.,  -100.]
+    high: [ 0.77032,  100.,  100.]
+    #energy-bounds: [0., 1.]
     quantity: flux
     name: flux-3
-    estimator: collision
-
-  - type: ITally
-    tally-type: legendre-FET
-    Position-Filter: regular-reactangular-mesh
-    #Position-Filter: box
-    shape: [2, 1, 1]
-    low: [-0.77032, -100., -100.]
-    high:  [ 0.77032,  100.,  100.]
-    energy-bounds: [0., 1.]
-    quantity: flux
-    name: flux-fet
-    estimator: collision
-    FET-order: 0
-    FET-axis: [Y]
-
-
+    estimator: track-length
+    FET-axis: [X]
 
 
 settings:
@@ -68,9 +55,9 @@ settings:
 
 simulation:
   mode: k-eigenvalue
-  nparticles: 1000
-  ngenerations: 50
-  nignored: 10
+  nparticles: 3000
+  ngenerations: 200
+  nignored: 100
   transport-operator:
     type: delta-tracking
   sources:
@@ -84,3 +71,5 @@ simulation:
         type: mono-energetic
         energy: 0.5
       weight: 1.
+
+

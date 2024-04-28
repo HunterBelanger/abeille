@@ -21,12 +21,17 @@
 
 #include <ndarray.hpp>
 
+namespace bc = boost::container;
+
+using StaticVector = bc::static_vector<size_t, 9>;
 
 void test_function(){
   std::cout<<"*********---- Starting of Testing Mode -----*********\n";
   boost::container::static_vector<size_t, 3> parth{1, 2, 3};
+  
   std::cout<<"Made the static vector.\n";
-
+  StaticVector part{11, 2, 3};
+  std::cout<<"-->"<<part[0]<<"\n";
   for ( size_t x : parth){
     std::cout<<x<<"\t";
   }
@@ -42,7 +47,7 @@ void test_function(){
   temp_nd({0,0,0}) = 10;
 
   boost::container::static_vector<size_t, 3> num{0, 0, 0};
-  //std::cout<<"Value = "<<temp_nd(num)<<"\n";
+  std::cout<<"Value = "<<temp_nd(num)<<"\n";
 
   std::cout<<"*********---- End of Testing Mode -----*********\n";
 }
