@@ -255,7 +255,7 @@ void make_itally(Tallies& tallies, const YAML::Node& node){
     std::shared_ptr<PositionFilter> pos_filter;
     std::shared_ptr<CartesianFilter> cart_filter;
 
-    /*if (pos_filter_name == "box" ){
+    if (pos_filter_name == "box" ){
         pos_filter = std::make_shared<BoxPositionFilter>(r_low_, r_high_);
         cart_filter = std::make_shared<BoxPositionFilter>(r_low_, r_high_);
     }else if (pos_filter_name == "reactangular-mesh"){
@@ -285,7 +285,7 @@ void make_itally(Tallies& tallies, const YAML::Node& node){
 
         if(tally_type == "legendre-FET"){
                 cart_filter = make_cartesian_filter(node);
-                /*new_tally = std::make_shared<LegendreFET>(tally_fet_order, LegendreFET::Quantity::Flux, LegendreFET::Estimator::Collision, tally_name_,
+                new_tally = std::make_shared<LegendreFET>(tally_fet_order, LegendreFET::Quantity::Flux, LegendreFET::Estimator::Collision, tally_name_,
                                         axes_vec, cart_filter, energy_filter_);
                 
                 new_tally = make_legendre_fet(node);

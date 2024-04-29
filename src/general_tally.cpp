@@ -2,6 +2,11 @@
 #include <tallies/general_tally.hpp>
 #include <utils/error.hpp>
 
+#include <boost/container/static_vector.hpp>
+
+template <typename std::size_t N>
+using StaticVector = boost::container::static_vector<std::size_t, N>;
+
 
 GeneralTally::GeneralTally(std::shared_ptr<PositionFilter> position_filter, 
                 std::shared_ptr<EnergyFilter> energy_in,
@@ -13,6 +18,7 @@ GeneralTally::GeneralTally(std::shared_ptr<PositionFilter> position_filter,
 {
 
     std::vector<size_t> tally_dimensions_;
+    StaticVector<4> tally_dimensions_1;
     tally_dimensions_.reserve(4);
 
     bool check_ifany_filter = true;
@@ -70,7 +76,7 @@ void GeneralTally::score_collision(const Particle& p, const Tracker& tktr, Mater
     if ( energy_in_ ){
         if (energy_in_->get_index(p.E(), index_E)){
             // Only add the energy_index if size of energy_bouds are more than one.
-            if ( energy_in_->size() > 1){
+            if ( energy_in_->size() > 1 ){
                 indexes_.insert(indexes_.begin(), index_E);
             }
 

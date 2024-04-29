@@ -27,11 +27,10 @@ class LegendreFET : public ITally{
     };
 
 
-    LegendreFET(size_t FET_order_, Quantity quantity_, Estimator estimator_, std::string name_,
-        std::vector<Axis> axes_,
-        std::shared_ptr<CartesianFilter> position_filter_, 
-        std::shared_ptr<EnergyFilter> energy_in,
-        std::shared_ptr<EnergyFilter> energy_out = nullptr) ;
+    LegendreFET(std::shared_ptr<CartesianFilter> position_filter_, 
+        std::shared_ptr<EnergyFilter> energy_in, 
+        std::vector<LegendreFET::Axis> axes_, size_t FET_order_,
+        LegendreFET::Quantity quantity_, LegendreFET::Estimator estimator_, std::string name_) ;
 
     
 
@@ -47,11 +46,12 @@ class LegendreFET : public ITally{
 
 
     private:
-        size_t FET_order;  // Note that the number of coefficient will be one more than the order.
-        std::vector<Axis> axes;
         std::shared_ptr<CartesianFilter> cartesian_filter_;
         std::shared_ptr<EnergyFilter> energy_in_;
-        std::shared_ptr<EnergyFilter> energy_out_;
+        std::shared_ptr<EnergyFilter> energy_out_ = nullptr;
+
+        std::vector<Axis> axes;
+        size_t FET_order;  // Note that the number of coefficient will be one more than the order.
         
 
 };

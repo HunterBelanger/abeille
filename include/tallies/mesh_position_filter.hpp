@@ -42,50 +42,86 @@ class MeshPositionFilter : public CartesianFilter{
     size_t Ny()const override final { return Ny_;}
     size_t Nz()const override final { return Nz_;}
 
+    // Note that the method given is applicable when the reduced_dimension is used.
     double x_min(const std::vector<size_t>& index_) const override { 
         if (Nx_ == 1){
             return r_low.x();
         }
 
-        const double xmin_ = r_low.x() + static_cast<double>(index_[1]) * dx;
+        const double xmin_ = r_low.x() + static_cast<double>(index_[0]) * dx;
         return xmin_;
     }
 
+    // Note that the method given is applicable when the reduced_dimension is used.
     double x_max(const std::vector<size_t>& index_) const override { 
         if (Nx_ == 1){
             return r_high.x();
         }
-        const double xmax_ = r_low.x() + static_cast<double>(index_[1]) * dx + dx;
+        const double xmax_ = r_low.x() + static_cast<double>(index_[0]) * dx + dx;
         return xmax_;
     }
 
+    // Note that the method given is applicable when the reduced_dimension is used.
     double y_min(const std::vector<size_t>& index_) const override { 
         if (Ny_ == 1){
             return r_low.y();
         }
 
-        const double ymin_ = r_low.y() + static_cast<double>(index_[1]) * dy;
+        size_t y_position_index = 1;
+        if ( Nx_ == 1){
+            y_position_index = 0;
+        }
+
+        const double ymin_ = r_low.y() + static_cast<double>(index_[y_position_index]) * dy;
         return ymin_;
     }
 
+    // Note that the method given is applicable when the reduced_dimension is used.
     double y_max(const std::vector<size_t>& index_) const override { 
         if (Ny_ == 1)
             return r_high.y();
-        const double ymax_ = r_low.y() + static_cast<double>(index_[1]) * dy + dy;
+        
+        size_t y_position_index = 1;
+        if ( Nx_ == 1){
+            y_position_index = 0;
+        }
+
+        const double ymax_ = r_low.y() + static_cast<double>(index_[y_position_index]) * dy + dy;
         return ymax_;
     }
 
+    // Note that the method given is applicable when the reduced_dimension is used.
     double z_min(const std::vector<size_t>& index_) const override { 
         if (Nz_ == 1)
             return r_low.z();
-        const double zmin_ = r_low.z() + static_cast<double>(index_[2]) * dz;
+
+        size_t z_position_index = 2;
+        if ( Nx_ == 1){
+            z_position_index --;
+        }
+
+        if ( Ny_ == 1 )
+            z_position_index --;
+        
+        const double zmin_ = r_low.z() + static_cast<double>(index_[z_position_index]) * dz;
         return zmin_; 
+
     }
+
+    // Note that the method given is applicable when the reduced_dimension is used.
     double z_max(const std::vector<size_t>& index_) const override { 
         if (Nz_ == 1)
             return r_high.z();
+
+        size_t z_position_index = 2;
+        if ( Nx_ == 1){
+            z_position_index --;
+        }
+
+        if ( Ny_ == 1 )
+            z_position_index --;
         
-        const double zmax_ = r_low.z() + static_cast<double>(index_[2]) * dz + dz;
+        const double zmax_ = r_low.z() + static_cast<double>(index_[z_position_index]) * dz + dz;
         return zmax_;  
     }
 

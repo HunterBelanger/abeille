@@ -29,22 +29,22 @@ tallies:
     energy-bounds: [0., 1.]
     quantity: flux
     name: flux_PUa
-    estimator: track-length
+    estimator: collision
 
   
   - type: ITally
-    tally-type: general
-    #tally-type: legendre-FET
+    #tally-type: general
+    tally-type: legendre-FET
     FET-order: 3
     Position-Filter: regular-reactangular-mesh
     #Position-Filter: box
     shape: [1, 1, 1]
     low: [ -0.77032,  -100.,  -100.]
     high: [ 0.77032,  100.,  100.]
-    #energy-bounds: [0., 1.]
+    energy-bounds: [0., 1.]
     quantity: flux
     name: flux-3
-    estimator: track-length
+    estimator: collision
     FET-axis: [X]
 
 
