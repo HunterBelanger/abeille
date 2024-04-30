@@ -1,0 +1,82 @@
+# Case for negative scattering distribution 
+# Problem No.34 (Analytical Benchmark test for code verification)
+# PUb-1-1-SL
+# k_eff = 1.0
+
+materials:
+  - name: Pu-239-b
+    id: 1
+    total: [1.]
+    absorption: [0.266667]
+    fission: [0.266667]
+    nu: [2.5]
+    chi: [[1.]]
+    scatter: [[0.733333]]
+    P1: [[0.4545452066]]
+
+surfaces:
+  - {type: xplane, x0: -0.79606, boundary: vacuum, id: 1}
+  - {type: xplane, x0:  0.79606, boundary: vacuum, id: 2}
+  - {type: yplane, y0: -100., boundary: reflective, id: 3}
+  - {type: yplane, y0:  100., boundary: reflective, id: 4}
+  - {type: zplane, z0: -100., boundary: reflective, id: 5}
+  - {type: zplane, z0:  100., boundary: reflective, id: 6}
+
+cells:
+  - {region: "+1 & -2 & +3 & -4 & +5 & -6", material: 1, id: 1}
+
+universes:
+  - {cells: [1], id: 1}
+
+root-universe: 1
+
+tallies:
+  - shape: [20, 1, 1]
+    low: [-0.79606, -100, -100]
+    hi: [0.79606, 100, 100] 
+    name: flux_PUb-1-1-SL
+    quantity: flux
+    estimator: track-length
+    energy-bounds: [0, 1]
+
+settings:
+  energy-mode: multi-group
+  energy-bounds: [0, 1]
+  ngroups: 1
+
+simulation:
+  mode: k-eigenvalue
+  nparticles: 10000
+  nignored: 100
+  ngenerations: 1000
+  combing: true
+
+  transport-operator:
+    type: delta-tracking
+
+  collision-operator:
+    type: branchless-material
+    splitting: true
+
+  cancelator:
+    type: approximate
+    low: [-0.79606, -100., -100.]
+    hi: [0.79606, 100., 100.]
+    shape: [1, 1, 1]
+
+  entropy:
+    shape: [20, 1, 1]
+    low: [-0.79606, -100., -100.]
+    hi:  [ 0.79606,  100.,  100.]
+    
+  sources:
+    - spatial:
+        type: box
+        low: [-0.79606, -10., -10.]
+        hi: [0.79606, 10., 10.]
+      direction:
+        type: isotropic
+      energy:
+        type: mono-energetic
+        energy: 0.5
+      weight: 1.

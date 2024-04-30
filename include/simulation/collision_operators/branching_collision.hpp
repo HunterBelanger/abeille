@@ -101,7 +101,9 @@ class BranchingCollision {
         ScatterInfo ninfo = nuclide.sample_scatter_mt(sinfo.mt, p.E(), p.u(),
                                                       xs.energy_index, p.rng);
 
-        p.make_secondary(ninfo.direction, ninfo.energy, p.wgt(), p.wgt2());
+        p.make_secondary(ninfo.direction, ninfo.energy,
+                         p.wgt() * ninfo.weight_modifier,
+                         p.wgt2() * ninfo.weight_modifier);
       }
 
       // This is set to 1 so that we have the correct weight for the last
@@ -111,8 +113,8 @@ class BranchingCollision {
 
     p.set_direction(sinfo.direction);
     p.set_energy(sinfo.energy);
-    p.set_weight(p.wgt() * sinfo.yield);
-    p.set_weight2(p.wgt2() * sinfo.yield);
+    p.set_weight(p.wgt() * sinfo.yield * sinfo.weight_modifier);
+    p.set_weight2(p.wgt2() * sinfo.yield * sinfo.weight_modifier);
   }
 };
 
