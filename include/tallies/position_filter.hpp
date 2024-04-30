@@ -11,9 +11,7 @@
 
 #include <boost/container/static_vector.hpp>
 
-
 using StaticVector6 = boost::container::static_vector<size_t, 6>;
-
 
 enum class FilterType {
   Energy_Filter,
@@ -39,7 +37,7 @@ class PositionFilter {
   // virtual bool get_indices(const Tracker& tktr, std::array<int, 3>& indices)
   // = 0;
 
-  //virtual std::vector<size_t> get_indices(const Tracker& tktr) = 0;
+  // virtual std::vector<size_t> get_indices(const Tracker& tktr) = 0;
 
   virtual StaticVector6 get_indices(const Tracker& tktr) = 0;
 

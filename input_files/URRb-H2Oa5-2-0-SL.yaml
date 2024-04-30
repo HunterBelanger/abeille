@@ -71,7 +71,7 @@ simulation:
   mode: k-eigenvalue
   nparticles: 10000
   ngenerations: 1050
-  nignored: 50
+  nignored: 20
   sources:
     - spatial:
         type: point

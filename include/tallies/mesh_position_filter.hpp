@@ -37,23 +37,21 @@ class MeshPositionFilter : public CartesianFilter {
     index_x = 0;
     index_y = 1;
     index_z = 2;
-    if (Nx_ == 1){
-        index_x = 0;
-        index_y--;
-        index_z--;
+    if (Nx_ == 1) {
+      index_x = 0;
+      index_y--;
+      index_z--;
     }
 
-    if ( Ny_ == 1){
-        index_y = 0;
-        index_z--;
-  }
+    if (Ny_ == 1) {
+      index_y = 0;
+      index_z--;
+    }
 
-  if (Nz_ == 1){
-    index_z = 0;
+    if (Nz_ == 1) {
+      index_z = 0;
+    }
   }
-
-  
-        }
 
   ~MeshPositionFilter() = default;
 
@@ -86,7 +84,8 @@ class MeshPositionFilter : public CartesianFilter {
     if (Nx_ == 1) {
       return r_high.x();
     }
-    const double xmax_ = r_low.x() + static_cast<double>(index_[index_x]) * dx + dx;
+    const double xmax_ =
+        r_low.x() + static_cast<double>(index_[index_x]) * dx + dx;
     return xmax_;
   }
 
@@ -97,8 +96,7 @@ class MeshPositionFilter : public CartesianFilter {
       return r_low.y();
     }
 
-    const double ymin_ =
-        r_low.y() + static_cast<double>(index_[index_y]) * dy;
+    const double ymin_ = r_low.y() + static_cast<double>(index_[index_y]) * dy;
     return ymin_;
   }
 
@@ -117,8 +115,7 @@ class MeshPositionFilter : public CartesianFilter {
   double z_min(const StaticVector6& index_) const override {
     if (Nz_ == 1) return r_low.z();
 
-    const double zmin_ =
-        r_low.z() + static_cast<double>(index_[index_z]) * dz;
+    const double zmin_ = r_low.z() + static_cast<double>(index_[index_z]) * dz;
     return zmin_;
   }
 
@@ -171,8 +168,9 @@ class MeshPositionFilter : public CartesianFilter {
     }
   }
 
-    // function-overloading for std::vecotr<size_t> type will reduce the dimsion, if there is only one bin in the direction
-    // this is currently being used for the track-length
+  // function-overloading for std::vecotr<size_t> type will reduce the dimsion,
+  // if there is only one bin in the direction this is currently being used for
+  // the track-length
   void reduce_dimension(std::vector<size_t> dimension_) {
     int it_ = 0;
     if ((Nx_ == 1) && (dimension_.size() > 1)) {
@@ -195,8 +193,6 @@ class MeshPositionFilter : public CartesianFilter {
       it_--;
     }
   }
-
-
 };
 
 // Make the cartesian or position filter class

@@ -6,7 +6,6 @@
 
 using StaticVector6 = boost::container::static_vector<size_t, 6>;
 
-
 GeneralTally::GeneralTally(std::shared_ptr<PositionFilter> position_filter,
                            std::shared_ptr<EnergyFilter> energy_in,
                            Quantity quantity, Estimator estimator,
@@ -14,7 +13,6 @@ GeneralTally::GeneralTally(std::shared_ptr<PositionFilter> position_filter,
     : ITally(quantity, estimator, name_),
       position_filter_(position_filter),
       energy_in_(energy_in) {
-
   StaticVector6 tally_dimensions_;
   bool check_ifany_filter = true;
 
@@ -54,12 +52,13 @@ void GeneralTally::score_collision(const Particle& p, const Tracker& tktr,
   StaticVector6 indexes_;
 
   if (position_filter_) {
-    indexes_ = position_filter_->get_indices(tktr);  // it will provde the reduce dimensions
+    indexes_ = position_filter_->get_indices(
+        tktr);  // it will provde the reduce dimensions
   }
 
   if (energy_in_) {
     if (energy_in_->get_index(p.E(), index_E)) {
-        indexes_.insert(indexes_.begin(), index_E);
+      indexes_.insert(indexes_.begin(), index_E);
 
     } else {
       return;
@@ -107,8 +106,7 @@ void GeneralTally::score_flight(const Particle& p, const Tracker& trkr,
   }
 
   std::size_t index_E;
-  bool any_energy_in_ =
-      false;  // Should be true when the energy_in_ is there
+  bool any_energy_in_ = false;  // Should be true when the energy_in_ is there
 
   if (energy_in_) {
     // get the energy_index if we in the bounds
@@ -175,34 +173,35 @@ std::shared_ptr<GeneralTally> make_general_tally(const YAML::Node& node) {
 
   // Check for the quantity
   std::string given_quantity = "";
-  if (!node["quantity"]){
+  if (!node["quantity"]) {
     fatal_error("No quantity is given for " + general_tally_name + " tally.");
   }
   given_quantity = node["quantity"].as<std::string>();
   GeneralTally::Quantity quant;
 
   bool found_quantity = false;
-  if ( given_quantity == "flux"){
+  if (given_quantity == "flux") {
     quant = GeneralTally::Quantity::Flux;
     found_quantity = true;
-     }
+  }
 
-  if ( given_quantity == "fission"){
+  if (given_quantity == "fission") {
     quant = GeneralTally::Quantity::Fission;
     found_quantity = true;
-     }
-  if ( given_quantity == "absorption"){
+  }
+  if (given_quantity == "absorption") {
     quant = GeneralTally::Quantity::Absorption;
     found_quantity = true;
-     }
-  if ( given_quantity == "elastic"){
+  }
+  if (given_quantity == "elastic") {
     quant = GeneralTally::Quantity::Elastic;
     found_quantity = true;
-     }
+  }
 
-  if ( found_quantity == false ){
-    fatal_error("For " + general_tally_name + " tally, a unknown quantity is given.");
-}
+  if (found_quantity == false) {
+    fatal_error("For " + general_tally_name +
+                " tally, a unknown quantity is given.");
+  }
 
   // Get the enrgy bounds, if any is given
   std::shared_ptr<EnergyFilter> energy_filter_ = nullptr;
@@ -229,7 +228,8 @@ std::shared_ptr<GeneralTally> make_general_tally(const YAML::Node& node) {
         GeneralTally::Estimator::TrackLength, general_tally_name);
 
   if (itally_genral_tally == nullptr)
-    fatal_error("Incorrect \"estimator\" is given for "+ general_tally_name +" tally.");
+    fatal_error("Incorrect \"estimator\" is given for " + general_tally_name +
+                " tally.");
 
   return itally_genral_tally;
 }

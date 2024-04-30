@@ -35,7 +35,8 @@ class LegendreFET : public ITally {
                        MaterialHelper& mat) override final;
 
   void score_flight(const Particle& /*p*/, const Tracker& /*trkr*/,
-                    double /*d_flight*/, MaterialHelper& /*mat*/) override final {}
+                    double /*d_flight*/,
+                    MaterialHelper& /*mat*/) override final {}
 
   size_t get_fet_order() { return FET_order; }
 

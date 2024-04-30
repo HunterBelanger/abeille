@@ -6,7 +6,6 @@
 #include <utils/error.hpp>
 #include <utils/position.hpp>
 
-
 class CartesianFilter : public PositionFilter {
  public:
   CartesianFilter(Position r_low_, Position r_high_)

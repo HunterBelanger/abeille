@@ -61,25 +61,24 @@ std::string ITally::estimator_str() {
   }
 }
 
-std::string ITally::quantity_str(){
-    switch (quantity_)
-    {
+std::string ITally::quantity_str() {
+  switch (quantity_) {
     case Quantity::Flux:
-        return "flux";
-        break;
+      return "flux";
+      break;
     case Quantity::Fission:
-        return "fission";
-        break;
+      return "fission";
+      break;
     case Quantity::Absorption:
-        return "absorption";
-        break;
+      return "absorption";
+      break;
     case Quantity::Elastic:
-        return "elastic";
-        break;
+      return "elastic";
+      break;
     default:
-        return "unknown";
-        break;
-    }
+      return "unknown";
+      break;
+  }
 }
 
 void ITally::write_tally() {
@@ -91,29 +90,29 @@ void ITally::write_tally() {
 
   // Create the group for the tally
   auto tally_grp = h5.createGroup("results/" + this->tally_name);
-/*
-  // First write coordinates and number of groups
-  std::vector<double> x_bounds(Nx + 1, 0.);
-  for (std::size_t i = 0; i <= Nx; i++) {
-    x_bounds[i] = (static_cast<double>(i) * dx) + r_low.x();
-  }
-  tally_grp.createAttribute("x-bounds", x_bounds);
+  /*
+    // First write coordinates and number of groups
+    std::vector<double> x_bounds(Nx + 1, 0.);
+    for (std::size_t i = 0; i <= Nx; i++) {
+      x_bounds[i] = (static_cast<double>(i) * dx) + r_low.x();
+    }
+    tally_grp.createAttribute("x-bounds", x_bounds);
 
-  std::vector<double> y_bounds(Ny + 1, 0.);
-  for (std::size_t i = 0; i <= Ny; i++) {
-    y_bounds[i] = (static_cast<double>(i) * dy) + r_low.y();
-  }
-  tally_grp.createAttribute("y-bounds", y_bounds);
+    std::vector<double> y_bounds(Ny + 1, 0.);
+    for (std::size_t i = 0; i <= Ny; i++) {
+      y_bounds[i] = (static_cast<double>(i) * dy) + r_low.y();
+    }
+    tally_grp.createAttribute("y-bounds", y_bounds);
 
-  std::vector<double> z_bounds(Nz + 1, 0.);
-  for (std::size_t i = 0; i <= Nz; i++) {
-    z_bounds[i] = (static_cast<double>(i) * dz) + r_low.z();
-  }
-  tally_grp.createAttribute("z-bounds", z_bounds);
+    std::vector<double> z_bounds(Nz + 1, 0.);
+    for (std::size_t i = 0; i <= Nz; i++) {
+      z_bounds[i] = (static_cast<double>(i) * dz) + r_low.z();
+    }
+    tally_grp.createAttribute("z-bounds", z_bounds);
 
 
-  tally_grp.createAttribute("energy-bounds", energy_bounds);
-*/
+    tally_grp.createAttribute("energy-bounds", energy_bounds);
+  */
   // Save the quantity
   tally_grp.createAttribute("quantity", this->quantity_str());
 
