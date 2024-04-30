@@ -15,9 +15,12 @@ LegendreFET::LegendreFET(std::shared_ptr<CartesianFilter> position_filter_,
     : ITally(quantity_, estimator_, name_),
       cartesian_filter_(position_filter_),
       energy_in_(energy_in),
-      axes(axes_),
+      axes(),
       FET_order(FET_order_) {
   // for legendre, check the size of axis vector should be between than 3.
+  for ( auto& c : axes_){
+    axes.push_back(c);
+  }
   if (axes.size() <= 1 && axes.size() >= 3)
     fatal_error(
         "The no. of given axis for legendre-FET is not between 1 to 3 for "
@@ -101,7 +104,7 @@ void LegendreFET::score_collision(const Particle& p, const Tracker& tktr,
   const double Et = mat.Et(p.E());
 
   const double collision_score = particle_base_score(p, mat) / Et;
-
+  
   // Check weather, given-axis size is more than 1.
   // if less than 1, there will not be any index
   const size_t axis_index = indexes_.size();

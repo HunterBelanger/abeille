@@ -19,6 +19,8 @@
 #include <simulation/tracker.hpp>
 #include <utils/mpi.hpp>
 
+#include <boost/container/static_vector.hpp>
+
 class LegendreFET : public ITally {
  public:
   enum class Axis { X, Y, Z };
@@ -45,7 +47,7 @@ class LegendreFET : public ITally {
   std::shared_ptr<EnergyFilter> energy_in_;
   std::shared_ptr<EnergyFilter> energy_out_ = nullptr;
 
-  std::vector<Axis> axes;
+  boost::container::static_vector<Axis, 3> axes;
   size_t FET_order;  // Note that the number of coefficient will be one more
                      // than the order.
 };
