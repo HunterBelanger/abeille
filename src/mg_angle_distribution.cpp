@@ -66,7 +66,6 @@ MGAngleDistribution::MGAngleDistribution(const std::vector<double>& mu,
   // will be used to sample the distribuiton with importance sampling.
   for (const auto& p : pdf_) {
     if (p < 0.) {
-      warning("Encountered angular distribution with a negative PDF.");
       pdf_is_neg = true;
     }
   }
@@ -113,7 +112,7 @@ MGAngleDistribution::MGAngleDistribution(const std::vector<double>& mu,
 
     abs_pdf_ = pndl::PCTable(abs_pdf_tabulated_.x(), abs_neg_pdf_, abs_neg_cdf_,
                              pndl::Interpolation::LinLin);
-  } else
+  } else {
     // Make sure CDF is sorted and > 0
     if (std::is_sorted(cdf_.begin(), cdf_.end()) == false) {
       fatal_error("CDF is not sorted.");
