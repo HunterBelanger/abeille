@@ -4,7 +4,7 @@
 
 #include <boost/container/static_vector.hpp>
 
-using StaticVector4 = boost::container::static_vector<size_t, 4>;
+using StaticVector6 = boost::container::static_vector<size_t, 6>;
 
 
 GeneralTally::GeneralTally(std::shared_ptr<PositionFilter> position_filter,
@@ -15,7 +15,7 @@ GeneralTally::GeneralTally(std::shared_ptr<PositionFilter> position_filter,
       position_filter_(position_filter),
       energy_in_(energy_in) {
 
-  StaticVector4 tally_dimensions_;
+  StaticVector6 tally_dimensions_;
   bool check_ifany_filter = true;
 
   if (position_filter_) {
@@ -25,13 +25,7 @@ GeneralTally::GeneralTally(std::shared_ptr<PositionFilter> position_filter,
 
   if (energy_in_) {
     size_t ne = energy_in_->size();
-    if (ne > 1) {
-      tally_dimensions_.insert(tally_dimensions_.begin(), ne);
-    }
-
-    if ((ne == 1) && (check_ifany_filter == true)) {
-      tally_dimensions_.insert(tally_dimensions_.begin(), ne);
-    }
+    tally_dimensions_.insert(tally_dimensions_.begin(), ne);
 
     check_ifany_filter = check_ifany_filter && false;
   }
@@ -57,25 +51,15 @@ void GeneralTally::score_collision(const Particle& p, const Tracker& tktr,
   }
 
   std::size_t index_E;
-  StaticVector4 indexes_;
+  StaticVector6 indexes_;
 
-  bool check_filter = true;
   if (position_filter_) {
-    indexes_ = position_filter_->get_indices(
-        tktr);  // it will provde the reduce dimensions
-    check_filter = false;
+    indexes_ = position_filter_->get_indices(tktr);  // it will provde the reduce dimensions
   }
 
   if (energy_in_) {
     if (energy_in_->get_index(p.E(), index_E)) {
-      // Only add the energy_index if size of energy_bouds are more than one.
-      if (energy_in_->size() > 1) {
         indexes_.insert(indexes_.begin(), index_E);
-      }
-
-      if (energy_in_->size() == 1 && check_filter == true) {
-        indexes_.insert(indexes_.begin(), index_E);
-      }
 
     } else {
       return;
@@ -123,14 +107,14 @@ void GeneralTally::score_flight(const Particle& p, const Tracker& trkr,
   }
 
   std::size_t index_E;
-  bool energy_in_multi_size =
-      false;  // Should be true when the energy_in_->size() is greater than 1.
+  bool any_energy_in_ =
+      false;  // Should be true when the energy_in_ is there
 
   if (energy_in_) {
+    // get the energy_index if we in the bounds
     if (energy_in_->get_index(p.E(), index_E)) {
-      // Only add the energy_index if size of energy_bouds are more than one.
       // for track-length, it will done with help of bool
-      if (energy_in_->size() > 1) energy_in_multi_size = true;
+      any_energy_in_ = true;
     } else {
       return;
     }
@@ -163,7 +147,7 @@ void GeneralTally::score_flight(const Particle& p, const Tracker& trkr,
     std::vector<size_t> all_indexes_ = pos_indexes_[iter].indexes_;
     const double d_ = pos_indexes_[iter].distance_in_bin;
 
-    if (energy_in_multi_size == true) {
+    if (any_energy_in_ == false) {
       all_indexes_.insert(all_indexes_.begin(), index_E);
     }
 
@@ -174,7 +158,7 @@ void GeneralTally::score_flight(const Particle& p, const Tracker& trkr,
   }
 }
 
-std::shared_ptr<ITally> make_general_tally(const YAML::Node& node) {
+std::shared_ptr<GeneralTally> make_general_tally(const YAML::Node& node) {
   // Check the name of the tally is given or not.
   if (!node["name"]) {
     fatal_error("No valid name is provided.");
@@ -189,6 +173,37 @@ std::shared_ptr<ITally> make_general_tally(const YAML::Node& node) {
   }
   std::string estimator_name = node["estimator"].as<std::string>();
 
+  // Check for the quantity
+  std::string given_quantity = "";
+  if (!node["quantity"]){
+    fatal_error("No quantity is given for " + general_tally_name + " tally.");
+  }
+  given_quantity = node["quantity"].as<std::string>();
+  GeneralTally::Quantity quant;
+
+  bool found_quantity = false;
+  if ( given_quantity == "flux"){
+    quant = GeneralTally::Quantity::Flux;
+    found_quantity = true;
+     }
+
+  if ( given_quantity == "fission"){
+    quant = GeneralTally::Quantity::Fission;
+    found_quantity = true;
+     }
+  if ( given_quantity == "absorption"){
+    quant = GeneralTally::Quantity::Absorption;
+    found_quantity = true;
+     }
+  if ( given_quantity == "elastic"){
+    quant = GeneralTally::Quantity::Elastic;
+    found_quantity = true;
+     }
+
+  if ( found_quantity == false ){
+    fatal_error("For " + general_tally_name + " tally, a unknown quantity is given.");
+}
+
   // Get the enrgy bounds, if any is given
   std::shared_ptr<EnergyFilter> energy_filter_ = nullptr;
   if (node["energy-bounds"]) {
@@ -201,20 +216,20 @@ std::shared_ptr<ITally> make_general_tally(const YAML::Node& node) {
   std::shared_ptr<PositionFilter> position_filter_ = make_position_filter(node);
 
   // For the general tally
-  std::shared_ptr<ITally> itally_genral_tally = nullptr;
+  std::shared_ptr<GeneralTally> itally_genral_tally = nullptr;
   if (estimator_name == "collision") {
     itally_genral_tally = std::make_shared<GeneralTally>(
-        position_filter_, energy_filter_, GeneralTally::Quantity::Flux,
+        position_filter_, energy_filter_, quant,
         GeneralTally::Estimator::Collision, general_tally_name);
   }
 
   if (estimator_name == "track-length")
     itally_genral_tally = std::make_shared<GeneralTally>(
-        position_filter_, energy_filter_, GeneralTally::Quantity::Flux,
+        position_filter_, energy_filter_, quant,
         GeneralTally::Estimator::TrackLength, general_tally_name);
 
   if (itally_genral_tally == nullptr)
-    fatal_error("Incorrect \"estimator\" is given.");
+    fatal_error("Incorrect \"estimator\" is given for "+ general_tally_name +" tally.");
 
   return itally_genral_tally;
 }

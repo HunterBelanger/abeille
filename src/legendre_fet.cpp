@@ -42,13 +42,8 @@ LegendreFET::LegendreFET(std::shared_ptr<CartesianFilter> position_filter_,
   // add the dimension for energy_in_ only if greater than 1.
   if (energy_in_) {
     std::size_t ne = energy_in_->size();
-    if (ne > 1) {
-      tally_dimensions_.insert(tally_dimensions_.begin(), ne);
-    }
+    tally_dimensions_.insert(tally_dimensions_.begin(), ne);
 
-    if ((ne == 1) && (check_filter == true)) {
-      tally_dimensions_.insert(tally_dimensions_.begin(), ne);
-    }
     check_filter = check_filter && false;
   }
 
@@ -61,16 +56,13 @@ LegendreFET::LegendreFET(std::shared_ptr<CartesianFilter> position_filter_,
   if (n_axis == 0) {
     fatal_error("For tally, " + name_ + " length of axis is zero.");
   }
+  tally_dimensions_.push_back(n_axis);
 
-  if (n_axis > 1) {
-    tally_dimensions_.push_back(n_axis);
-  }
 
   // Add the dimension for the order of FET only if greater than 0
   std::size_t fet_order_dimension = FET_order_ + 1;
-  if (fet_order_dimension > 1) {
     tally_dimensions_.push_back(fet_order_dimension);
-  }
+
 
   tally_avg.reallocate(tally_dimensions_);
   tally_avg.fill(0.0);
@@ -89,33 +81,18 @@ void LegendreFET::score_collision(const Particle& p, const Tracker& tktr,
   }
 
   StaticVector6 indexes_;
-  StaticVector3 position_index_;
+  StaticVector6 position_index_;
   std::size_t index_E;
-  bool check_filter = true;
 
-  // if cartesian_filter_ exist than get the indexes
-  if (cartesian_filter_) {
-    //indexes_ = cartesian_filter_->get_indices(tktr);
     position_index_ = cartesian_filter_->get_indices(tktr);
-    for ( auto& c : position_index_ )
-       indexes_.push_back(c);
-
-    check_filter = false;
-  } else {
-    return;
-  }
+    indexes_ = position_index_;
 
   if (energy_in_) {
     if (energy_in_->get_index(p.E(), index_E)) {
-      // Only add the energy_index if size of energy_bouds are more than one.
-      if (energy_in_->size() > 1) {
         indexes_.insert(indexes_.begin(), index_E);
-      }
 
-      if (energy_in_->size() == 1 && check_filter == true) {
-        indexes_.insert(indexes_.begin(), index_E);
-      }
     } else {
+
       return;
     }
   }
@@ -150,17 +127,12 @@ void LegendreFET::score_collision(const Particle& p, const Tracker& tktr,
   // Check weather, given-axis size is more than 1.
   // if less than 1, there will not be any index
   const size_t axis_index = indexes_.size();
-  bool axes_size_more_than_1 = (axes.size() > 1);
-  if (axes_size_more_than_1) {
     indexes_.push_back(0);
-  }
 
   // Check weather, given- FET order is more than 1 or not.
   const size_t FET_index = indexes_.size();
-  bool order_more_than_0 = (FET_order > 0);
-  if (order_more_than_0) {
-    indexes_.push_back(0);
-  }
+ indexes_.push_back(0);
+
 
   // Variables for scoring
   double beta_n, scaled_loc;
@@ -169,9 +141,7 @@ void LegendreFET::score_collision(const Particle& p, const Tracker& tktr,
   for (auto& c : axes) {  // Loop over the different axis and indexing is done
                           // using the it_axis
 
-    if (axes_size_more_than_1) {
       indexes_[axis_index] = it_axis;
-    }
 
     switch (c) {
       case LegendreFET::Axis::X: {
@@ -201,11 +171,8 @@ void LegendreFET::score_collision(const Particle& p, const Tracker& tktr,
           collision_score *
           legendre(i, scaled_loc);  // score for i-th order's basis function
 
-      // if FET order is more than zero, than assigned that location otherwise,
-      // no assignment
-      if (order_more_than_0) {
         indexes_[FET_index] = i;
-      }
+
 
 #ifdef ABEILLE_USE_OMP
 #pragma omp atomic
@@ -231,6 +198,38 @@ std::shared_ptr<LegendreFET> make_legendre_fet(const YAML::Node& node) {
         "\", therefore, collision estimator will be taken, by default.");
   }
   std::string estimator_name = node["estimator"].as<std::string>();
+
+  // Check for the quantity
+  std::string given_quantity = "";
+  if (!node["quantity"]){
+    fatal_error("No quantity is given for " + legendre_fet_tally_name + " tally.");
+  }
+  given_quantity = node["quantity"].as<std::string>();
+  LegendreFET::Quantity quant;
+
+  bool found_quantity = false;
+  if ( given_quantity == "flux"){
+    quant = LegendreFET::Quantity::Flux;
+    found_quantity = true;
+     }
+
+  if ( given_quantity == "fission"){
+    quant = LegendreFET::Quantity::Fission;
+    found_quantity = true;
+     }
+  if ( given_quantity == "absorption"){
+    quant = LegendreFET::Quantity::Absorption;
+    found_quantity = true;
+     }
+  if ( given_quantity == "elastic"){
+    quant = LegendreFET::Quantity::Elastic;
+    found_quantity = true;
+     }
+
+    if ( found_quantity == false ){
+        fatal_error("For " + legendre_fet_tally_name + " tally, a unknown quantity is given.");
+    }
+
 
   // Get the enrgy bounds, if any is given
   std::shared_ptr<EnergyFilter> energy_filter_ = nullptr;
@@ -284,7 +283,7 @@ std::shared_ptr<LegendreFET> make_legendre_fet(const YAML::Node& node) {
   if (estimator_name == "collision") {
     itally_legendre_fet_tally_ = std::make_shared<LegendreFET>(
         cartesian_filter_, energy_filter_, fet_axis, FET_order_,
-        LegendreFET::Quantity::Flux, LegendreFET::Estimator::Collision,
+        quant, LegendreFET::Estimator::Collision,
         legendre_fet_tally_name);
   }
 

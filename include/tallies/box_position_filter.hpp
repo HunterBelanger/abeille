@@ -44,8 +44,8 @@ class BoxPositionFilter : public CartesianFilter {
       }
   }*/
 
-  StaticVector3 get_indices(const Tracker& tktr) override final {
-    StaticVector3 indexes;
+  StaticVector6 get_indices(const Tracker& tktr) override final {
+    StaticVector6 indexes;
     const Position r = tktr.r();
     if ((r_low.x() <= r.x() && r_high.x() >= r.x()) &&
         (r_low.y() <= r.y() && r_high.y() >= r.y()) &&
@@ -66,35 +66,35 @@ class BoxPositionFilter : public CartesianFilter {
   size_t Ny() const override final { return 1; }
   size_t Nz() const override final { return 1; }
 
-  StaticVector3 get_dimension() override final {
-    StaticVector3 pos_filter_dim{1};
+  StaticVector6 get_dimension() override final {
+    StaticVector6 pos_filter_dim{1};
     return pos_filter_dim;
   }
 
-  double x_min(const StaticVector3& index_) const override {
+  double x_min(const StaticVector6& index_) const override {
     return r_low.x();
     if (index_.empty()) return r_low.x();
   }
-  double x_max(const StaticVector3& index_) const override {
+  double x_max(const StaticVector6& index_) const override {
     return r_high.x();
     if (index_.empty()) return r_high.x();
   }
 
-  double y_min(const StaticVector3& index_) const override {
+  double y_min(const StaticVector6& index_) const override {
     return r_low.y();
     if (index_.empty()) return r_low.y();
   }
-  double y_max(const StaticVector3& index_) const override {
+  double y_max(const StaticVector6& index_) const override {
     return r_high.y();
     if (index_.empty()) return r_high.y();
   }
 
-  double z_min(const StaticVector3& index_) const override {
+  double z_min(const StaticVector6& index_) const override {
     return r_low.z();
     if (index_.empty()) return r_low.z();
   }
 
-  double z_max(const StaticVector3& index_) const override {
+  double z_max(const StaticVector6& index_) const override {
     return r_high.z();
     if (index_.empty()) return r_high.z();
   }

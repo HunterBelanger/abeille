@@ -68,13 +68,13 @@ std::string ITally::quantity_str(){
         return "flux";
         break;
     case Quantity::Fission:
-        return "flux";
+        return "fission";
         break;
     case Quantity::Absorption:
-        return "flux";
+        return "absorption";
         break;
     case Quantity::Elastic:
-        return "flux";
+        return "elastic";
         break;
     default:
         return "unknown";

@@ -12,7 +12,7 @@
 #include <boost/container/static_vector.hpp>
 
 
-using StaticVector3 = boost::container::static_vector<size_t, 3>;
+using StaticVector6 = boost::container::static_vector<size_t, 6>;
 
 
 enum class FilterType {
@@ -41,7 +41,7 @@ class PositionFilter {
 
   //virtual std::vector<size_t> get_indices(const Tracker& tktr) = 0;
 
-  virtual StaticVector3 get_indices(const Tracker& tktr) = 0;
+  virtual StaticVector6 get_indices(const Tracker& tktr) = 0;
 
   virtual std::vector<TracklengthDistance> get_indices_tracklength(
       const Tracker& trkr, double d_flight) = 0;
@@ -50,7 +50,7 @@ class PositionFilter {
   virtual size_t Ny() const = 0;
   virtual size_t Nz() const = 0;
 
-  virtual StaticVector3 get_dimension() = 0;
+  virtual StaticVector6 get_dimension() = 0;
 
   // Perhaps Not Needed
   virtual FilterType type() const { return FilterType::Position_Filter; }

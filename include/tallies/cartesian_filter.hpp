@@ -20,14 +20,14 @@ class CartesianFilter : public PositionFilter {
 
   virtual ~CartesianFilter() = default;
 
-  virtual double x_min(const StaticVector3& index_) const = 0;
-  virtual double x_max(const StaticVector3& index_) const = 0;
+  virtual double x_min(const StaticVector6& index_) const = 0;
+  virtual double x_max(const StaticVector6& index_) const = 0;
 
-  virtual double y_min(const StaticVector3& index_) const = 0;
-  virtual double y_max(const StaticVector3& index_) const = 0;
+  virtual double y_min(const StaticVector6& index_) const = 0;
+  virtual double y_max(const StaticVector6& index_) const = 0;
 
-  virtual double z_min(const StaticVector3& index_) const = 0;
-  virtual double z_max(const StaticVector3& index_) const = 0;
+  virtual double z_min(const StaticVector6& index_) const = 0;
+  virtual double z_max(const StaticVector6& index_) const = 0;
 
   virtual size_t Nx() const = 0;
   virtual size_t Ny() const = 0;

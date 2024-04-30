@@ -16,7 +16,10 @@ class MeshPositionFilter : public CartesianFilter {
         Ny_(ny_),
         Nz_(nz_),
         ymin(),
-        zmin() {
+        zmin(),
+        index_x(),
+        index_y(),
+        index_z() {
     if (Nx_ == 0 || Ny_ == 0 || Nz_ == 0)
       fatal_error("The number of bins in any direction cannot be zero.\n");
 
@@ -30,11 +33,31 @@ class MeshPositionFilter : public CartesianFilter {
 
     std::cout << "Dx = " << dx << "\n(1) " << r_low.x() << "\n(2)"
               << (r_low.x() + dx) << "\n(3)" << (r_low.x() + 2.0 * dx) << "\n";
+
+    index_x = 0;
+    index_y = 1;
+    index_z = 2;
+    if (Nx_ == 1){
+        index_x = 0;
+        index_y--;
+        index_z--;
+    }
+
+    if ( Ny_ == 1){
+        index_y = 0;
+        index_z--;
   }
+
+  if (Nz_ == 1){
+    index_z = 0;
+  }
+
+  
+        }
 
   ~MeshPositionFilter() = default;
 
-  StaticVector3 get_indices(
+  StaticVector6 get_indices(
       const Tracker& tktr) override final;  // override final;
 
   // std::vector<TracklengthDistance> get_indices_tracklength(Position r, const
@@ -48,93 +71,69 @@ class MeshPositionFilter : public CartesianFilter {
 
   // Note that the method given is applicable when the reduced_dimension is
   // used.
-  double x_min(const StaticVector3& index_) const override {
+  double x_min(const StaticVector6& index_) const override {
     if (Nx_ == 1) {
       return r_low.x();
     }
 
-    const double xmin_ = r_low.x() + static_cast<double>(index_[0]) * dx;
+    const double xmin_ = r_low.x() + static_cast<double>(index_[index_x]) * dx;
     return xmin_;
   }
 
   // Note that the method given is applicable when the reduced_dimension is
   // used.
-  double x_max(const StaticVector3& index_) const override {
+  double x_max(const StaticVector6& index_) const override {
     if (Nx_ == 1) {
       return r_high.x();
     }
-    const double xmax_ = r_low.x() + static_cast<double>(index_[0]) * dx + dx;
+    const double xmax_ = r_low.x() + static_cast<double>(index_[index_x]) * dx + dx;
     return xmax_;
   }
 
   // Note that the method given is applicable when the reduced_dimension is
   // used.
-  double y_min(const StaticVector3& index_) const override {
+  double y_min(const StaticVector6& index_) const override {
     if (Ny_ == 1) {
       return r_low.y();
     }
 
-    size_t y_position_index = 1;
-    if (Nx_ == 1) {
-      y_position_index = 0;
-    }
-
     const double ymin_ =
-        r_low.y() + static_cast<double>(index_[y_position_index]) * dy;
+        r_low.y() + static_cast<double>(index_[index_y]) * dy;
     return ymin_;
   }
 
   // Note that the method given is applicable when the reduced_dimension is
   // used.
-  double y_max(const StaticVector3& index_) const override {
+  double y_max(const StaticVector6& index_) const override {
     if (Ny_ == 1) return r_high.y();
 
-    size_t y_position_index = 1;
-    if (Nx_ == 1) {
-      y_position_index = 0;
-    }
-
     const double ymax_ =
-        r_low.y() + static_cast<double>(index_[y_position_index]) * dy + dy;
+        r_low.y() + static_cast<double>(index_[index_y]) * dy + dy;
     return ymax_;
   }
 
   // Note that the method given is applicable when the reduced_dimension is
   // used.
-  double z_min(const StaticVector3& index_) const override {
+  double z_min(const StaticVector6& index_) const override {
     if (Nz_ == 1) return r_low.z();
 
-    size_t z_position_index = 2;
-    if (Nx_ == 1) {
-      z_position_index--;
-    }
-
-    if (Ny_ == 1) z_position_index--;
-
     const double zmin_ =
-        r_low.z() + static_cast<double>(index_[z_position_index]) * dz;
+        r_low.z() + static_cast<double>(index_[index_z]) * dz;
     return zmin_;
   }
 
   // Note that the method given is applicable when the reduced_dimension is
   // used.
-  double z_max(const StaticVector3& index_) const override {
+  double z_max(const StaticVector6& index_) const override {
     if (Nz_ == 1) return r_high.z();
 
-    size_t z_position_index = 2;
-    if (Nx_ == 1) {
-      z_position_index--;
-    }
-
-    if (Ny_ == 1) z_position_index--;
-
     const double zmax_ =
-        r_low.z() + static_cast<double>(index_[z_position_index]) * dz + dz;
+        r_low.z() + static_cast<double>(index_[index_z]) * dz + dz;
     return zmax_;
   }
 
-  StaticVector3 get_dimension() override final {
-    StaticVector3 pos_filter_dim{Nx_, Ny_, Nz_};
+  StaticVector6 get_dimension() override final {
+    StaticVector6 pos_filter_dim{Nx_, Ny_, Nz_};
     reduce_dimension(pos_filter_dim);
     return pos_filter_dim;
   }
@@ -146,9 +145,10 @@ class MeshPositionFilter : public CartesianFilter {
  private:
   size_t Nx_, Ny_, Nz_;
   double ymin, zmin;
+  size_t index_x, index_y, index_z;
 
   // function will reduce the dimsion, if there is only one bin in the direction
-  void reduce_dimension(StaticVector3& dimension_) {
+  void reduce_dimension(StaticVector6& dimension_) {
     int it_ = 0;
     if ((Nx_ == 1) && (dimension_.size() > 1)) {
       auto dimen_begin_ = dimension_.begin();
@@ -171,8 +171,9 @@ class MeshPositionFilter : public CartesianFilter {
     }
   }
 
-  // function-overloading will reduce the dimsion, if there is only one bin in the direction
-  void reduce_dimension(std::vector<std::size_t>& dimension_) {
+    // function-overloading for std::vecotr<size_t> type will reduce the dimsion, if there is only one bin in the direction
+    // this is currently being used for the track-length
+  void reduce_dimension(std::vector<size_t> dimension_) {
     int it_ = 0;
     if ((Nx_ == 1) && (dimension_.size() > 1)) {
       auto dimen_begin_ = dimension_.begin();
@@ -194,6 +195,7 @@ class MeshPositionFilter : public CartesianFilter {
       it_--;
     }
   }
+
 
 };
 

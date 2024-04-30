@@ -41,6 +41,6 @@ class GeneralTally : public ITally {
   std::shared_ptr<EnergyFilter> energy_out_ = nullptr;
 };
 
-std::shared_ptr<ITally> make_general_tally(const YAML::Node& node);
+std::shared_ptr<GeneralTally> make_general_tally(const YAML::Node& node);
 
 #endif
