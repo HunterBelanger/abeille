@@ -62,10 +62,11 @@ MGAngleDistribution::MGAngleDistribution(const std::vector<double>& mu,
   }
 
   // Make sure PDF is positive
-  // if pdf found to be negative, then weight modifier will be used.
+  // If portions of the pdf are found to be negative, then a weight modifier
+  // will be used to sample the distribuiton with importance sampling.
   for (const auto& p : pdf_) {
     if (p < 0.) {
-      warning("PDF is less than 0.");
+      warning("Encountered angular distribution with a negative PDF.");
       pdf_is_neg = true;
     }
   }
@@ -112,10 +113,7 @@ MGAngleDistribution::MGAngleDistribution(const std::vector<double>& mu,
 
     abs_pdf_ = pndl::PCTable(abs_pdf_tabulated_.x(), abs_neg_pdf_, abs_neg_cdf_,
                              pndl::Interpolation::LinLin);
-  }
-
-  // Make sure CDF is positive
-  if (pdf_is_neg == false) {
+  } else
     // Make sure CDF is sorted and > 0
     if (std::is_sorted(cdf_.begin(), cdf_.end()) == false) {
       fatal_error("CDF is not sorted.");
