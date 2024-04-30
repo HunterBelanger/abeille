@@ -70,25 +70,7 @@ void GeneralTally::score_collision(const Particle& p, const Tracker& tktr,
   }
 
   const double Et = mat.Et(p.E());
-  double collision_score = 1.0 / (Et * net_weight_);
-
-  switch (quantity_) {
-    case Quantity::Flux:
-      collision_score *= p.wgt();
-      break;
-
-    case Quantity::Fission:
-      collision_score *= p.wgt() * mat.Ef(p.E());
-      break;
-
-    case Quantity::Absorption:
-      collision_score *= p.wgt() * mat.Ea(p.E());
-      break;
-
-    case Quantity::Elastic:
-      collision_score *= p.wgt() * mat.Eelastic(p.E());
-      break;
-  }
+  const double collision_score = particle_base_score(p, mat) / Et;
 
 #ifdef ABEILLE_USE_OMP
 #pragma omp atomic
@@ -118,25 +100,7 @@ void GeneralTally::score_flight(const Particle& p, const Tracker& trkr,
     }
   }
 
-  double flight_score = 1.0 / (net_weight_);
-
-  switch (quantity_) {
-    case Quantity::Flux:
-      flight_score *= p.wgt();
-      break;
-
-    case Quantity::Fission:
-      flight_score *= p.wgt() * mat.Ef(p.E());
-      break;
-
-    case Quantity::Absorption:
-      flight_score *= p.wgt() * mat.Ea(p.E());
-      break;
-
-    case Quantity::Elastic:
-      flight_score *= p.wgt() * mat.Eelastic(p.E());
-      break;
-  }
+  double flight_score = particle_base_score(p, mat);
 
   std::vector<TracklengthDistance> pos_indexes_ =
       position_filter_->get_indices_tracklength(trkr, d_flight);

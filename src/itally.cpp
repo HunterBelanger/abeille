@@ -9,6 +9,28 @@
 
 // #include <boost/container/static_vector.hpp>
 
+double ITally::particle_base_score(const Particle& p, MaterialHelper& mat) {
+  double collision_score = 1.0 / (net_weight_);
+  switch (quantity_) {
+    case Quantity::Flux:
+      collision_score *= p.wgt();
+      break;
+
+    case Quantity::Fission:
+      collision_score *= p.wgt() * mat.Ef(p.E());
+      break;
+
+    case Quantity::Absorption:
+      collision_score *= p.wgt() * mat.Ea(p.E());
+      break;
+
+    case Quantity::Elastic:
+      collision_score *= p.wgt() * mat.Eelastic(p.E());
+      break;
+  }
+  return collision_score;
+}
+
 void ITally::record_generation(double multiplier) {
   gen_++;
 

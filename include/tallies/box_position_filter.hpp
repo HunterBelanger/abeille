@@ -29,21 +29,6 @@ class BoxPositionFilter : public CartesianFilter {
 
   ~BoxPositionFilter() = default;
 
-  /*bool get_indices(const Tracker& tktr, std::vector<std::size_t> indices)  {
-      const Position r = tktr.r();
-      if ( (r_low.x() <= r.x() && r_high.x() >= r.x())
-      && (r_low.y() <= r.y() && r_high.y() >= r.y())
-      && (r_low.z() <= r.z() && r_high.z() >= r.z())){
-          //indices.fill(static_cast<size_t> (0));
-          indices.push_back(0);
-          return true;
-      }
-      else{
-          indices.push_back(-1);
-          return false;
-      }
-  }*/
-
   StaticVector6 get_indices(const Tracker& tktr) override final {
     StaticVector6 indexes;
     const Position r = tktr.r();

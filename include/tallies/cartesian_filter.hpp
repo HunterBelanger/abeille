@@ -32,6 +32,7 @@ class CartesianFilter : public PositionFilter {
   virtual size_t Ny() const = 0;
   virtual size_t Nz() const = 0;
 
+ protected:
   // required for track-length
   bool find_entry_point(Position& r, const Direction& u,
                         double& d_flight) const;

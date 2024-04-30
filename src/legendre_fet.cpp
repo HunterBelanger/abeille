@@ -100,25 +100,7 @@ void LegendreFET::score_collision(const Particle& p, const Tracker& tktr,
 
   const double Et = mat.Et(p.E());
 
-  double collision_score = 1.0 / (Et * net_weight_);
-
-  switch (quantity_) {
-    case LegendreFET::Quantity::Flux:
-      collision_score *= p.wgt();
-      break;
-
-    case LegendreFET::Quantity::Fission:
-      collision_score *= p.wgt() * mat.Ef(p.E());
-      break;
-
-    case LegendreFET::Quantity::Absorption:
-      collision_score *= p.wgt() * mat.Ea(p.E());
-      break;
-
-    case LegendreFET::Quantity::Elastic:
-      collision_score *= p.wgt() * mat.Eelastic(p.E());
-      break;
-  }
+  const double collision_score = particle_base_score(p, mat) / Et;
 
   // Check weather, given-axis size is more than 1.
   // if less than 1, there will not be any index

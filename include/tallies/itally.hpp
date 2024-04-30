@@ -58,6 +58,9 @@ class ITally {
   void write_tally();
 
  protected:
+  double particle_base_score(const Particle& p, MaterialHelper& mat);
+
+ protected:
   NDArray<double> tally_avg;
   NDArray<double> tally_gen_score;
   NDArray<double> tally_var;
