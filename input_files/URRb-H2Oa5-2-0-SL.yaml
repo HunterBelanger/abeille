@@ -50,7 +50,7 @@ tallies:
   - type: ITally
     #tally-type: general
     tally-type: legendre-FET
-    FET-order: 20
+    FET-order: 30
     #Position-Filter: regular-reactangular-mesh
     Position-Filter: box
     shape: [2, 1, 1]

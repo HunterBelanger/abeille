@@ -41,7 +41,6 @@
 #include <stdexcept>
 #include <string>
 
-#include <tallies/testing.h>
 
 #ifdef ABEILLE_USE_OMP
 #include <omp.h>
@@ -83,7 +82,6 @@ bool exists(std::string fname) {
 }
 
 int main(int argc, char** argv) {
-  test_function();
   settings::alpha_omega_timer.start();
 
   mpi::initialize_mpi(&argc, &argv);
