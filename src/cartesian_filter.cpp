@@ -1,10 +1,10 @@
-#include <tallies/cartesian_filter.hpp>
 #include <tallies/box_position_filter.hpp>
+#include <tallies/cartesian_filter.hpp>
 #include <tallies/mesh_position_filter.hpp>
 #include <utils/constants.hpp>
 
 bool CartesianFilter::find_entry_point(Position& r, const Direction& u,
-                                            double& d_flight) const {
+                                       double& d_flight) const {
   const double ux_inv = 1. / u.x();
   const double uy_inv = 1. / u.y();
   const double uz_inv = 1. / u.z();
@@ -77,12 +77,9 @@ bool CartesianFilter::find_entry_point(Position& r, const Direction& u,
   return true;
 }
 
-
-
-void CartesianFilter::initialize_indices(const Position& r, const Direction& u, int& i,
-                                              int& j, int& k,
-                                              std::array<int, 3>& on) {
-
+void CartesianFilter::initialize_indices(const Position& r, const Direction& u,
+                                         int& i, int& j, int& k,
+                                         std::array<int, 3>& on) {
   i = static_cast<int>(std::floor((r.x() - r_low.x()) * dx_inv));
   j = static_cast<int>(std::floor((r.y() - r_low.y()) * dy_inv));
   k = static_cast<int>(std::floor((r.z() - r_low.z()) * dz_inv));
@@ -151,9 +148,8 @@ void CartesianFilter::initialize_indices(const Position& r, const Direction& u, 
   }
 }
 
-
 void CartesianFilter::update_indices(int key, int& i, int& j, int& k,
-                                          std::array<int, 3>& on) {
+                                     std::array<int, 3>& on) {
   // Must initially fill with zero, so that we don't stay on top
   // of other surfaces the entire time
   on.fill(0);
@@ -194,11 +190,9 @@ void CartesianFilter::update_indices(int key, int& i, int& j, int& k,
   }
 }
 
-
-std::pair<double, int> CartesianFilter::distance_to_next_index(const Position& r, const Direction& u, const std::array<int, 3>& on, 
-                                                int i , int j, int k) {
-
-
+std::pair<double, int> CartesianFilter::distance_to_next_index(
+    const Position& r, const Direction& u, const std::array<int, 3>& on, int i,
+    int j, int k) {
   // Get position at center of current tile
   double xc = r_low.x() + i * dx + 0.5 * dx;
   double yc = r_low.y() + j * dy + 0.5 * dy;
@@ -263,24 +257,23 @@ std::pair<double, int> CartesianFilter::distance_to_next_index(const Position& r
   return {dist, key};
 }
 
-
 // make the cartesian filter
-std::shared_ptr<CartesianFilter> make_cartesian_filter(const YAML::Node& node){
-    
-    std::shared_ptr<CartesianFilter> cartesian_filter_ = nullptr;
+std::shared_ptr<CartesianFilter> make_cartesian_filter(const YAML::Node& node) {
+  std::shared_ptr<CartesianFilter> cartesian_filter_ = nullptr;
 
-    if (!node["Position-Filter"]){
-        fatal_error("Position-Filter is not given.");
-    }
-    const std::string cartesian_filter_type = node["Position-Filter"].as<std::string>();
+  if (!node["Position-Filter"]) {
+    fatal_error("Position-Filter is not given.");
+  }
+  const std::string cartesian_filter_type =
+      node["Position-Filter"].as<std::string>();
 
-    if ( cartesian_filter_type == "box"){
-        cartesian_filter_ = make_box_position_filter<CartesianFilter>(node);
-    }
+  if (cartesian_filter_type == "box") {
+    cartesian_filter_ = make_box_position_filter<CartesianFilter>(node);
+  }
 
-    if ( cartesian_filter_type == "regular-reactangular-mesh"){
-        cartesian_filter_ = make_mesh_position_filter<CartesianFilter>(node);
-    }
+  if (cartesian_filter_type == "regular-reactangular-mesh") {
+    cartesian_filter_ = make_mesh_position_filter<CartesianFilter>(node);
+  }
 
-    return cartesian_filter_;
+  return cartesian_filter_;
 }

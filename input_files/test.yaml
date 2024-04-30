@@ -1,0 +1,96 @@
+# Analytical Benchmark test set for crticallity verification
+# Problem-58
+# Problemm Name- URRb-H2Oa(1)-2-0-SL
+# k_eff = 1.0
+
+materials:
+  - name: U-Research-Reactor
+    id: 1
+    total: [0.88721, 2.9727]
+    absorption: [0.00194, 0.053633]
+    fission: [0.000836, 0.029564]
+    nu: [2.5, 2.5]
+    chi: [[1.0, 0.0],
+          [1.0, 0.0]]
+    scatter: [[0.83892, 0.04635],
+              [0.000767, 2.9183]]
+  
+  - name: H2Oa
+    id: 2
+    total: [0.88798, 2.9865]
+    absorption: [0.00074, 0.018564]
+    fission: [0., 0.]
+    nu: [0., 0.]
+    chi: [[0., 0.],
+          [0., 0.]]
+    scatter: [[0.83975, 0.04749],
+              [0.000336, 2.9676]]
+
+surfaces:
+  - {type: xplane, x0: -6.696802, id: 1}
+  - {type: xplane, x0: 6.696802, id: 2}
+  - {type: xplane, x0: -7.822954, boundary: vacuum, id: 3}
+  - {type: xplane, x0: 7.822954, boundary: vacuum, id: 4}
+  - {type: yplane, y0: -100, boundary: reflective, id: 5}
+  - {type: yplane, y0: 100, boundary: reflective, id: 6}
+  - {type: zplane, z0: -100, boundary: reflective, id: 7}
+  - {type: zplane, z0: 100, boundary: reflective, id: 8}
+
+cells:
+  - {region: "+1 & -2 & +5 & -6 & +7 & -8", material: 1, id: 1}
+  - {region: "+3 & -1 & +5 & -6 & +7 & -8", material: 2, id: 2}
+  - {region: "+2 & -4 & +5 & -6 & +7 & -8", material: 2, id: 3}
+
+universes:
+  - {cells: [3, 1, 2], id: 1}
+
+root-universe: 1
+
+
+tallies:
+  - #shape: [1, 1, 1]
+    shape: [1000, 1, 1]
+    low: [-7.822954, -100., -100.]
+    hi:  [ 7.822954,  100.,  100.]
+    energy-bounds: [0., 1., 2.]
+    quantity: flux
+    name: flux_PUa
+    estimator: collision
+  
+  - type: ITally
+    tally-type: legendre-FET
+    FET-order: 5
+    Position-Filter: regular-reactangular-mesh
+    #Position-Filter: box
+    shape: [2, 1, 1]
+    low: [-7.822954, -100., -100.]
+    high:  [ 7.822954,  100.,  100.]
+    energy-bounds: [1., 2.]
+    quantity: flux
+    name: flux-3
+    estimator: collision
+    FET-axis: [X]
+
+settings: 
+  energy-mode: multi-group
+  ngroups: 2
+  energy-bounds: [0, 1, 2]
+
+simulation:
+  mode: k-eigenvalue
+  nparticles: 10000
+  ngenerations: 500
+  nignored: 100
+
+  sources:
+    - spatial:
+        type: box
+        low: [-6., -50., -50.]
+        hi:  [ 6.,  50.,  50.]
+      direction:
+        type: isotropic
+      energy:
+        type: mono-energetic
+        energy: 0.5
+      weight: 1.
+

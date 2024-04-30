@@ -82,7 +82,6 @@ bool exists(std::string fname) {
   return file.good();
 }
 
-
 int main(int argc, char** argv) {
   test_function();
   settings::alpha_omega_timer.start();

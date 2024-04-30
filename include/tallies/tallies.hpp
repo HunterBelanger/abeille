@@ -35,8 +35,8 @@
 
 #include <string>
 
-#include <tallies/itally.hpp>
 #include <simulation/tracker.hpp>
+#include <tallies/itally.hpp>
 
 struct ThreadLocalScores {
   double k_col_score = 0.;
@@ -67,7 +67,7 @@ class Tallies {
 
   static Tallies& instance();
 
-  void add_ITally(std::shared_ptr<ITally> new_tally){
+  void add_ITally(std::shared_ptr<ITally> new_tally) {
     new_tally->set_net_weight(total_weight);
     new_I_tallies.push_back(new_tally);
   }
@@ -84,19 +84,22 @@ class Tallies {
 
   //===============================================
   // NEW TALLY INTERFACE
-  void score_collision(const Particle& p, const Tracker& tktr, MaterialHelper& mat){     
-    if (scoring_ && !new_I_tallies.empty()){
-      for( auto& new_tally : new_I_tallies){
+  void score_collision(const Particle& p, const Tracker& tktr,
+                       MaterialHelper& mat) {
+    if (scoring_ && !new_I_tallies.empty()) {
+      for (auto& new_tally : new_I_tallies) {
         new_tally->score_collision(p, tktr, mat);
       }
     }
   }
 
-  //void score_flight(const Particle& p, double d_flight, MaterialHelper& mat, bool new_tally_flight){
-  void score_flight(const Particle& p, const Tracker& trkr, double d_flight, MaterialHelper& mat){
-    if ( scoring_ && !new_I_tallies.empty() ){
-      for( auto& new_tally : new_I_tallies){
-        //new_tally->score_flight(p, d_flight, mat);
+  // void score_flight(const Particle& p, double d_flight, MaterialHelper& mat,
+  // bool new_tally_flight){
+  void score_flight(const Particle& p, const Tracker& trkr, double d_flight,
+                    MaterialHelper& mat) {
+    if (scoring_ && !new_I_tallies.empty()) {
+      for (auto& new_tally : new_I_tallies) {
+        // new_tally->score_flight(p, d_flight, mat);
         new_tally->score_flight(p, trkr, d_flight, mat);
       }
     }
@@ -206,7 +209,8 @@ class Tallies {
     for (auto& t : source_mesh_tallies_) t->set_net_weight(total_weight);
     for (auto& t : noise_source_mesh_tallies_) t->set_net_weight(total_weight);
 
-    for (auto& new_tally : new_I_tallies)  new_tally->set_net_weight(total_weight);
+    for (auto& new_tally : new_I_tallies)
+      new_tally->set_net_weight(total_weight);
   }
 
   int generations() const { return gen; }

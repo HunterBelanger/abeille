@@ -20,7 +20,7 @@
 #include <boost/container/static_vector.hpp>
 
 #include <ndarray.hpp>
-
+/*
 namespace bc = boost::container;
 
 using StaticVector = bc::static_vector<size_t, 9>;
@@ -52,7 +52,9 @@ void test_function(){
   std::cout<<"*********---- End of Testing Mode -----*********\n";
 
 }
+*/
 
+void test_function(){}
 
 
 #endif

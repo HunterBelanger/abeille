@@ -141,7 +141,7 @@ void MeshTally::record_generation(double multiplier) {
       var = var + ((val - old_avg) * (val - avg) - (var)) * invs_dg;
       tally_var[i] = var;
 
-      //std::cout<<"Given :"<<tally_avg[i]<<"\n";
+      // std::cout<<"Given :"<<tally_avg[i]<<"\n";
     }
   }
 }
@@ -201,5 +201,4 @@ void MeshTally::write_tally() {
   auto std_dset =
       tally_grp.createDataSet<double>("std", H5::DataSpace(tally_var.shape()));
   std_dset.write_raw(&tally_var[0]);
-
 }
