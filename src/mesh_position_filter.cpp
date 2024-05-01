@@ -2,8 +2,8 @@
 #include <tallies/position_filter.hpp>
 #include <utils/output.hpp>
 
-StaticVector6 MeshPositionFilter::get_indices(const Tracker& tktr) {
-  StaticVector6 indexes;
+StaticVector3 MeshPositionFilter::get_indices(const Tracker& tktr) {
+  StaticVector3 indexes;
   const Position r = tktr.r();
   int index_x = static_cast<int>(std::floor((r.x() - r_low.x()) * dx_inv));
   int index_y = static_cast<int>(std::floor((r.y() - r_low.y()) * dy_inv));

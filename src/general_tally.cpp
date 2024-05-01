@@ -4,7 +4,7 @@
 
 #include <boost/container/static_vector.hpp>
 
-using StaticVector6 = boost::container::static_vector<size_t, 6>;
+using StaticVector4 = boost::container::static_vector<size_t, 4>;
 
 GeneralTally::GeneralTally(std::shared_ptr<PositionFilter> position_filter,
                            std::shared_ptr<EnergyFilter> energy_in,
@@ -13,13 +13,16 @@ GeneralTally::GeneralTally(std::shared_ptr<PositionFilter> position_filter,
     : ITally(quantity, estimator, name_),
       position_filter_(position_filter),
       energy_in_(energy_in) {
-  StaticVector6 tally_dimensions_;
+        
   bool check_ifany_filter = true;
 
+  StaticVector3 position_shape_;
   if (position_filter_) {
-    tally_dimensions_ = position_filter_->get_dimension();
+    position_shape_ = position_filter_->get_dimension();
     check_ifany_filter = false;
   }
+
+  StaticVector4 tally_dimensions_(position_shape_.begin(), position_shape_.end());
 
   if (energy_in_) {
     size_t ne = energy_in_->size();
@@ -49,23 +52,25 @@ void GeneralTally::score_collision(const Particle& p, const Tracker& tktr,
   }
 
   std::size_t index_E;
-  StaticVector6 indexes_;
+  StaticVector3 position_indexes;
 
   if (position_filter_) {
-    indexes_ = position_filter_->get_indices(
+    position_indexes = position_filter_->get_indices(
         tktr);  // it will provde the reduce dimensions
   }
+  
+  StaticVector4 indexes(position_indexes.begin(), position_indexes.end());
 
   if (energy_in_) {
     if (energy_in_->get_index(p.E(), index_E)) {
-      indexes_.insert(indexes_.begin(), index_E);
+      indexes.insert(indexes.begin(), index_E);
 
     } else {
       return;
     }
   }
 
-  if (indexes_.empty()) {
+  if (indexes.empty()) {
     return;
   }
 
@@ -75,7 +80,7 @@ void GeneralTally::score_collision(const Particle& p, const Tracker& tktr,
 #ifdef ABEILLE_USE_OMP
 #pragma omp atomic
 #endif
-  tally_gen_score(indexes_) += collision_score;
+  tally_gen_score(indexes) += collision_score;
 }
 
 // void GeneralTally::score_flight(const Particle& p,

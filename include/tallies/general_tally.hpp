@@ -1,16 +1,15 @@
 #ifndef GENERAL_TALLY_H
 #define GENERAL_TALLY_H
 
-#include <memory>
-
-#include <yaml-cpp/yaml.h>
-
-#include <tallies/energy_filter.hpp>
 #include <tallies/itally.hpp>
 #include <tallies/position_filter.hpp>
+#include <tallies/energy_filter.hpp>
 
-#include <tallies/box_position_filter.hpp>
-#include <utils/mpi.hpp>
+#include <yaml-cpp/yaml.h>
+#include <boost/container/static_vector.hpp>
+using StaticVector4 = boost::container::static_vector<size_t, 4>;
+
+#include <memory>
 
 class GeneralTally : public ITally {
  public:
@@ -30,7 +29,6 @@ class GeneralTally : public ITally {
   void score_collision(const Particle& p, const Tracker& tktr,
                        MaterialHelper& mat) override final;
 
-  // void score_flight(const Particle& p, double d_flight ,MaterialHelper& mat )
   // override final;
   void score_flight(const Particle& p, const Tracker& trkr, double d_flight,
                     MaterialHelper& mat) override final;

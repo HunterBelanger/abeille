@@ -1,23 +1,12 @@
 #ifndef ITALLY_H
 #define ITALLY_H
 
-#include <memory>
-
-#include <yaml-cpp/yaml.h>
-#include <ndarray.hpp>
-
 #include <materials/material_helper.hpp>
 #include <simulation/particle.hpp>
 #include <simulation/tracker.hpp>
-#include <tallies/box_position_filter.hpp>
-#include <tallies/energy_filter.hpp>
-#include <tallies/mesh_position_filter.hpp>
-#include <tallies/position_filter.hpp>
-#include <utils/error.hpp>
-#include <utils/mpi.hpp>
-#include <utils/position.hpp>
 
-#include <boost/container/static_vector.hpp>
+#include <ndarray.hpp>
+#include <yaml-cpp/yaml.h>
 
 class ITally {
  public:
@@ -42,8 +31,6 @@ class ITally {
                                MaterialHelper& mat) = 0;
 
   // For track-length estimator
-  // virtual void score_flight(const Particle& p, double d_flight
-  // ,MaterialHelper& mat ) = 0;
   virtual void score_flight(const Particle& p, const Tracker& trkr,
                             double d_flight, MaterialHelper& mat) = 0;
 
@@ -60,7 +47,6 @@ class ITally {
  protected:
   double particle_base_score(const Particle& p, MaterialHelper& mat);
 
- protected:
   NDArray<double> tally_avg;
   NDArray<double> tally_gen_score;
   NDArray<double> tally_var;

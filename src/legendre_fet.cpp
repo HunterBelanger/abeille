@@ -1,10 +1,8 @@
 #include <tallies/legendre_fet.hpp>
-#include <utils/mpi.hpp>
-
+#include <utils/legendre.hpp>
 #include <tallies/itally.hpp>
 
 #include <boost/container/static_vector.hpp>
-
 using StaticVector6 = boost::container::static_vector<size_t, 6>;
 
 LegendreFET::LegendreFET(std::shared_ptr<CartesianFilter> position_filter_,
@@ -27,19 +25,22 @@ LegendreFET::LegendreFET(std::shared_ptr<CartesianFilter> position_filter_,
         "tally " +
         name_ + ".");
 
-  StaticVector6 tally_dimensions_;
+
 
   bool check_filter = true;
 
   // add the dimension for the cartesian_filter_
+  StaticVector3 position_shape;
   if (cartesian_filter_) {
-    tally_dimensions_ = position_filter_->get_dimension();
+    position_shape = position_filter_->get_dimension();
     check_filter = false;
   } else {
     fatal_error("For the tally, " + name_ +
                 ", the positional filter is required to do the legendre "
                 "functional expansion tally.");
   }
+
+  StaticVector6 tally_dimensions_(position_shape.begin(), position_shape.end());
 
   // add the dimension for energy_in_ only if greater than 1.
   if (energy_in_) {
@@ -80,16 +81,14 @@ void LegendreFET::score_collision(const Particle& p, const Tracker& tktr,
     return;
   }
 
-  StaticVector6 indexes_;
-  StaticVector6 position_index_;
   std::size_t index_E;
-
-  position_index_ = cartesian_filter_->get_indices(tktr);
-  indexes_ = position_index_;
+  StaticVector3 position_index = cartesian_filter_->get_indices(tktr);
+  
+  StaticVector6 indexes(position_index.begin(), position_index.end());
 
   if (energy_in_) {
     if (energy_in_->get_index(p.E(), index_E)) {
-      indexes_.insert(indexes_.begin(), index_E);
+      indexes.insert(indexes.begin(), index_E);
 
     } else {
       return;
@@ -97,7 +96,7 @@ void LegendreFET::score_collision(const Particle& p, const Tracker& tktr,
   }
 
   // if the indexes_ is empty, then, we didn't get any scoring bin(s)
-  if (indexes_.empty()) {
+  if (indexes.empty()) {
     return;
   }
 
@@ -107,12 +106,12 @@ void LegendreFET::score_collision(const Particle& p, const Tracker& tktr,
   
   // Check weather, given-axis size is more than 1.
   // if less than 1, there will not be any index
-  const size_t axis_index = indexes_.size();
-  indexes_.push_back(0);
+  const size_t axis_index = indexes.size();
+  indexes.push_back(0);
 
   // Check weather, given- FET order is more than 1 or not.
-  const size_t FET_index = indexes_.size();
-  indexes_.push_back(0);
+  const size_t FET_index = indexes.size();
+  indexes.push_back(0);
 
   // Variables for scoring
   double beta_n, scaled_loc;
@@ -121,24 +120,24 @@ void LegendreFET::score_collision(const Particle& p, const Tracker& tktr,
   for (auto& c : axes) {  // Loop over the different axis and indexing is done
                           // using the it_axis
 
-    indexes_[axis_index] = it_axis;
+    indexes[axis_index] = it_axis;
 
     switch (c) {
       case LegendreFET::Axis::X: {
-        const double xmin_ = cartesian_filter_->x_min(position_index_);
-        const double xmax_ = cartesian_filter_->x_max(position_index_);
+        const double xmin_ = cartesian_filter_->x_min(position_index);
+        const double xmax_ = cartesian_filter_->x_max(position_index);
         scaled_loc = 2. * (tktr.r().x() - xmin_) / (xmax_ - xmin_) - 1.;
       } break;
 
       case LegendreFET::Axis::Y: {
-        const double ymin_ = cartesian_filter_->y_min(position_index_);
-        const double ymax_ = cartesian_filter_->y_max(position_index_);
+        const double ymin_ = cartesian_filter_->y_min(position_index);
+        const double ymax_ = cartesian_filter_->y_max(position_index);
         scaled_loc = 2 * (tktr.r().y() - ymin_) / (ymax_ - ymin_) - 1;
       } break;
 
       case LegendreFET::Axis::Z: {
-        const double zmin_ = cartesian_filter_->z_min(position_index_);
-        const double zmax_ = cartesian_filter_->z_max(position_index_);
+        const double zmin_ = cartesian_filter_->z_min(position_index);
+        const double zmax_ = cartesian_filter_->z_max(position_index);
         scaled_loc = 2 * (tktr.r().z() - zmin_) / (zmax_ - zmin_) - 1;
       }
       default:
@@ -151,12 +150,12 @@ void LegendreFET::score_collision(const Particle& p, const Tracker& tktr,
           collision_score *
           legendre(i, scaled_loc);  // score for i-th order's basis function
 
-      indexes_[FET_index] = i;
+      indexes[FET_index] = i;
 
 #ifdef ABEILLE_USE_OMP
 #pragma omp atomic
 #endif
-      tally_gen_score(indexes_) += beta_n;
+      tally_gen_score(indexes) += beta_n;
     }
 
     it_axis++;

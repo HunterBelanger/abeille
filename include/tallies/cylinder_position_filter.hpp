@@ -110,10 +110,6 @@ class CylinderPositionFilter : public PositionFilter {
   double axial_min() { return new_origin_.z(); }
   double axial_max() { return new_origin_.z() + dz; }
 
-  // perhaps not needed
-  FilterType type() const override {
-    return FilterType::Cylinder_Position_Filter;
-  }
   std::string type_str() const override { return "cylinderpostionfilter"; }
 
  private:

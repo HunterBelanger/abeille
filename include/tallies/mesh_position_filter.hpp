@@ -31,9 +31,6 @@ class MeshPositionFilter : public CartesianFilter {
     dy_inv = 1. / dy;
     dz_inv = 1. / dz;
 
-    std::cout << "Dx = " << dx << "\n(1) " << r_low.x() << "\n(2)"
-              << (r_low.x() + dx) << "\n(3)" << (r_low.x() + 2.0 * dx) << "\n";
-
     index_x = 0;
     index_y = 1;
     index_z = 2;
@@ -55,7 +52,7 @@ class MeshPositionFilter : public CartesianFilter {
 
   ~MeshPositionFilter() = default;
 
-  StaticVector6 get_indices(
+  StaticVector3 get_indices(
       const Tracker& tktr) override final;  // override final;
 
   // std::vector<TracklengthDistance> get_indices_tracklength(Position r, const
@@ -69,7 +66,7 @@ class MeshPositionFilter : public CartesianFilter {
 
   // Note that the method given is applicable when the reduced_dimension is
   // used.
-  double x_min(const StaticVector6& index_) const override {
+  double x_min(const StaticVector3& index_) const override {
     if (Nx_ == 1) {
       return r_low.x();
     }
@@ -80,7 +77,7 @@ class MeshPositionFilter : public CartesianFilter {
 
   // Note that the method given is applicable when the reduced_dimension is
   // used.
-  double x_max(const StaticVector6& index_) const override {
+  double x_max(const StaticVector3& index_) const override {
     if (Nx_ == 1) {
       return r_high.x();
     }
@@ -91,7 +88,7 @@ class MeshPositionFilter : public CartesianFilter {
 
   // Note that the method given is applicable when the reduced_dimension is
   // used.
-  double y_min(const StaticVector6& index_) const override {
+  double y_min(const StaticVector3& index_) const override {
     if (Ny_ == 1) {
       return r_low.y();
     }
@@ -102,7 +99,7 @@ class MeshPositionFilter : public CartesianFilter {
 
   // Note that the method given is applicable when the reduced_dimension is
   // used.
-  double y_max(const StaticVector6& index_) const override {
+  double y_max(const StaticVector3& index_) const override {
     if (Ny_ == 1) return r_high.y();
 
     const double ymax_ =
@@ -112,7 +109,7 @@ class MeshPositionFilter : public CartesianFilter {
 
   // Note that the method given is applicable when the reduced_dimension is
   // used.
-  double z_min(const StaticVector6& index_) const override {
+  double z_min(const StaticVector3& index_) const override {
     if (Nz_ == 1) return r_low.z();
 
     const double zmin_ = r_low.z() + static_cast<double>(index_[index_z]) * dz;
@@ -121,7 +118,7 @@ class MeshPositionFilter : public CartesianFilter {
 
   // Note that the method given is applicable when the reduced_dimension is
   // used.
-  double z_max(const StaticVector6& index_) const override {
+  double z_max(const StaticVector3& index_) const override {
     if (Nz_ == 1) return r_high.z();
 
     const double zmax_ =
@@ -129,14 +126,12 @@ class MeshPositionFilter : public CartesianFilter {
     return zmax_;
   }
 
-  StaticVector6 get_dimension() override final {
-    StaticVector6 pos_filter_dim{Nx_, Ny_, Nz_};
+  StaticVector3 get_dimension() override final {
+    StaticVector3 pos_filter_dim{Nx_, Ny_, Nz_};
     reduce_dimension(pos_filter_dim);
     return pos_filter_dim;
   }
 
-  // Perhaps Not Needed
-  FilterType type() const override { return FilterType::Mesh_Positin_Filter; }
   std::string type_str() const override { return "Mesh_Position_Filter"; }
 
  private:
@@ -145,7 +140,7 @@ class MeshPositionFilter : public CartesianFilter {
   size_t index_x, index_y, index_z;
 
   // function will reduce the dimsion, if there is only one bin in the direction
-  void reduce_dimension(StaticVector6& dimension_) {
+  void reduce_dimension(StaticVector3& dimension_) {
     int it_ = 0;
     if ((Nx_ == 1) && (dimension_.size() > 1)) {
       auto dimen_begin_ = dimension_.begin();

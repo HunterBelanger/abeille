@@ -1,25 +1,21 @@
 #ifndef LEGENDRE_FET_H
 #define LEGENDRE_FET_H
 
-#include <iostream>
-#include <memory>
-#include <vector>
-
-#include <yaml-cpp/yaml.h>
-
+#include <tallies/itally.hpp>
 #include <tallies/cartesian_filter.hpp>
 #include <tallies/energy_filter.hpp>
-#include <tallies/itally.hpp>
-#include <tallies/legendre.hpp>
-
-#include <ndarray.hpp>
-
 #include <materials/material_helper.hpp>
 #include <simulation/particle.hpp>
 #include <simulation/tracker.hpp>
-#include <utils/mpi.hpp>
 
+#include <yaml-cpp/yaml.h>
+#include <ndarray.hpp>
 #include <boost/container/static_vector.hpp>
+using StaticVector6 = boost::container::static_vector<size_t, 6>;
+
+#include <iostream>
+#include <memory>
+#include <vector>
 
 class LegendreFET : public ITally {
  public:
