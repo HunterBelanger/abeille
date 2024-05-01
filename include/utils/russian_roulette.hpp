@@ -31,7 +31,7 @@
 
 #include <cmath>
 
-void russian_roulette(Particle& p) {
+inline void russian_roulette(Particle& p) {
   // Roulette first weight
   if (std::abs(p.wgt()) < settings::wgt_cutoff) {
     double P_kill = 1.0 - (std::abs(p.wgt()) / settings::wgt_survival);

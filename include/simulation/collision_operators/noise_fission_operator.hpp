@@ -37,7 +37,9 @@
 
 class NoiseFissionOperator {
  public:
-  NoiseFissionOperator() = default;
+  NoiseFissionOperator(bool noise_gens): noise_generations_(noise_gens) {}
+
+  bool noise_generations() const { return noise_generations_; }
 
   void fission(Particle& p, const MicroXSs& xs, const Nuclide& nuc,
                double omega, double keff) const {
@@ -88,6 +90,8 @@ class NoiseFissionOperator {
   }
 
  private:
+  bool noise_generations_;
+
   int n_fission_neutrons(Particle& p, const MicroXSs& xs, double keff) const {
     // When transporting noise particles, we don't normalize the number of
     // generated particles by the weight ! We also scale by keff to make the
@@ -96,7 +100,11 @@ class NoiseFissionOperator {
   }
 
   void save_fission_particle(Particle& p, BankedParticle& fp) const {
-    p.make_secondary(fp.u, fp.E, fp.wgt, fp.wgt2);
+    if (noise_generations_) {
+      p.add_fission_particle(fp);
+    } else {
+      p.make_secondary(fp.u, fp.E, fp.wgt, fp.wgt2);
+    }
   }
 };
 

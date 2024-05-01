@@ -24,6 +24,7 @@
  * */
 #include <simulation/fixed_source.hpp>
 #include <simulation/power_iterator.hpp>
+#include <simulation/noise.hpp>
 #include <simulation/simulation.hpp>
 #include <utils/error.hpp>
 #include <utils/mpi.hpp>
@@ -231,7 +232,7 @@ std::shared_ptr<Simulation> make_simulation(const YAML::Node& input) {
   } else if (mode == "modified-fixed-source") {
     fatal_error("Simulation mode modified-fixed-source not yet implemented.");
   } else if (mode == "noise") {
-    fatal_error("Simulation mode noise not yet implemented.");
+    simulation = make_noise_simulator(sim);
   } else {
     fatal_error("Unknown simulation mode " + mode + ".");
   }

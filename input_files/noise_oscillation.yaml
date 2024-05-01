@@ -86,38 +86,6 @@ universes:
 
 root-universe: 4
 
-sources:
-  - spatial:
-      type: box
-      low: [-10.71, -10.71, -2.00]
-      hi: [10.71, 10.71, 2.00]
-    direction:
-      type: isotropic
-    energy:
-      type: mono-energetic
-      energy: 0.5
-    weight: 1.
-
-cancelator:
-  type: approximate
-  shape: [170, 170, 170]
-  low: [-10.71, -10.71, -2.00]
-  hi: [10.71, 10.71, 2.00]
-
-noise-sources:
-  - type: square-oscillation
-    low: [2.1543, -2.8857, -2.00]
-    hi: [2.8857, -2.1543, 2.00]
-    angular-frequency: 6.28318531 # 2 pi
-    epsilon-total: 0.041
-    epsilon-fission: 0.021
-    epsilon-scatter: 0.034
-
-entropy:
-  low: [-10.71, -10.71, -2.00]
-  hi: [10.71, 10.71, 2.00]
-  shape: [17, 17, 1]
-
 tallies:
   - low: [1.5, -3.5, -2.]
     hi: [3.5, -1.5, 2.]
@@ -152,28 +120,51 @@ tallies:
     name: imag-flux
 
 settings:
-  nparticles: 100000
-  ngenerations: 2000
+  ngroups: 2
+  energy-mode: multi-group
+  energy-bounds: [0., 1., 2.]
+  #max-run-time: 5. # Minutes
+
+simulation:
+  mode: noise
+  nparticles: 10000
+  nbatches: 2000
   nignored: 10
   nskip: 3
-  ngroups: 2
-  transport: surface-tracking
-  #simulation: k-eigenvalue
-  simulation: noise 
   noise-cancellation: true
   inner-generations: true
   normalize-noise-source: true
-  #max-run-time: 5. # Minutes
   noise-angular-frequency: 6.28318531
   keff: 0.99916
-  energy-mode: multi-group
-  energy-bounds: [0., 1., 2.]
-  
-plots:
-  - type: slice
-    basis: xy
-    resolution: [1000, 1000]
-    origin: [0., 0., 0.]
-    dimensions: [21.58, 21.58] 
-    color: material
-    name: noise_assembly_plot
+
+  cancelator:
+    type: approximate
+    shape: [170, 170, 170]
+    low: [-10.71, -10.71, -2.00]
+    hi: [10.71, 10.71, 2.00]
+
+  sources:
+    - spatial:
+        type: box
+        low: [-10.71, -10.71, -2.00]
+        hi: [10.71, 10.71, 2.00]
+      direction:
+        type: isotropic
+      energy:
+        type: mono-energetic
+        energy: 0.5
+      weight: 1.
+
+  noise-sources:
+    - type: square-oscillation
+      low: [2.1543, -2.8857, -2.00]
+      hi: [2.8857, -2.1543, 2.00]
+      angular-frequency: 6.28318531 # 2 pi
+      epsilon-total: 0.041
+      epsilon-fission: 0.021
+      epsilon-scatter: 0.034
+
+  entropy:
+    low: [-10.71, -10.71, -2.00]
+    hi: [10.71, 10.71, 2.00]
+    shape: [17, 17, 1]
