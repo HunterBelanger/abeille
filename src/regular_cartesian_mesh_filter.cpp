@@ -1,32 +1,75 @@
-#include <tallies/box_position_filter.hpp>
+#include <tallies/regular_cartesian_mesh_filter.hpp>
 #include <utils/constants.hpp>
 #include <utils/output.hpp>
 
-BoxPositionFilter::BoxPositionFilter(const Position r_low, const Position r_high)
-      : CartesianFilter(r_low, r_high), dx_(), dy_(), dz_(), dx_inv_(), dy_inv_(), dz_inv_()
-       {
-    if ((r_low_.x() > r_high_.x()) || (r_low_.y() > r_high_.y()) ||
-        (r_low_.z() > r_high_.z()))
-      fatal_error(
-          " Corrdinates of \"low\" position are higher than \"high\" "
-          "position.\n");
+RegularCartesianMeshFilter::RegularCartesianMeshFilter(Position r_low, Position r_high, size_t nx_, size_t ny_,
+                     size_t nz_)
+      : CartesianFilter(r_low, r_high),
+        dx_(), dy_(), dz_(), dx_inv_(), dy_inv_(), dz_inv_(),
+        Nx_(nx_),
+        Ny_(ny_),
+        Nz_(nz_),
+        x_index_(),
+        y_index_(),
+        z_index_() {
+    if (Nx_ == 0 || Ny_ == 0 || Nz_ == 0)
+      fatal_error("The number of bins in any direction cannot be zero.\n");
 
-    dx_ = (r_high_.x() - r_low_.x());
-    dy_ = (r_high_.y() - r_low_.y());
-    dz_ = (r_high_.z() - r_low_.z());
+    if (Nx_ == 1 && Ny_ == 1 && Nz_ == 1) {
+      fatal_error("For shape [1,1,1] the reactilinear mesh position filter is used instead of box filter.");
+    }
+
+    dx_ = (r_high_.x() - r_low_.x()) / static_cast<double>(Nx_);
+    dy_ = (r_high_.y() - r_low_.y()) / static_cast<double>(Ny_);
+    dz_ = (r_high_.z() - r_low_.z()) / static_cast<double>(Nz_);
 
     dx_inv_ = 1. / dx_;
     dy_inv_ = 1. / dy_;
     dz_inv_ = 1. / dz_;
+
+    x_index_ = 0;
+    y_index_ = 1;
+    z_index_ = 2;
+    if (Nx_ == 1) {
+      x_index_ = 0;
+      y_index_--;
+      z_index_--;
+    }
+
+    if (Ny_ == 1) {
+      y_index_ = 0;
+      z_index_--;
+    }
+
+    if (Nz_ == 1) {
+      z_index_ = 0;
+    }
+
+}
+
+
+StaticVector3 RegularCartesianMeshFilter::get_indices(const Tracker& tktr) {
+  StaticVector3 indexes;
+  const Position r = tktr.r();
+  int index_x = static_cast<int>(std::floor((r.x() - r_low_.x()) * dx_inv_));
+  int index_y = static_cast<int>(std::floor((r.y() - r_low_.y()) * dy_inv_));
+  int index_z = static_cast<int>(std::floor((r.z() - r_low_.z()) * dz_inv_));
+
+  if ((index_x >= 0 && index_x < static_cast<int>(Nx_)) &&
+      (index_y >= 0 && index_y < static_cast<int>(Ny_)) &&
+      (index_z >= 0 && index_z < static_cast<int>(Nz_))) {
+
+    indexes = reduce_dimension(index_x, index_y, index_z);
   }
 
+  return indexes;
+}
 
-std::vector<TracklengthDistance> BoxPositionFilter::get_indices_tracklength(
+
+std::vector<TracklengthDistance> RegularCartesianMeshFilter::get_indices_tracklength(
     const Tracker& trkr, double d_flight) {
   std::vector<TracklengthDistance> indexes_tracklength;
   TracklengthDistance trlen_d;
-
-  // const Position final_loc = r + d_flight * u_;
 
   Position r = trkr.r();
   const Direction u_ = trkr.u();
@@ -35,11 +78,11 @@ std::vector<TracklengthDistance> BoxPositionFilter::get_indices_tracklength(
   int i = 0, j = 0, k = 0;
   std::array<int, 3> on;
   on.fill(0.0);
+  initialize_indices(r, u_, i, j, k, on);
 
   // Check if particle inside the bin
-  if ((r_low_.x() <= r.x() && r_high_.x() >= r.x()) &&
-      (r_low_.y() <= r.y() && r_high_.y() >= r.y()) &&
-      (r_low_.z() <= r.z() && r_high_.z() >= r.z())) {
+  if (i >= 0 && i < static_cast<int>(Nx_) && j >= 0 &&
+      j < static_cast<int>(Ny_) && k >= 0 && k < static_cast<int>(Nz_)) {
     inside_bin = true;
   }
 
@@ -47,11 +90,10 @@ std::vector<TracklengthDistance> BoxPositionFilter::get_indices_tracklength(
   if (inside_bin == false) {
     if (find_entry_point(r, u_, d_flight) == false) {
       return indexes_tracklength;
-
-      // check_on_boundary(tktr, on);
     }
     initialize_indices(r, u_, i, j, k, on);
-    if (i == 0 && j == 0 && k == 0) {
+    if (i >= 0 && i < static_cast<int>(Nx_) && j >= 0 &&
+        j < static_cast<int>(Ny_) && k >= 0 && k < static_cast<int>(Nz_)) {
       inside_bin = true;
     } else {
       // This is a problem, in theory, we should now be inside the tally
@@ -63,31 +105,60 @@ std::vector<TracklengthDistance> BoxPositionFilter::get_indices_tracklength(
   // Distance remaining to tally
   double distance_remaining = d_flight;
 
-  auto next_tile = distance_to_next_index(r, u_, on, i, j, k);
+  while (distance_remaining > 0.) {
+    // Distance we will travel in this cell
+    // indexes_tracklength.clear();
+    auto next_tile = distance_to_next_index(r, u_, on, i, j, k);
 
-  if (next_tile.first == INF) {
-    // Something went wrong.... Don't score.
-    Output::instance().save_warning(
-        "Problem encountered with mesh tally in box_tally.\n");
-    return indexes_tracklength;
+    if (next_tile.first == INF) {
+      // Something went wrong.... Don't score.
+      Output::instance().save_warning(
+          "Problem encountered with mesh tally in box_tally.\n");
+      return indexes_tracklength;
+      // break;
+    } else if (next_tile.first < 0.) {
+      // Something went wrong.... Don't score.
+      warning("Negative distance encountered with mesh tally.");
+    }
 
-  } else if (next_tile.first < 0.) {
-    // Something went wrong.... Don't score.
-    warning("Negative distance encountered with mesh tally.");
-  }
+    double d_tile = std::min(next_tile.first, distance_remaining);
 
-  double d_tile = std::min(next_tile.first, distance_remaining);
+    // Make the score if we are in a valid cell
+    if (i >= 0 && i < static_cast<int>(Nx_) && j >= 0 &&
+        j < static_cast<int>(Ny_) && k >= 0 && k < static_cast<int>(Nz_)) {
+      size_t ui = static_cast<size_t>(i);
+      size_t uj = static_cast<size_t>(j);
+      size_t uk = static_cast<size_t>(k);
 
-  // Make the score if we are in a valid cell
-  if (i == 0 && j == 0 && k == 0) {
-    trlen_d.indexes_ = StaticVector3{0};
-    trlen_d.distance_in_bin = d_tile;
-    indexes_tracklength.push_back(trlen_d);
-  }
+      StaticVector3 u_indexes = reduce_dimension(ui, uj, uk);
+      trlen_d.indexes_ = u_indexes;
+      trlen_d.distance_in_bin = d_tile;
+      indexes_tracklength.push_back(trlen_d);
+
+    } else {
+      // If we arrive here, it means that we have left the tally region
+      // when were we initially inside it. We can return here, as it's
+      // impossible to go back in.
+      return indexes_tracklength;
+    }
+
+    // Remove the traveled distance
+    distance_remaining -= d_tile;
+
+    if (distance_remaining <= 0.) break;
+
+    // Update the position and cell indices
+    r = r + d_tile * u_;
+    update_indices(next_tile.second, i, j, k, on);
+
+  }  // While we still have to travel
+
   return indexes_tracklength;
 }
 
-bool BoxPositionFilter::find_entry_point(Position& r, const Direction& u,
+
+
+bool RegularCartesianMeshFilter::find_entry_point(Position& r, const Direction& u,
                                        double& d_flight) const {
   const double ux_inv = 1. / u.x();
   const double uy_inv = 1. / u.y();
@@ -161,7 +232,7 @@ bool BoxPositionFilter::find_entry_point(Position& r, const Direction& u,
   return true;
 }
 
-void BoxPositionFilter::initialize_indices(const Position& r, const Direction& u,
+void RegularCartesianMeshFilter::initialize_indices(const Position& r, const Direction& u,
                                          int& i, int& j, int& k,
                                          std::array<int, 3>& on) {
   i = static_cast<int>(std::floor((r.x() - r_low_.x()) * dx_inv_));
@@ -232,8 +303,49 @@ void BoxPositionFilter::initialize_indices(const Position& r, const Direction& u
   }
 }
 
+void RegularCartesianMeshFilter::update_indices(int key, int& i, int& j, int& k,
+                                     std::array<int, 3>& on) {
+  // Must initially fill with zero, so that we don't stay on top
+  // of other surfaces the entire time
+  on.fill(0);
 
-std::pair<double, int> BoxPositionFilter::distance_to_next_index(
+  switch (key) {
+    case -1:
+      i--;
+      on[0] = 1;
+      break;
+
+    case 1:
+      i++;
+      on[0] = -1;
+      break;
+
+    case -2:
+      j--;
+      on[1] = 1;
+      break;
+
+    case 2:
+      j++;
+      on[1] = -1;
+      break;
+
+    case -3:
+      k--;
+      on[2] = 1;
+      break;
+
+    case 3:
+      k++;
+      on[2] = -1;
+      break;
+
+    default:
+      break;
+  }
+}
+
+std::pair<double, int> RegularCartesianMeshFilter::distance_to_next_index(
     const Position& r, const Direction& u, const std::array<int, 3>& on, int i,
     int j, int k) {
   // Get position at center of current tile
@@ -301,24 +413,34 @@ std::pair<double, int> BoxPositionFilter::distance_to_next_index(
 }
 
 
-
-// make the cartesian filter or position filter
-std::shared_ptr<BoxPositionFilter> make_box_position_filter(const YAML::Node& node) {
+// Make the cartesian or position filter class
+std::shared_ptr<RegularCartesianMeshFilter> make_mesh_position_filter(const YAML::Node& node) {
   if (!node["low"])
     fatal_error(
-        "For box position-filter \"low\" co-ordinates is not provided.");
+        "For mesh position-filter \"low\" co-ordinates is not provided.");
   if (!node["high"])
     fatal_error(
-        "For box position-filter \"high\" co-ordinates is not provided.");
+        "For mesh position-filter \"high\" co-ordinates is not provided.");
+  if (!node["shape"])
+    fatal_error("For mesh position-filter \"shape\" is not provided.");
 
   std::vector<double> low_point = node["low"].as<std::vector<double>>();
   std::vector<double> high_point = node["high"].as<std::vector<double>>();
+  std::vector<std::size_t> shape_ =
+      node["shape"].as<std::vector<std::size_t>>();
 
-  Position r_low (low_point[0], low_point[1], low_point[2]);
-  Position r_high (high_point[0], high_point[1], high_point[2]);
+  if (shape_[0] == 1 && shape_[1] == 1 && shape_[2] == 1) {
+    std::string name_ = node["name"].as<std::string>();
+      fatal_error("For " + name_ +" tally, the shape [1,1,1] with reactilinear mesh position filter is used instead of box filter.");
+  }
 
-  std::shared_ptr<BoxPositionFilter> box_type_filter =
-      std::make_shared<BoxPositionFilter>(r_low, r_high);
+  if (shape_.size() != 3) fatal_error("Element in the shape must be 3.");
 
-  return box_type_filter;
+  Position r_low(low_point[0], low_point[1], low_point[2]);
+  Position r_high(high_point[0], high_point[1], high_point[2]);
+
+  std::shared_ptr<RegularCartesianMeshFilter> mesh_type_filter = std::make_shared<RegularCartesianMeshFilter>(
+      r_low, r_high, shape_[0], shape_[1], shape_[2]);
+
+  return mesh_type_filter;
 }

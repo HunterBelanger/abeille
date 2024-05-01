@@ -73,7 +73,7 @@ set(ABEILLE_SOURCE_FILES ${ABEILLE_SOURCE_FILES}
   src/header.cpp
   src/itally.cpp
   src/general_tally.cpp
-  src/mesh_position_filter.cpp
+  src/regular_cartesian_mesh_filter.cpp
   src/box_position_filter.cpp
   src/cartesian_filter.cpp
   src/legendre_fet.cpp

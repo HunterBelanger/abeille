@@ -4,7 +4,7 @@
 #include <tallies/box_position_filter.hpp>
 #include <tallies/general_tally.hpp>
 #include <tallies/legendre_fet.hpp>
-#include <tallies/mesh_position_filter.hpp>
+#include <tallies/regular_cartesian_mesh_filter.hpp>
 #include <tallies/tallies.hpp>
 
 // #include <boost/container/static_vector.hpp>

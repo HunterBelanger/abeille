@@ -81,18 +81,19 @@ void LegendreFET::score_collision(const Particle& p, const Tracker& tktr,
     return;
   }
 
-  std::size_t index_E;
   StaticVector3 position_index = cartesian_filter_->get_indices(tktr);
   
   StaticVector6 indexes(position_index.begin(), position_index.end());
 
+  std::size_t index_E;
   if (energy_in_) {
-    if (energy_in_->get_index(p.E(), index_E)) {
-      indexes.insert(indexes.begin(), index_E);
+    std::optional<std::size_t> E_indx = energy_in_->get_index(p.E());
+    
+    if ( E_indx.has_value() )
+      index_E = E_indx.value();
 
-    } else {
+    else
       return;
-    }
   }
 
   // if the indexes_ is empty, then, we didn't get any scoring bin(s)

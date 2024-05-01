@@ -41,7 +41,6 @@ class LegendreFET : public ITally {
  private:
   std::shared_ptr<CartesianFilter> cartesian_filter_;
   std::shared_ptr<EnergyFilter> energy_in_;
-  std::shared_ptr<EnergyFilter> energy_out_ = nullptr;
 
   boost::container::static_vector<Axis, 3> axes;
   size_t FET_order;  // Note that the number of coefficient will be one more

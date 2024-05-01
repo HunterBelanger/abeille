@@ -43,6 +43,7 @@ GeneralTally::GeneralTally(std::shared_ptr<PositionFilter> position_filter,
 
   tally_var.reallocate(tally_dimensions_);
   tally_var.fill(0.0);
+
 }
 
 void GeneralTally::score_collision(const Particle& p, const Tracker& tktr,
@@ -62,10 +63,11 @@ void GeneralTally::score_collision(const Particle& p, const Tracker& tktr,
   StaticVector4 indexes(position_indexes.begin(), position_indexes.end());
 
   if (energy_in_) {
-    if (energy_in_->get_index(p.E(), index_E)) {
-      indexes.insert(indexes.begin(), index_E);
 
-    } else {
+    std::optional<std::size_t> E_indx = energy_in_->get_index(p.E());
+    if ( E_indx.has_value() ){
+      index_E = E_indx.value();
+    }else{
       return;
     }
   }
@@ -93,14 +95,13 @@ void GeneralTally::score_flight(const Particle& p, const Tracker& trkr,
   }
 
   std::size_t index_E;
-  bool any_energy_in_ = false;  // Should be true when the energy_in_ is there
 
   if (energy_in_) {
     // get the energy_index if we in the bounds
-    if (energy_in_->get_index(p.E(), index_E)) {
-      // for track-length, it will done with help of bool
-      any_energy_in_ = true;
-    } else {
+    std::optional<std::size_t> E_indx = energy_in_->get_index(p.E());
+    if ( E_indx.has_value() ){
+      index_E = E_indx.value();
+    }else{
       return;
     }
   }
@@ -111,10 +112,10 @@ void GeneralTally::score_flight(const Particle& p, const Tracker& trkr,
       position_filter_->get_indices_tracklength(trkr, d_flight);
 
   for (size_t iter = 0; iter < pos_indexes_.size(); iter++) {
-    std::vector<size_t> all_indexes_ = pos_indexes_[iter].indexes_;
+    StaticVector4 all_indexes_(pos_indexes_[iter].indexes_.begin(), pos_indexes_[iter].indexes_.end()) ;
     const double d_ = pos_indexes_[iter].distance_in_bin;
 
-    if (any_energy_in_ == false) {
+    if ( energy_in_ ) {
       all_indexes_.insert(all_indexes_.begin(), index_E);
     }
 

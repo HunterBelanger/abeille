@@ -17,12 +17,6 @@ class GeneralTally : public ITally {
                std::shared_ptr<EnergyFilter> energy_in, Quantity quantity,
                Estimator estimator, std::string name_);
 
-  /*
-  // The below defination can be used when energ_out is not a nullptr
-  GeneralTally(std::shared_ptr<PositionFilter> position_filter,
-  std::shared_ptr<EnergyFilter> energy_in, std::shared_ptr<EnergyFilter>
-  energy_out, Quantity quantity, Estimator estimator, std::string name_);
-  */
 
   ~GeneralTally() = default;
 
@@ -36,7 +30,6 @@ class GeneralTally : public ITally {
  private:
   std::shared_ptr<PositionFilter> position_filter_;
   std::shared_ptr<EnergyFilter> energy_in_;
-  std::shared_ptr<EnergyFilter> energy_out_ = nullptr;
 };
 
 std::shared_ptr<GeneralTally> make_general_tally(const YAML::Node& node);

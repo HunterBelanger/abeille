@@ -3,18 +3,15 @@
 
 #include <simulation/tracker.hpp>
 
-
-
 #include <yaml-cpp/yaml.h>
 #include <boost/container/static_vector.hpp>
+using StaticVector3 = boost::container::static_vector<size_t, 3>;
 
 #include <memory>
 #include <vector>
 
-using StaticVector3 = boost::container::static_vector<size_t, 3>;
-
 struct TracklengthDistance {
-  std::vector<size_t> indexes_;
+  StaticVector3 indexes_;
   double distance_in_bin;
 };
 
@@ -29,13 +26,7 @@ class PositionFilter {
   virtual std::vector<TracklengthDistance> get_indices_tracklength(
       const Tracker& trkr, double d_flight) = 0;
 
-  virtual size_t Nx() const = 0;
-  virtual size_t Ny() const = 0;
-  virtual size_t Nz() const = 0;
-
   virtual StaticVector3 get_dimension() = 0;
-
-  // Perhaps Not Needed
 
   virtual std::string type_str() const = 0;
 };
