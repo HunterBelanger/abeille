@@ -5,8 +5,8 @@
 
 CartesianFilter::CartesianFilter(Position r_low, Position r_high)
     : r_low_(r_low), r_high_(r_high) {
-  if ((r_low.x() > r_high.x()) || (r_low.y() > r_high.y()) ||
-      (r_low.z() > r_high.z()))
+  if ((r_low_.x() > r_high_.x()) || (r_low_.y() > r_high_.y()) ||
+      (r_low_.z() > r_high_.z()))
     fatal_error(
         " Corrdinates of \"low\" position are higher than \"high\" "
         "position.\n");

@@ -13,68 +13,19 @@ class RegularCartesianMeshFilter : public CartesianFilter {
 
   ~RegularCartesianMeshFilter() = default;
 
-  StaticVector3 get_indices(
-      const Tracker& tktr) override final;  // override final;
+  StaticVector3 get_indices(const Tracker& tktr) override final;
 
   std::vector<TracklengthDistance> get_indices_tracklength(
       const Tracker& trkr, double d_flight) override final;
 
-  size_t Nx() const override final { return Nx_; }
-  size_t Ny() const override final { return Ny_; }
-  size_t Nz() const override final { return Nz_; }
-
   // Note that the method given is applicable when the reduced_dimension is
   // used.
-  double x_min(const StaticVector3& index_) const override {
-    if (Nx_ == 1) {
-      return r_low_.x();
-    }
-
-    return r_low_.x() + static_cast<double>(index_[x_index_]) * dx_;
-  }
-
-  // Note that the method given is applicable when the reduced_dimension is
-  // used.
-  double x_max(const StaticVector3& index_) const override {
-    if (Nx_ == 1) {
-      return r_high_.x();
-    }
-    return r_low_.x() + static_cast<double>(index_[x_index_]) * dx_ + dx_;
-  }
-
-  // Note that the method given is applicable when the reduced_dimension is
-  // used.
-  double y_min(const StaticVector3& index_) const override {
-    if (Ny_ == 1) {
-      return r_low_.y();
-    }
-
-    return r_low_.y() + static_cast<double>(index_[y_index_]) * dy_;
-  }
-
-  // Note that the method given is applicable when the reduced_dimension is
-  // used.
-  double y_max(const StaticVector3& index_) const override {
-    if (Ny_ == 1) return r_high_.y();
-
-    return r_low_.y() + static_cast<double>(index_[y_index_]) * dy_ + dy_;
-  }
-
-  // Note that the method given is applicable when the reduced_dimension is
-  // used.
-  double z_min(const StaticVector3& index_) const override {
-    if (Nz_ == 1) return r_low_.z();
-
-    return r_low_.z() + static_cast<double>(index_[z_index_]) * dz_;
-  }
-
-  // Note that the method given is applicable when the reduced_dimension is
-  // used.
-  double z_max(const StaticVector3& index_) const override {
-    if (Nz_ == 1) return r_high_.z();
-
-    return r_low_.z() + static_cast<double>(index_[z_index_]) * dz_ + dz_;
-  }
+  double x_min(const StaticVector3& index) const override;
+  double x_max(const StaticVector3& index) const override;
+  double y_min(const StaticVector3& index) const override;
+  double y_max(const StaticVector3& index) const override;
+  double z_min(const StaticVector3& index) const override;
+  double z_max(const StaticVector3& index) const override;
 
   StaticVector3 get_shape() override final {
     return reduce_dimension(Nx_, Ny_, Nz_);

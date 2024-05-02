@@ -2,7 +2,6 @@
 #define BOX_POSITION_FILTER_H
 
 #include <tallies/cartesian_filter.hpp>
-#include <utils/position.hpp>
 
 #include <yaml-cpp/yaml.h>
 
@@ -27,12 +26,6 @@ class BoxPositionFilter : public CartesianFilter {
 
   std::vector<TracklengthDistance> get_indices_tracklength(
       const Tracker& trkr, double d_flight) override final;
-
-  void check_on_boundary(const Tracker tktr, std::array<int, 3> on);
-
-  size_t Nx() const override final { return 1; }
-  size_t Ny() const override final { return 1; }
-  size_t Nz() const override final { return 1; }
 
   StaticVector3 get_shape() override final { return {1}; }
 

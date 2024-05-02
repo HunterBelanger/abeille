@@ -31,8 +31,6 @@ std::vector<TracklengthDistance> BoxPositionFilter::get_indices_tracklength(
   std::vector<TracklengthDistance> indexes_tracklength;
   TracklengthDistance trlen_d;
 
-  // const Position final_loc = r + d_flight * u_;
-
   Position r = trkr.r();
   const Direction u_ = trkr.u();
   bool inside_bin = false;
@@ -52,8 +50,6 @@ std::vector<TracklengthDistance> BoxPositionFilter::get_indices_tracklength(
   if (inside_bin == false) {
     if (find_entry_point(r, u_, d_flight) == false) {
       return indexes_tracklength;
-
-      // check_on_boundary(tktr, on);
     }
     initialize_indices(r, u_, i, j, k, on);
     if (i == 0 && j == 0 && k == 0) {

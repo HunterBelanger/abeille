@@ -19,6 +19,12 @@ RegularCartesianMeshFilter::RegularCartesianMeshFilter(Position r_low,
       x_index_(),
       y_index_(),
       z_index_() {
+  if ((r_low_.x() > r_high_.x()) || (r_low_.y() > r_high_.y()) ||
+      (r_low_.z() > r_high_.z()))
+    fatal_error(
+        " Corrdinates of \"low\" position are higher than \"high\" "
+        "position.\n");
+
   if (Nx_ == 0 || Ny_ == 0 || Nz_ == 0)
     fatal_error("The number of bins in any direction cannot be zero.\n");
 
@@ -69,6 +75,46 @@ StaticVector3 RegularCartesianMeshFilter::get_indices(const Tracker& tktr) {
   }
 
   return indexes;
+}
+
+double RegularCartesianMeshFilter::x_min(const StaticVector3& index) const {
+  if (Nx_ == 1) {
+    return r_low_.x();
+  }
+  return r_low_.x() + static_cast<double>(index[x_index_]) * dx_;
+}
+
+double RegularCartesianMeshFilter::x_max(const StaticVector3& index) const {
+  if (Nx_ == 1) {
+    return r_high_.x();
+  }
+  return r_low_.x() + static_cast<double>(index[x_index_]) * dx_ + dx_;
+}
+
+double RegularCartesianMeshFilter::y_min(const StaticVector3& index) const {
+  if (Ny_ == 1) {
+    return r_low_.y();
+  }
+
+  return r_low_.y() + static_cast<double>(index[y_index_]) * dy_;
+}
+
+double RegularCartesianMeshFilter::y_max(const StaticVector3& index) const {
+  if (Ny_ == 1) return r_high_.y();
+
+  return r_low_.y() + static_cast<double>(index[y_index_]) * dy_ + dy_;
+}
+
+double RegularCartesianMeshFilter::z_min(const StaticVector3& index) const {
+  if (Nz_ == 1) return r_low_.z();
+
+  return r_low_.z() + static_cast<double>(index[z_index_]) * dz_;
+}
+
+double RegularCartesianMeshFilter::z_max(const StaticVector3& index) const {
+  if (Nz_ == 1) return r_high_.z();
+
+  return r_low_.z() + static_cast<double>(index[z_index_]) * dz_ + dz_;
 }
 
 std::vector<TracklengthDistance>

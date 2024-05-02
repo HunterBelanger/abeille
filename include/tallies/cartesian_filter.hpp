@@ -19,10 +19,6 @@ class CartesianFilter : public PositionFilter {
   virtual double z_min(const StaticVector3& index) const = 0;
   virtual double z_max(const StaticVector3& index) const = 0;
 
-  virtual size_t Nx() const = 0;
-  virtual size_t Ny() const = 0;
-  virtual size_t Nz() const = 0;
-
   std::string type_str() const override { return "Cartesian_Filter"; };
 
  protected:

@@ -27,7 +27,7 @@ tallies:
     low: [-0.77032, -100., -100.]
     hi:  [ 0.77032,  100.,  100.]
     energy-bounds: [0., 1.]
-    quantity: fission
+    quantity: flux
     name: flux_PUa
     estimator: collision
 
@@ -42,7 +42,7 @@ tallies:
     low: [ -0.77032,  -100.,  -100.]
     high: [ 0.77032,  100.,  100.]
     energy-bounds: [0., 1.]
-    quantity: fission
+    quantity: flux
     name: flux-3
     estimator: track-length
     FET-axis: [X]

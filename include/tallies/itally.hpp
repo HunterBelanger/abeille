@@ -5,7 +5,6 @@
 #include <simulation/particle.hpp>
 #include <simulation/tracker.hpp>
 
-#include <yaml-cpp/yaml.h>
 #include <ndarray.hpp>
 
 class ITally {
