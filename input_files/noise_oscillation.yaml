@@ -127,7 +127,7 @@ settings:
 
 simulation:
   mode: noise
-  nparticles: 10000
+  nparticles: 100000
   nbatches: 2000
   nignored: 10
   nskip: 3
@@ -144,15 +144,9 @@ simulation:
     hi: [10.71, 10.71, 2.00]
 
   sources:
-    - spatial:
-        type: box
-        low: [-10.71, -10.71, -2.00]
-        hi: [10.71, 10.71, 2.00]
-      direction:
-        type: isotropic
-      energy:
-        type: mono-energetic
-        energy: 0.5
+    - spatial: {type: box, low: [-10.71, -10.71, -2.00], hi: [10.71, 10.71, 2.00]}
+      direction: {type: isotropic}
+      energy: {type: mono-energetic, energy: 0.5}
       weight: 1.
 
   noise-sources:

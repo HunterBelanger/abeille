@@ -1001,6 +1001,8 @@ std::shared_ptr<Noise> make_noise_simulator(const YAML::Node& sim) {
   noise_params.keff = keff;
   noise_params.eta = eta;
 
+  noise_maker.noise_parameters() = noise_params;
+
   // Create simulation
   std::shared_ptr<Noise> simptr = std::make_shared<Noise>(noise_mover, pi_mover, noise_params, noise_maker);
 
