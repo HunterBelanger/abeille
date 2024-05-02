@@ -5,8 +5,8 @@
 #include <simulation/particle.hpp>
 #include <simulation/tracker.hpp>
 
-#include <ndarray.hpp>
 #include <yaml-cpp/yaml.h>
+#include <ndarray.hpp>
 
 class ITally {
  public:
@@ -36,6 +36,9 @@ class ITally {
 
   // Record the avg and variance for the generation
   void record_generation(double mulitplier = 1.0);
+
+  // Clear the tally_gen_score
+  void clear_generation() { tally_gen_score.fill(0.0); }
 
   void set_net_weight(double weight_) { net_weight_ = weight_; }
 

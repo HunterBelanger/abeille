@@ -1,9 +1,9 @@
 #ifndef GENERAL_TALLY_H
 #define GENERAL_TALLY_H
 
+#include <tallies/energy_filter.hpp>
 #include <tallies/itally.hpp>
 #include <tallies/position_filter.hpp>
-#include <tallies/energy_filter.hpp>
 
 #include <yaml-cpp/yaml.h>
 #include <boost/container/static_vector.hpp>
@@ -17,13 +17,11 @@ class GeneralTally : public ITally {
                std::shared_ptr<EnergyFilter> energy_in, Quantity quantity,
                Estimator estimator, std::string name_);
 
-
   ~GeneralTally() = default;
 
   void score_collision(const Particle& p, const Tracker& tktr,
                        MaterialHelper& mat) override final;
 
-  // override final;
   void score_flight(const Particle& p, const Tracker& trkr, double d_flight,
                     MaterialHelper& mat) override final;
 

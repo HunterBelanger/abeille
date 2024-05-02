@@ -2,24 +2,29 @@
 #include <utils/constants.hpp>
 #include <utils/output.hpp>
 
-BoxPositionFilter::BoxPositionFilter(const Position r_low, const Position r_high)
-      : CartesianFilter(r_low, r_high), dx_(), dy_(), dz_(), dx_inv_(), dy_inv_(), dz_inv_()
-       {
-    if ((r_low_.x() > r_high_.x()) || (r_low_.y() > r_high_.y()) ||
-        (r_low_.z() > r_high_.z()))
-      fatal_error(
-          " Corrdinates of \"low\" position are higher than \"high\" "
-          "position.\n");
+BoxPositionFilter::BoxPositionFilter(const Position r_low,
+                                     const Position r_high)
+    : CartesianFilter(r_low, r_high),
+      dx_(),
+      dy_(),
+      dz_(),
+      dx_inv_(),
+      dy_inv_(),
+      dz_inv_() {
+  if ((r_low_.x() > r_high_.x()) || (r_low_.y() > r_high_.y()) ||
+      (r_low_.z() > r_high_.z()))
+    fatal_error(
+        " Corrdinates of \"low\" position are higher than \"high\" "
+        "position.\n");
 
-    dx_ = (r_high_.x() - r_low_.x());
-    dy_ = (r_high_.y() - r_low_.y());
-    dz_ = (r_high_.z() - r_low_.z());
+  dx_ = (r_high_.x() - r_low_.x());
+  dy_ = (r_high_.y() - r_low_.y());
+  dz_ = (r_high_.z() - r_low_.z());
 
-    dx_inv_ = 1. / dx_;
-    dy_inv_ = 1. / dy_;
-    dz_inv_ = 1. / dz_;
-  }
-
+  dx_inv_ = 1. / dx_;
+  dy_inv_ = 1. / dy_;
+  dz_inv_ = 1. / dz_;
+}
 
 std::vector<TracklengthDistance> BoxPositionFilter::get_indices_tracklength(
     const Tracker& trkr, double d_flight) {
@@ -88,7 +93,7 @@ std::vector<TracklengthDistance> BoxPositionFilter::get_indices_tracklength(
 }
 
 bool BoxPositionFilter::find_entry_point(Position& r, const Direction& u,
-                                       double& d_flight) const {
+                                         double& d_flight) const {
   const double ux_inv = 1. / u.x();
   const double uy_inv = 1. / u.y();
   const double uz_inv = 1. / u.z();
@@ -161,9 +166,9 @@ bool BoxPositionFilter::find_entry_point(Position& r, const Direction& u,
   return true;
 }
 
-void BoxPositionFilter::initialize_indices(const Position& r, const Direction& u,
-                                         int& i, int& j, int& k,
-                                         std::array<int, 3>& on) {
+void BoxPositionFilter::initialize_indices(const Position& r,
+                                           const Direction& u, int& i, int& j,
+                                           int& k, std::array<int, 3>& on) {
   i = static_cast<int>(std::floor((r.x() - r_low_.x()) * dx_inv_));
   j = static_cast<int>(std::floor((r.y() - r_low_.y()) * dy_inv_));
   k = static_cast<int>(std::floor((r.z() - r_low_.z()) * dz_inv_));
@@ -232,7 +237,6 @@ void BoxPositionFilter::initialize_indices(const Position& r, const Direction& u
   }
 }
 
-
 std::pair<double, int> BoxPositionFilter::distance_to_next_index(
     const Position& r, const Direction& u, const std::array<int, 3>& on, int i,
     int j, int k) {
@@ -300,10 +304,9 @@ std::pair<double, int> BoxPositionFilter::distance_to_next_index(
   return {dist, key};
 }
 
-
-
 // make the cartesian filter or position filter
-std::shared_ptr<BoxPositionFilter> make_box_position_filter(const YAML::Node& node) {
+std::shared_ptr<BoxPositionFilter> make_box_position_filter(
+    const YAML::Node& node) {
   if (!node["low"])
     fatal_error(
         "For box position-filter \"low\" co-ordinates is not provided.");
@@ -314,8 +317,8 @@ std::shared_ptr<BoxPositionFilter> make_box_position_filter(const YAML::Node& no
   std::vector<double> low_point = node["low"].as<std::vector<double>>();
   std::vector<double> high_point = node["high"].as<std::vector<double>>();
 
-  Position r_low (low_point[0], low_point[1], low_point[2]);
-  Position r_high (high_point[0], high_point[1], high_point[2]);
+  Position r_low(low_point[0], low_point[1], low_point[2]);
+  Position r_high(high_point[0], high_point[1], high_point[2]);
 
   std::shared_ptr<BoxPositionFilter> box_type_filter =
       std::make_shared<BoxPositionFilter>(r_low, r_high);

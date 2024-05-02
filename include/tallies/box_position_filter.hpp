@@ -34,9 +34,7 @@ class BoxPositionFilter : public CartesianFilter {
   size_t Ny() const override final { return 1; }
   size_t Nz() const override final { return 1; }
 
-  StaticVector3 get_dimension() override final {
-    return {1};
-  }
+  StaticVector3 get_shape() override final { return {1}; }
 
   double x_min(const StaticVector3& /*index*/) const override {
     return r_low_.x();
@@ -59,12 +57,11 @@ class BoxPositionFilter : public CartesianFilter {
   double z_max(const StaticVector3& /*index*/) const override {
     return r_high_.z();
   }
-  
+
   std::string type_str() const override { return "box_position_filter"; }
 
-  protected:
-
-    // required for track-length
+ protected:
+  // required for track-length
   bool find_entry_point(Position& r, const Direction& u,
                         double& d_flight) const;
   void initialize_indices(const Position& r, const Direction& u, int& i, int& j,
@@ -74,11 +71,12 @@ class BoxPositionFilter : public CartesianFilter {
                                                 const std::array<int, 3>& on,
                                                 int i, int j, int k);
 
-  private:
-    double dx_, dy_, dz_, dx_inv_, dy_inv_, dz_inv_ ;
+ private:
+  double dx_, dy_, dz_, dx_inv_, dy_inv_, dz_inv_;
 };
 
 // make the cartesian filter or position filter
-std::shared_ptr<BoxPositionFilter> make_box_position_filter(const YAML::Node& node);
+std::shared_ptr<BoxPositionFilter> make_box_position_filter(
+    const YAML::Node& node);
 
 #endif

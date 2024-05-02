@@ -2,51 +2,58 @@
 #include <utils/constants.hpp>
 #include <utils/output.hpp>
 
-RegularCartesianMeshFilter::RegularCartesianMeshFilter(Position r_low, Position r_high, size_t nx_, size_t ny_,
-                     size_t nz_)
-      : CartesianFilter(r_low, r_high),
-        dx_(), dy_(), dz_(), dx_inv_(), dy_inv_(), dz_inv_(),
-        Nx_(nx_),
-        Ny_(ny_),
-        Nz_(nz_),
-        x_index_(),
-        y_index_(),
-        z_index_() {
-    if (Nx_ == 0 || Ny_ == 0 || Nz_ == 0)
-      fatal_error("The number of bins in any direction cannot be zero.\n");
+RegularCartesianMeshFilter::RegularCartesianMeshFilter(Position r_low,
+                                                       Position r_high,
+                                                       size_t nx_, size_t ny_,
+                                                       size_t nz_)
+    : CartesianFilter(r_low, r_high),
+      dx_(),
+      dy_(),
+      dz_(),
+      dx_inv_(),
+      dy_inv_(),
+      dz_inv_(),
+      Nx_(nx_),
+      Ny_(ny_),
+      Nz_(nz_),
+      x_index_(),
+      y_index_(),
+      z_index_() {
+  if (Nx_ == 0 || Ny_ == 0 || Nz_ == 0)
+    fatal_error("The number of bins in any direction cannot be zero.\n");
 
-    if (Nx_ == 1 && Ny_ == 1 && Nz_ == 1) {
-      fatal_error("For shape [1,1,1] the reactilinear mesh position filter is used instead of box filter.");
-    }
+  if (Nx_ == 1 && Ny_ == 1 && Nz_ == 1) {
+    fatal_error(
+        "For shape [1,1,1] the reactilinear mesh position filter is used "
+        "instead of box filter.");
+  }
 
-    dx_ = (r_high_.x() - r_low_.x()) / static_cast<double>(Nx_);
-    dy_ = (r_high_.y() - r_low_.y()) / static_cast<double>(Ny_);
-    dz_ = (r_high_.z() - r_low_.z()) / static_cast<double>(Nz_);
+  dx_ = (r_high_.x() - r_low_.x()) / static_cast<double>(Nx_);
+  dy_ = (r_high_.y() - r_low_.y()) / static_cast<double>(Ny_);
+  dz_ = (r_high_.z() - r_low_.z()) / static_cast<double>(Nz_);
 
-    dx_inv_ = 1. / dx_;
-    dy_inv_ = 1. / dy_;
-    dz_inv_ = 1. / dz_;
+  dx_inv_ = 1. / dx_;
+  dy_inv_ = 1. / dy_;
+  dz_inv_ = 1. / dz_;
 
+  x_index_ = 0;
+  y_index_ = 1;
+  z_index_ = 2;
+  if (Nx_ == 1) {
     x_index_ = 0;
-    y_index_ = 1;
-    z_index_ = 2;
-    if (Nx_ == 1) {
-      x_index_ = 0;
-      y_index_--;
-      z_index_--;
-    }
+    y_index_--;
+    z_index_--;
+  }
 
-    if (Ny_ == 1) {
-      y_index_ = 0;
-      z_index_--;
-    }
+  if (Ny_ == 1) {
+    y_index_ = 0;
+    z_index_--;
+  }
 
-    if (Nz_ == 1) {
-      z_index_ = 0;
-    }
-
+  if (Nz_ == 1) {
+    z_index_ = 0;
+  }
 }
-
 
 StaticVector3 RegularCartesianMeshFilter::get_indices(const Tracker& tktr) {
   StaticVector3 indexes;
@@ -58,16 +65,15 @@ StaticVector3 RegularCartesianMeshFilter::get_indices(const Tracker& tktr) {
   if ((index_x >= 0 && index_x < static_cast<int>(Nx_)) &&
       (index_y >= 0 && index_y < static_cast<int>(Ny_)) &&
       (index_z >= 0 && index_z < static_cast<int>(Nz_))) {
-
     indexes = reduce_dimension(index_x, index_y, index_z);
   }
 
   return indexes;
 }
 
-
-std::vector<TracklengthDistance> RegularCartesianMeshFilter::get_indices_tracklength(
-    const Tracker& trkr, double d_flight) {
+std::vector<TracklengthDistance>
+RegularCartesianMeshFilter::get_indices_tracklength(const Tracker& trkr,
+                                                    double d_flight) {
   std::vector<TracklengthDistance> indexes_tracklength;
   TracklengthDistance trlen_d;
 
@@ -156,10 +162,9 @@ std::vector<TracklengthDistance> RegularCartesianMeshFilter::get_indices_trackle
   return indexes_tracklength;
 }
 
-
-
-bool RegularCartesianMeshFilter::find_entry_point(Position& r, const Direction& u,
-                                       double& d_flight) const {
+bool RegularCartesianMeshFilter::find_entry_point(Position& r,
+                                                  const Direction& u,
+                                                  double& d_flight) const {
   const double ux_inv = 1. / u.x();
   const double uy_inv = 1. / u.y();
   const double uz_inv = 1. / u.z();
@@ -232,9 +237,10 @@ bool RegularCartesianMeshFilter::find_entry_point(Position& r, const Direction& 
   return true;
 }
 
-void RegularCartesianMeshFilter::initialize_indices(const Position& r, const Direction& u,
-                                         int& i, int& j, int& k,
-                                         std::array<int, 3>& on) {
+void RegularCartesianMeshFilter::initialize_indices(const Position& r,
+                                                    const Direction& u, int& i,
+                                                    int& j, int& k,
+                                                    std::array<int, 3>& on) {
   i = static_cast<int>(std::floor((r.x() - r_low_.x()) * dx_inv_));
   j = static_cast<int>(std::floor((r.y() - r_low_.y()) * dy_inv_));
   k = static_cast<int>(std::floor((r.z() - r_low_.z()) * dz_inv_));
@@ -304,7 +310,7 @@ void RegularCartesianMeshFilter::initialize_indices(const Position& r, const Dir
 }
 
 void RegularCartesianMeshFilter::update_indices(int key, int& i, int& j, int& k,
-                                     std::array<int, 3>& on) {
+                                                std::array<int, 3>& on) {
   // Must initially fill with zero, so that we don't stay on top
   // of other surfaces the entire time
   on.fill(0);
@@ -412,9 +418,9 @@ std::pair<double, int> RegularCartesianMeshFilter::distance_to_next_index(
   return {dist, key};
 }
 
-
 // Make the cartesian or position filter class
-std::shared_ptr<RegularCartesianMeshFilter> make_mesh_position_filter(const YAML::Node& node) {
+std::shared_ptr<RegularCartesianMeshFilter> make_mesh_position_filter(
+    const YAML::Node& node) {
   if (!node["low"])
     fatal_error(
         "For mesh position-filter \"low\" co-ordinates is not provided.");
@@ -431,7 +437,9 @@ std::shared_ptr<RegularCartesianMeshFilter> make_mesh_position_filter(const YAML
 
   if (shape_[0] == 1 && shape_[1] == 1 && shape_[2] == 1) {
     std::string name_ = node["name"].as<std::string>();
-      fatal_error("For " + name_ +" tally, the shape [1,1,1] with reactilinear mesh position filter is used instead of box filter.");
+    fatal_error("For " + name_ +
+                " tally, the shape [1,1,1] with reactilinear mesh position "
+                "filter is used instead of box filter.");
   }
 
   if (shape_.size() != 3) fatal_error("Element in the shape must be 3.");
@@ -439,8 +447,9 @@ std::shared_ptr<RegularCartesianMeshFilter> make_mesh_position_filter(const YAML
   Position r_low(low_point[0], low_point[1], low_point[2]);
   Position r_high(high_point[0], high_point[1], high_point[2]);
 
-  std::shared_ptr<RegularCartesianMeshFilter> mesh_type_filter = std::make_shared<RegularCartesianMeshFilter>(
-      r_low, r_high, shape_[0], shape_[1], shape_[2]);
+  std::shared_ptr<RegularCartesianMeshFilter> mesh_type_filter =
+      std::make_shared<RegularCartesianMeshFilter>(r_low, r_high, shape_[0],
+                                                   shape_[1], shape_[2]);
 
   return mesh_type_filter;
 }

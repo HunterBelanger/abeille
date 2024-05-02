@@ -26,7 +26,7 @@ class PositionFilter {
   virtual std::vector<TracklengthDistance> get_indices_tracklength(
       const Tracker& trkr, double d_flight) = 0;
 
-  virtual StaticVector3 get_dimension() = 0;
+  virtual StaticVector3 get_shape() = 0;
 
   virtual std::string type_str() const = 0;
 };

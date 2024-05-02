@@ -4,10 +4,9 @@
 #include <yaml-cpp/yaml.h>
 
 #include <iostream>
+#include <optional>
 #include <string>
 #include <vector>
-#include <optional>
-
 
 class EnergyFilter {
  public:

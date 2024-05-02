@@ -137,11 +137,11 @@ void MeshTally::record_generation(double multiplier) {
       tally_avg[i] = avg;
 
       // Get new variance
-      double var = tally_var[i];
-      var = var + ((val - old_avg) * (val - avg) - (var)) * invs_dg;
-      tally_var[i] = var;
-
-      // std::cout<<"Given :"<<tally_avg[i]<<"\n";
+      if (g > 1) {
+        double var = tally_var[i];
+        var = var + ((val - old_avg) * (val - avg) - (var)) * invs_dg;
+        tally_var[i] = var;
+      }
     }
   }
 }

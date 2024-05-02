@@ -20,7 +20,6 @@ EnergyFilter::EnergyFilter(const std::vector<double> energy_bounds)
 }
 
 std::optional<std::size_t> EnergyFilter::get_index(const double& E) const {
-
   for (std::size_t i = 0; i < energy_bounds_.size() - 1; i++) {
     if (E >= energy_bounds_[i] && E <= energy_bounds_[i + 1]) {
       return i;
@@ -30,7 +29,6 @@ std::optional<std::size_t> EnergyFilter::get_index(const double& E) const {
   // if came here, meaning the energy index were not found
   return std::nullopt;
 }
-
 
 std::shared_ptr<EnergyFilter> make_energy_filter(const YAML::Node& node) {
   if (!node['energy-bounds']) {

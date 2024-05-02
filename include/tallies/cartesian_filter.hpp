@@ -26,9 +26,7 @@ class CartesianFilter : public PositionFilter {
   std::string type_str() const override { return "Cartesian_Filter"; };
 
  protected:
-
   Position r_low_, r_high_;
-
 };
 
 std::shared_ptr<CartesianFilter> make_cartesian_filter(const YAML::Node& node);

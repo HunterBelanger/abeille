@@ -1,13 +1,10 @@
-#include <tallies/itally.hpp>
-#include <utils/output.hpp>
-
 #include <tallies/box_position_filter.hpp>
 #include <tallies/general_tally.hpp>
+#include <tallies/itally.hpp>
 #include <tallies/legendre_fet.hpp>
 #include <tallies/regular_cartesian_mesh_filter.hpp>
 #include <tallies/tallies.hpp>
-
-// #include <boost/container/static_vector.hpp>
+#include <utils/output.hpp>
 
 double ITally::particle_base_score(const Particle& p, MaterialHelper& mat) {
   double collision_score = 1.0 / (net_weight_);
@@ -57,12 +54,13 @@ void ITally::record_generation(double multiplier) {
       tally_avg[i] = avg;
 
       // Get new variance
-      double var = tally_var[i];
-      var = var + ((val - old_avg) * (val - avg) - (var)) * invs_dg;
-      tally_var[i] = var;
+      if (gen_ > 1) {
+        double var = tally_var[i];
+        var = var + ((val - old_avg) * (val - avg) - (var)) * invs_dg;
+        tally_var[i] = var;
+      }
     }
   }
-
   // Clear the entry for the tally_gen
   tally_gen_score.fill(0.0);
 }

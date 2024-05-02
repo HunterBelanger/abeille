@@ -1,6 +1,6 @@
+#include <tallies/itally.hpp>
 #include <tallies/legendre_fet.hpp>
 #include <utils/legendre.hpp>
-#include <tallies/itally.hpp>
 
 #include <boost/container/static_vector.hpp>
 using StaticVector6 = boost::container::static_vector<size_t, 6>;
@@ -15,25 +15,11 @@ LegendreFET::LegendreFET(std::shared_ptr<CartesianFilter> position_filter_,
       energy_in_(energy_in),
       axes(),
       FET_order(FET_order_) {
-  // for legendre, check the size of axis vector should be between than 3.
-  for ( auto& c : axes_){
-    axes.push_back(c);
-  }
-  if (axes.size() <= 1 && axes.size() >= 3)
-    fatal_error(
-        "The no. of given axis for legendre-FET is not between 1 to 3 for "
-        "tally " +
-        name_ + ".");
-
-
-
-  bool check_filter = true;
-
-  // add the dimension for the cartesian_filter_
+  // get the shape or dimensions for the cartesian_filter_
+  // the Legendre-FET requires the co-ordinate information
   StaticVector3 position_shape;
   if (cartesian_filter_) {
-    position_shape = position_filter_->get_dimension();
-    check_filter = false;
+    position_shape = position_filter_->get_shape();
   } else {
     fatal_error("For the tally, " + name_ +
                 ", the positional filter is required to do the legendre "
@@ -42,17 +28,21 @@ LegendreFET::LegendreFET(std::shared_ptr<CartesianFilter> position_filter_,
 
   StaticVector6 tally_dimensions_(position_shape.begin(), position_shape.end());
 
-  // add the dimension for energy_in_ only if greater than 1.
+  // add the dimension for energy_in_ only if exist
   if (energy_in_) {
     std::size_t ne = energy_in_->size();
     tally_dimensions_.insert(tally_dimensions_.begin(), ne);
-
-    check_filter = check_filter && false;
   }
 
-  if (check_filter == true) {
-    fatal_error("for the " + name_ + " tally, no filter is provided.");
+  // for legendre, check the size of axis vector should be between than 3.
+  for (auto& c : axes_) {
+    axes.push_back(c);
   }
+  if (axes.size() <= 1 && axes.size() >= 3)
+    fatal_error(
+        "The no. of given axis for legendre-FET is not between 1 to 3 for "
+        "tally " +
+        name_ + ".");
 
   // Add the dimension for axis only when greater than 1
   std::size_t n_axis = axes.size();
@@ -65,6 +55,7 @@ LegendreFET::LegendreFET(std::shared_ptr<CartesianFilter> position_filter_,
   std::size_t fet_order_dimension = FET_order_ + 1;
   tally_dimensions_.push_back(fet_order_dimension);
 
+  // reallocate and fill with zeross for the tally avg, gen-score and variance
   tally_avg.reallocate(tally_dimensions_);
   tally_avg.fill(0.0);
 
@@ -81,15 +72,16 @@ void LegendreFET::score_collision(const Particle& p, const Tracker& tktr,
     return;
   }
 
+  // get the cartisian_filter indexes
   StaticVector3 position_index = cartesian_filter_->get_indices(tktr);
-  
   StaticVector6 indexes(position_index.begin(), position_index.end());
 
+  // get the energy-index, if energy-filter exists
   std::size_t index_E;
   if (energy_in_) {
     std::optional<std::size_t> E_indx = energy_in_->get_index(p.E());
-    
-    if ( E_indx.has_value() )
+
+    if (E_indx.has_value())
       index_E = E_indx.value();
 
     else
@@ -104,13 +96,12 @@ void LegendreFET::score_collision(const Particle& p, const Tracker& tktr,
   const double Et = mat.Et(p.E());
 
   const double collision_score = particle_base_score(p, mat) / Et;
-  
-  // Check weather, given-axis size is more than 1.
-  // if less than 1, there will not be any index
+
+  // add one dimension for axis_index
   const size_t axis_index = indexes.size();
   indexes.push_back(0);
 
-  // Check weather, given- FET order is more than 1 or not.
+  // add one dimesnion for FET-index
   const size_t FET_index = indexes.size();
   indexes.push_back(0);
 
@@ -123,6 +114,7 @@ void LegendreFET::score_collision(const Particle& p, const Tracker& tktr,
 
     indexes[axis_index] = it_axis;
 
+    // get the scaled x, y, or z for legendre polynomial
     switch (c) {
       case LegendreFET::Axis::X: {
         const double xmin_ = cartesian_filter_->x_min(position_index);
@@ -267,12 +259,8 @@ std::shared_ptr<LegendreFET> make_legendre_fet(const YAML::Node& node) {
   }
 
   if (estimator_name == "track-length") {
-    /*itally_legendre_fet_tally_ = std::make_shared<LegendreFET>(FET_order_,
-       LegendreFET::Quantity::Flux, LegendreFET::Estimator::TrackLength,
-       legendre_fet_tally_name, fet_axis, cartesian_filter_, energy_filter_);
-    */
     fatal_error(
-        "The track-length for the legendre-FET is not avilable as asked in " +
+        "The track-length for the legendre-FET is not supported as asked in " +
         legendre_fet_tally_name + " tally. ");
   }
 
