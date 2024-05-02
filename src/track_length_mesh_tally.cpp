@@ -97,7 +97,6 @@ void TrackLengthMeshTally::score_flight(const Particle& p, double d,
   // If so, we can fast-forward to that position.
   if (!inside_tally_region) {
     if (!find_entry_point(r, u, d)) {
-      std::cout << "Track-lenght\n";
       return;
     }
 
