@@ -1,5 +1,6 @@
 #include <tallies/general_tally.hpp>
 #include <utils/error.hpp>
+#include <utils/output.hpp>
 
 #include <boost/container/static_vector.hpp>
 using StaticVector4 = boost::container::static_vector<size_t, 4>;
@@ -12,8 +13,8 @@ GeneralTally::GeneralTally(std::shared_ptr<PositionFilter> position_filter,
       position_filter_(position_filter),
       energy_in_(energy_in) {
   // at least one filter must exists.
-  if ( position_filter_ == nullptr && energy_in_ == nullptr){
-      fatal_error("for the " + name_ + " tally, no filter is provided.");
+  if (position_filter_ == nullptr && energy_in_ == nullptr) {
+    fatal_error("for the " + name_ + " tally, no filter is provided.");
   }
 
   // get the shape or dimension of position filter
@@ -43,10 +44,6 @@ GeneralTally::GeneralTally(std::shared_ptr<PositionFilter> position_filter,
 
 void GeneralTally::score_collision(const Particle& p, const Tracker& tktr,
                                    MaterialHelper& mat) {
-  if (estimator_ != GeneralTally::Estimator::Collision) {
-    return;
-  }
-
   // get the indices for the positions, if exist
   StaticVector3 position_indices;
   if (position_filter_) {
@@ -60,7 +57,7 @@ void GeneralTally::score_collision(const Particle& p, const Tracker& tktr,
     std::optional<std::size_t> E_indx = energy_in_->get_index(p.E());
     if (E_indx.has_value()) {
       std::size_t index_E = E_indx.value();
-      indices.insert( indices.begin(), index_E );
+      indices.insert(indices.begin(), index_E);
     } else {
       // Not inside any energy bin. Don't score.
       return;
@@ -82,10 +79,6 @@ void GeneralTally::score_collision(const Particle& p, const Tracker& tktr,
 
 void GeneralTally::score_flight(const Particle& p, const Tracker& trkr,
                                 double d_flight, MaterialHelper& mat) {
-  if (estimator_ != GeneralTally::Estimator::TrackLength) {
-    return;
-  }
-
   // get the energy index
   std::size_t index_E;
   if (energy_in_) {
@@ -109,7 +102,7 @@ void GeneralTally::score_flight(const Particle& p, const Tracker& trkr,
   for (size_t iter = 0; iter < pos_indices_.size(); iter++) {
     StaticVector4 all_indices_(pos_indices_[iter].index.begin(),
                                pos_indices_[iter].index.end());
-    
+
     if (energy_in_) {
       all_indices_.insert(all_indices_.begin(), index_E);
     }
@@ -121,6 +114,62 @@ void GeneralTally::score_flight(const Particle& p, const Tracker& trkr,
 #endif
     tally_gen_score(all_indices_) += d_ * flight_score;
   }
+}
+
+void GeneralTally::write_tally() {
+  // Only master can write tallies, as only master has a copy
+  // of the mean and variance.
+  if (mpi::rank != 0) return;
+
+  auto& h5 = Output::instance().h5();
+
+  // Create the group for the tally
+  auto tally_grp = h5.createGroup("results/" + tally_name);
+  /*
+    // First write coordinates and number of groups
+    std::vector<double> x_bounds(Nx + 1, 0.);
+    for (std::size_t i = 0; i <= Nx; i++) {
+      x_bounds[i] = (static_cast<double>(i) * dx) + r_low.x();
+    }
+    tally_grp.createAttribute("x-bounds", x_bounds);
+
+    std::vector<double> y_bounds(Ny + 1, 0.);
+    for (std::size_t i = 0; i <= Ny; i++) {
+      y_bounds[i] = (static_cast<double>(i) * dy) + r_low.y();
+    }
+    tally_grp.createAttribute("y-bounds", y_bounds);
+
+    std::vector<double> z_bounds(Nz + 1, 0.);
+    for (std::size_t i = 0; i <= Nz; i++) {
+      z_bounds[i] = (static_cast<double>(i) * dz) + r_low.z();
+    }
+    tally_grp.createAttribute("z-bounds", z_bounds);
+
+
+    tally_grp.createAttribute("energy-bounds", energy_bounds);
+  */
+  // Save the quantity
+  tally_grp.createAttribute("quantity", quantity_str());
+
+  /*if (this->quantity_str() == "mt") {
+    tally_grp.createAttribute("mt", this->mt());
+  }*/
+
+  // Save the estimator
+  tally_grp.createAttribute("estimator", estimator_str());
+
+  // Convert flux_var to the error on the mean
+  for (size_t l = 0; l < tally_var.size(); l++)
+    tally_var[l] = std::sqrt(tally_var[l] / static_cast<double>(gen_));
+
+  // Add data sets for the average and the standard deviation
+  auto avg_dset =
+      tally_grp.createDataSet<double>("avg", H5::DataSpace(tally_avg.shape()));
+  avg_dset.write_raw(&tally_avg[0]);
+
+  auto std_dset =
+      tally_grp.createDataSet<double>("std", H5::DataSpace(tally_var.shape()));
+  std_dset.write_raw(&tally_var[0]);
 }
 
 std::shared_ptr<GeneralTally> make_general_tally(const YAML::Node& node) {
@@ -160,7 +209,7 @@ std::shared_ptr<GeneralTally> make_general_tally(const YAML::Node& node) {
   // Get the enrgy bounds, if any is given
   std::shared_ptr<EnergyFilter> energy_filter_ = nullptr;
   if (node["energy-bounds"]) {
-    if ( !node["energy-bounds"].IsScalar() ){
+    if (!node["energy-bounds"].IsSequence()) {
       fatal_error("Invalid energy-filter is given.");
     }
     energy_filter_ = make_energy_filter(node);
@@ -169,7 +218,7 @@ std::shared_ptr<GeneralTally> make_general_tally(const YAML::Node& node) {
   // Get the position filter
   std::shared_ptr<PositionFilter> position_filter_ = nullptr;
   if (node["position-filter"]) {
-    if ( !node["position-filter"].IsScalar() ){
+    if (!node["position-filter"].IsScalar()) {
       fatal_error("Invalid position-filter is given.");
     }
     position_filter_ = make_position_filter(node);

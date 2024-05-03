@@ -44,7 +44,7 @@ class ITally {
   std::string estimator_str();
   std::string quantity_str();
 
-  void write_tally();
+  virtual void write_tally() = 0;
 
  protected:
   double particle_base_score(const Particle& p, MaterialHelper& mat);

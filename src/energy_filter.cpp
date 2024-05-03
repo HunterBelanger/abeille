@@ -31,9 +31,8 @@ std::optional<std::size_t> EnergyFilter::get_index(const double& E) const {
 }
 
 std::shared_ptr<EnergyFilter> make_energy_filter(const YAML::Node& node) {
-
   if (!node["energy-bounds"].IsSequence() ||
-      (node["energy-bounds"].size() < 2 )) {
+      (node["energy-bounds"].size() < 2)) {
     fatal_error("Invalid enery-bounds are given.");
   }
   std::vector<double> energy_bounds_ =

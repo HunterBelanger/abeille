@@ -5,7 +5,7 @@
 
 // make_position_filter will be usded for general tally system
 std::shared_ptr<PositionFilter> make_position_filter(const YAML::Node& node) {
-  if (!node["position-filter"]) {
+  if (!node["position-filter"] && !node["position-filter"].IsScalar()) {
     fatal_error("position-filter is not given.");
   }
 

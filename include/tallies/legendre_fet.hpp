@@ -33,6 +33,8 @@ class LegendreFET : public ITally {
                     double /*d_flight*/,
                     MaterialHelper& /*mat*/) override final {}
 
+  void write_tally() override final;
+
   size_t get_fet_order() { return FET_order_; }
 
  private:

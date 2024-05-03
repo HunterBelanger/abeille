@@ -23,6 +23,8 @@ class GeneralTally : public ITally {
   void score_flight(const Particle& p, const Tracker& trkr, double d_flight,
                     MaterialHelper& mat) override final;
 
+  void write_tally() override final;
+
  private:
   std::shared_ptr<PositionFilter> position_filter_;
   std::shared_ptr<EnergyFilter> energy_in_;

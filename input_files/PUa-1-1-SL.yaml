@@ -55,7 +55,7 @@ tallies:
     energy-bounds: [0., 1.]
     quantity: flux
     name: flux-3
-    estimator: track-length
+    estimator: collision
     axes: [X]
 
 

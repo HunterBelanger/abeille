@@ -68,7 +68,12 @@ class Tallies {
 
   void add_ITally(std::shared_ptr<ITally> new_tally) {
     new_tally->set_net_weight(total_weight);
-    new_I_tallies_.push_back(new_tally);
+
+    if (new_tally->estimator_str() == "collision") {
+      new_itally_collision_.push_back(new_tally);
+    } else if (new_tally->estimator_str() == "track-length") {
+      new_itally_track_length_.push_back(new_tally);
+    }
   }
 
   void add_collision_mesh_tally(std::shared_ptr<CollisionMeshTally> cetally);
@@ -85,8 +90,8 @@ class Tallies {
   // NEW TALLY INTERFACE
   void score_collision(const Particle& p, const Tracker& tktr,
                        MaterialHelper& mat) {
-    if (scoring_ && !new_I_tallies_.empty()) {
-      for (auto& new_tally : new_I_tallies_) {
+    if (scoring_ && !new_itally_collision_.empty()) {
+      for (auto& new_tally : new_itally_collision_) {
         new_tally->score_collision(p, tktr, mat);
       }
     }
@@ -94,9 +99,8 @@ class Tallies {
 
   void score_flight(const Particle& p, const Tracker& trkr, double d_flight,
                     MaterialHelper& mat) {
-    if (scoring_ && !new_I_tallies_.empty()) {
-      for (auto& new_tally : new_I_tallies_) {
-        // new_tally->score_flight(p, d_flight, mat);
+    if (scoring_ && !new_itally_track_length_.empty()) {
+      for (auto& new_tally : new_itally_track_length_) {
         new_tally->score_flight(p, trkr, d_flight, mat);
       }
     }
@@ -206,7 +210,10 @@ class Tallies {
     for (auto& t : source_mesh_tallies_) t->set_net_weight(total_weight);
     for (auto& t : noise_source_mesh_tallies_) t->set_net_weight(total_weight);
 
-    for (auto& new_tally : new_I_tallies_)
+    for (auto& new_tally : new_itally_collision_)
+      new_tally->set_net_weight(total_weight);
+
+    for (auto& new_tally : new_itally_track_length_)
       new_tally->set_net_weight(total_weight);
   }
 
@@ -249,8 +256,9 @@ class Tallies {
   std::vector<std::shared_ptr<SourceMeshTally>> noise_source_mesh_tallies_;
 
   std::vector<std::shared_ptr<ITally>>
-      new_I_tallies_;  // New "Itally" vector responsble for both collision and
-                       // track-length
+      new_itally_collision_;  // New "Itally" vector for collision
+  std::vector<std::shared_ptr<ITally>>
+      new_itally_track_length_;  // New "Itally" vector for track-length
 
   void update_avg_and_var(double x, double& x_avg, double& x_var);
 
