@@ -7,21 +7,21 @@
 
 #include <array>
 
-class BoxPositionFilter : public CartesianFilter {
+class BoxFilter : public CartesianFilter {
  public:
-  BoxPositionFilter(const Position r_low, const Position r_high);
+  BoxFilter(const Position r_low, const Position r_high);
 
-  ~BoxPositionFilter() = default;
+  ~BoxFilter() = default;
 
   StaticVector3 get_indices(const Tracker& tktr) override final {
-    StaticVector3 indexes;
+    StaticVector3 indices;
     const Position r = tktr.r();
     if ((r_low_.x() <= r.x() && r_high_.x() >= r.x()) &&
         (r_low_.y() <= r.y() && r_high_.y() >= r.y()) &&
         (r_low_.z() <= r.z() && r_high_.z() >= r.z())) {
-      indexes.push_back(0);
+      indices.push_back(0);
     }
-    return indexes;
+    return indices;
   }
 
   std::vector<TracklengthDistance> get_indices_tracklength(
@@ -69,7 +69,6 @@ class BoxPositionFilter : public CartesianFilter {
 };
 
 // make the cartesian filter or position filter
-std::shared_ptr<BoxPositionFilter> make_box_position_filter(
-    const YAML::Node& node);
+std::shared_ptr<BoxFilter> make_box_position_filter(const YAML::Node& node);
 
 #endif

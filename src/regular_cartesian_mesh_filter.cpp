@@ -19,10 +19,10 @@ RegularCartesianMeshFilter::RegularCartesianMeshFilter(Position r_low,
       x_index_(),
       y_index_(),
       z_index_() {
-  if ((r_low_.x() > r_high_.x()) || (r_low_.y() > r_high_.y()) ||
-      (r_low_.z() > r_high_.z()))
+  if ((r_low_.x() >= r_high_.x()) || (r_low_.y() >= r_high_.y()) ||
+      (r_low_.z() >= r_high_.z()))
     fatal_error(
-        " Corrdinates of \"low\" position are higher than \"high\" "
+        " Coordinates of \"low\" position are >= than \"high\" "
         "position.\n");
 
   if (Nx_ == 0 || Ny_ == 0 || Nz_ == 0)
@@ -62,7 +62,7 @@ RegularCartesianMeshFilter::RegularCartesianMeshFilter(Position r_low,
 }
 
 StaticVector3 RegularCartesianMeshFilter::get_indices(const Tracker& tktr) {
-  StaticVector3 indexes;
+  StaticVector3 indices;
   const Position r = tktr.r();
   int index_x = static_cast<int>(std::floor((r.x() - r_low_.x()) * dx_inv_));
   int index_y = static_cast<int>(std::floor((r.y() - r_low_.y()) * dy_inv_));
@@ -71,10 +71,10 @@ StaticVector3 RegularCartesianMeshFilter::get_indices(const Tracker& tktr) {
   if ((index_x >= 0 && index_x < static_cast<int>(Nx_)) &&
       (index_y >= 0 && index_y < static_cast<int>(Ny_)) &&
       (index_z >= 0 && index_z < static_cast<int>(Nz_))) {
-    indexes = reduce_dimension(index_x, index_y, index_z);
+    indices = reduce_dimension(index_x, index_y, index_z);
   }
 
-  return indexes;
+  return indices;
 }
 
 double RegularCartesianMeshFilter::x_min(const StaticVector3& index) const {
@@ -120,7 +120,7 @@ double RegularCartesianMeshFilter::z_max(const StaticVector3& index) const {
 std::vector<TracklengthDistance>
 RegularCartesianMeshFilter::get_indices_tracklength(const Tracker& trkr,
                                                     double d_flight) {
-  std::vector<TracklengthDistance> indexes_tracklength;
+  std::vector<TracklengthDistance> indices_tracklength;
   TracklengthDistance trlen_d;
 
   Position r = trkr.r();
@@ -141,7 +141,7 @@ RegularCartesianMeshFilter::get_indices_tracklength(const Tracker& trkr,
   // it is possible that particle is not inside the box, but can intersect
   if (inside_bin == false) {
     if (find_entry_point(r, u_, d_flight) == false) {
-      return indexes_tracklength;
+      return indices_tracklength;
     }
     initialize_indices(r, u_, i, j, k, on);
     if (i >= 0 && i < static_cast<int>(Nx_) && j >= 0 &&
@@ -159,14 +159,14 @@ RegularCartesianMeshFilter::get_indices_tracklength(const Tracker& trkr,
 
   while (distance_remaining > 0.) {
     // Distance we will travel in this cell
-    // indexes_tracklength.clear();
+    // indices_tracklength.clear();
     auto next_tile = distance_to_next_index(r, u_, on, i, j, k);
 
     if (next_tile.first == INF) {
       // Something went wrong.... Don't score.
       Output::instance().save_warning(
           "Problem encountered with mesh tally in box_tally.\n");
-      return indexes_tracklength;
+      return indices_tracklength;
       // break;
     } else if (next_tile.first < 0.) {
       // Something went wrong.... Don't score.
@@ -182,16 +182,16 @@ RegularCartesianMeshFilter::get_indices_tracklength(const Tracker& trkr,
       size_t uj = static_cast<size_t>(j);
       size_t uk = static_cast<size_t>(k);
 
-      StaticVector3 u_indexes = reduce_dimension(ui, uj, uk);
-      trlen_d.indexes_ = u_indexes;
-      trlen_d.distance_in_bin = d_tile;
-      indexes_tracklength.push_back(trlen_d);
+      StaticVector3 u_index = reduce_dimension(ui, uj, uk);
+      trlen_d.index = u_index;
+      trlen_d.distance = d_tile;
+      indices_tracklength.push_back(trlen_d);
 
     } else {
       // If we arrive here, it means that we have left the tally region
       // when were we initially inside it. We can return here, as it's
       // impossible to go back in.
-      return indexes_tracklength;
+      return indices_tracklength;
     }
 
     // Remove the traveled distance
@@ -205,7 +205,7 @@ RegularCartesianMeshFilter::get_indices_tracklength(const Tracker& trkr,
 
   }  // While we still have to travel
 
-  return indexes_tracklength;
+  return indices_tracklength;
 }
 
 bool RegularCartesianMeshFilter::find_entry_point(Position& r,
@@ -465,16 +465,33 @@ std::pair<double, int> RegularCartesianMeshFilter::distance_to_next_index(
 }
 
 // Make the cartesian or position filter class
-std::shared_ptr<RegularCartesianMeshFilter> make_mesh_position_filter(
+std::shared_ptr<RegularCartesianMeshFilter> make_regular_cartesian_filter(
     const YAML::Node& node) {
-  if (!node["low"])
+  if (!node["low"]) {
     fatal_error(
-        "For mesh position-filter \"low\" co-ordinates is not provided.");
-  if (!node["high"])
+        "For box position-filter \"low\" coordinates are not provided.");
+  } else if (!node["low"].IsSequence() || node["low"].size() != 3) {
     fatal_error(
-        "For mesh position-filter \"high\" co-ordinates is not provided.");
-  if (!node["shape"])
+        "The given entry for the \"low\" coordinates must be a sequence of "
+        "size 3.");
+  }
+
+  if (!node["high"]) {
+    fatal_error(
+        "For box position-filter \"high\" coordinates are not provided.");
+  } else if (!node["high"].IsSequence() || node["high"].size() != 3) {
+    fatal_error(
+        "The given entry for the \"high\" coordinates must be a sequence of "
+        "size 3.");
+  }
+
+  if (!node["shape"]) {
     fatal_error("For mesh position-filter \"shape\" is not provided.");
+  } else if (!node["shape"].IsSequence() || node["shape"].size() != 3) {
+    fatal_error(
+        "The given entry for the \"shape\" coordinates must be a sequence of "
+        "size 3.");
+  }
 
   std::vector<double> low_point = node["low"].as<std::vector<double>>();
   std::vector<double> high_point = node["high"].as<std::vector<double>>();

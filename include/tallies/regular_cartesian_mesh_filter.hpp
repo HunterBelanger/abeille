@@ -11,15 +11,11 @@ class RegularCartesianMeshFilter : public CartesianFilter {
   RegularCartesianMeshFilter(Position r_low_, Position r_high_, size_t nx_,
                              size_t ny_, size_t nz_);
 
-  ~RegularCartesianMeshFilter() = default;
-
   StaticVector3 get_indices(const Tracker& tktr) override final;
 
   std::vector<TracklengthDistance> get_indices_tracklength(
       const Tracker& trkr, double d_flight) override final;
 
-  // Note that the method given is applicable when the reduced_dimension is
-  // used.
   double x_min(const StaticVector3& index) const override;
   double x_max(const StaticVector3& index) const override;
   double y_min(const StaticVector3& index) const override;
@@ -70,7 +66,7 @@ class RegularCartesianMeshFilter : public CartesianFilter {
 };
 
 // Make the cartesian or position filter class
-std::shared_ptr<RegularCartesianMeshFilter> make_mesh_position_filter(
+std::shared_ptr<RegularCartesianMeshFilter> make_regular_cartesian_filter(
     const YAML::Node& node);
 
 #endif

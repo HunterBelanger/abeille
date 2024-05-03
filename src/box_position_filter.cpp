@@ -2,8 +2,7 @@
 #include <utils/constants.hpp>
 #include <utils/output.hpp>
 
-BoxPositionFilter::BoxPositionFilter(const Position r_low,
-                                     const Position r_high)
+BoxFilter::BoxFilter(const Position r_low, const Position r_high)
     : CartesianFilter(r_low, r_high),
       dx_(),
       dy_(),
@@ -11,10 +10,10 @@ BoxPositionFilter::BoxPositionFilter(const Position r_low,
       dx_inv_(),
       dy_inv_(),
       dz_inv_() {
-  if ((r_low_.x() > r_high_.x()) || (r_low_.y() > r_high_.y()) ||
-      (r_low_.z() > r_high_.z()))
+  if ((r_low_.x() >= r_high_.x()) || (r_low_.y() >= r_high_.y()) ||
+      (r_low_.z() >= r_high_.z()))
     fatal_error(
-        " Corrdinates of \"low\" position are higher than \"high\" "
+        " Coordinates of \"low\" position are >= than \"high\" "
         "position.\n");
 
   dx_ = (r_high_.x() - r_low_.x());
@@ -26,9 +25,9 @@ BoxPositionFilter::BoxPositionFilter(const Position r_low,
   dz_inv_ = 1. / dz_;
 }
 
-std::vector<TracklengthDistance> BoxPositionFilter::get_indices_tracklength(
+std::vector<TracklengthDistance> BoxFilter::get_indices_tracklength(
     const Tracker& trkr, double d_flight) {
-  std::vector<TracklengthDistance> indexes_tracklength;
+  std::vector<TracklengthDistance> indices_tracklength;
   TracklengthDistance trlen_d;
 
   Position r = trkr.r();
@@ -49,7 +48,7 @@ std::vector<TracklengthDistance> BoxPositionFilter::get_indices_tracklength(
   // it is possible that particle is not inside the box, but can intersect
   if (inside_bin == false) {
     if (find_entry_point(r, u_, d_flight) == false) {
-      return indexes_tracklength;
+      return indices_tracklength;
     }
     initialize_indices(r, u_, i, j, k, on);
     if (i == 0 && j == 0 && k == 0) {
@@ -57,7 +56,8 @@ std::vector<TracklengthDistance> BoxPositionFilter::get_indices_tracklength(
     } else {
       // This is a problem, in theory, we should now be inside the tally
       // region. We will therefore spew a warning here.
-      warning("Could not locate tile after fast forward to mesh entry.\n");
+      Output::instance().save_warning(
+          "Could not locate tile after fast forward to mesh entry.\n");
     }
   }
 
@@ -70,26 +70,27 @@ std::vector<TracklengthDistance> BoxPositionFilter::get_indices_tracklength(
     // Something went wrong.... Don't score.
     Output::instance().save_warning(
         "Problem encountered with mesh tally in box_tally.\n");
-    return indexes_tracklength;
+    return indices_tracklength;
 
   } else if (next_tile.first < 0.) {
     // Something went wrong.... Don't score.
-    warning("Negative distance encountered with mesh tally.");
+    Output::instance().save_warning(
+        "Negative distance encountered with mesh tally.");
   }
 
   double d_tile = std::min(next_tile.first, distance_remaining);
 
   // Make the score if we are in a valid cell
   if (i == 0 && j == 0 && k == 0) {
-    trlen_d.indexes_ = StaticVector3{0};
-    trlen_d.distance_in_bin = d_tile;
-    indexes_tracklength.push_back(trlen_d);
+    trlen_d.index = StaticVector3{0};
+    trlen_d.distance = d_tile;
+    indices_tracklength.push_back(trlen_d);
   }
-  return indexes_tracklength;
+  return indices_tracklength;
 }
 
-bool BoxPositionFilter::find_entry_point(Position& r, const Direction& u,
-                                         double& d_flight) const {
+bool BoxFilter::find_entry_point(Position& r, const Direction& u,
+                                 double& d_flight) const {
   const double ux_inv = 1. / u.x();
   const double uy_inv = 1. / u.y();
   const double uz_inv = 1. / u.z();
@@ -162,9 +163,9 @@ bool BoxPositionFilter::find_entry_point(Position& r, const Direction& u,
   return true;
 }
 
-void BoxPositionFilter::initialize_indices(const Position& r,
-                                           const Direction& u, int& i, int& j,
-                                           int& k, std::array<int, 3>& on) {
+void BoxFilter::initialize_indices(const Position& r, const Direction& u,
+                                   int& i, int& j, int& k,
+                                   std::array<int, 3>& on) {
   i = static_cast<int>(std::floor((r.x() - r_low_.x()) * dx_inv_));
   j = static_cast<int>(std::floor((r.y() - r_low_.y()) * dy_inv_));
   k = static_cast<int>(std::floor((r.z() - r_low_.z()) * dz_inv_));
@@ -233,7 +234,7 @@ void BoxPositionFilter::initialize_indices(const Position& r,
   }
 }
 
-std::pair<double, int> BoxPositionFilter::distance_to_next_index(
+std::pair<double, int> BoxFilter::distance_to_next_index(
     const Position& r, const Direction& u, const std::array<int, 3>& on, int i,
     int j, int k) {
   // Get position at center of current tile
@@ -301,14 +302,24 @@ std::pair<double, int> BoxPositionFilter::distance_to_next_index(
 }
 
 // make the cartesian filter or position filter
-std::shared_ptr<BoxPositionFilter> make_box_position_filter(
-    const YAML::Node& node) {
-  if (!node["low"])
+std::shared_ptr<BoxFilter> make_box_position_filter(const YAML::Node& node) {
+  if (!node["low"]) {
     fatal_error(
-        "For box position-filter \"low\" co-ordinates is not provided.");
-  if (!node["high"])
+        "For box position-filter \"low\" coordinates are not provided.");
+  } else if (!node["low"].IsSequence() || node["low"].size() != 3) {
     fatal_error(
-        "For box position-filter \"high\" co-ordinates is not provided.");
+        "The given entry for the \"low\" coordinates must be a sequence of "
+        "size 3.");
+  }
+
+  if (!node["high"]) {
+    fatal_error(
+        "For box position-filter \"high\" coordinates are not provided.");
+  } else if (!node["high"].IsSequence() || node["high"].size() != 3) {
+    fatal_error(
+        "The given entry for the \"high\" coordinates must be a sequence of "
+        "size 3.");
+  }
 
   std::vector<double> low_point = node["low"].as<std::vector<double>>();
   std::vector<double> high_point = node["high"].as<std::vector<double>>();
@@ -316,8 +327,8 @@ std::shared_ptr<BoxPositionFilter> make_box_position_filter(
   Position r_low(low_point[0], low_point[1], low_point[2]);
   Position r_high(high_point[0], high_point[1], high_point[2]);
 
-  std::shared_ptr<BoxPositionFilter> box_type_filter =
-      std::make_shared<BoxPositionFilter>(r_low, r_high);
+  std::shared_ptr<BoxFilter> box_type_filter =
+      std::make_shared<BoxFilter>(r_low, r_high);
 
   return box_type_filter;
 }

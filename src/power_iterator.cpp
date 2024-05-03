@@ -45,8 +45,6 @@ namespace H5 = HighFive;
 #include <sstream>
 #include <vector>
 
-#include <tallies/general_tally.hpp>
-
 void PowerIterator::initialize() {
   this->write_output_info();
 

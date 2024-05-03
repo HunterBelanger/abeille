@@ -21,6 +21,17 @@ universes:
 
 root-universe: 1
 
+tally-filters:
+  position-filters:
+    - id: 1
+      type: box
+      low: [0,0,0]
+      high: [1,1,1]
+
+  energy-filters:
+    - id: 2
+      energy-bounds: [0., 1., 20.]
+
 tallies:
   - #shape: [1, 1, 1]
     shape: [2, 2, 2]
@@ -35,8 +46,8 @@ tallies:
   - type: ITally
     tally-type: general
     #tally-type: legendre-FET
-    FET-order: 3
-    Position-Filter: regular-reactangular-mesh
+    order: 3
+    position-filter: regular-cartesian-mesh
     #Position-Filter: box
     shape: [2, 2, 2]
     low: [ -0.77032,  -100.,  -100.]
@@ -45,7 +56,7 @@ tallies:
     quantity: flux
     name: flux-3
     estimator: track-length
-    FET-axis: [X]
+    axes: [X]
 
 
 settings:

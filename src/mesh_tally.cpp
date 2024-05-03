@@ -30,8 +30,6 @@
 #include <utils/output.hpp>
 #include <utils/settings.hpp>
 
-#include <tallies/general_tally.hpp>
-
 #include <set>
 #include <vector>
 

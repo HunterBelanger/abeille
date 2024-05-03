@@ -7,14 +7,14 @@ using StaticVector6 = boost::container::static_vector<size_t, 6>;
 
 LegendreFET::LegendreFET(std::shared_ptr<CartesianFilter> position_filter_,
                          std::shared_ptr<EnergyFilter> energy_in,
-                         std::vector<LegendreFET::Axis> axes_,
-                         size_t FET_order_, LegendreFET::Quantity quantity_,
+                         std::vector<LegendreFET::Axis> axes, size_t FET_order,
+                         LegendreFET::Quantity quantity_,
                          LegendreFET::Estimator estimator_, std::string name_)
     : ITally(quantity_, estimator_, name_),
       cartesian_filter_(position_filter_),
       energy_in_(energy_in),
-      axes(),
-      FET_order(FET_order_) {
+      axes_(),
+      FET_order_(FET_order) {
   // get the shape or dimensions for the cartesian_filter_
   // the Legendre-FET requires the co-ordinate information
   StaticVector3 position_shape;
@@ -35,17 +35,17 @@ LegendreFET::LegendreFET(std::shared_ptr<CartesianFilter> position_filter_,
   }
 
   // for legendre, check the size of axis vector should be between than 3.
-  for (auto& c : axes_) {
-    axes.push_back(c);
+  for (auto& c : axes) {
+    axes_.push_back(c);
   }
-  if (axes.size() <= 1 && axes.size() >= 3)
+  if (axes_.size() <= 1 && axes_.size() >= 3)
     fatal_error(
         "The no. of given axis for legendre-FET is not between 1 to 3 for "
         "tally " +
         name_ + ".");
 
   // Add the dimension for axis only when greater than 1
-  std::size_t n_axis = axes.size();
+  std::size_t n_axis = axes_.size();
   if (n_axis == 0) {
     fatal_error("For tally, " + name_ + " length of axis is zero.");
   }
@@ -72,9 +72,9 @@ void LegendreFET::score_collision(const Particle& p, const Tracker& tktr,
     return;
   }
 
-  // get the cartisian_filter indexes
+  // get the cartisian_filter indices
   StaticVector3 position_index = cartesian_filter_->get_indices(tktr);
-  StaticVector6 indexes(position_index.begin(), position_index.end());
+  StaticVector6 indices(position_index.begin(), position_index.end());
 
   // get the energy-index, if energy-filter exists
   std::size_t index_E;
@@ -88,8 +88,8 @@ void LegendreFET::score_collision(const Particle& p, const Tracker& tktr,
       return;
   }
 
-  // if the indexes_ is empty, then, we didn't get any scoring bin(s)
-  if (indexes.empty()) {
+  // if the indices_ is empty, then, we didn't get any scoring bin(s)
+  if (indices.empty()) {
     return;
   }
 
@@ -98,21 +98,21 @@ void LegendreFET::score_collision(const Particle& p, const Tracker& tktr,
   const double collision_score = particle_base_score(p, mat) / Et;
 
   // add one dimension for axis_index
-  const size_t axis_index = indexes.size();
-  indexes.push_back(0);
+  const size_t axis_index = indices.size();
+  indices.push_back(0);
 
   // add one dimesnion for FET-index
-  const size_t FET_index = indexes.size();
-  indexes.push_back(0);
+  const size_t FET_index = indices.size();
+  indices.push_back(0);
 
   // Variables for scoring
   double beta_n, scaled_loc;
 
   size_t it_axis = 0;
-  for (auto& c : axes) {  // Loop over the different axis and indexing is done
-                          // using the it_axis
+  for (auto& c : axes_) {  // Loop over the different axis and indexing is done
+                           // using the it_axis
 
-    indexes[axis_index] = it_axis;
+    indices[axis_index] = it_axis;
 
     // get the scaled x, y, or z for legendre polynomial
     switch (c) {
@@ -137,18 +137,18 @@ void LegendreFET::score_collision(const Particle& p, const Tracker& tktr,
         break;
     }
 
-    for (size_t i = 0; i < FET_order + 1;
+    for (size_t i = 0; i < FET_order_ + 1;
          i++) {  // loop over differnt FET order
       beta_n =
           collision_score *
           legendre(i, scaled_loc);  // score for i-th order's basis function
 
-      indexes[FET_index] = i;
+      indices[FET_index] = i;
 
 #ifdef ABEILLE_USE_OMP
 #pragma omp atomic
 #endif
-      tally_gen_score(indexes) += beta_n;
+      tally_gen_score(indices) += beta_n;
     }
 
     it_axis++;
@@ -212,27 +212,31 @@ std::shared_ptr<LegendreFET> make_legendre_fet(const YAML::Node& node) {
   }
 
   // Get the cartesian type position filter
+  if (!node["position-filter"]) {
+    fatal_error("For " + legendre_fet_tally_name +
+                ", the position-filter must be given.");
+  }
   std::shared_ptr<CartesianFilter> cartesian_filter_ =
       make_cartesian_filter(node);
 
   // Get the Legendre-FET order
-  if (!node["FET-order"]) {
+  if (!node["order"]) {
     fatal_error("Legendre-FET order is not given for the " +
                 legendre_fet_tally_name + "tally.");
   }
-  int FET_order_int_type = node["FET-order"].as<int>();
+  int FET_order_int_type = node["order"].as<int>();
   if (FET_order_int_type < 0) {
     fatal_error("Legendre-FET order should not be negative.");
   }
-  std::size_t FET_order_ = static_cast<std::size_t>(FET_order_int_type);
+  std::size_t FET_order = static_cast<std::size_t>(FET_order_int_type);
 
   // Get the Legendre-FET axes
-  if (!node["FET-axis"]) {
+  if (!node["axes"]) {
     fatal_error("The axes for " + legendre_fet_tally_name +
                 " should be given. ");
   }
   std::vector<std::string> fet_axis_type_string =
-      node["FET-axis"].as<std::vector<std::string>>();
+      node["axis"].as<std::vector<std::string>>();
 
   std::vector<LegendreFET::Axis> fet_axis;
   fet_axis.reserve(fet_axis_type_string.size());
@@ -254,7 +258,7 @@ std::shared_ptr<LegendreFET> make_legendre_fet(const YAML::Node& node) {
   std::shared_ptr<LegendreFET> itally_legendre_fet_tally_ = nullptr;
   if (estimator_name == "collision") {
     itally_legendre_fet_tally_ = std::make_shared<LegendreFET>(
-        cartesian_filter_, energy_filter_, fet_axis, FET_order_, quant,
+        cartesian_filter_, energy_filter_, fet_axis, FET_order, quant,
         LegendreFET::Estimator::Collision, legendre_fet_tally_name);
   }
 

@@ -11,8 +11,8 @@ using StaticVector3 = boost::container::static_vector<size_t, 3>;
 #include <vector>
 
 struct TracklengthDistance {
-  StaticVector3 indexes_;
-  double distance_in_bin;
+  StaticVector3 index;
+  double distance;
 };
 
 class PositionFilter {

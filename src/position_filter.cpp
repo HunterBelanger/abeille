@@ -5,22 +5,21 @@
 
 // make_position_filter will be usded for general tally system
 std::shared_ptr<PositionFilter> make_position_filter(const YAML::Node& node) {
-  std::shared_ptr<PositionFilter> position_filter_ = nullptr;
-
-  if (!node["Position-Filter"]) {
-    std::string name_ = node["name"].as<std::string>();
-    warning("Position-Filter is not given for the \"" + name_ + "\".");
-    return position_filter_;
+  if (!node["position-filter"]) {
+    fatal_error("position-filter is not given.");
   }
+
   const std::string position_filter_type =
-      node["Position-Filter"].as<std::string>();
+      node["position-filter"].as<std::string>();
+
+  std::shared_ptr<PositionFilter> position_filter_ = nullptr;
 
   if (position_filter_type == "box") {
     position_filter_ = make_box_position_filter(node);
-  }
-
-  if (position_filter_type == "regular-reactangular-mesh") {
-    position_filter_ = make_mesh_position_filter(node);
+  } else if (position_filter_type == "regular-cartesian-mesh") {
+    position_filter_ = make_regular_cartesian_filter(node);
+  } else {
+    fatal_error(position_filter_type + " is not a valid position-filter.");
   }
 
   return position_filter_;

@@ -21,23 +21,23 @@ EnergyFilter::EnergyFilter(const std::vector<double> energy_bounds)
 
 std::optional<std::size_t> EnergyFilter::get_index(const double& E) const {
   for (std::size_t i = 0; i < energy_bounds_.size() - 1; i++) {
-    if (E >= energy_bounds_[i] && E <= energy_bounds_[i + 1]) {
+    if (energy_bounds_[i] <= E && E <= energy_bounds_[i + 1]) {
       return i;
       break;
     }
   }
-  // if came here, meaning the energy index were not found
+  // if we get here, the energy index is not found.
   return std::nullopt;
 }
 
 std::shared_ptr<EnergyFilter> make_energy_filter(const YAML::Node& node) {
-  if (!node['energy-bounds']) {
-    return nullptr;
+
+  if (!node["energy-bounds"].IsSequence() ||
+      (node["energy-bounds"].size() < 2 )) {
+    fatal_error("Invalid enery-bounds are given.");
   }
   std::vector<double> energy_bounds_ =
-      node['energy-bounds'].as<std::vector<double>>();
-  std::shared_ptr<EnergyFilter> energy_filter_ =
-      std::make_shared<EnergyFilter>(energy_bounds_);
+      node["energy-bounds"].as<std::vector<double>>();
 
-  return energy_filter_;
+  return std::make_shared<EnergyFilter>(energy_bounds_);
 }

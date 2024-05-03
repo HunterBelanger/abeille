@@ -6,8 +6,6 @@
 #include <tallies/position_filter.hpp>
 
 #include <yaml-cpp/yaml.h>
-#include <boost/container/static_vector.hpp>
-using StaticVector4 = boost::container::static_vector<size_t, 4>;
 
 #include <memory>
 
