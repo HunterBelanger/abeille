@@ -24,6 +24,7 @@
  * */
 #include <cancelator/exact_mg_cancelator.hpp>
 #include <geometry/geometry.hpp>
+#include <simulation/particle_mover.hpp>
 #include <utils/error.hpp>
 #include <utils/output.hpp>
 #include <utils/settings.hpp>

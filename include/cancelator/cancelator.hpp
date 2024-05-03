@@ -26,13 +26,18 @@
 #define CANCELATOR_H
 
 #include <simulation/particle.hpp>
-#include <simulation/particle_mover.hpp>
-#include <utils/output.hpp>
 #include <utils/rng.hpp>
+
+#include <highfive/H5File.hpp>
+namespace H5 = HighFive;
 
 #include <yaml-cpp/yaml.h>
 
 #include <memory>
+
+// Can't include particle_mover.hpp, as that creates a circular include
+// dependency. Instead, we just predefine this here.
+class IParticleMover;
 
 class Cancelator {
  public:
