@@ -24,7 +24,7 @@ std::shared_ptr<CartesianFilter> make_cartesian_filter(const YAML::Node& node) {
   if (cartesian_filter_type == "box") {
     cartesian_filter_ = make_box_position_filter(node);
   } else if (cartesian_filter_type == "regular-cartesian-mesh") {
-    cartesian_filter_ = make_regular_cartesian_filter(node);
+    cartesian_filter_ = make_regular_cartesian_mesh_filter(node);
   } else {
     fatal_error(cartesian_filter_type + " is not a valid position-filter.");
   }

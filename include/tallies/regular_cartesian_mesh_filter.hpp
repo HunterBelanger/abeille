@@ -66,7 +66,7 @@ class RegularCartesianMeshFilter : public CartesianFilter {
 };
 
 // Make the cartesian or position filter class
-std::shared_ptr<RegularCartesianMeshFilter> make_regular_cartesian_filter(
+std::shared_ptr<RegularCartesianMeshFilter> make_regular_cartesian_mesh_filter(
     const YAML::Node& node);
 
 #endif

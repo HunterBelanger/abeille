@@ -17,7 +17,7 @@ std::shared_ptr<PositionFilter> make_position_filter(const YAML::Node& node) {
   if (position_filter_type == "box") {
     position_filter_ = make_box_position_filter(node);
   } else if (position_filter_type == "regular-cartesian-mesh") {
-    position_filter_ = make_regular_cartesian_filter(node);
+    position_filter_ = make_regular_cartesian_mesh_filter(node);
   } else {
     fatal_error(position_filter_type + " is not a valid position-filter.");
   }

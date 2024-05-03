@@ -20,8 +20,8 @@ class ITally {
 
   ITally() = default;
 
-  ITally(Quantity quantity, Estimator estimator, std::string name_)
-      : quantity_(quantity), estimator_(estimator), tally_name(name_) {}
+  ITally(Quantity quantity, Estimator estimator, std::string name)
+      : quantity_(quantity), estimator_(estimator), tally_name_(name) {}
 
   virtual ~ITally() = default;
 
@@ -37,11 +37,17 @@ class ITally {
   void record_generation(double mulitplier = 1.0);
 
   // Clear the tally_gen_score
-  void clear_generation() { tally_gen_score.fill(0.0); }
+  void clear_generation() { tally_gen_score_.fill(0.0); }
 
-  void set_net_weight(double weight_) { net_weight_ = weight_; }
+  void set_net_weight(double weight_) { 
+    net_weight_ = weight_;
+    inv_net_weight_ = 1.0 / weight_;
+  }
 
+  Estimator estimator() { return estimator_; }
   std::string estimator_str();
+
+  Quantity quantity() { return quantity_;}
   std::string quantity_str();
 
   virtual void write_tally() = 0;
@@ -49,17 +55,17 @@ class ITally {
  protected:
   double particle_base_score(const Particle& p, MaterialHelper& mat);
 
-  NDArray<double> tally_avg;
-  NDArray<double> tally_gen_score;
-  NDArray<double> tally_var;
+  NDArray<double> tally_avg_;
+  NDArray<double> tally_gen_score_;
+  NDArray<double> tally_var_;
 
   size_t gen_ = 0;
 
   Quantity quantity_;
   Estimator estimator_;
-  std::string tally_name;
+  std::string tally_name_;
 
-  double net_weight_;
+  double net_weight_, inv_net_weight_;
 };
 
 #endif

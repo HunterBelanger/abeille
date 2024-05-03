@@ -23,7 +23,6 @@ std::optional<std::size_t> EnergyFilter::get_index(const double& E) const {
   for (std::size_t i = 0; i < energy_bounds_.size() - 1; i++) {
     if (energy_bounds_[i] <= E && E <= energy_bounds_[i + 1]) {
       return i;
-      break;
     }
   }
   // if we get here, the energy index is not found.
@@ -33,7 +32,7 @@ std::optional<std::size_t> EnergyFilter::get_index(const double& E) const {
 std::shared_ptr<EnergyFilter> make_energy_filter(const YAML::Node& node) {
   if (!node["energy-bounds"].IsSequence() ||
       (node["energy-bounds"].size() < 2)) {
-    fatal_error("Invalid enery-bounds are given.");
+    fatal_error("Invalid enery-bounds are given on energy-filter.");
   }
   std::vector<double> energy_bounds_ =
       node["energy-bounds"].as<std::vector<double>>();

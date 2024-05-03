@@ -465,7 +465,7 @@ std::pair<double, int> RegularCartesianMeshFilter::distance_to_next_index(
 }
 
 // Make the cartesian or position filter class
-std::shared_ptr<RegularCartesianMeshFilter> make_regular_cartesian_filter(
+std::shared_ptr<RegularCartesianMeshFilter> make_regular_cartesian_mesh_filter(
     const YAML::Node& node) {
   if (!node["low"]) {
     fatal_error(

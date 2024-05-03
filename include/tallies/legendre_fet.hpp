@@ -20,7 +20,7 @@ class LegendreFET : public ITally {
 
   LegendreFET(std::shared_ptr<CartesianFilter> position_filter_,
               std::shared_ptr<EnergyFilter> energy_in,
-              std::vector<LegendreFET::Axis> axes, size_t FET_order,
+              std::vector<LegendreFET::Axis> axes, size_t fet_order,
               LegendreFET::Quantity quantity_,
               LegendreFET::Estimator estimator_, std::string name_);
 
@@ -35,14 +35,14 @@ class LegendreFET : public ITally {
 
   void write_tally() override final;
 
-  size_t get_fet_order() { return FET_order_; }
+  size_t get_fet_order() { return fet_order_; }
 
  private:
   std::shared_ptr<CartesianFilter> cartesian_filter_;
   std::shared_ptr<EnergyFilter> energy_in_;
 
   boost::container::static_vector<Axis, 3> axes_;
-  size_t FET_order_;  // Note that the number of coefficient will be one more
+  size_t fet_order_;  // Note that the number of coefficient will be one more
                       // than the order.
 };
 

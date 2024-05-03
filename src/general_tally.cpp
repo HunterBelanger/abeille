@@ -8,64 +8,68 @@ using StaticVector4 = boost::container::static_vector<size_t, 4>;
 GeneralTally::GeneralTally(std::shared_ptr<PositionFilter> position_filter,
                            std::shared_ptr<EnergyFilter> energy_in,
                            Quantity quantity, Estimator estimator,
-                           std::string name_)
-    : ITally(quantity, estimator, name_),
+                           std::string name)
+    : ITally(quantity, estimator, name),
       position_filter_(position_filter),
       energy_in_(energy_in) {
+  StaticVector4 tally_shape;
   // at least one filter must exists.
   if (position_filter_ == nullptr && energy_in_ == nullptr) {
-    fatal_error("for the " + name_ + " tally, no filter is provided.");
+    tally_shape.push_back(1);
+  } else {
+    // get the size of the enery_filter
+    if (energy_in_) {
+      size_t ne = energy_in_->size();
+      tally_shape.push_back(ne);
+    }
+
+    // get the shape or dimension of position filter
+    if (position_filter_) {
+      StaticVector3 position_shape = position_filter_->get_shape();
+      tally_shape.insert(tally_shape.end(), position_shape.begin(), position_shape.end() );
+    }
   }
 
-  // get the shape or dimension of position filter
-  StaticVector3 position_shape_;
-  if (position_filter_) {
-    position_shape_ = position_filter_->get_shape();
-  }
+  tally_avg_.reallocate(tally_shape);
+  tally_avg_.fill(0.0);
 
-  StaticVector4 tally_dimensions_(position_shape_.begin(),
-                                  position_shape_.end());
+  tally_gen_score_.reallocate(tally_shape);
+  tally_gen_score_.fill(0.0);
 
-  // get the size of the enery_filter
-  if (energy_in_) {
-    size_t ne = energy_in_->size();
-    tally_dimensions_.insert(tally_dimensions_.begin(), ne);
-  }
-
-  tally_avg.reallocate(tally_dimensions_);
-  tally_avg.fill(0.0);
-
-  tally_gen_score.reallocate(tally_dimensions_);
-  tally_gen_score.fill(0.0);
-
-  tally_var.reallocate(tally_dimensions_);
-  tally_var.fill(0.0);
+  tally_var_.reallocate(tally_shape);
+  tally_var_.fill(0.0);
 }
 
 void GeneralTally::score_collision(const Particle& p, const Tracker& tktr,
                                    MaterialHelper& mat) {
-  // get the indices for the positions, if exist
-  StaticVector3 position_indices;
-  if (position_filter_) {
-    position_indices = position_filter_->get_indices(
-        tktr);  // it will provde the reduce dimensions
-  }
-  StaticVector4 indices(position_indices.begin(), position_indices.end());
+  StaticVector4 indices;
+  // if both energy and position filter don't exist, then index is 0
+  if ( position_filter_ == nullptr && energy_in_ == nullptr){
+    indices.push_back(0);
+  } else {
+    // get the index for the energy if exist
+    if (energy_in_) {
+      std::optional<std::size_t> E_indx = energy_in_->get_index(p.E());
+      if (E_indx.has_value()) {
+        std::size_t index_E = E_indx.value();
+        indices.push_back(index_E);
+      } else {
+        // Not inside any energy bin. Don't score.
+        return;
+      }
+    }
+    // get the indices for the positions, if exist
+    StaticVector3 position_indices;
+    if (position_filter_) {
+      position_indices = position_filter_->get_indices(
+          tktr);  // it will provde the reduce dimensions
+    }
+    indices.insert(indices.end(), position_indices.begin(), position_indices.end());
 
-  // get the index for the energy if exist
-  if (energy_in_) {
-    std::optional<std::size_t> E_indx = energy_in_->get_index(p.E());
-    if (E_indx.has_value()) {
-      std::size_t index_E = E_indx.value();
-      indices.insert(indices.begin(), index_E);
-    } else {
-      // Not inside any energy bin. Don't score.
+    // if indices is empty, then no bin is found, so return
+    if (indices.empty()) {
       return;
     }
-  }
-
-  if (indices.empty()) {
-    return;
   }
 
   const double Et = mat.Et(p.E());
@@ -74,11 +78,22 @@ void GeneralTally::score_collision(const Particle& p, const Tracker& tktr,
 #ifdef ABEILLE_USE_OMP
 #pragma omp atomic
 #endif
-  tally_gen_score(indices) += collision_score;
+  tally_gen_score_(indices) += collision_score;
 }
 
 void GeneralTally::score_flight(const Particle& p, const Tracker& trkr,
                                 double d_flight, MaterialHelper& mat) {
+  // if position filter and energy-filter are not exit, then score and return
+  if (position_filter_ == nullptr && energy_in_ == nullptr){
+    const double flight_score = particle_base_score(p, mat);
+#ifdef ABEILLE_USE_OMP
+#pragma omp atomic
+#endif
+    tally_gen_score_({0}) += d_flight * flight_score;
+  
+    return;
+  }
+
   // get the energy index
   std::size_t index_E;
   if (energy_in_) {
@@ -92,27 +107,27 @@ void GeneralTally::score_flight(const Particle& p, const Tracker& trkr,
     }
   }
 
-  double flight_score = particle_base_score(p, mat);
+  const double flight_score = particle_base_score(p, mat);
 
   // get the all the bins' index along with the distance travelled by the
   // particle
-  std::vector<TracklengthDistance> pos_indices_ =
+  std::vector<TracklengthDistance> position_indices =
       position_filter_->get_indices_tracklength(trkr, d_flight);
 
-  for (size_t iter = 0; iter < pos_indices_.size(); iter++) {
-    StaticVector4 all_indices_(pos_indices_[iter].index.begin(),
-                               pos_indices_[iter].index.end());
-
+  for (size_t iter = 0; iter < position_indices.size(); iter++) {
+    StaticVector4 all_indices;
     if (energy_in_) {
-      all_indices_.insert(all_indices_.begin(), index_E);
+      all_indices.insert(all_indices.begin(), index_E);
     }
+    all_indices.insert(all_indices.end(), position_indices[iter].index.begin(),
+                               position_indices[iter].index.end());
 
-    const double d_ = pos_indices_[iter].distance;
+    const double d_ = position_indices[iter].distance;
 
 #ifdef ABEILLE_USE_OMP
 #pragma omp atomic
 #endif
-    tally_gen_score(all_indices_) += d_ * flight_score;
+    tally_gen_score_(all_indices) += d_ * flight_score;
   }
 }
 
@@ -124,7 +139,7 @@ void GeneralTally::write_tally() {
   auto& h5 = Output::instance().h5();
 
   // Create the group for the tally
-  auto tally_grp = h5.createGroup("results/" + tally_name);
+  auto tally_grp = h5.createGroup("results/" + tally_name_);
   /*
     // First write coordinates and number of groups
     std::vector<double> x_bounds(Nx + 1, 0.);
@@ -159,17 +174,17 @@ void GeneralTally::write_tally() {
   tally_grp.createAttribute("estimator", estimator_str());
 
   // Convert flux_var to the error on the mean
-  for (size_t l = 0; l < tally_var.size(); l++)
-    tally_var[l] = std::sqrt(tally_var[l] / static_cast<double>(gen_));
+  for (size_t l = 0; l < tally_var_.size(); l++)
+    tally_var_[l] = std::sqrt(tally_var_[l] / static_cast<double>(gen_));
 
   // Add data sets for the average and the standard deviation
   auto avg_dset =
-      tally_grp.createDataSet<double>("avg", H5::DataSpace(tally_avg.shape()));
-  avg_dset.write_raw(&tally_avg[0]);
+      tally_grp.createDataSet<double>("avg", H5::DataSpace(tally_avg_.shape()));
+  avg_dset.write_raw(&tally_avg_[0]);
 
   auto std_dset =
-      tally_grp.createDataSet<double>("std", H5::DataSpace(tally_var.shape()));
-  std_dset.write_raw(&tally_var[0]);
+      tally_grp.createDataSet<double>("std", H5::DataSpace(tally_var_.shape()));
+  std_dset.write_raw(&tally_var_[0]);
 }
 
 std::shared_ptr<GeneralTally> make_general_tally(const YAML::Node& node) {

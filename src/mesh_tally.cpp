@@ -115,6 +115,7 @@ void MeshTally::record_generation(double multiplier) {
 
   const double dg = static_cast<double>(g);
   const double invs_dg = 1. / dg;
+  const double invs_dg_m1 = 1. / (dg - 1.);
 
   // All worker threads must send their generation score to the master.
   // Master must recieve all generations scores from workers and add
@@ -136,9 +137,10 @@ void MeshTally::record_generation(double multiplier) {
 
       // Get new variance
       if (g > 1) {
-        double var = tally_var[i];
-        var = var + ((val - old_avg) * (val - avg) - (var)) * invs_dg;
-        tally_var[i] = var;
+        const double old_var = tally_var[i];
+        const double diff = val - old_avg;
+        tally_var[i] =
+            old_var + (diff * diff * invs_dg) - (old_var * invs_dg_m1);
       }
     }
   }

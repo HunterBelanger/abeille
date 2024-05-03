@@ -7,7 +7,7 @@
 #include <utils/output.hpp>
 
 double ITally::particle_base_score(const Particle& p, MaterialHelper& mat) {
-  double collision_score = 1.0 / (net_weight_);
+  double collision_score = inv_net_weight_;
   switch (quantity_) {
     case Quantity::Flux:
       collision_score *= p.wgt();
@@ -33,11 +33,12 @@ void ITally::record_generation(double multiplier) {
 
   const double dg = static_cast<double>(gen_);
   const double invs_dg = 1. / dg;
+  const double invs_dg_m1 = 1. / (dg - 1.);  
 
   // All worker threads must send their generation score to the master.
   // Master must recieve all generations scores from workers and add
   // them to it's own generation score.
-  mpi::Reduce_sum(tally_gen_score.data_vector(), 0);
+  mpi::Reduce_sum(tally_gen_score_.data_vector(), 0);
 
   // Only try to update average and variance is we are master, as worker
   // processes don't have copies of this data, so it will seg-fault.
@@ -45,24 +46,25 @@ void ITally::record_generation(double multiplier) {
 #ifdef ABEILLE_USE_OMP
 #pragma omp parallel for schedule(static)
 #endif
-    for (size_t i = 0; i < tally_avg.size(); i++) {
+    for (size_t i = 0; i < tally_avg_.size(); i++) {
       // Get new average
 
-      double old_avg = tally_avg[i];
-      double val = tally_gen_score[i] * multiplier;
+      double old_avg = tally_avg_[i];
+      double val = tally_gen_score_[i] * multiplier;
       double avg = old_avg + (val - old_avg) * invs_dg;
-      tally_avg[i] = avg;
+      tally_avg_[i] = avg;
 
       // Get new variance
       if (gen_ > 1) {
-        double var = tally_var[i];
-        var = var + ((val - old_avg) * (val - avg) - (var)) * invs_dg;
-        tally_var[i] = var;
+        const double old_var = tally_var_[i];
+        const double diff = val - old_avg;
+        tally_var_[i] =
+            old_var + (diff * diff * invs_dg) - (old_var * invs_dg_m1);
       }
     }
   }
   // Clear the entry for the tally_gen
-  tally_gen_score.fill(0.0);
+  tally_gen_score_.fill(0.0);
 }
 
 std::string ITally::estimator_str() {
@@ -116,18 +118,12 @@ void make_itally(Tallies& tallies, const YAML::Node& node) {
   std::shared_ptr<ITally> new_ITally = nullptr;
   if (tally_type_ == "general") {
     new_ITally = make_general_tally(node);
-  }
-
-  if (tally_type_ == "legendre-FET") {
+  }else if (tally_type_ == "legendre-fet") {
     new_ITally = make_legendre_fet(node);
-  }
-
-  if (tally_type_ == "zernike-FET") {
-    fatal_error("The zernike-FET for " + tally_name_ +
+  } else if (tally_type_ == "zernike-fet") {
+    fatal_error("The zernike-fet for " + tally_name_ +
                 " is not supported yet.");
-  }
-
-  if (new_ITally == nullptr) {
+  } else {
     fatal_error("For the " + tally_name_ +
                 ", something went worng in the input.");
   }
