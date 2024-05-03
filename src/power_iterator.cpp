@@ -88,6 +88,8 @@ void PowerIterator::write_output_info() const {
 
   if (cancelator) {
     h5.createAttribute("regional-cancellation", true);
+    auto cancelator_grp = h5.createGroup("cancelator");
+    cancelator->write_output_info(cancelator_grp);
   } else {
     h5.createAttribute("regional-cancellation", false);
   }
@@ -979,7 +981,7 @@ void PowerIterator::perform_regional_cancellation(
 std::shared_ptr<PowerIterator> make_power_iterator(const YAML::Node& sim) {
   // Get the number of particles
   if (!sim["nparticles"] || sim["nparticles"].IsScalar() == false) {
-    fatal_error("No nparticles entry in fixed-source simulation.");
+    fatal_error("No nparticles entry in k-eigenvalue simulation.");
   }
   std::size_t nparticles = sim["nparticles"].as<std::size_t>();
 

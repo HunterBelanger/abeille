@@ -114,6 +114,23 @@ ExactMGCancelator::ExactMGCancelator(
   if (Key::shape[3] == 0) Key::shape[3] = 1;
 }
 
+void ExactMGCancelator::write_output_info(H5::Group& grp) const {
+  const std::array<std::size_t, 3> shp{Key::shape[0], Key::shape[1],
+                                       Key::shape[2]};
+  const std::array<double, 3> rlw{Key::r_low.x(), Key::r_low.y(),
+                                  Key::r_low.z()};
+  const std::array<double, 3> rhi{Key::r_hi.x(), Key::r_hi.y(), Key::r_hi.z()};
+
+  grp.createAttribute("type", "exact-mg");
+  grp.createAttribute("shape", shp);
+  grp.createAttribute("low", rlw);
+  grp.createAttribute("hi", rhi);
+  grp.createAttribute("nsamples", N_SAMPLES);
+  if (Key::group_bins.empty() == false) {
+    grp.createAttribute("group-bins", Key::group_bins);
+  }
+}
+
 void ExactMGCancelator::check_particle_mover_compatibility(
     const std::shared_ptr<IParticleMover>& pmover) const {
   if (pmover->exact_cancellation_compatible() == false) {

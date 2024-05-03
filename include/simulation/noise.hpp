@@ -37,13 +37,13 @@
 
 class Noise : public Simulation {
  public:
-  Noise(std::shared_ptr<IParticleMover> i_pm,
+  Noise(std::shared_ptr<INoiseParticleMover> i_pm,
         std::shared_ptr<IParticleMover> i_pipm, NoiseParameters noise_parms,
         NoiseMaker noise_mkr)
-      : Simulation(i_pm),
+      : Simulation(i_pipm),
         noise_params(noise_parms),
         noise_maker(noise_mkr),
-        pi_particle_mover(i_pipm) {}
+        noise_particle_mover(i_pm) {}
 
   void initialize() override final;
   void run() override final;
@@ -75,7 +75,7 @@ class Noise : public Simulation {
   Timer power_iteration_timer{};
   Timer convergence_timer{};
   Timer noise_batch_timer{};
-  std::shared_ptr<IParticleMover> pi_particle_mover = nullptr;
+  std::shared_ptr<INoiseParticleMover> noise_particle_mover = nullptr;
   std::shared_ptr<Cancelator> cancelator = nullptr;
   std::shared_ptr<Entropy> t_pre_entropy = nullptr;
   std::shared_ptr<Entropy> p_pre_entropy = nullptr;
@@ -119,5 +119,7 @@ class Noise : public Simulation {
   void sample_source_from_sources();
   void load_source_from_file();
 };
+
+std::shared_ptr<Noise> make_noise_simulator(const YAML::Node& sim);
 
 #endif
