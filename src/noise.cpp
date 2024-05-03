@@ -75,6 +75,11 @@ void Noise::write_output_info() const {
   if (in_source_file_name.empty() == false)
     h5.createAttribute("source-file", in_source_file_name);
 
+  if (regional_cancellation_ || regional_cancellation_noise_) {
+    auto cancelator_grp = h5.createGroup("cancelator");
+    cancelator->write_output_info(cancelator_grp);
+  }
+
   noise_particle_mover->write_output_info("noise-");
   particle_mover->write_output_info("power-iterator-");
 }
@@ -425,7 +430,8 @@ void Noise::power_iteration(bool sample_noise) {
   if (sample_noise == false) {
     next_gen = particle_mover->transport(bank, std::nullopt, nullptr, nullptr);
   } else {
-    next_gen = particle_mover->transport(bank, std::nullopt, &noise_bank, &noise_maker);
+    next_gen = particle_mover->transport(bank, std::nullopt, &noise_bank,
+                                         &noise_maker);
   }
 
   if (next_gen.size() == 0) {
@@ -908,10 +914,12 @@ std::shared_ptr<Noise> make_noise_simulator(const YAML::Node& sim) {
   }
 
   bool normalize_noise_source = true;
-  if (sim["normalize-noise-source"] && sim["normalize-noise-source"].IsScalar()) {
+  if (sim["normalize-noise-source"] &&
+      sim["normalize-noise-source"].IsScalar()) {
     normalize_noise_source = sim["normalize-noise-source"].as<bool>();
   } else if (sim["normalize-noise-source"]) {
-    fatal_error("Invalid normalize-noise-source entry provided in noise simulation.");
+    fatal_error(
+        "Invalid normalize-noise-source entry provided in noise simulation.");
   }
 
   // Get entropy bins
@@ -926,18 +934,21 @@ std::shared_ptr<Noise> make_noise_simulator(const YAML::Node& sim) {
   // noise particles and one for the normal particles in power iteration. We
   // start by making the particle mover for noise. It will use the prescribed
   // transport operator, but will always use NoiseBranchingCollision.
-  std::shared_ptr<INoiseParticleMover> noise_mover = make_noise_particle_mover(sim);
+  std::shared_ptr<INoiseParticleMover> noise_mover =
+      make_noise_particle_mover(sim);
 
   // Now we can get the particle mover for power iteration. This will sue the
   // same transport operator, but will use the prescribed collision operator
   // in the input file.
-  std::shared_ptr<IParticleMover> pi_mover = make_particle_mover(sim, settings::SimMode::KEFF);
+  std::shared_ptr<IParticleMover> pi_mover =
+      make_particle_mover(sim, settings::SimMode::KEFF);
 
   std::size_t ncancel_noise_gens = std::numeric_limits<std::size_t>::max();
   if (sim["ncancel-noise-gens"] && sim["ncancel-noise-gens"].IsScalar()) {
     ncancel_noise_gens = sim["ncancel-noise-gens"].as<std::size_t>();
   } else if (sim["ncancel-noise-gens"]) {
-    fatal_error("Invalid ncancel-noise-gens entry provided in noise simulation.");
+    fatal_error(
+        "Invalid ncancel-noise-gens entry provided in noise simulation.");
   }
 
   // Get cancelator
@@ -965,8 +976,10 @@ std::shared_ptr<Noise> make_noise_simulator(const YAML::Node& sim) {
   }
 
   if ((noise_cancellation || cancellation) && cancelator == nullptr) {
-    fatal_error("Cancellation is desired, but no cancelator was provided in noise simulation.");
-  } 
+    fatal_error(
+        "Cancellation is desired, but no cancelator was provided in noise "
+        "simulation.");
+  }
 
   // Make sure our transport operators are compatible with cancellation !
   if (noise_cancellation) {
@@ -978,8 +991,10 @@ std::shared_ptr<Noise> make_noise_simulator(const YAML::Node& sim) {
 
   // Read in noise parameters
   double omega;
-  if (!sim["noise-angular-frequency"] || sim["noise-angular-frequency"].IsScalar() == false) {
-    fatal_error("No valid noise-angular-frequency entry provided in noise simulation.");
+  if (!sim["noise-angular-frequency"] ||
+      sim["noise-angular-frequency"].IsScalar() == false) {
+    fatal_error(
+        "No valid noise-angular-frequency entry provided in noise simulation.");
   }
   omega = sim["noise-angular-frequency"].as<double>();
 
@@ -1004,7 +1019,8 @@ std::shared_ptr<Noise> make_noise_simulator(const YAML::Node& sim) {
   noise_maker.noise_parameters() = noise_params;
 
   // Create simulation
-  std::shared_ptr<Noise> simptr = std::make_shared<Noise>(noise_mover, pi_mover, noise_params, noise_maker);
+  std::shared_ptr<Noise> simptr =
+      std::make_shared<Noise>(noise_mover, pi_mover, noise_params, noise_maker);
 
   // Set quantities
   simptr->set_nparticles(nparticles);
@@ -1012,7 +1028,7 @@ std::shared_ptr<Noise> make_noise_simulator(const YAML::Node& sim) {
   simptr->set_nignored(nignored);
   simptr->set_nskip(nskip);
   simptr->set_normalize_noise_source(normalize_noise_source);
-  simptr->set_ncancel_noise_gens(ncancel_noise_gens); 
+  simptr->set_ncancel_noise_gens(ncancel_noise_gens);
   if (cancelator) simptr->set_cancelator(cancelator);
   simptr->set_regional_cancellation(cancellation);
   simptr->set_regional_cancellation_noise(noise_cancellation);

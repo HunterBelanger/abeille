@@ -27,6 +27,7 @@
 
 #include <simulation/particle.hpp>
 #include <simulation/particle_mover.hpp>
+#include <utils/output.hpp>
 #include <utils/rng.hpp>
 
 #include <yaml-cpp/yaml.h>
@@ -46,6 +47,8 @@ class Cancelator {
 
   bool cancel_dual_weights() const { return dual_weights_; }
   void set_cancel_dual_weights(bool dw) { dual_weights_ = dw; }
+
+  virtual void write_output_info(H5::Group& grp) const = 0;
 
  protected:
   bool dual_weights_{false};

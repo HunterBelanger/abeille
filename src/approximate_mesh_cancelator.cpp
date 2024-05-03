@@ -118,6 +118,20 @@ ApproximateMeshCancelator::ApproximateMeshCancelator(
   Sl = 1;
 }
 
+void ApproximateMeshCancelator::write_output_info(H5::Group& grp) const {
+  const std::array<std::size_t, 3> shp{shape[0], shape[1], shape[2]};
+  const std::array<double, 3> rlw{r_low.x(), r_low.y(), r_low.z()};
+  const std::array<double, 3> rhi{r_hi.x(), r_hi.y(), r_hi.z()};
+
+  grp.createAttribute("type", "approximate");
+  grp.createAttribute("shape", shp);
+  grp.createAttribute("low", rlw);
+  grp.createAttribute("hi", rhi);
+  if (energy_edges.empty() == false) {
+    grp.createAttribute("energy-bounds", energy_edges);
+  }
+}
+
 bool ApproximateMeshCancelator::add_particle(BankedParticle& p) {
   // Get bin indicies for spacial coordinates
   int i = static_cast<int>(std::floor((p.r.x() - r_low.x()) / dx));

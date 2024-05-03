@@ -88,6 +88,8 @@ void PowerIterator::write_output_info() const {
 
   if (cancelator) {
     h5.createAttribute("regional-cancellation", true);
+    auto cancelator_grp = h5.createGroup("cancelator");
+    cancelator->write_output_info(cancelator_grp);
   } else {
     h5.createAttribute("regional-cancellation", false);
   }
