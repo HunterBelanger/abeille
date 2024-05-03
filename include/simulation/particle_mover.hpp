@@ -229,40 +229,52 @@ class ParticleMover : public IParticleMover {
 };
 
 class INoiseParticleMover : public IParticleMover {
-  public:
-    INoiseParticleMover() = default;
-    virtual ~INoiseParticleMover() = default;
+ public:
+  INoiseParticleMover() = default;
+  virtual ~INoiseParticleMover() = default;
 
-    virtual bool noise_generations() const = 0;
+  virtual bool noise_generations() const = 0;
 };
 
 template <TransportOperator TransportOp>
-class NoiseParticleMover : public ParticleMover<TransportOp, NoiseBranchingCollision>, public INoiseParticleMover {
-  public:
-    NoiseParticleMover(TransportOp t, NoiseBranchingCollision c): ParticleMover<TransportOp, NoiseBranchingCollision>(t, c) {}
+class NoiseParticleMover
+    : public ParticleMover<TransportOp, NoiseBranchingCollision>,
+      public INoiseParticleMover {
+ public:
+  NoiseParticleMover(TransportOp t, NoiseBranchingCollision c)
+      : ParticleMover<TransportOp, NoiseBranchingCollision>(t, c) {}
 
-    std::vector<BankedParticle> transport(std::vector<Particle>& bank, std::optional<NoiseParameters> noise = std::nullopt, std::vector<BankedParticle>* noise_bank = nullptr, const NoiseMaker* noise_maker = nullptr) override final {
-      return ParticleMover<TransportOp, NoiseBranchingCollision>::transport(bank, noise, noise_bank, noise_maker);
-    }
-    
-    bool exact_cancellation_compatible() const override final {
-      return ParticleMover<TransportOp, NoiseBranchingCollision>::exact_cancellation_compatible();
-    }
+  std::vector<BankedParticle> transport(
+      std::vector<Particle>& bank,
+      std::optional<NoiseParameters> noise = std::nullopt,
+      std::vector<BankedParticle>* noise_bank = nullptr,
+      const NoiseMaker* noise_maker = nullptr) override final {
+    return ParticleMover<TransportOp, NoiseBranchingCollision>::transport(
+        bank, noise, noise_bank, noise_maker);
+  }
 
-    bool track_length_compatible() const override final {
-      return ParticleMover<TransportOp, NoiseBranchingCollision>::track_length_compatible();
-    }
-    
-    void write_output_info(const std::string& base = "") const override final {
-      ParticleMover<TransportOp, NoiseBranchingCollision>::write_output_info(base);
-    }
+  bool exact_cancellation_compatible() const override final {
+    return ParticleMover<
+        TransportOp, NoiseBranchingCollision>::exact_cancellation_compatible();
+  }
 
-    bool noise_generations() const override final {
-      return this->collision_operator_.noise_generations();
-    };
+  bool track_length_compatible() const override final {
+    return ParticleMover<TransportOp,
+                         NoiseBranchingCollision>::track_length_compatible();
+  }
+
+  void write_output_info(const std::string& base = "") const override final {
+    ParticleMover<TransportOp, NoiseBranchingCollision>::write_output_info(
+        base);
+  }
+
+  bool noise_generations() const override final {
+    return this->collision_operator_.noise_generations();
+  };
 };
 
-std::shared_ptr<INoiseParticleMover> make_noise_particle_mover(const YAML::Node& sim);
+std::shared_ptr<INoiseParticleMover> make_noise_particle_mover(
+    const YAML::Node& sim);
 
 std::shared_ptr<IParticleMover> make_particle_mover(const YAML::Node& sim,
                                                     settings::SimMode mode);

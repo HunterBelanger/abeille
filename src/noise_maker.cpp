@@ -348,7 +348,7 @@ void NoiseMaker::sample_oscillation_noise_scatter(Particle& p,
 
   std::complex<double> wgt{p.wgt(), p.wgt2()};
   wgt *= sinfo.yield * sinfo.weight_modifier;  // Multiply by scattering yield
-  wgt *= P_scatter;    // Implicit capture
+  wgt *= P_scatter;                            // Implicit capture
 
   // Get the complex weight factor
   std::complex<double> dE_E{0., 0.};

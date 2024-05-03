@@ -132,17 +132,22 @@ std::shared_ptr<IParticleMover> make_concrete_mover(const YAML::Node& sim,
   return nullptr;
 }
 
-std::shared_ptr<INoiseParticleMover> make_concrete_noise_mover(const YAML::Node& sim, const NoiseBranchingCollision& cop) {
+std::shared_ptr<INoiseParticleMover> make_concrete_noise_mover(
+    const YAML::Node& sim, const NoiseBranchingCollision& cop) {
   TransporterObjct top = make_transporter(sim);
 
   if (std::holds_alternative<SurfaceTracker>(top)) {
-    return std::make_shared<NoiseParticleMover<SurfaceTracker>>(std::get<SurfaceTracker>(top), cop);
+    return std::make_shared<NoiseParticleMover<SurfaceTracker>>(
+        std::get<SurfaceTracker>(top), cop);
   } else if (std::holds_alternative<DeltaTracker>(top)) {
-    return std::make_shared<NoiseParticleMover<DeltaTracker>>(std::get<DeltaTracker>(top), cop);
+    return std::make_shared<NoiseParticleMover<DeltaTracker>>(
+        std::get<DeltaTracker>(top), cop);
   } else if (std::holds_alternative<ImplicitLeakageDeltaTracker>(top)) {
-    return std::make_shared<NoiseParticleMover<ImplicitLeakageDeltaTracker>>(std::get<ImplicitLeakageDeltaTracker>(top), cop);
+    return std::make_shared<NoiseParticleMover<ImplicitLeakageDeltaTracker>>(
+        std::get<ImplicitLeakageDeltaTracker>(top), cop);
   } else if (std::holds_alternative<CarterTracker>(top)) {
-    return std::make_shared<NoiseParticleMover<CarterTracker>>(std::get<CarterTracker>(top), cop);
+    return std::make_shared<NoiseParticleMover<CarterTracker>>(
+        std::get<CarterTracker>(top), cop);
   }
 
   // Should never get here !
@@ -150,23 +155,25 @@ std::shared_ptr<INoiseParticleMover> make_concrete_noise_mover(const YAML::Node&
   return nullptr;
 }
 
-std::shared_ptr<INoiseParticleMover> make_noise_particle_mover(const YAML::Node& sim) {
+std::shared_ptr<INoiseParticleMover> make_noise_particle_mover(
+    const YAML::Node& sim) {
   bool noise_generations = true;
   if (sim["noise-generations"] && sim["noise-generations"].IsScalar()) {
     noise_generations = sim["noise-generations"].as<bool>();
   } else if (sim["noise-generations"]) {
     fatal_error("Invalid noise-generations entry in noise simulation.");
   }
-  
+
   // If this is for a noise simulation, we only have one type of collison
   // operator at the moment, so nothing to check other than the mode.
-  return make_concrete_noise_mover(sim, NoiseBranchingCollision(noise_generations));
+  return make_concrete_noise_mover(sim,
+                                   NoiseBranchingCollision(noise_generations));
 }
 
 std::shared_ptr<IParticleMover> make_particle_mover(const YAML::Node& sim,
                                                     settings::SimMode mode) {
   if (mode == settings::SimMode::NOISE) {
-    fatal_error("Cannot create a particle mover for noise here."); 
+    fatal_error("Cannot create a particle mover for noise here.");
   }
 
   // Next, we get the collision operator type

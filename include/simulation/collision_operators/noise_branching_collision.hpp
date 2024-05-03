@@ -39,9 +39,11 @@
 
 class NoiseBranchingCollision {
  public:
-  NoiseBranchingCollision(bool noise_gens): fission_operator(noise_gens) {}
+  NoiseBranchingCollision(bool noise_gens) : fission_operator(noise_gens) {}
 
-  bool noise_generations() const { return fission_operator.noise_generations(); }
+  bool noise_generations() const {
+    return fission_operator.noise_generations();
+  }
 
   void write_output_info(const std::string& base) const {
     if (mpi::rank != 0) return;

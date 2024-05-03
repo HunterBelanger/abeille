@@ -37,7 +37,7 @@
 
 class NoiseFissionOperator {
  public:
-  NoiseFissionOperator(bool noise_gens): noise_generations_(noise_gens) {}
+  NoiseFissionOperator(bool noise_gens) : noise_generations_(noise_gens) {}
 
   bool noise_generations() const { return noise_generations_; }
 
@@ -96,7 +96,8 @@ class NoiseFissionOperator {
     // When transporting noise particles, we don't normalize the number of
     // generated particles by the weight ! We also scale by keff to make the
     // problem "critical".
-    return static_cast<int>(std::floor(xs.nu_total * xs.fission / (xs.total * keff) + p.rng()));
+    return static_cast<int>(
+        std::floor(xs.nu_total * xs.fission / (xs.total * keff) + p.rng()));
   }
 
   void save_fission_particle(Particle& p, BankedParticle& fp) const {

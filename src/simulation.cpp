@@ -23,8 +23,8 @@
  *
  * */
 #include <simulation/fixed_source.hpp>
-#include <simulation/power_iterator.hpp>
 #include <simulation/noise.hpp>
+#include <simulation/power_iterator.hpp>
 #include <simulation/simulation.hpp>
 #include <utils/error.hpp>
 #include <utils/mpi.hpp>
