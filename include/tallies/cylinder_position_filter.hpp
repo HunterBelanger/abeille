@@ -8,13 +8,13 @@
 
 #include <array>
 
-class CylinderPositionFilter : public PositionFilter {
+class CylinderFilter : public PositionFilter {
  public:
   enum class Orientation { X, Y, Z };
 
-  CylinderPositionFilter(Position origin, double radius, double dx, double dy,
-                         double dz, std::size_t nx, std::size_t ny,
-                         std::size_t nz, Orientation z_, std::size_t id);
+  CylinderFilter(Position origin, double radius, double dx, double dy,
+                 double dz, std::size_t nx, std::size_t ny, std::size_t nz,
+                 Orientation z_, std::size_t id);
 
   StaticVector3 get_indices(const Tracker& tktr);
 
@@ -83,7 +83,7 @@ class CylinderPositionFilter : public PositionFilter {
   }
 };
 
-std::shared_ptr<CylinderPositionFilter> make_cylinder_position_filter(
+std::shared_ptr<CylinderFilter> make_cylinder_position_filter(
     const YAML::Node& node);
 
 #endif

@@ -7,6 +7,31 @@
 
 #include <ndarray.hpp>
 
+const static std::set<std::string> reserved_tally_names{
+    "families",
+    "pair-dist-sqrd",
+    "entropy",
+    "total-pre-cancel-entropy",
+    "neg-pre-cancel-entropy",
+    "pos-pre-cancel-entropy",
+    "total-post-cancel-entropy",
+    "neg-post-cancel-entropy",
+    "pos-post-cancel-entropy",
+    "empty-entropy-frac",
+    "Nnet",
+    "Ntot",
+    "Npos",
+    "Nneg",
+    "Wnet",
+    "Wtot",
+    "Wpos",
+    "Wneg",
+    "kcol",
+    "ktrk",
+    "kabs",
+    "leakage",
+    "mig-area"};
+
 class ITally {
  public:
   enum class Quantity {
@@ -21,7 +46,11 @@ class ITally {
   ITally() = default;
 
   ITally(Quantity quantity, Estimator estimator, std::string name)
-      : quantity_(quantity), estimator_(estimator), tally_name_(name) {}
+      : quantity_(quantity), estimator_(estimator), tally_name_(name) {
+    if (reserved_tally_names.contains(name)) {
+      fatal_error("The tally name " + name + " is reserved.");
+    }
+  }
 
   virtual ~ITally() = default;
 

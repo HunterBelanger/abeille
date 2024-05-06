@@ -268,12 +268,11 @@ std::shared_ptr<LegendreFET> make_legendre_fet(const YAML::Node& node) {
   }
 
   // Get the cartesian type position filter
-  if (!node["position-filter-type"] ||
-      !node["position-filter-type"].IsScalar()) {
+  if (!node["position-filter"] || !node["position-filter"].IsScalar()) {
     fatal_error("For " + legendre_fet_tally_name +
                 ", a valid position-filter must be given.");
   }
-  std::size_t position_id = node["position-filter-type"].as<std::size_t>();
+  std::size_t position_id = node["position-filter"].as<std::size_t>();
   std::shared_ptr<CartesianFilter> cartesian_filter =
       tallies.get_cartesian_filter(position_id);
   if (cartesian_filter == nullptr) {

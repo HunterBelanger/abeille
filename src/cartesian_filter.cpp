@@ -5,23 +5,21 @@
 
 CartesianFilter::CartesianFilter(Position r_low, Position r_high,
                                  std::size_t id)
-    : r_low_(r_low), r_high_(r_high), PositionFilter(id) {
+    : PositionFilter(id), r_low_(r_low), r_high_(r_high) {
   if ((r_low_.x() >= r_high_.x()) || (r_low_.y() >= r_high_.y()) ||
       (r_low_.z() >= r_high_.z()))
-    fatal_error(
-        " Coordinates of \"low\" position are >= than \"high\" "
-        "position.\n");
+    fatal_error("for id: " + std::to_string(id) +
+                ", coordinates of \"low\" position are >= than \"high\" "
+                "position.");
 }
 
 // make the cartesian filter
 std::shared_ptr<CartesianFilter> make_cartesian_filter(const YAML::Node& node) {
   std::shared_ptr<CartesianFilter> cartesian_filter_ = nullptr;
-  if (!node["position-filter-type"] &&
-      !node["position-filter-type"].IsScalar()) {
+  if (!node["type"] && !node["type"].IsScalar()) {
     fatal_error("position-filter is not given.");
   }
-  const std::string cartesian_filter_type =
-      node["position-filter-type"].as<std::string>();
+  const std::string cartesian_filter_type = node["type"].as<std::string>();
 
   if (cartesian_filter_type == "box") {
     cartesian_filter_ = make_box_position_filter(node);

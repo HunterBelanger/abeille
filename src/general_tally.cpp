@@ -253,11 +253,11 @@ std::shared_ptr<GeneralTally> make_general_tally(const YAML::Node& node) {
 
   // Get the position filter
   std::shared_ptr<PositionFilter> position_filter_ = nullptr;
-  if (node["position-filter-type"]) {
-    if (!node["position-filter-type"].IsScalar()) {
+  if (node["position-filter"]) {
+    if (!node["position-filter"].IsScalar()) {
       fatal_error("Invalid position-filter is given.");
     }
-    std::size_t position_id = node["position-filter-type"].as<std::size_t>();
+    std::size_t position_id = node["position-filter"].as<std::size_t>();
     position_filter_ = tallies.get_position_filter(position_id);
     if (position_filter_ = nullptr) {
       std::stringstream messg;

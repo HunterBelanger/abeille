@@ -30,9 +30,9 @@ ZernikePolynomials::ZernikePolynomials(std::size_t order)
     std::size_t max_k = static_cast<std::size_t>((n - m) * 0.5);
     std::vector<double> single_order_Zr_coeff;
     single_order_Zr_coeff.reserve(max_k + 1);
-    int sign_change = 1;
+    double sign_change = 1.;
 
-    if (static_cast<int>(max_k % 2) == 1) sign_change = -1;
+    if (static_cast<int>(max_k % 2) == 1) sign_change = -1.;
 
     std::size_t k;
     for (std::size_t i = 0; i <= max_k; i++) {
@@ -56,8 +56,13 @@ ZernikePolynomials::ZernikePolynomials(std::size_t order)
 
 double ZernikePolynomials::evaluate_zernike_at_order(
     const double x, const double theta, const std::size_t order) const {
+  if (order_ < order) {
+    fatal_error(
+        "the providede order for the zernike-polynomial is out of the stored "
+        "max-order.");
+  }
   const std::size_t m = m_[order];
-  double x_k = pow(x, m);
+  double x_k = std::pow(x, m);
   const double x_k2 = x * x;
 
   const std::vector<double> coeffs = Zr_coefficients_[order];
@@ -70,9 +75,9 @@ double ZernikePolynomials::evaluate_zernike_at_order(
   }
   double mtheta = static_cast<double>(m) * theta;
   if (Zr_types_[order] == ZernikeType::Even) {
-    value *= cos(mtheta);
+    value *= std::cos(mtheta);
   } else {
-    value *= sin(mtheta);
+    value *= std::sin(mtheta);
   }
 
   return value;
@@ -105,9 +110,9 @@ std::vector<double> ZernikePolynomials::evaluate_zernikes(
     }
     double mtheta = static_cast<double>(m) * theta;
     if (zr_type == ZernikeType::Even) {
-      value *= cos(mtheta);
+      value *= std::cos(mtheta);
     } else {
-      value *= sin(mtheta);
+      value *= std::sin(mtheta);
     }
     zr_values.push_back(value);
   }

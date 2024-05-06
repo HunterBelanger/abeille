@@ -78,7 +78,7 @@ class Tallies {
   void add_cartesian_filter(std::size_t id,
                             std::shared_ptr<CartesianFilter> filter);
   void add_cylinder_filter(std::size_t id,
-                           std::shared_ptr<CylinderPositionFilter> filter);
+                           std::shared_ptr<CylinderFilter> filter);
   void add_energy_filter(std::size_t id, std::shared_ptr<EnergyFilter> filter);
 
   //===============================================
@@ -95,8 +95,7 @@ class Tallies {
     }
     return cartesian_filters_[id];
   }
-  std::shared_ptr<CylinderPositionFilter> get_cylinder_position_filter(
-      std::size_t id) {
+  std::shared_ptr<CylinderFilter> get_cylinder_position_filter(std::size_t id) {
     if (cylinder_filters_.find(id) == cylinder_filters_.end()) {
       return nullptr;
     }
@@ -294,8 +293,7 @@ class Tallies {
   // mapes for the position, cartesian, cylinder-position, and energy-filter
   std::map<std::size_t, std::shared_ptr<PositionFilter>> position_filters_;
   std::map<std::size_t, std::shared_ptr<CartesianFilter>> cartesian_filters_;
-  std::map<std::size_t, std::shared_ptr<CylinderPositionFilter>>
-      cylinder_filters_;
+  std::map<std::size_t, std::shared_ptr<CylinderFilter>> cylinder_filters_;
   std::map<std::size_t, std::shared_ptr<EnergyFilter>> energy_filters_;
 
   void update_avg_and_var(double x, double& x_avg, double& x_var);

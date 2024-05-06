@@ -6,6 +6,8 @@
 #include <tallies/tallies.hpp>
 #include <utils/output.hpp>
 
+#include <set>
+
 double ITally::particle_base_score(const Particle& p, MaterialHelper& mat) {
   double collision_score = inv_net_weight_;
   switch (quantity_) {
@@ -104,10 +106,14 @@ std::string ITally::quantity_str() {
 }
 
 void make_itally(Tallies& tallies, const YAML::Node& node) {
-  if (!node["name"]) {
+  if (!node["name"] || node["name"].IsScalar() == false) {
     fatal_error("Tally name is not given.");
   }
   std::string tally_name_ = node["name"].as<std::string>();
+  if (reserved_tally_names.contains(tally_name_)) {
+    fatal_error("The tally name " + tally_name_ + " is reserved.");
+  }
+
   std::string tally_type_ = "general";
   if (!node["tally-type"]) {
     warning(
@@ -124,8 +130,8 @@ void make_itally(Tallies& tallies, const YAML::Node& node) {
     fatal_error("The zernike-fet for " + tally_name_ +
                 " is not supported yet.");
   } else {
-    fatal_error("For the " + tally_name_ +
-                ", something went worng in the input.");
+    fatal_error("Unknown tally type " + tally_type_ + " found in tally " +
+                tally_name_ + ".");
   }
 
   // Add the new_ITally of type ITally into the "tallies"

@@ -119,8 +119,8 @@ void Tallies::add_cartesian_filter(std::size_t id,
   }
   cartesian_filters_[id] = filter;
 }
-void Tallies::add_cylinder_filter(
-    std::size_t id, std::shared_ptr<CylinderPositionFilter> filter) {
+void Tallies::add_cylinder_filter(std::size_t id,
+                                  std::shared_ptr<CylinderFilter> filter) {
   if (cylinder_filters_.find(id) != cylinder_filters_.end()) {
     std::stringstream mssg;
     mssg << "the position-filter id - " << id << " must be a unique id.";
@@ -388,13 +388,13 @@ void make_tallies_filter(Tallies& tallies, const YAML::Node& node) {
       }
       std::size_t id = position_filter_nodes[i]["id"].as<std::size_t>();
 
-      if (!position_filter_nodes[i]["position-filter-type"] ||
-          !position_filter_nodes[i]["position-filter-type"].IsScalar()) {
-        fatal_error("Invalid entry for the position-filter-type for " +
+      if (!position_filter_nodes[i]["type"] ||
+          !position_filter_nodes[i]["type"].IsScalar()) {
+        fatal_error("Invalid entry for the position-filter type for " +
                     std::to_string(id) + " id.");
       }
       std::string position_filter_name =
-          position_filter_nodes[i]["position-filter-type"].as<std::string>();
+          position_filter_nodes[i]["type"].as<std::string>();
 
       if (position_filter_name == "cylinder-filter") {
         auto cylinder_filter =

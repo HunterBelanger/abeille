@@ -10,7 +10,7 @@
 
 class ZernikeFET : public ITally {
  public:
-  ZernikeFET(std::shared_ptr<CylinderPositionFilter> cylinder_filter,
+  ZernikeFET(std::shared_ptr<CylinderFilter> cylinder_filter,
              std::shared_ptr<EnergyFilter> energy_filter,
              std::size_t zernike_order, std::size_t lengendre_order,
              ZernikeFET::Quantity quantity, ZernikeFET::Estimator estimator,
@@ -29,7 +29,7 @@ class ZernikeFET : public ITally {
   std::size_t get_legendre_order() { return legen_order_; }
 
  private:
-  std::shared_ptr<CylinderPositionFilter> cylinder_filter_;
+  std::shared_ptr<CylinderFilter> cylinder_filter_;
   std::shared_ptr<EnergyFilter> energy_filter_;
 
   // Zernike Polynomials can hold the polynomials upto that order
@@ -37,7 +37,7 @@ class ZernikeFET : public ITally {
   ZernikePolynomials zr_polynomial_;
   std::size_t zr_order_, legen_order_;
 
-  CylinderPositionFilter::Orientation axial_direction_;
+  CylinderFilter::Orientation axial_direction_;
 };
 
 std::shared_ptr<ZernikeFET> make_zernike_fet(const YAML::Node& node);

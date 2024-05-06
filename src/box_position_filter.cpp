@@ -13,9 +13,9 @@ BoxFilter::BoxFilter(const Position r_low, const Position r_high,
       dz_inv_() {
   if ((r_low_.x() >= r_high_.x()) || (r_low_.y() >= r_high_.y()) ||
       (r_low_.z() >= r_high_.z()))
-    fatal_error(
-        " Coordinates of \"low\" position are >= than \"high\" "
-        "position.\n");
+    fatal_error("for id: " + std::to_string(id) +
+                ", coordinates of \"low\" position are >= than \"high\" "
+                "position.");
 
   dx_ = (r_high_.x() - r_low_.x());
   dy_ = (r_high_.y() - r_low_.y());
@@ -308,22 +308,29 @@ std::shared_ptr<BoxFilter> make_box_position_filter(const YAML::Node& node) {
     fatal_error("Invalid id is given for the position-filter.");
   }
   std::size_t id = node["id"].as<std::size_t>();
+  std::string id_str = std::to_string(id);
 
   if (!node["low"]) {
     fatal_error(
-        "For box position-filter \"low\" coordinates are not provided.");
+        "For box position-filter \"low\" coordinates are not provided in the "
+        "id: " +
+        id_str + ".");
   } else if (!node["low"].IsSequence() || node["low"].size() != 3) {
     fatal_error(
-        "The given entry for the \"low\" coordinates must be a sequence of "
+        "for id: " + id_str +
+        ", the given entry for the \"low\" coordinates must be a sequence of "
         "size 3.");
   }
 
   if (!node["high"]) {
     fatal_error(
-        "For box position-filter \"high\" coordinates are not provided.");
+        "For box position-filter \"high\" coordinates are not provided in the "
+        "id: " +
+        id_str + ".");
   } else if (!node["high"].IsSequence() || node["high"].size() != 3) {
     fatal_error(
-        "The given entry for the \"high\" coordinates must be a sequence of "
+        "for id: " + id_str +
+        "the given entry for the \"high\" coordinates must be a sequence of "
         "size 3.");
   }
 

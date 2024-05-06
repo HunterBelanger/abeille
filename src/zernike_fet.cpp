@@ -7,7 +7,7 @@
 #include <boost/container/static_vector.hpp>
 using StaticVector6 = boost::container::static_vector<std::size_t, 6>;
 
-ZernikeFET::ZernikeFET(std::shared_ptr<CylinderPositionFilter> cylinder_filter,
+ZernikeFET::ZernikeFET(std::shared_ptr<CylinderFilter> cylinder_filter,
                        std::shared_ptr<EnergyFilter> energy_filter,
                        std::size_t zernike_order, std::size_t lengendre_order,
                        ZernikeFET::Quantity quantity,
@@ -15,7 +15,7 @@ ZernikeFET::ZernikeFET(std::shared_ptr<CylinderPositionFilter> cylinder_filter,
     : ITally(quantity, estimator, name),
       cylinder_filter_(cylinder_filter),
       energy_filter_(energy_filter),
-      zr_polynomial_(),
+      zr_polynomial_(zernike_order),
       zr_order_(zernike_order),
       legen_order_(lengendre_order),
       axial_direction_() {
@@ -31,7 +31,7 @@ ZernikeFET::ZernikeFET(std::shared_ptr<CylinderPositionFilter> cylinder_filter,
   if (cylinder_filter_ == nullptr) {
     fatal_error(
         "for tally " + name +
-        ", the cylinder-filte's information is required for zernike-fet.");
+        ", the cylinder-filter information is required for zernike-fet.");
   }
   StaticVector3 cylinder_shape = cylinder_filter_->get_shape();
   tally_shape.insert(tally_shape.end(), cylinder_shape.begin(),
@@ -61,9 +61,6 @@ ZernikeFET::ZernikeFET(std::shared_ptr<CylinderPositionFilter> cylinder_filter,
 
   tally_var_.reallocate(tally_shape);
   tally_var_.fill(0.0);
-
-  // construct the zernike polynomials upto the given order
-  zr_polynomial_ = ZernikePolynomials(zr_order_);
 }
 
 void ZernikeFET::score_collision(const Particle& p, const Tracker& tktr,
@@ -111,11 +108,7 @@ void ZernikeFET::score_collision(const Particle& p, const Tracker& tktr,
   const double theta = scaled_r_and_theta.second;
   const std::vector<double> zr_value =
       zr_polynomial_.evaluate_zernikes(scaled_r, theta);
-  if (zr_value.size() != (zr_order_ + 1)) {
-    fatal_error(
-        "for the zernike-FET, something happened as the sizes for evaluated "
-        "polynomials and zr-order+1 is not same.");
-  }
+
   for (std::size_t i = 0; i <= zr_order_; i++) {
     // score for i-th order's basis function
     beta_n = collision_score * zr_value[i];
@@ -131,9 +124,9 @@ void ZernikeFET::score_collision(const Particle& p, const Tracker& tktr,
   const double zmin = cylinder_filter_->z_min(cylinder_index);
   const double zmax = cylinder_filter_->z_max(cylinder_index);
   double z = tktr.r().z();
-  if (axial_direction_ == CylinderPositionFilter::Orientation::Y) {
+  if (axial_direction_ == CylinderFilter::Orientation::Y) {
     z = tktr.r().y();
-  } else if (axial_direction_ == CylinderPositionFilter::Orientation::X) {
+  } else if (axial_direction_ == CylinderFilter::Orientation::X) {
     z = tktr.r().z();
   }
   const double scaled_z = 2 * (z - zmin) / (zmin - zmax) - 1.0;
@@ -272,13 +265,12 @@ std::shared_ptr<ZernikeFET> make_zernike_fet(const YAML::Node& node) {
   }
 
   // Get the cylinder type position filter
-  if (!node["position-filter-type"] ||
-      !node["position-filter-type"].IsScalar()) {
+  if (!node["position-filter"] || !node["position-filter"].IsScalar()) {
     fatal_error("For " + zernike_fet_tally_name +
                 ", a valid position-filter must be given.");
   }
-  std::size_t position_id = node["position-filter-type"].as<std::size_t>();
-  std::shared_ptr<CylinderPositionFilter> cylinder_filter =
+  std::size_t position_id = node["position-filter"].as<std::size_t>();
+  std::shared_ptr<CylinderFilter> cylinder_filter =
       tallies.get_cylinder_position_filter(position_id);
   if (cylinder_filter = nullptr) {
     std::stringstream messg;

@@ -3,21 +3,19 @@
 
 #include <utils/error.hpp>
 
-#include <math.h>
+#include <cmath>
 #include <iostream>
 #include <vector>
 
 //===================================
-// Zernike Polynomials upto 0 to order
+// Zernike Polynomials from order 0 up to order.
 //
 class ZernikePolynomials {
  public:
   // enum class for the even and odd zernike
   enum class ZernikeType { Even, Odd };
-  ZernikePolynomials() = default;
 
   ZernikePolynomials(std::size_t order);
-  ~ZernikePolynomials() = default;
 
   double evaluate_zernike_at_order(const double x, const double theta,
                                    const std::size_t order) const;
