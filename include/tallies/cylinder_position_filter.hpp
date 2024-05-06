@@ -13,8 +13,8 @@ class CylinderPositionFilter : public PositionFilter {
   enum class Orientation { X, Y, Z };
 
   CylinderPositionFilter(Position origin, double radius, double dx, double dy,
-                         double dz, std::size_t nx = 1, std::size_t ny = 1,
-                         std::size_t nz = 1, Orientation z_ = Orientation::Z);
+                         double dz, std::size_t nx, std::size_t ny,
+                         std::size_t nz, Orientation z_, std::size_t id);
 
   StaticVector3 get_indices(const Tracker& tktr);
 
@@ -32,7 +32,7 @@ class CylinderPositionFilter : public PositionFilter {
   double z_min(const StaticVector3& indices) const;
   double z_max(const StaticVector3& indices) const;
 
-  Position get_centre(const StaticVector3& indices) const;
+  Position get_center(const StaticVector3& indices) const;
 
   std::pair<double, double> get_scaled_radius_and_angle(
       const StaticVector3& indices, const Position& r) const;

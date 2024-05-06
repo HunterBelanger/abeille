@@ -73,31 +73,42 @@ class Tallies {
 
   //===============================================
   // addding filters instances into the Map
-  void add_position_filter_set(std::size_t id,
-                               std::shared_ptr<PositionFilter> filter);
-  void add_cartesian_filter_set(std::size_t id,
-                                std::shared_ptr<CartesianFilter> filter);
-  void add_cylinder_filter_set(std::size_t id,
-                               std::shared_ptr<CylinderPositionFilter> filter);
-  void add_energy_filter_set(std::size_t id,
-                             std::shared_ptr<EnergyFilter> filter);
+  void add_position_filter(std::size_t id,
+                           std::shared_ptr<PositionFilter> filter);
+  void add_cartesian_filter(std::size_t id,
+                            std::shared_ptr<CartesianFilter> filter);
+  void add_cylinder_filter(std::size_t id,
+                           std::shared_ptr<CylinderPositionFilter> filter);
+  void add_energy_filter(std::size_t id, std::shared_ptr<EnergyFilter> filter);
 
   //===============================================
   // Method to get the filters from Maps
   std::shared_ptr<PositionFilter> get_position_filter(std::size_t id) {
-    return position_filter_set_[id];
+    if (position_filters_.find(id) == position_filters_.end()) {
+      return nullptr;
+    }
+    return position_filters_[id];
   }
   std::shared_ptr<CartesianFilter> get_cartesian_filter(std::size_t id) {
-    return cartesian_filter_set_[id];
+    if (cartesian_filters_.find(id) == cartesian_filters_.end()) {
+      return nullptr;
+    }
+    return cartesian_filters_[id];
   }
   std::shared_ptr<CylinderPositionFilter> get_cylinder_position_filter(
       std::size_t id) {
-    return cylinder_position_set_[id];
+    if (cylinder_filters_.find(id) == cylinder_filters_.end()) {
+      return nullptr;
+    }
+    return cylinder_filters_[id];
   }
   std::shared_ptr<EnergyFilter> get_energy_filter(std::size_t id) {
-    return energy_filter_set_[id];
+    if (energy_filters_.find(id) == energy_filters_.end()) {
+      return nullptr;
+    }
+    return energy_filters_[id];
   }
-  void add_ITally(std::shared_ptr<ITally> new_tally);
+  void add_ITally(std::shared_ptr<ITally> tally);
   void add_collision_mesh_tally(std::shared_ptr<CollisionMeshTally> cetally);
   void add_track_length_mesh_tally(
       std::shared_ptr<TrackLengthMeshTally> tltally);
@@ -113,8 +124,8 @@ class Tallies {
   void score_collision(const Particle& p, const Tracker& tktr,
                        MaterialHelper& mat) {
     if (scoring_ && !new_itally_collision_.empty()) {
-      for (auto& new_tally : new_itally_collision_) {
-        new_tally->score_collision(p, tktr, mat);
+      for (auto& tally : new_itally_collision_) {
+        tally->score_collision(p, tktr, mat);
       }
     }
   }
@@ -122,8 +133,8 @@ class Tallies {
   void score_flight(const Particle& p, const Tracker& trkr, double d_flight,
                     MaterialHelper& mat) {
     if (scoring_ && !new_itally_track_length_.empty()) {
-      for (auto& new_tally : new_itally_track_length_) {
-        new_tally->score_flight(p, trkr, d_flight, mat);
+      for (auto& tally : new_itally_track_length_) {
+        tally->score_flight(p, trkr, d_flight, mat);
       }
     }
   }
@@ -232,11 +243,9 @@ class Tallies {
     for (auto& t : source_mesh_tallies_) t->set_net_weight(total_weight);
     for (auto& t : noise_source_mesh_tallies_) t->set_net_weight(total_weight);
 
-    for (auto& new_tally : new_itally_collision_)
-      new_tally->set_net_weight(total_weight);
+    for (auto& t : new_itally_collision_) t->set_net_weight(total_weight);
 
-    for (auto& new_tally : new_itally_track_length_)
-      new_tally->set_net_weight(total_weight);
+    for (auto& t : new_itally_track_length_) t->set_net_weight(total_weight);
   }
 
   int generations() const { return gen; }
@@ -283,11 +292,11 @@ class Tallies {
       new_itally_track_length_;  // New "Itally" vector for track-length
 
   // mapes for the position, cartesian, cylinder-position, and energy-filter
-  std::map<std::size_t, std::shared_ptr<PositionFilter>> position_filter_set_;
-  std::map<std::size_t, std::shared_ptr<CartesianFilter>> cartesian_filter_set_;
+  std::map<std::size_t, std::shared_ptr<PositionFilter>> position_filters_;
+  std::map<std::size_t, std::shared_ptr<CartesianFilter>> cartesian_filters_;
   std::map<std::size_t, std::shared_ptr<CylinderPositionFilter>>
-      cylinder_position_set_;
-  std::map<std::size_t, std::shared_ptr<EnergyFilter>> energy_filter_set_;
+      cylinder_filters_;
+  std::map<std::size_t, std::shared_ptr<EnergyFilter>> energy_filters_;
 
   void update_avg_and_var(double x, double& x_avg, double& x_var);
 

@@ -1,3 +1,4 @@
+#include <tallies/tallies.hpp>
 #include <tallies/zernike_fet.hpp>
 #include <utils/error.hpp>
 #include <utils/legendre.hpp>
@@ -217,6 +218,18 @@ std::shared_ptr<ZernikeFET> make_zernike_fet(const YAML::Node& node) {
                 " tally.");
   }
   std::string estimator_name = node["estimator"].as<std::string>();
+  ZernikeFET::Estimator estimator;
+  if (estimator_name == "collision") {
+    estimator = ZernikeFET::Estimator::Collision;
+  } else if (estimator_name == "track-length") {
+    estimator = ZernikeFET::Estimator::TrackLength;
+    fatal_error(
+        "The track-length for the zernike-fet is not supported as asked in " +
+        zernike_fet_tally_name + " tally. ");
+  } else {
+    fatal_error("Incorrect \"estimator\" is given for the " +
+                zernike_fet_tally_name + " tally.");
+  }
 
   // Check for the quantity
   std::string given_quantity = "";
@@ -239,14 +252,23 @@ std::shared_ptr<ZernikeFET> make_zernike_fet(const YAML::Node& node) {
     fatal_error("For " + zernike_fet_tally_name +
                 " tally, a unknown quantity is given.");
   }
-
+  // get the tallies instanceQ
+  auto& tallies = Tallies::instance();
   // Get the enrgy filter, if any is given
   std::shared_ptr<EnergyFilter> energy_filter = nullptr;
   if (node["energy-bounds"]) {
     if (!node["energy-bounds"].IsSequence()) {
       fatal_error("energy-bounds is not provided in the list format.");
     }
-    energy_filter = make_energy_filter(node);
+    std::size_t energy_id = node["energy-filters"].as<std::size_t>();
+    energy_filter = tallies.get_energy_filter(energy_id);
+    if (energy_filter == nullptr) {
+      std::stringstream messg;
+      messg << "for the tally " << zernike_fet_tally_name
+            << ", the id: " << energy_id
+            << ", for the energy-filters is not provided in the tally-filters.";
+      fatal_error(messg.str());
+    }
   }
 
   // Get the cylinder type position filter
@@ -255,8 +277,16 @@ std::shared_ptr<ZernikeFET> make_zernike_fet(const YAML::Node& node) {
     fatal_error("For " + zernike_fet_tally_name +
                 ", a valid position-filter must be given.");
   }
+  std::size_t position_id = node["position-filter-type"].as<std::size_t>();
   std::shared_ptr<CylinderPositionFilter> cylinder_filter =
-      make_cylinder_position_filter(node);
+      tallies.get_cylinder_position_filter(position_id);
+  if (cylinder_filter = nullptr) {
+    std::stringstream messg;
+    messg << "for tally " << zernike_fet_tally_name
+          << ", the id: " << position_id
+          << ", for the position-filter is not provided in the tally-filters.";
+    fatal_error(messg.str());
+  }
 
   // get the order of zernike
   if (!node["zernike-order"] && !node["zernike-order"].IsScalar()) {
@@ -273,19 +303,10 @@ std::shared_ptr<ZernikeFET> make_zernike_fet(const YAML::Node& node) {
   std::size_t legendre_fet_order = node["legendre-order"].as<std::size_t>();
 
   // make the ZernikeFET class for the given tally description
-  std::shared_ptr<ZernikeFET> itally_zernike_fet_tally = nullptr;
-  if (estimator_name == "collision") {
-    itally_zernike_fet_tally = std::make_shared<ZernikeFET>(
-        cylinder_filter, energy_filter, zernike_fet_order, legendre_fet_order,
-        quant, ZernikeFET::Estimator::Collision, zernike_fet_tally_name);
-  } else if (estimator_name == "track-length") {
-    fatal_error(
-        "The track-length for the zernike-fet is not supported as asked in " +
-        zernike_fet_tally_name + " tally. ");
-  } else {
-    fatal_error("Incorrect \"estimator\" is given for the " +
-                zernike_fet_tally_name + " tally.");
-  }
+  std::shared_ptr<ZernikeFET> itally_zernike_fet_tally =
+      std::make_shared<ZernikeFET>(cylinder_filter, energy_filter,
+                                   zernike_fet_order, legendre_fet_order, quant,
+                                   estimator, zernike_fet_tally_name);
 
   return itally_zernike_fet_tally;
 }

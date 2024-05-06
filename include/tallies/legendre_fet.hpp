@@ -4,6 +4,7 @@
 #include <tallies/cartesian_filter.hpp>
 #include <tallies/energy_filter.hpp>
 #include <tallies/itally.hpp>
+#include <utils/error.hpp>
 
 #include <yaml-cpp/yaml.h>
 #include <boost/container/static_vector.hpp>
@@ -18,11 +19,11 @@ class LegendreFET : public ITally {
  public:
   enum class Axis { X, Y, Z };
 
-  LegendreFET(std::shared_ptr<CartesianFilter> position_filter_,
+  LegendreFET(std::shared_ptr<CartesianFilter> position_filter,
               std::shared_ptr<EnergyFilter> energy_in,
               std::vector<LegendreFET::Axis> axes, size_t fet_order,
-              LegendreFET::Quantity quantity_,
-              LegendreFET::Estimator estimator_, std::string name_);
+              LegendreFET::Quantity quantity, LegendreFET::Estimator estimator,
+              std::string name);
 
   ~LegendreFET() = default;
 
@@ -31,7 +32,9 @@ class LegendreFET : public ITally {
 
   void score_flight(const Particle& /*p*/, const Tracker& /*trkr*/,
                     double /*d_flight*/,
-                    MaterialHelper& /*mat*/) override final {}
+                    MaterialHelper& /*mat*/) override final {
+    fatal_error("the track-length for the legendre-fet is not supoorted yet.");
+  }
 
   void write_tally() override final;
 

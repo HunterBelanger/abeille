@@ -5,8 +5,9 @@
 RegularCartesianMeshFilter::RegularCartesianMeshFilter(Position r_low,
                                                        Position r_high,
                                                        size_t nx_, size_t ny_,
-                                                       size_t nz_)
-    : CartesianFilter(r_low, r_high),
+                                                       size_t nz_,
+                                                       std::size_t id)
+    : CartesianFilter(r_low, r_high, id),
       dx_(),
       dy_(),
       dz_(),
@@ -467,6 +468,11 @@ std::pair<double, int> RegularCartesianMeshFilter::distance_to_next_index(
 // Make the cartesian or position filter class
 std::shared_ptr<RegularCartesianMeshFilter> make_regular_cartesian_mesh_filter(
     const YAML::Node& node) {
+  if (!node["id"] || !node["id"].IsScalar()) {
+    fatal_error("Invalid id is given for the position-filter.");
+  }
+  std::size_t id = node["id"].as<std::size_t>();
+
   if (!node["low"]) {
     fatal_error(
         "For box position-filter \"low\" coordinates are not provided.");
@@ -512,7 +518,7 @@ std::shared_ptr<RegularCartesianMeshFilter> make_regular_cartesian_mesh_filter(
 
   std::shared_ptr<RegularCartesianMeshFilter> mesh_type_filter =
       std::make_shared<RegularCartesianMeshFilter>(r_low, r_high, shape_[0],
-                                                   shape_[1], shape_[2]);
+                                                   shape_[1], shape_[2], id);
 
   return mesh_type_filter;
 }

@@ -6,7 +6,7 @@
 
 class CartesianFilter : public PositionFilter {
  public:
-  CartesianFilter(Position r_low, Position r_high);
+  CartesianFilter(Position r_low, Position r_high, std::size_t id);
 
   virtual ~CartesianFilter() = default;
 

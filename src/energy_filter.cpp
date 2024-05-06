@@ -1,8 +1,9 @@
 #include <tallies/energy_filter.hpp>
 #include <utils/error.hpp>
 
-EnergyFilter::EnergyFilter(const std::vector<double> energy_bounds)
-    : energy_bounds_(energy_bounds) {
+EnergyFilter::EnergyFilter(const std::vector<double> energy_bounds,
+                           std::size_t id)
+    : energy_bounds_(energy_bounds), id_(id) {
   // Check the size of energy_bounds should be multiple of 2
   // since any bounds has 2 end-point-boundary-elements to define the range.
   if (energy_bounds.size() < 2) {
@@ -34,8 +35,14 @@ std::shared_ptr<EnergyFilter> make_energy_filter(const YAML::Node& node) {
       (node["energy-bounds"].size() < 2)) {
     fatal_error("Invalid enery-bounds are given on energy-filter.");
   }
+
+  if (!node["id"] || !node["id"].IsScalar()) {
+    fatal_error("invalid id is given for energy-fitler.");
+  }
+  std::size_t id = node["id"].as<std::size_t>();
+
   std::vector<double> energy_bounds_ =
       node["energy-bounds"].as<std::vector<double>>();
 
-  return std::make_shared<EnergyFilter>(energy_bounds_);
+  return std::make_shared<EnergyFilter>(energy_bounds_, id);
 }

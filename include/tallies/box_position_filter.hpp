@@ -9,7 +9,7 @@
 
 class BoxFilter : public CartesianFilter {
  public:
-  BoxFilter(const Position r_low, const Position r_high);
+  BoxFilter(const Position r_low, const Position r_high, std::size_t id);
 
   ~BoxFilter() = default;
 

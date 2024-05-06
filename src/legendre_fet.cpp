@@ -1,5 +1,6 @@
 #include <tallies/itally.hpp>
 #include <tallies/legendre_fet.hpp>
+#include <tallies/tallies.hpp>
 #include <utils/legendre.hpp>
 #include <utils/output.hpp>
 
@@ -211,6 +212,18 @@ std::shared_ptr<LegendreFET> make_legendre_fet(const YAML::Node& node) {
                 " tally.");
   }
   std::string estimator_name = node["estimator"].as<std::string>();
+  LegendreFET::Estimator estimator;
+  if (estimator_name == "collision") {
+    estimator = LegendreFET::Estimator::Collision;
+  } else if (estimator_name == "track-length") {
+    estimator = LegendreFET::Estimator::TrackLength;
+    fatal_error(
+        "The track-length for the legendre-fet is not supported as asked in " +
+        legendre_fet_tally_name + " tally. ");
+  } else {
+    fatal_error("Incorrect \"estimator\" is given for the " +
+                legendre_fet_tally_name + " tally.");
+  }
 
   // Check for the quantity
   std::string given_quantity = "";
@@ -234,13 +247,24 @@ std::shared_ptr<LegendreFET> make_legendre_fet(const YAML::Node& node) {
                 " tally, a unknown quantity is given.");
   }
 
+  // get the tallies instance
+  auto& tallies = Tallies::instance();
+
   // Get the enrgy filter, if any is given
-  std::shared_ptr<EnergyFilter> energy_filter_ = nullptr;
-  if (node["energy-bounds"]) {
-    if (!node["energy-bounds"].IsSequence()) {
-      fatal_error("energy-bounds is not provided in the list format.");
+  std::shared_ptr<EnergyFilter> energy_filter = nullptr;
+  if (node["energy-filters"]) {
+    if (!node["energy-filters"].IsScalar()) {
+      fatal_error("energy-filters is not provided as a scalar.");
     }
-    energy_filter_ = make_energy_filter(node);
+    std::size_t energy_id = node["energy-filters"].as<std::size_t>();
+    energy_filter = tallies.get_energy_filter(energy_id);
+    if (energy_filter == nullptr) {
+      std::stringstream messg;
+      messg << "for the tally " << legendre_fet_tally_name
+            << ", the id: " << energy_id
+            << ", for the energy-filters is not provided in the tally-filters.";
+      fatal_error(messg.str());
+    }
   }
 
   // Get the cartesian type position filter
@@ -249,8 +273,16 @@ std::shared_ptr<LegendreFET> make_legendre_fet(const YAML::Node& node) {
     fatal_error("For " + legendre_fet_tally_name +
                 ", a valid position-filter must be given.");
   }
-  std::shared_ptr<CartesianFilter> cartesian_filter_ =
-      make_cartesian_filter(node);
+  std::size_t position_id = node["position-filter-type"].as<std::size_t>();
+  std::shared_ptr<CartesianFilter> cartesian_filter =
+      tallies.get_cartesian_filter(position_id);
+  if (cartesian_filter == nullptr) {
+    std::stringstream messg;
+    messg << "for tally " << legendre_fet_tally_name
+          << ", the id: " << position_id
+          << ", for the position-filter is not provided in the tally-filters.";
+    fatal_error(messg.str());
+  }
 
   // Get the legendre-fet order
   if (!node["order"] && !node["order"].IsScalar()) {
@@ -288,19 +320,10 @@ std::shared_ptr<LegendreFET> make_legendre_fet(const YAML::Node& node) {
   }
 
   // Make the Legendre FET tally class
-  std::shared_ptr<LegendreFET> itally_legendre_fet_tally_ = nullptr;
-  if (estimator_name == "collision") {
-    itally_legendre_fet_tally_ = std::make_shared<LegendreFET>(
-        cartesian_filter_, energy_filter_, fet_axis, FET_order, quant,
-        LegendreFET::Estimator::Collision, legendre_fet_tally_name);
-  } else if (estimator_name == "track-length") {
-    fatal_error(
-        "The track-length for the legendre-fet is not supported as asked in " +
-        legendre_fet_tally_name + " tally. ");
-  } else {
-    fatal_error("Incorrect \"estimator\" is given for the " +
-                legendre_fet_tally_name + " tally.");
-  }
+  std::shared_ptr<LegendreFET> itally_legendre_fet_tally_ =
+      std::make_shared<LegendreFET>(cartesian_filter, energy_filter, fet_axis,
+                                    FET_order, quant, estimator,
+                                    legendre_fet_tally_name);
 
   return itally_legendre_fet_tally_;
 }

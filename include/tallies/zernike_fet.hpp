@@ -10,8 +10,8 @@
 
 class ZernikeFET : public ITally {
  public:
-  ZernikeFET(std::shared_ptr<CylinderPositionFilter> cylinder_filter_,
-             std::shared_ptr<EnergyFilter> energy_filter_,
+  ZernikeFET(std::shared_ptr<CylinderPositionFilter> cylinder_filter,
+             std::shared_ptr<EnergyFilter> energy_filter,
              std::size_t zernike_order, std::size_t lengendre_order,
              ZernikeFET::Quantity quantity, ZernikeFET::Estimator estimator,
              std::string name);

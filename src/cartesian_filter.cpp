@@ -3,8 +3,9 @@
 #include <tallies/regular_cartesian_mesh_filter.hpp>
 #include <utils/constants.hpp>
 
-CartesianFilter::CartesianFilter(Position r_low, Position r_high)
-    : r_low_(r_low), r_high_(r_high) {
+CartesianFilter::CartesianFilter(Position r_low, Position r_high,
+                                 std::size_t id)
+    : r_low_(r_low), r_high_(r_high), PositionFilter(id) {
   if ((r_low_.x() >= r_high_.x()) || (r_low_.y() >= r_high_.y()) ||
       (r_low_.z() >= r_high_.z()))
     fatal_error(

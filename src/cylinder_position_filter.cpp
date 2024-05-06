@@ -6,8 +6,10 @@
 CylinderPositionFilter::CylinderPositionFilter(Position origin, double radius,
                                                double dx, double dy, double dz,
                                                std::size_t nx, std::size_t ny,
-                                               std::size_t nz, Orientation z_)
-    : origin_(origin),
+                                               std::size_t nz, Orientation z_,
+                                               std::size_t id)
+    : PositionFilter(id),
+      origin_(origin),
       r_low_(),
       Nx_(nx),
       Ny_(ny),
@@ -156,7 +158,7 @@ double CylinderPositionFilter::z_max(const StaticVector3& indices) const {
   return (r_low_.z() + static_cast<double>(index[2]) * dz_ + dz_);
 }
 
-Position CylinderPositionFilter::get_centre(
+Position CylinderPositionFilter::get_center(
     const StaticVector3& indices) const {
   // the indicies is not according to the class, so map it.
   StaticVector3 index = indices;
@@ -167,6 +169,7 @@ Position CylinderPositionFilter::get_centre(
   return map_coordinate(Position(new_origin_x, new_origin_y, new_origin_z));
 }
 
+// first will be the scaled radius and second will be the angle
 std::pair<double, double> CylinderPositionFilter::get_scaled_radius_and_angle(
     const StaticVector3& indices, const Position& r) const {
   // the indicies and Position is not according to the class, so map it.
@@ -191,6 +194,12 @@ std::pair<double, double> CylinderPositionFilter::get_scaled_radius_and_angle(
 
 std::shared_ptr<CylinderPositionFilter> make_cylinder_position_filter(
     const YAML::Node& node) {
+  // get the id
+  if (!node["id"] || !node["id"].IsScalar()) {
+    fatal_error("Invalid id is given for the position-filter.");
+  }
+  std::size_t id = node["id"].as<std::size_t>();
+
   // check and get the origin
   if (!node["origin"]) {
     fatal_error(
@@ -310,21 +319,21 @@ std::shared_ptr<CylinderPositionFilter> make_cylinder_position_filter(
     dz = pitch_x;
     cylinder_filter = std::make_shared<CylinderPositionFilter>(
         origin, radius, dx, dy, dz, nx, ny, nz,
-        CylinderPositionFilter::Orientation::X);
+        CylinderPositionFilter::Orientation::X, id);
   } else if (axial_axis == "y" || axial_axis == "Y") {
     dx = pitch_x;
     dy = length;
     dz = pitch_y;
     cylinder_filter = std::make_shared<CylinderPositionFilter>(
         origin, radius, dx, dy, dz, nx, ny, nz,
-        CylinderPositionFilter::Orientation::Y);
+        CylinderPositionFilter::Orientation::Y, id);
   } else if (axial_axis == "z" || axial_axis == "Z") {
     dx = pitch_x;
     dy = pitch_y;
     dz = length;
     cylinder_filter = std::make_shared<CylinderPositionFilter>(
         origin, radius, dx, dy, dz, nx, ny, nz,
-        CylinderPositionFilter::Orientation::Z);
+        CylinderPositionFilter::Orientation::Z, id);
   } else {
     fatal_error("Invalid axial direction axis is given.");
   }

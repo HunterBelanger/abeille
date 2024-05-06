@@ -2,8 +2,9 @@
 #include <utils/constants.hpp>
 #include <utils/output.hpp>
 
-BoxFilter::BoxFilter(const Position r_low, const Position r_high)
-    : CartesianFilter(r_low, r_high),
+BoxFilter::BoxFilter(const Position r_low, const Position r_high,
+                     std::size_t id)
+    : CartesianFilter(r_low, r_high, id),
       dx_(),
       dy_(),
       dz_(),
@@ -303,6 +304,11 @@ std::pair<double, int> BoxFilter::distance_to_next_index(
 
 // make the cartesian filter or position filter
 std::shared_ptr<BoxFilter> make_box_position_filter(const YAML::Node& node) {
+  if (!node["id"] || !node["id"].IsScalar()) {
+    fatal_error("Invalid id is given for the position-filter.");
+  }
+  std::size_t id = node["id"].as<std::size_t>();
+
   if (!node["low"]) {
     fatal_error(
         "For box position-filter \"low\" coordinates are not provided.");
@@ -328,7 +334,7 @@ std::shared_ptr<BoxFilter> make_box_position_filter(const YAML::Node& node) {
   Position r_high(high_point[0], high_point[1], high_point[2]);
 
   std::shared_ptr<BoxFilter> box_type_filter =
-      std::make_shared<BoxFilter>(r_low, r_high);
+      std::make_shared<BoxFilter>(r_low, r_high, id);
 
   return box_type_filter;
 }

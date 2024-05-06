@@ -10,7 +10,7 @@
 
 class EnergyFilter {
  public:
-  EnergyFilter(const std::vector<double> energy_bounds);
+  EnergyFilter(const std::vector<double> energy_bounds, std::size_t id);
 
   ~EnergyFilter() = default;
 
@@ -21,8 +21,11 @@ class EnergyFilter {
 
   std::string type_str() { return "energyfilter"; }
 
+  std::size_t get_id() { return id_; }
+
  private:
   std::vector<double> energy_bounds_;
+  std::size_t id_;
 };
 
 std::shared_ptr<EnergyFilter> make_energy_filter(const YAML::Node& node);

@@ -18,6 +18,7 @@ struct TracklengthDistance {
 class PositionFilter {
  public:
   PositionFilter() = default;
+  PositionFilter(std::size_t id) : id_(id) {}
 
   virtual ~PositionFilter() = default;
 
@@ -29,6 +30,11 @@ class PositionFilter {
   virtual StaticVector3 get_shape() = 0;
 
   virtual std::string type_str() const = 0;
+
+  std::size_t get_id() { return id_; }
+
+ private:
+  std::size_t id_;
 };
 
 std::shared_ptr<PositionFilter> make_position_filter(const YAML::Node& node);

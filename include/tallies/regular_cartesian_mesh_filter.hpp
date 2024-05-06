@@ -8,8 +8,8 @@
 
 class RegularCartesianMeshFilter : public CartesianFilter {
  public:
-  RegularCartesianMeshFilter(Position r_low_, Position r_high_, size_t nx_,
-                             size_t ny_, size_t nz_);
+  RegularCartesianMeshFilter(Position r_low, Position r_high, size_t nx,
+                             size_t ny, size_t nz, std::size_t id);
 
   StaticVector3 get_indices(const Tracker& tktr) override final;
 

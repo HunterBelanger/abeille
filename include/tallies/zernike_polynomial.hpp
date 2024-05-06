@@ -1,6 +1,8 @@
 #ifndef ZERNIKE_POLYNOMIAL_H
 #define ZERNIKE_POLYNOMIAL_H
 
+#include <utils/error.hpp>
+
 #include <math.h>
 #include <iostream>
 #include <vector>

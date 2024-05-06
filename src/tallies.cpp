@@ -100,31 +100,51 @@ void Tallies::verify_track_length_tallies(bool track_length_transporter) const {
   }
 }
 
-void Tallies::add_position_filter_set(std::size_t id,
-                                      std::shared_ptr<PositionFilter> filter) {
-  position_filter_set_[id] = filter;
+void Tallies::add_position_filter(std::size_t id,
+                                  std::shared_ptr<PositionFilter> filter) {
+  if (position_filters_.find(id) != position_filters_.end()) {
+    std::stringstream mssg;
+    mssg << "the position-filter id - " << id << " must be a unique id.";
+    fatal_error(mssg.str());
+  }
+  position_filters_[id] = filter;
 }
 
-void Tallies::add_cartesian_filter_set(
-    std::size_t id, std::shared_ptr<CartesianFilter> filter) {
-  cartesian_filter_set_[id] = filter;
+void Tallies::add_cartesian_filter(std::size_t id,
+                                   std::shared_ptr<CartesianFilter> filter) {
+  if (cartesian_filters_.find(id) != cartesian_filters_.end()) {
+    std::stringstream mssg;
+    mssg << "the position-filter id - " << id << " must be a unique id.";
+    fatal_error(mssg.str());
+  }
+  cartesian_filters_[id] = filter;
 }
-void Tallies::add_cylinder_filter_set(
+void Tallies::add_cylinder_filter(
     std::size_t id, std::shared_ptr<CylinderPositionFilter> filter) {
-  cylinder_position_set_[id] = filter;
+  if (cylinder_filters_.find(id) != cylinder_filters_.end()) {
+    std::stringstream mssg;
+    mssg << "the position-filter id - " << id << " must be a unique id.";
+    fatal_error(mssg.str());
+  }
+  cylinder_filters_[id] = filter;
 }
-void Tallies::add_energy_filter_set(std::size_t id,
-                                    std::shared_ptr<EnergyFilter> filter) {
-  energy_filter_set_[id] = filter;
+void Tallies::add_energy_filter(std::size_t id,
+                                std::shared_ptr<EnergyFilter> filter) {
+  if (energy_filters_.find(id) != energy_filters_.end()) {
+    std::stringstream mssg;
+    mssg << "the energy-filter id - " << id << " must be a unique id.";
+    fatal_error(mssg.str());
+  }
+  energy_filters_[id] = filter;
 }
 
-void Tallies::add_ITally(std::shared_ptr<ITally> new_tally) {
-  new_tally->set_net_weight(total_weight);
+void Tallies::add_ITally(std::shared_ptr<ITally> tallly) {
+  tallly->set_net_weight(total_weight);
 
-  if (new_tally->estimator() == ITally::Estimator::Collision) {
-    new_itally_collision_.push_back(new_tally);
-  } else if (new_tally->estimator() == ITally::Estimator::TrackLength) {
-    new_itally_track_length_.push_back(new_tally);
+  if (tallly->estimator() == ITally::Estimator::Collision) {
+    new_itally_collision_.push_back(tallly);
+  } else if (tallly->estimator() == ITally::Estimator::TrackLength) {
+    new_itally_track_length_.push_back(tallly);
   }
 }
 
@@ -259,11 +279,11 @@ void Tallies::record_generation(double multiplier) {
   for (auto& tally : noise_source_mesh_tallies_)
     tally->record_generation(multiplier);
 
-  for (auto& new_tally : new_itally_collision_)
-    new_tally->record_generation(multiplier);
+  for (auto& tallly : new_itally_collision_)
+    tallly->record_generation(multiplier);
 
-  for (auto& new_tally : new_itally_track_length_)
-    new_tally->record_generation(multiplier);
+  for (auto& tallly : new_itally_track_length_)
+    tallly->record_generation(multiplier);
 }
 
 void Tallies::write_tallies(bool track_length_compatible) {
@@ -326,9 +346,9 @@ void Tallies::write_tallies(bool track_length_compatible) {
 
     for (auto& tally : noise_source_mesh_tallies_) tally->write_tally();
 
-    for (auto& new_tally : new_itally_collision_) new_tally->write_tally();
+    for (auto& tallly : new_itally_collision_) tallly->write_tally();
 
-    for (auto& new_tally : new_itally_track_length_) new_tally->write_tally();
+    for (auto& tallly : new_itally_track_length_) tallly->write_tally();
   }
 }
 
@@ -348,11 +368,14 @@ void Tallies::update_avg_and_var(double x, double& x_avg, double& x_var) {
 
 void make_tallies_filter(Tallies& tallies, const YAML::Node& node) {
   if (!node["tally-filters"]) {
-    fatal_error("tally-filter are not given to evaluate the tallies.");
+    return;
   }
 
   // position-filters
   if (node["tally-filters"]["position-filters"]) {
+    if (!node["tally-filters"]["position-filters"].IsSequence()) {
+      fatal_error("Invalid input for the position-filters are given.");
+    }
     const YAML::Node& position_filter_nodes =
         node["tally-filters"]["position-filters"];
     for (std::size_t i = 0; i < position_filter_nodes.size(); i++) {
@@ -376,23 +399,27 @@ void make_tallies_filter(Tallies& tallies, const YAML::Node& node) {
       if (position_filter_name == "cylinder-filter") {
         auto cylinder_filter =
             make_cylinder_position_filter(position_filter_nodes[i]);
-        tallies.add_cylinder_filter_set(id, cylinder_filter);
-        tallies.add_position_filter_set(id, cylinder_filter);
+        tallies.add_cylinder_filter(id, cylinder_filter);
+        tallies.add_position_filter(id, cylinder_filter);
       } else {
         auto cartesian_filter = make_cartesian_filter(position_filter_nodes[i]);
-        tallies.add_cartesian_filter_set(id, cartesian_filter);
-        tallies.add_position_filter_set(id, cartesian_filter);
+        tallies.add_cartesian_filter(id, cartesian_filter);
+        tallies.add_position_filter(id, cartesian_filter);
       }
     }
   }
 
   // energy-filters
   if (node["tally-filters"]["energy-filters"]) {
+    if (!node["tally-filters"]["energy-filters"].IsSequence()) {
+      fatal_error("Invalid input for the energy-filters are given.");
+    }
     const YAML::Node& energy_filter_node =
         node["tally-filters"]["energy-filters"];
+
     for (std::size_t i = 0; i < energy_filter_node.size(); i++) {
       if (!energy_filter_node[i]["id"] ||
-          energy_filter_node[i]["id"].IsScalar()) {
+          !energy_filter_node[i]["id"].IsScalar()) {
         fatal_error(
             "Invalid \"id\" is given for energy filter in tally-filters, the "
             "possible error entry is " +
@@ -400,8 +427,9 @@ void make_tallies_filter(Tallies& tallies, const YAML::Node& node) {
       }
 
       std::size_t id = energy_filter_node[i]["id"].as<std::size_t>();
-      std::shared_ptr<EnergyFilter> filter = make_energy_filter(node);
-      tallies.add_energy_filter_set(id, filter);
+      std::shared_ptr<EnergyFilter> filter =
+          make_energy_filter(energy_filter_node[i]);
+      tallies.add_energy_filter(id, filter);
     }
   }
 }

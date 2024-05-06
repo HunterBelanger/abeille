@@ -1,4 +1,5 @@
 #include <tallies/general_tally.hpp>
+#include <tallies/tallies.hpp>
 #include <utils/error.hpp>
 #include <utils/output.hpp>
 
@@ -76,12 +77,6 @@ void GeneralTally::score_collision(const Particle& p, const Tracker& tktr,
 
   const double Et = mat.Et(p.E());
   const double collision_score = particle_base_score(p, mat) / Et;
-
-  if (indices[0] != 0 || indices[1] != 0 || indices[2] != 0 ||
-      indices[3] != 0) {
-    std::cout << ">>>>>>>>> 1. \t" << indices[0] << "\n2.\t" << indices[1]
-              << "\n3.\t" << indices[2] << "\n4.\t" << indices[3] << "\n";
-  }
 
 #ifdef ABEILLE_USE_OMP
 #pragma omp atomic
@@ -207,6 +202,15 @@ std::shared_ptr<GeneralTally> make_general_tally(const YAML::Node& node) {
     fatal_error("Estimator is not given for \"" + general_tally_name + ".");
   }
   std::string estimator_name = node["estimator"].as<std::string>();
+  GeneralTally::Estimator estimator;
+  if (estimator_name == "collision") {
+    estimator = GeneralTally::Estimator::Collision;
+  } else if (estimator_name == "track-length") {
+    estimator = GeneralTally::Estimator::TrackLength;
+
+  } else {
+    fatal_error("Invalid estimator is given for \"" + general_tally_name + ".");
+  }
 
   // Check for the quantity
   std::string given_quantity = "";
@@ -228,14 +232,23 @@ std::shared_ptr<GeneralTally> make_general_tally(const YAML::Node& node) {
     fatal_error("For " + general_tally_name +
                 " tally, a unknown quantity is given.");
   }
-
+  // get the tallies instance
+  auto& tallies = Tallies::instance();
   // Get the enrgy bounds, if any is given
   std::shared_ptr<EnergyFilter> energy_filter_ = nullptr;
-  if (node["energy-bounds"]) {
-    if (!node["energy-bounds"].IsSequence()) {
+  if (node["energy-filters"]) {
+    if (!node["energy-filters"].IsScalar()) {
       fatal_error("Invalid energy-filter is given.");
     }
-    energy_filter_ = make_energy_filter(node);
+    std::size_t energy_id = node["energy-filters"].as<std::size_t>();
+    energy_filter_ = tallies.get_energy_filter(energy_id);
+    if (energy_filter_ == nullptr) {
+      std::stringstream messg;
+      messg << "for the tally " << general_tally_name
+            << ", the id: " << energy_id
+            << ", for the energy-filters is not provided in the tally-filters.";
+      fatal_error(messg.str());
+    }
   }
 
   // Get the position filter
@@ -244,23 +257,21 @@ std::shared_ptr<GeneralTally> make_general_tally(const YAML::Node& node) {
     if (!node["position-filter-type"].IsScalar()) {
       fatal_error("Invalid position-filter is given.");
     }
-    position_filter_ = make_position_filter(node);
+    std::size_t position_id = node["position-filter-type"].as<std::size_t>();
+    position_filter_ = tallies.get_position_filter(position_id);
+    if (position_filter_ = nullptr) {
+      std::stringstream messg;
+      messg
+          << "for tally " << general_tally_name << ", the id: " << position_id
+          << ", for the position-filter is not provided in the tally-filters.";
+      fatal_error(messg.str());
+    }
   }
 
   // For the general tally
-  std::shared_ptr<GeneralTally> itally_general_tally = nullptr;
-  if (estimator_name == "collision") {
-    itally_general_tally = std::make_shared<GeneralTally>(
-        position_filter_, energy_filter_, quant,
-        GeneralTally::Estimator::Collision, general_tally_name);
-  } else if (estimator_name == "track-length") {
-    itally_general_tally = std::make_shared<GeneralTally>(
-        position_filter_, energy_filter_, quant,
-        GeneralTally::Estimator::TrackLength, general_tally_name);
-
-  } else {
-    fatal_error("Invalid estimator is given for \"" + general_tally_name + ".");
-  }
+  std::shared_ptr<GeneralTally> itally_general_tally =
+      std::make_shared<GeneralTally>(position_filter_, energy_filter_, quant,
+                                     estimator, general_tally_name);
 
   return itally_general_tally;
 }
