@@ -15,7 +15,8 @@ CartesianFilter::CartesianFilter(Position r_low, Position r_high)
 // make the cartesian filter
 std::shared_ptr<CartesianFilter> make_cartesian_filter(const YAML::Node& node) {
   std::shared_ptr<CartesianFilter> cartesian_filter_ = nullptr;
-  if (!node["position-filter-type"] && !node["position-filter-type"].IsScalar()) {
+  if (!node["position-filter-type"] &&
+      !node["position-filter-type"].IsScalar()) {
     fatal_error("position-filter is not given.");
   }
   const std::string cartesian_filter_type =

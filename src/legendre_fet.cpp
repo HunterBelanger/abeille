@@ -32,13 +32,13 @@ LegendreFET::LegendreFET(std::shared_ptr<CartesianFilter> position_filter,
                 "functional expansion tally.");
   }
   StaticVector3 position_shape = cartesian_filter_->get_shape();
-  tally_shape.insert(tally_shape.end(), position_shape.begin(), position_shape.end());
+  tally_shape.insert(tally_shape.end(), position_shape.begin(),
+                     position_shape.end());
 
   // for legendre, check the size of axis vector should be between than 3.
   if (axes_.size() <= 1 && axes_.size() >= 3)
-    fatal_error(
-        "The no. of given axis for legendre-fet is not between 1 to 3 for "
-        "tally " + name + ".");
+    fatal_error("the length of given axes for " + name +
+                " tally is not between 1 to 3.");
 
   std::size_t n_axis = axes_.size();
   tally_shape.push_back(n_axis);
@@ -60,7 +60,7 @@ LegendreFET::LegendreFET(std::shared_ptr<CartesianFilter> position_filter,
 
 void LegendreFET::score_collision(const Particle& p, const Tracker& tktr,
                                   MaterialHelper& mat) {
-   StaticVector6 indices;
+  StaticVector6 indices;
   // get the energy-index, if energy-filter exists
   if (energy_in_) {
     std::optional<std::size_t> E_indx = energy_in_->get_index(p.E());
@@ -96,9 +96,9 @@ void LegendreFET::score_collision(const Particle& p, const Tracker& tktr,
 
   // Variables for scoring
   double beta_n, scaled_loc;
-
-  for (std::size_t it_axis = 0; it_axis < axes_.size(); it_axis++) {  // Loop over the different axis and indexing is done
-                           // using the it_axis
+  // Loop over the different axis and indexing is done
+  for (std::size_t it_axis = 0; it_axis < axes_.size(); it_axis++) {
+    // using the it_axis
 
     indices[axis_index] = it_axis;
 
@@ -244,7 +244,8 @@ std::shared_ptr<LegendreFET> make_legendre_fet(const YAML::Node& node) {
   }
 
   // Get the cartesian type position filter
-  if (!node["position-filter-type"] || !node["position-filter-type"].IsScalar()) {
+  if (!node["position-filter-type"] ||
+      !node["position-filter-type"].IsScalar()) {
     fatal_error("For " + legendre_fet_tally_name +
                 ", a valid position-filter must be given.");
   }

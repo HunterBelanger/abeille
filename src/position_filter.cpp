@@ -1,12 +1,13 @@
 #include <tallies/box_position_filter.hpp>
+#include <tallies/cylinder_position_filter.hpp>
 #include <tallies/position_filter.hpp>
 #include <tallies/regular_cartesian_mesh_filter.hpp>
-#include <tallies/cylinder_position_filter.hpp>
 #include <utils/error.hpp>
 
 // make_position_filter will be usded for general tally system
 std::shared_ptr<PositionFilter> make_position_filter(const YAML::Node& node) {
-  if (!node["position-filter-type"] && !node["position-filter-type"].IsScalar()) {
+  if (!node["position-filter-type"] &&
+      !node["position-filter-type"].IsScalar()) {
     fatal_error("position-filter is not given.");
   }
 

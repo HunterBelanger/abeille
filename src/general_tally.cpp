@@ -26,7 +26,8 @@ GeneralTally::GeneralTally(std::shared_ptr<PositionFilter> position_filter,
     // get the shape or dimension of position filter
     if (position_filter_) {
       StaticVector3 position_shape = position_filter_->get_shape();
-      tally_shape.insert(tally_shape.end(), position_shape.begin(), position_shape.end() );
+      tally_shape.insert(tally_shape.end(), position_shape.begin(),
+                         position_shape.end());
     }
   }
 
@@ -44,7 +45,7 @@ void GeneralTally::score_collision(const Particle& p, const Tracker& tktr,
                                    MaterialHelper& mat) {
   StaticVector4 indices;
   // if both energy and position filter don't exist, then index is 0
-  if ( position_filter_ == nullptr && energy_in_ == nullptr){
+  if (position_filter_ == nullptr && energy_in_ == nullptr) {
     indices.push_back(0);
   } else {
     // get the index for the energy if exist
@@ -63,21 +64,24 @@ void GeneralTally::score_collision(const Particle& p, const Tracker& tktr,
     if (position_filter_) {
       position_indices = position_filter_->get_indices(
           tktr);  // it will provde the reduce dimensions
-      
-      if (position_indices.empty()){
+
+      if (position_indices.empty()) {
         // Not inside any energy bin. Don't score.
         return;
       }
     }
-    indices.insert(indices.end(), position_indices.begin(), position_indices.end());
-
+    indices.insert(indices.end(), position_indices.begin(),
+                   position_indices.end());
   }
 
   const double Et = mat.Et(p.E());
   const double collision_score = particle_base_score(p, mat) / Et;
-  
-  if ( indices[0] != 0 || indices[1] != 0 || indices[2] != 0 || indices[3] != 0 ){
-    std::cout<<">>>>>>>>> 1. \t"<< indices[0]<<"\n2.\t"<<indices[1]<<"\n3.\t"<<indices[2]<<"\n4.\t"<<indices[3]<<"\n";}
+
+  if (indices[0] != 0 || indices[1] != 0 || indices[2] != 0 ||
+      indices[3] != 0) {
+    std::cout << ">>>>>>>>> 1. \t" << indices[0] << "\n2.\t" << indices[1]
+              << "\n3.\t" << indices[2] << "\n4.\t" << indices[3] << "\n";
+  }
 
 #ifdef ABEILLE_USE_OMP
 #pragma omp atomic
@@ -88,13 +92,13 @@ void GeneralTally::score_collision(const Particle& p, const Tracker& tktr,
 void GeneralTally::score_flight(const Particle& p, const Tracker& trkr,
                                 double d_flight, MaterialHelper& mat) {
   // if position filter and energy-filter are not exit, then score and return
-  if (position_filter_ == nullptr && energy_in_ == nullptr){
+  if (position_filter_ == nullptr && energy_in_ == nullptr) {
     const double flight_score = particle_base_score(p, mat);
 #ifdef ABEILLE_USE_OMP
 #pragma omp atomic
 #endif
     tally_gen_score_({0}) += d_flight * flight_score;
-  
+
     return;
   }
 
@@ -124,7 +128,7 @@ void GeneralTally::score_flight(const Particle& p, const Tracker& trkr,
       all_indices.insert(all_indices.begin(), index_E);
     }
     all_indices.insert(all_indices.end(), position_indices[iter].index.begin(),
-                               position_indices[iter].index.end());
+                       position_indices[iter].index.end());
 
     const double d_ = position_indices[iter].distance;
 

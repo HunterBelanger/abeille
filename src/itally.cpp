@@ -33,7 +33,7 @@ void ITally::record_generation(double multiplier) {
 
   const double dg = static_cast<double>(gen_);
   const double invs_dg = 1. / dg;
-  const double invs_dg_m1 = 1. / (dg - 1.);  
+  const double invs_dg_m1 = 1. / (dg - 1.);
 
   // All worker threads must send their generation score to the master.
   // Master must recieve all generations scores from workers and add
@@ -118,7 +118,7 @@ void make_itally(Tallies& tallies, const YAML::Node& node) {
   std::shared_ptr<ITally> new_ITally = nullptr;
   if (tally_type_ == "general") {
     new_ITally = make_general_tally(node);
-  }else if (tally_type_ == "legendre-fet") {
+  } else if (tally_type_ == "legendre-fet") {
     new_ITally = make_legendre_fet(node);
   } else if (tally_type_ == "zernike-fet") {
     fatal_error("The zernike-fet for " + tally_name_ +

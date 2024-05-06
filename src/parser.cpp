@@ -584,8 +584,8 @@ void make_tallies(const YAML::Node& input) {
     fatal_error("Tallies entry must be provided as a sequence.");
   }
 
-  //if tallies are given, then Get the tallies-filter for itally
-  if (!input["tally-filters"]){
+  // if tallies are given, then Get the tallies-filter for itally
+  if (!input["tally-filters"]) {
     fatal_error("tally-filter are not given for tallies.\n");
   }
   make_tallies_filter(tallies, input);

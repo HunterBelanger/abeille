@@ -39,7 +39,7 @@ class ITally {
   // Clear the tally_gen_score
   void clear_generation() { tally_gen_score_.fill(0.0); }
 
-  void set_net_weight(double weight_) { 
+  void set_net_weight(double weight_) {
     net_weight_ = weight_;
     inv_net_weight_ = 1.0 / weight_;
   }
@@ -47,7 +47,7 @@ class ITally {
   Estimator estimator() { return estimator_; }
   std::string estimator_str();
 
-  Quantity quantity() { return quantity_;}
+  Quantity quantity() { return quantity_; }
   std::string quantity_str();
 
   virtual void write_tally() = 0;
