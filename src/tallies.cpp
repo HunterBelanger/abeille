@@ -100,6 +100,20 @@ void Tallies::verify_track_length_tallies(bool track_length_transporter) const {
   }
 }
 
+void Tallies::add_position_filter_set(std::size_t id, std::shared_ptr<PositionFilter> filter){
+  position_filter_set_[id] = filter;
+}
+
+void Tallies::add_cartesian_filter_set(std::size_t id, std::shared_ptr<CartesianFilter> filter){
+  cartesian_filter_set_[id] = filter;
+}
+void Tallies::add_cylinder_filter_set(std::size_t id, std::shared_ptr<CylinderPositionFilter> filter){
+  cylinder_position_set_[id] = filter;
+}
+void Tallies::add_energy_filter_set(std::size_t id, std::shared_ptr<EnergyFilter> filter){
+  energy_filter_set_[id] = filter;
+}
+
 void Tallies::add_ITally(std::shared_ptr<ITally> new_tally) {
   new_tally->set_net_weight(total_weight);
 
@@ -326,6 +340,54 @@ void Tallies::update_avg_and_var(double x, double& x_avg, double& x_var) {
   if (gen > 1)
     x_var = x_var_old + ((x - x_avg_old) * (x - x_avg_old) / (dgen)) -
             ((x_var_old) / (dgen - 1.));
+}
+
+void make_tallies_filter(Tallies& tallies, const YAML::Node& node){
+  if ( !node["tally-filters"]){
+    fatal_error("tally-filter are not given to evaluate the tallies.");
+  }
+
+  // position-filters
+  if (node["tally-filters"]["position-filters"]){
+    const YAML::Node& position_filter_nodes = node["tally-filters"]["position-filters"];
+    for(std::size_t i = 0; i<position_filter_nodes.size(); i++){
+      if (!position_filter_nodes[i]["id"] || !position_filter_nodes[i]["id"].IsScalar()){
+        fatal_error("Invalid \"id\" is given for position filter in tally-filters, the possible error entry is "+std::to_string(i)+" from top.");
+      }
+      std::size_t id = position_filter_nodes[i]["id"].as<std::size_t>();
+
+      if ( !position_filter_nodes[i]["position-filter-type"] 
+          || !position_filter_nodes[i]["position-filter-type"].IsScalar() ){
+        fatal_error("Invalid entry for the position-filter-type for " + std::to_string(id) + " id.");
+      }
+      std::string position_filter_name = position_filter_nodes[i]["position-filter-type"].as<std::string>();
+
+      if (position_filter_name == "cylinder-filter"){
+        auto cylinder_filter = make_cylinder_position_filter(position_filter_nodes[i]);
+        tallies.add_cylinder_filter_set(id, cylinder_filter);
+        tallies.add_position_filter_set(id, cylinder_filter);
+      } else {
+        auto cartesian_filter = make_cartesian_filter(position_filter_nodes[i]);
+        tallies.add_cartesian_filter_set(id, cartesian_filter);
+        tallies.add_position_filter_set(id, cartesian_filter);
+      }
+      
+    }
+  }
+
+  // energy-filters
+  if ( node["tally-filters"]["energy-filters"]){
+    const YAML::Node& energy_filter_node = node["tally-filters"]["energy-filters"];
+    for (std::size_t i = 0; i<energy_filter_node.size(); i++){
+      if ( !energy_filter_node[i]["id"] || energy_filter_node[i]["id"].IsScalar() ){
+        fatal_error("Invalid \"id\" is given for energy filter in tally-filters, the possible error entry is "+std::to_string(i)+" from top.");
+      }
+
+      std::size_t id = energy_filter_node[i]["id"].as<std::size_t>();
+      std::shared_ptr<EnergyFilter> filter = make_energy_filter(node);
+      tallies.add_energy_filter_set(id, filter);
+    }
+  }
 }
 
 void add_mesh_tally(Tallies& tallies, const YAML::Node& node) {

@@ -24,9 +24,15 @@ root-universe: 1
 tally-filters:
   position-filters:
     - id: 1
-      type: box
+      position-filter-type: box
       low: [0,0,0]
       high: [1,1,1]
+      
+    - id: 2
+      position-filter-type: regular-cartesian-mesh
+      low: [-0.77032, -100., -100.]
+      hi:  [ 0.77032,  100.,  100.]
+      
 
   energy-filters:
     - id: 2
@@ -48,7 +54,7 @@ tallies:
     tally-type: legendre-fet
     order: 3
     #position-filter: regular-cartesian-mesh
-    position-filter: box
+    position-filter-type: box
     shape: [2, 1,1]
     low: [ -0.77032,  -100.,  -100.]
     high: [ 0.77032,  100.,  100.]

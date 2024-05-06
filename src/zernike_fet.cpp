@@ -243,7 +243,7 @@ std::shared_ptr<ZernikeFET> make_zernike_fet(const YAML::Node& node){
     }
 
     // Get the cylinder type position filter
-    if (!node["position-filter"] || !node["position-filter"].IsScalar()) {
+    if (!node["position-filter-type"] || !node["position-filter-type"].IsScalar()) {
         fatal_error("For " + zernike_fet_tally_name +
                     ", a valid position-filter must be given.");
     }

@@ -244,7 +244,7 @@ std::shared_ptr<LegendreFET> make_legendre_fet(const YAML::Node& node) {
   }
 
   // Get the cartesian type position filter
-  if (!node["position-filter"] || !node["position-filter"].IsScalar()) {
+  if (!node["position-filter-type"] || !node["position-filter-type"].IsScalar()) {
     fatal_error("For " + legendre_fet_tally_name +
                 ", a valid position-filter must be given.");
   }
