@@ -20,6 +20,31 @@ universes:
 
 root-universe: 1
 
+tallies:
+  - type: ITally
+    tally-type: general
+    name: Zr
+    position-filter: cylinder-filter
+    origin: [0., 0., -100.]
+    radius: 5.514296811
+    pitch-x: 11.
+    pitch-y: 0.
+    pitch-z: 1.
+    axial-length: 200.
+    axial-axis: Z
+    shape: [1, 1, 1]
+    energy-bounds: [0., 1.]
+    estimator: collision
+    quantity: flux
+  
+  - shape: [1, 1, 1]
+    hi: [5.514296811, 5.514296811, 100.]
+    low: [-5.514296811, -5.514296811, -100.]
+    energy-bounds: [0., 1.]
+    quantity: flux
+    estimator: collision
+    name: old
+
 settings: 
   energy-mode: multi-group
   ngroups: 1
@@ -27,8 +52,8 @@ settings:
 
 simulation:
   mode: k-eigenvalue
-  nparticles: 1000000
-  ngenerations: 1050
+  nparticles: 1000
+  ngenerations: 100
   nignored: 50
   sources:
     - spatial:

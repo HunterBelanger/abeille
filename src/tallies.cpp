@@ -100,6 +100,16 @@ void Tallies::verify_track_length_tallies(bool track_length_transporter) const {
   }
 }
 
+void Tallies::add_ITally(std::shared_ptr<ITally> new_tally) {
+  new_tally->set_net_weight(total_weight);
+
+  if (new_tally->estimator() == ITally::Estimator::Collision) {
+    new_itally_collision_.push_back(new_tally);
+  } else if (new_tally->estimator() == ITally::Estimator::TrackLength) {
+    new_itally_track_length_.push_back(new_tally);
+  }
+}
+
 void Tallies::add_collision_mesh_tally(
     std::shared_ptr<CollisionMeshTally> cetally) {
   cetally->set_net_weight(total_weight);

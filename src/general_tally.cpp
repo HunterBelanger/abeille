@@ -63,17 +63,21 @@ void GeneralTally::score_collision(const Particle& p, const Tracker& tktr,
     if (position_filter_) {
       position_indices = position_filter_->get_indices(
           tktr);  // it will provde the reduce dimensions
+      
+      if (position_indices.empty()){
+        // Not inside any energy bin. Don't score.
+        return;
+      }
     }
     indices.insert(indices.end(), position_indices.begin(), position_indices.end());
 
-    // if indices is empty, then no bin is found, so return
-    if (indices.empty()) {
-      return;
-    }
   }
 
   const double Et = mat.Et(p.E());
   const double collision_score = particle_base_score(p, mat) / Et;
+  
+  if ( indices[0] != 0 || indices[1] != 0 || indices[2] != 0 || indices[3] != 0 ){
+    std::cout<<">>>>>>>>> 1. \t"<< indices[0]<<"\n2.\t"<<indices[1]<<"\n3.\t"<<indices[2]<<"\n4.\t"<<indices[3]<<"\n";}
 
 #ifdef ABEILLE_USE_OMP
 #pragma omp atomic

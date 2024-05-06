@@ -66,16 +66,7 @@ class Tallies {
 
   static Tallies& instance();
 
-  void add_ITally(std::shared_ptr<ITally> new_tally) {
-    new_tally->set_net_weight(total_weight);
-
-    if (new_tally->estimator() == ITally::Estimator::Collision) {
-      new_itally_collision_.push_back(new_tally);
-    } else if (new_tally->estimator() == ITally::Estimator::TrackLength) {
-      new_itally_track_length_.push_back(new_tally);
-    }
-  }
-
+  void add_ITally(std::shared_ptr<ITally> new_tally);
   void add_collision_mesh_tally(std::shared_ptr<CollisionMeshTally> cetally);
   void add_track_length_mesh_tally(
       std::shared_ptr<TrackLengthMeshTally> tltally);
