@@ -24,20 +24,30 @@ root-universe: 1
 tally-filters:
   position-filters:
     - id: 1
-      position-filter-type: box
+      type: box
       low: [-0.77032, -100., -100.]
       high:  [ 0.77032,  100.,  100.]
       axes: [X]
 
     - id: 2
-      position-filter-type: box
+      type: regular-cartesian-mesh
       low: [-0.77032, -100., -100.]
       high:  [ 0.77032,  100.,  100.]
-      shape: [2, 1,1]
-      
+      shape: [2, 1, 1]
+    
+    - id: 3
+      type: cylinder-filter
+      origin: [0., 0., -100.]
+      radius: 5.514296811
+      pitch-x: 11.
+      pitch-y: 0.
+      pitch-z: 1.
+      length: 200.
+      axis: Z
+      shape: [1, 1, 1]
 
   energy-filters:
-    - id: 2
+    - id: 1
       energy-bounds: [0., 1.]
 
 tallies:
@@ -52,12 +62,12 @@ tallies:
 
   
   - type: ITally
-    #tally-type: general
-    tally-type: legendre-fet
+    tally-type: general
+    #tally-type: legendre-fet
     order: 3
     axes: [X]
-    position-filter-type: 1
-    energy-filters: 2
+    position-filter: 2
+    energy-filter: 1
     quantity: flux
     name: flux-3
     estimator: collision

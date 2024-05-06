@@ -10,7 +10,7 @@ materials:
     P1: [[0.171052632]]
 
 surfaces:
-  - {type: zcylinder, x0: 0., y0: 0., r: 5.514296811, boundary: vacuum, id: 1}
+  - {type: zcylinder, x0: 0., y0: 0., r: 5.514296811, boundary: reflective, id: 1}
 
 cells:
   - {region: "-1", material: 1, id: 1}
@@ -20,22 +20,31 @@ universes:
 
 root-universe: 1
 
+tally-filters:
+  position-filters:
+    - id: 1
+      type: cylinder-filter
+      origin: [0., 0., -100.]
+      radius: 5.514296811
+      pitch-x: 12.
+      pitch-y: 0.
+      pitch-z: 1.
+      length: 200.
+      axis: Z
+      shape: [2, 1, 1]
+
+  energy-filters:
+    - id: 1
+      energy-bounds: [0., 1.]
+
 tallies:
   - type: ITally
     tally-type: general
     name: Zr
-    position-filter: cylinder-filter
-    origin: [0., 0., -100.]
-    radius: 5.514296811
-    pitch-x: 11.
-    pitch-y: 0.
-    pitch-z: 1.
-    axial-length: 200.
-    axial-axis: Z
-    shape: [1, 1, 1]
-    energy-bounds: [0., 1.]
+    position-filter: 1
     estimator: collision
     quantity: flux
+    energy-filter: 1
   
   - shape: [1, 1, 1]
     hi: [5.514296811, 5.514296811, 100.]
@@ -52,8 +61,10 @@ settings:
 
 simulation:
   mode: k-eigenvalue
+  #nparticles: 1000000
   nparticles: 1000
-  ngenerations: 100
+  ngenerations: 150
+  #ngenerations: 1050
   nignored: 50
   sources:
     - spatial:

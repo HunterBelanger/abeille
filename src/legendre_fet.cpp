@@ -252,11 +252,11 @@ std::shared_ptr<LegendreFET> make_legendre_fet(const YAML::Node& node) {
 
   // Get the enrgy filter, if any is given
   std::shared_ptr<EnergyFilter> energy_filter = nullptr;
-  if (node["energy-filters"]) {
-    if (!node["energy-filters"].IsScalar()) {
-      fatal_error("energy-filters is not provided as a scalar.");
+  if (node["energy-filter"]) {
+    if (!node["energy-filter"].IsScalar()) {
+      fatal_error("energy-filter is not provided as a scalar.");
     }
-    std::size_t energy_id = node["energy-filters"].as<std::size_t>();
+    std::size_t energy_id = node["energy-filter"].as<std::size_t>();
     energy_filter = tallies.get_energy_filter(energy_id);
     if (energy_filter == nullptr) {
       std::stringstream messg;

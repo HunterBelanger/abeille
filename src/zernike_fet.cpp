@@ -249,11 +249,11 @@ std::shared_ptr<ZernikeFET> make_zernike_fet(const YAML::Node& node) {
   auto& tallies = Tallies::instance();
   // Get the enrgy filter, if any is given
   std::shared_ptr<EnergyFilter> energy_filter = nullptr;
-  if (node["energy-bounds"]) {
-    if (!node["energy-bounds"].IsSequence()) {
-      fatal_error("energy-bounds is not provided in the list format.");
+  if (node["energy-filter"]) {
+    if (!node["energy-filter"].IsScalar()) {
+      fatal_error("energy-filter must be given as scalar.");
     }
-    std::size_t energy_id = node["energy-filters"].as<std::size_t>();
+    std::size_t energy_id = node["energy-filter"].as<std::size_t>();
     energy_filter = tallies.get_energy_filter(energy_id);
     if (energy_filter == nullptr) {
       std::stringstream messg;
@@ -272,7 +272,8 @@ std::shared_ptr<ZernikeFET> make_zernike_fet(const YAML::Node& node) {
   std::size_t position_id = node["position-filter"].as<std::size_t>();
   std::shared_ptr<CylinderFilter> cylinder_filter =
       tallies.get_cylinder_position_filter(position_id);
-  if (cylinder_filter = nullptr) {
+
+  if (cylinder_filter == nullptr) {
     std::stringstream messg;
     messg << "for tally " << zernike_fet_tally_name
           << ", the id: " << position_id

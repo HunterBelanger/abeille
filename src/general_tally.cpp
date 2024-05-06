@@ -236,11 +236,11 @@ std::shared_ptr<GeneralTally> make_general_tally(const YAML::Node& node) {
   auto& tallies = Tallies::instance();
   // Get the enrgy bounds, if any is given
   std::shared_ptr<EnergyFilter> energy_filter_ = nullptr;
-  if (node["energy-filters"]) {
-    if (!node["energy-filters"].IsScalar()) {
+  if (node["energy-filter"]) {
+    if (!node["energy-filter"].IsScalar()) {
       fatal_error("Invalid energy-filter is given.");
     }
-    std::size_t energy_id = node["energy-filters"].as<std::size_t>();
+    std::size_t energy_id = node["energy-filter"].as<std::size_t>();
     energy_filter_ = tallies.get_energy_filter(energy_id);
     if (energy_filter_ == nullptr) {
       std::stringstream messg;
@@ -259,7 +259,8 @@ std::shared_ptr<GeneralTally> make_general_tally(const YAML::Node& node) {
     }
     std::size_t position_id = node["position-filter"].as<std::size_t>();
     position_filter_ = tallies.get_position_filter(position_id);
-    if (position_filter_ = nullptr) {
+
+    if (position_filter_ == nullptr) {
       std::stringstream messg;
       messg
           << "for tally " << general_tally_name << ", the id: " << position_id
