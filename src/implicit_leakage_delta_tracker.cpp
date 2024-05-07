@@ -110,6 +110,8 @@ void ImplicitLeakageDeltaTracker::transport(
       p.set_weight(wgt_leak);
       p.set_weight2(wgt2_leak);
       Tallies::instance().score_flight(p, bound.distance, mat);
+      Tallies::instance().score_flight(p, trkr, bound.distance,
+                                     mat);
 
       // Reduce weight
       p.set_weight(wgt_collides);
@@ -117,6 +119,8 @@ void ImplicitLeakageDeltaTracker::transport(
 
       // Score TLE for the portion which only goes to the collision site
       Tallies::instance().score_flight(p, d_coll, mat);
+      Tallies::instance().score_flight(p, trkr, d_coll,
+                                     mat);
     } else {
       d_coll = p.rng.exponential(Emajorant);
 
@@ -126,6 +130,8 @@ void ImplicitLeakageDeltaTracker::transport(
       // should have been thrown when building all tallies.
       Tallies::instance().score_flight(p, std::min(d_coll, bound.distance),
                                        mat);
+      Tallies::instance().score_flight(p, trkr, std::min(d_coll, bound.distance),
+                                     mat);
     }
 
     if (bound.distance < d_coll ||

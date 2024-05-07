@@ -9,7 +9,8 @@ materials:
     scatter: [[0.733333]]
     P1: [[0.272727397]]
 
-sampling-xs-ratio: [0.90]
+sampling-xs:
+  xs: [0.90]
 
 surfaces:
   - {type: xplane, x0: -0.77032, boundary: vacuum, id: 1}
@@ -86,7 +87,7 @@ simulation:
   ngenerations: 500
   nignored: 100
   transport-operator:
-    type: surface-tracking
+    type: carter-tracking
   sources:
     - spatial:
         type: box
