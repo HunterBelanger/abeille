@@ -348,7 +348,7 @@ simulation:
     type: branching
   
   # Any number of particle sources may be defined to begin the simulation.
-  # low and hi follow the same convention as from above. Chi is the energy
+  # low and hi follow the same convention as from above. Chi is the energys
   # spectrum for the source, and weight is a float describing the relative
   # probability of being born using the rules for that source description.
   sources:

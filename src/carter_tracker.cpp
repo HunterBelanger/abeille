@@ -148,6 +148,9 @@ void CarterTracker::transport(Particle& p, Tracker& trkr, MaterialHelper& mat,
     double d_coll = p.rng.exponential(Esample);
     Boundary bound(INF, -1, BoundaryType::Normal);
 
+    Tallies::instance().score_flight(p, trkr, std::min(d_coll, bound.distance),
+                                     mat);
+
     // Try moving the distance to collision, and see if we land in a valid
     // material.
     trkr.move(d_coll);

@@ -9,6 +9,8 @@ materials:
     scatter: [[0.733333]]
     P1: [[0.272727397]]
 
+sampling-xs-ratio: [0.90]
+
 surfaces:
   - {type: xplane, x0: -0.77032, boundary: vacuum, id: 1}
   - {type: xplane, x0:  0.77032, boundary: vacuum, id: 2}
@@ -58,7 +60,7 @@ tallies:
     energy-bounds: [0., 1.]
     quantity: flux
     name: flux_PUa
-    estimator: collision
+    estimator: track-length
 
   
   - type: ITally
@@ -70,7 +72,7 @@ tallies:
     energy-filter: 1
     quantity: flux
     name: flux-3
-    estimator: collision
+    estimator: track-length
 
 
 settings:
@@ -84,7 +86,7 @@ simulation:
   ngenerations: 500
   nignored: 100
   transport-operator:
-    type: delta-tracking
+    type: surface-tracking
   sources:
     - spatial:
         type: box

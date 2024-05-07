@@ -1,4 +1,4 @@
-materials:
+:
   - id: 1
     name: UO2
     color: [255,127,14]

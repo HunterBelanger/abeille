@@ -122,18 +122,18 @@ void make_itally(Tallies& tallies, const YAML::Node& node) {
   }
   tally_type_ = node["tally-type"].as<std::string>();
 
-  std::shared_ptr<ITally> new_ITally = nullptr;
+  std::shared_ptr<ITally> t = nullptr;
   if (tally_type_ == "general") {
-    new_ITally = make_general_tally(node);
+    t = make_general_tally(node);
   } else if (tally_type_ == "legendre-fet") {
-    new_ITally = make_legendre_fet(node);
+    t = make_legendre_fet(node);
   } else if (tally_type_ == "zernike-fet") {
-    new_ITally = make_zernike_fet(node);
+    t = make_zernike_fet(node);
   } else {
     fatal_error("Unknown tally type " + tally_type_ + " found in tally " +
                 tally_name_ + ".");
   }
 
   // Add the new_ITally of type ITally into the "tallies"
-  tallies.add_ITally(new_ITally);
+  tallies.add_ITally(t);
 }
