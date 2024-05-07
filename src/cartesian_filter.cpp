@@ -8,7 +8,7 @@ CartesianFilter::CartesianFilter(Position r_low, Position r_high,
     : PositionFilter(id), r_low_(r_low), r_high_(r_high) {
   if ((r_low_.x() >= r_high_.x()) || (r_low_.y() >= r_high_.y()) ||
       (r_low_.z() >= r_high_.z()))
-    fatal_error("for id: " + std::to_string(id) +
+    fatal_error("On position-filter with id " + std::to_string(id) +
                 ", coordinates of \"low\" position are >= than \"high\" "
                 "position.");
 }

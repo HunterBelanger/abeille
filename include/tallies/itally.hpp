@@ -7,30 +7,7 @@
 
 #include <ndarray.hpp>
 
-const static std::set<std::string> reserved_tally_names{
-    "families",
-    "pair-dist-sqrd",
-    "entropy",
-    "total-pre-cancel-entropy",
-    "neg-pre-cancel-entropy",
-    "pos-pre-cancel-entropy",
-    "total-post-cancel-entropy",
-    "neg-post-cancel-entropy",
-    "pos-post-cancel-entropy",
-    "empty-entropy-frac",
-    "Nnet",
-    "Ntot",
-    "Npos",
-    "Nneg",
-    "Wnet",
-    "Wtot",
-    "Wpos",
-    "Wneg",
-    "kcol",
-    "ktrk",
-    "kabs",
-    "leakage",
-    "mig-area"};
+#include <set>
 
 class ITally {
  public:
@@ -43,15 +20,7 @@ class ITally {
 
   enum class Estimator { Collision, TrackLength };
 
-  ITally() = default;
-
-  ITally(Quantity quantity, Estimator estimator, std::string name)
-      : quantity_(quantity), estimator_(estimator), tally_name_(name) {
-    if (reserved_tally_names.contains(name)) {
-      fatal_error("The tally name " + name + " is reserved.");
-    }
-  }
-
+  ITally(Quantity quantity, Estimator estimator, std::string name);
   virtual ~ITally() = default;
 
   // For collision estmator
@@ -80,6 +49,8 @@ class ITally {
   std::string quantity_str();
 
   virtual void write_tally() = 0;
+
+  static const std::set<std::string> reserved_tally_names;
 
  protected:
   double particle_base_score(const Particle& p, MaterialHelper& mat);

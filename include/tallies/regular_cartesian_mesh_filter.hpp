@@ -27,7 +27,7 @@ class RegularCartesianMeshFilter : public CartesianFilter {
     return reduce_dimension(Nx_, Ny_, Nz_);
   }
 
-  std::string type_str() const override { return "Mesh_Position_Filter"; }
+  std::string type_str() const override { return "regular-cartesian-mesh"; }
 
  protected:
   // required for track-length

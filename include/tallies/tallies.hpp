@@ -243,7 +243,6 @@ class Tallies {
     for (auto& t : noise_source_mesh_tallies_) t->set_net_weight(total_weight);
 
     for (auto& t : new_itally_collision_) t->set_net_weight(total_weight);
-
     for (auto& t : new_itally_track_length_) t->set_net_weight(total_weight);
   }
 
@@ -303,7 +302,7 @@ class Tallies {
 void add_mesh_tally(Tallies& tallies, const YAML::Node& node);
 
 // for making the tallies filter
-void make_tallies_filter(Tallies& tallies, const YAML::Node& node);
+void make_tally_filters(Tallies& tallies, const YAML::Node& node);
 
 void make_itally(Tallies& tallies, const YAML::Node& node);
 

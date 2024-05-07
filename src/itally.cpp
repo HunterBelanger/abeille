@@ -5,9 +5,39 @@
 #include <tallies/regular_cartesian_mesh_filter.hpp>
 #include <tallies/tallies.hpp>
 #include <tallies/zernike_fet.hpp>
-#include <utils/output.hpp>
+#include <utils/mpi.hpp>
 
-#include <set>
+const std::set<std::string> ITally::reserved_tally_names{
+    "families",
+    "pair-dist-sqrd",
+    "entropy",
+    "total-pre-cancel-entropy",
+    "neg-pre-cancel-entropy",
+    "pos-pre-cancel-entropy",
+    "total-post-cancel-entropy",
+    "neg-post-cancel-entropy",
+    "pos-post-cancel-entropy",
+    "empty-entropy-frac",
+    "Nnet",
+    "Ntot",
+    "Npos",
+    "Nneg",
+    "Wnet",
+    "Wtot",
+    "Wpos",
+    "Wneg",
+    "kcol",
+    "ktrk",
+    "kabs",
+    "leakage",
+    "mig-area"};
+
+ITally::ITally(Quantity quantity, Estimator estimator, std::string name)
+    : quantity_(quantity), estimator_(estimator), tally_name_(name) {
+  if (reserved_tally_names.contains(name)) {
+    fatal_error("The tally name " + name + " is reserved.");
+  }
+}
 
 double ITally::particle_base_score(const Particle& p, MaterialHelper& mat) {
   double collision_score = inv_net_weight_;
@@ -49,7 +79,7 @@ void ITally::record_generation(double multiplier) {
 #ifdef ABEILLE_USE_OMP
 #pragma omp parallel for schedule(static)
 #endif
-    for (size_t i = 0; i < tally_avg_.size(); i++) {
+    for (std::size_t i = 0; i < tally_avg_.size(); i++) {
       // Get new average
 
       double old_avg = tally_avg_[i];
@@ -79,11 +109,10 @@ std::string ITally::estimator_str() {
     case Estimator::TrackLength:
       return "track-length";
       break;
-
-    default:
-      return "unkown";
-      break;
   }
+
+  // NEVER GETS HERE
+  return "unknown";
 }
 
 std::string ITally::quantity_str() {
@@ -100,38 +129,38 @@ std::string ITally::quantity_str() {
     case Quantity::Elastic:
       return "elastic";
       break;
-    default:
-      return "unknown";
-      break;
   }
+
+  // NEVER GETS HERE
+  return "unknown";
 }
 
 void make_itally(Tallies& tallies, const YAML::Node& node) {
   if (!node["name"] || node["name"].IsScalar() == false) {
     fatal_error("Tally name is not given.");
   }
-  std::string tally_name_ = node["name"].as<std::string>();
-  if (reserved_tally_names.contains(tally_name_)) {
-    fatal_error("The tally name " + tally_name_ + " is reserved.");
+  std::string tally_name = node["name"].as<std::string>();
+  if (ITally::reserved_tally_names.contains(tally_name)) {
+    fatal_error("The tally name " + tally_name + " is reserved.");
   }
 
-  std::string tally_type_ = "general";
-  if (!node["tally-type"]) {
-    warning(
-        "The tally-type is not given therefore, \"general\" will be assumed.");
+  std::string tally_type = "general";
+  if (node["tally-type"] && node["tally-type"].IsScalar()) {
+    tally_type = node["tally-type"].as<std::string>();
+  } else if (node["tally-type"]) {
+    fatal_error("Tally " + tally_name + " had invalid type entry.");
   }
-  tally_type_ = node["tally-type"].as<std::string>();
 
   std::shared_ptr<ITally> t = nullptr;
-  if (tally_type_ == "general") {
+  if (tally_type == "general") {
     t = make_general_tally(node);
-  } else if (tally_type_ == "legendre-fet") {
+  } else if (tally_type == "legendre-fet") {
     t = make_legendre_fet(node);
-  } else if (tally_type_ == "zernike-fet") {
+  } else if (tally_type == "zernike-fet") {
     t = make_zernike_fet(node);
   } else {
-    fatal_error("Unknown tally type " + tally_type_ + " found in tally " +
-                tally_name_ + ".");
+    fatal_error("Unknown tally type " + tally_type + " found in tally " +
+                tally_name + ".");
   }
 
   // Add the new_ITally of type ITally into the "tallies"

@@ -588,7 +588,7 @@ void make_tallies(const YAML::Node& input) {
   if (!input["tally-filters"]) {
     fatal_error("tally-filter are not given for tallies.\n");
   }
-  make_tallies_filter(tallies, input);
+  make_tally_filters(tallies, input);
 
   // Add all spatial mesh tallies to the tallies instance
   for (size_t t = 0; t < input["tallies"].size(); t++) {

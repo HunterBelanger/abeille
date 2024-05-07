@@ -2,6 +2,8 @@
 #include <utils/constants.hpp>
 #include <utils/output.hpp>
 
+#include <sstream>
+
 RegularCartesianMeshFilter::RegularCartesianMeshFilter(Position r_low,
                                                        Position r_high,
                                                        size_t nx_, size_t ny_,
@@ -22,17 +24,17 @@ RegularCartesianMeshFilter::RegularCartesianMeshFilter(Position r_low,
       z_index_() {
   if ((r_low_.x() >= r_high_.x()) || (r_low_.y() >= r_high_.y()) ||
       (r_low_.z() >= r_high_.z()))
-    fatal_error("for id: " + std::to_string(id) +
+    fatal_error("In position-filter with id: " + std::to_string(id) +
                 ", coordinates of \"low\" position are >= than \"high\" "
                 "position.");
 
   if (Nx_ == 0 || Ny_ == 0 || Nz_ == 0)
-    fatal_error("for id: " + std::to_string(id) +
+    fatal_error("In position-filter with id: " + std::to_string(id) +
                 ", the number of bins in any direction must be a non-zero.");
 
   if (Nx_ == 1 && Ny_ == 1 && Nz_ == 1) {
     fatal_error(
-        "for id: " + std::to_string(id) +
+        "In position-filter with id: " + std::to_string(id) +
         ", the given shape is [1,1,1], so box filter will should be used.");
   }
 
@@ -476,59 +478,60 @@ std::shared_ptr<RegularCartesianMeshFilter> make_regular_cartesian_mesh_filter(
   std::string id_str = std::to_string(id);
 
   if (!node["low"]) {
-    fatal_error(
-        "For box position-filter \"low\" coordinates are not provided in the "
-        "id: " +
-        id_str + ".");
+    std::stringstream mssg;
+    mssg << "For position-filter with id " << id
+         << ", \"low\" coordinates are not provided.";
+    fatal_error(mssg.str());
   } else if (!node["low"].IsSequence() || node["low"].size() != 3) {
-    fatal_error(
-        "for id: " + id_str +
-        "the given entry for the \"low\" coordinates must be a sequence of "
-        "size 3.");
+    std::stringstream mssg;
+    mssg << "For position-filter with id " << id
+         << ", the given entry for the \"low\" coordinates must be a sequence "
+            "of size 3.";
+    fatal_error(mssg.str());
   }
 
   if (!node["high"]) {
-    fatal_error(
-        "For box position-filter \"high\" coordinates are not provided in the "
-        "id: " +
-        id_str + ".");
+    std::stringstream mssg;
+    mssg << "For position-filter with id " << id
+         << ", \"high\" coordinates are not provided.";
+    fatal_error(mssg.str());
   } else if (!node["high"].IsSequence() || node["high"].size() != 3) {
-    fatal_error(
-        "for id: " + id_str +
-        "thegiven entry for the \"high\" coordinates must be a sequence of "
-        "size 3.");
+    std::stringstream mssg;
+    mssg << "For position-filter with id " << id
+         << ", the given entry for the \"high\" coordinates must be a sequence "
+            "of size 3.";
+    fatal_error(mssg.str());
   }
 
   if (!node["shape"]) {
-    fatal_error(
-        "For mesh position-filter \"shape\" is not provided in the id: " +
-        id_str + ".");
+    std::stringstream mssg;
+    mssg << "For position-filter with id " << id
+         << ", \"shape\" is not provided.";
+    fatal_error(mssg.str());
   } else if (!node["shape"].IsSequence() || node["shape"].size() != 3) {
-    fatal_error(
-        "for id: " + id_str +
-        "the given entry for the \"shape\" coordinates must be a sequence of "
-        "size 3.");
+    std::stringstream mssg;
+    mssg << "For position-filter with id " << id
+         << ", \"shape\" must be a sequence of size 3.";
+    fatal_error(mssg.str());
   }
 
   std::vector<double> low_point = node["low"].as<std::vector<double>>();
   std::vector<double> high_point = node["high"].as<std::vector<double>>();
-  std::vector<std::size_t> shape_ =
-      node["shape"].as<std::vector<std::size_t>>();
+  std::vector<std::size_t> shape = node["shape"].as<std::vector<std::size_t>>();
 
-  if (shape_[0] == 1 && shape_[1] == 1 && shape_[2] == 1) {
-    fatal_error("For id:" + id_str +
-                " tally, the shape [1,1,1] with reactilinear mesh position "
-                "filter is used instead of box filter.");
+  if (shape[0] == 1 && shape[1] == 1 && shape[2] == 1) {
+    std::stringstream mssg;
+    mssg << "For position-filter with id " << id
+         << ", the shape [1,1,1] indicates a box filter should be used.";
+    fatal_error(mssg.str());
   }
-
-  if (shape_.size() != 3) fatal_error("Element in the shape must be 3.");
 
   Position r_low(low_point[0], low_point[1], low_point[2]);
   Position r_high(high_point[0], high_point[1], high_point[2]);
 
   std::shared_ptr<RegularCartesianMeshFilter> mesh_type_filter =
-      std::make_shared<RegularCartesianMeshFilter>(r_low, r_high, shape_[0],
-                                                   shape_[1], shape_[2], id);
+      std::make_shared<RegularCartesianMeshFilter>(r_low, r_high, shape[0],
+                                                   shape[1], shape[2], id);
 
   return mesh_type_filter;
 }

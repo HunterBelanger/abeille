@@ -366,69 +366,69 @@ void Tallies::update_avg_and_var(double x, double& x_avg, double& x_var) {
             ((x_var_old) / (dgen - 1.));
 }
 
-void make_tallies_filter(Tallies& tallies, const YAML::Node& node) {
+void make_tally_filters(Tallies& tallies, const YAML::Node& node) {
   if (!node["tally-filters"]) {
     return;
   }
 
-  // position-filters
+  // Read all position-filters
   if (node["tally-filters"]["position-filters"]) {
     if (!node["tally-filters"]["position-filters"].IsSequence()) {
       fatal_error("Invalid input for the position-filters are given.");
     }
-    const YAML::Node& position_filter_nodes =
+
+    const YAML::Node& position_filters =
         node["tally-filters"]["position-filters"];
-    for (std::size_t i = 0; i < position_filter_nodes.size(); i++) {
-      if (!position_filter_nodes[i]["id"] ||
-          !position_filter_nodes[i]["id"].IsScalar()) {
+
+    for (std::size_t i = 0; i < position_filters.size(); i++) {
+      if (!position_filters[i]["id"] || !position_filters[i]["id"].IsScalar()) {
         fatal_error(
             "Invalid \"id\" is given for position filter in tally-filters, the "
             "possible error entry is " +
             std::to_string(i) + " from top.");
       }
-      std::size_t id = position_filter_nodes[i]["id"].as<std::size_t>();
+      std::size_t id = position_filters[i]["id"].as<std::size_t>();
 
-      if (!position_filter_nodes[i]["type"] ||
-          !position_filter_nodes[i]["type"].IsScalar()) {
-        fatal_error("Invalid entry for the position-filter type for " +
-                    std::to_string(id) + " id.");
+      if (!position_filters[i]["type"] ||
+          !position_filters[i]["type"].IsScalar()) {
+        fatal_error("Invalid entry for the position-filter type at id " +
+                    std::to_string(id) + ".");
       }
-      std::string position_filter_name =
-          position_filter_nodes[i]["type"].as<std::string>();
+      std::string position_filter_type =
+          position_filters[i]["type"].as<std::string>();
 
-      if (position_filter_name == "cylinder-filter") {
+      if (position_filter_type == "cylinder-filter") {
         auto cylinder_filter =
-            make_cylinder_position_filter(position_filter_nodes[i]);
+            make_cylinder_position_filter(position_filters[i]);
         tallies.add_cylinder_filter(id, cylinder_filter);
         tallies.add_position_filter(id, cylinder_filter);
       } else {
-        auto cartesian_filter = make_cartesian_filter(position_filter_nodes[i]);
+        auto cartesian_filter = make_cartesian_filter(position_filters[i]);
         tallies.add_cartesian_filter(id, cartesian_filter);
         tallies.add_position_filter(id, cartesian_filter);
       }
     }
   }
 
-  // energy-filters
+  // Read all energy-filters
   if (node["tally-filters"]["energy-filters"]) {
     if (!node["tally-filters"]["energy-filters"].IsSequence()) {
       fatal_error("Invalid input for the energy-filters are given.");
     }
-    const YAML::Node& energy_filter_node =
-        node["tally-filters"]["energy-filters"];
 
-    for (std::size_t i = 0; i < energy_filter_node.size(); i++) {
-      if (!energy_filter_node[i]["id"] ||
-          !energy_filter_node[i]["id"].IsScalar()) {
+    const YAML::Node& energy_filters = node["tally-filters"]["energy-filters"];
+
+    for (std::size_t i = 0; i < energy_filters.size(); i++) {
+      if (!energy_filters[i]["id"] || !energy_filters[i]["id"].IsScalar()) {
         fatal_error(
             "Invalid \"id\" is given for energy filter in tally-filters, the "
             "possible error entry is " +
             std::to_string(i) + " from top.");
       }
 
-      std::size_t id = energy_filter_node[i]["id"].as<std::size_t>();
+      std::size_t id = energy_filters[i]["id"].as<std::size_t>();
       std::shared_ptr<EnergyFilter> filter =
-          make_energy_filter(energy_filter_node[i]);
+          make_energy_filter(energy_filters[i]);
       tallies.add_energy_filter(id, filter);
     }
   }
