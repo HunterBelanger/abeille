@@ -10,7 +10,7 @@ materials:
     P1: [[0.171052632]]
 
 surfaces:
-  - {type: zcylinder, x0: 0., y0: 0., r: 5.514296811, boundary: reflective, id: 1}
+  - {type: zcylinder, x0: 0., y0: 0., r: 5.514296811, boundary: vacuum, id: 1}
 
 cells:
   - {region: "-1", material: 1, id: 1}
@@ -31,7 +31,7 @@ tally-filters:
       pitch-z: 1.
       length: 200.
       axis: Z
-      shape: [2, 1, 1]
+      shape: [1, 1, 1]
 
   energy-filters:
     - id: 1
@@ -39,8 +39,11 @@ tally-filters:
 
 tallies:
   - type: ITally
-    tally-type: general
+    tally-type: zernike-fet
+    #tally-type: general
     name: Zr
+    zernike-order: 1
+    #legendre-order: 1
     position-filter: 1
     estimator: collision
     quantity: flux

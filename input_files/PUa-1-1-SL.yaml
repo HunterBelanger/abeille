@@ -66,12 +66,11 @@ tallies:
     #tally-type: legendre-fet
     order: 3
     axes: [X]
-    position-filter: 2
+    position-filter: 1
     energy-filter: 1
     quantity: flux
     name: flux-3
     estimator: collision
-    id: 5
 
 
 settings:

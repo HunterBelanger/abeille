@@ -19,10 +19,13 @@ class CylinderFilter : public PositionFilter {
   StaticVector3 get_indices(const Tracker& tktr);
 
   StaticVector3 get_shape() {
+    if ( Real_nx == 1 && Real_ny == 1 && Real_nz == 1){
+      return {1};
+    }
     StaticVector3 filter_shape{Nx_, Ny_, Nz_};
 
     map_indexes(filter_shape);
-    return filter_shape;
+    return reduce_dimension(filter_shape[0], filter_shape[1], filter_shape[2]);
   }
 
   double radius() const { return radius_; }
@@ -45,9 +48,12 @@ class CylinderFilter : public PositionFilter {
     return index_;
   }
 
+  Orientation get_axial_direction() { return length_axis_; }
+
  private:
   Position origin_, r_low_;
   std::size_t Nx_, Ny_, Nz_;
+  std::size_t Real_nx, Real_ny, Real_nz;
   Orientation length_axis_;
   double radius_, pitch_x_, pitch_y_, dz_, inv_radius_, inv_pitch_x_,
       inv_pitch_y_, inv_dz_;
@@ -80,6 +86,27 @@ class CylinderFilter : public PositionFilter {
       return Position(point.z(), point.y(), point.x());
     }
     return point;
+  }
+
+  // function will reduce the dimsion, if there is only one bin in the direction
+  StaticVector3 reduce_dimension(const size_t& loc_x, const size_t& loc_y,
+                                 const size_t& loc_z) {
+    StaticVector3 reduce_;
+    if ( Real_nx == 1 && Real_ny == 1 && Real_nz == 1){
+      return {loc_x};
+    }
+    if (Real_nx > 1) {
+      reduce_.push_back(loc_x);
+    }
+
+    if (Real_ny > 1) {
+      reduce_.push_back(loc_y);
+    }
+
+    if (Real_nz > 1) {
+      reduce_.push_back(loc_z);
+    }
+    return reduce_;
   }
 };
 

@@ -14,6 +14,9 @@ CylinderFilter::CylinderFilter(Position origin, double radius, double dx,
       Nx_(nx),
       Ny_(ny),
       Nz_(nz),
+      Real_nx(nx),
+      Real_ny(ny),
+      Real_nz(nz),
       length_axis_(z_),
       radius_(radius),
       pitch_x_(dx),
@@ -146,7 +149,7 @@ StaticVector3 CylinderFilter::get_indices(const Tracker& tktr) {
       indices.push_back(static_cast<std::size_t>(ny));
       indices.push_back(static_cast<std::size_t>(nz));
       map_indexes(indices);
-      return indices;
+      return reduce_dimension(indices[0], indices[1], indices[2]);
     }
   }
   return indices;

@@ -36,6 +36,7 @@ ZernikeFET::ZernikeFET(std::shared_ptr<CylinderFilter> cylinder_filter,
   StaticVector3 cylinder_shape = cylinder_filter_->get_shape();
   tally_shape.insert(tally_shape.end(), cylinder_shape.begin(),
                      cylinder_shape.end());
+  axial_direction_ = cylinder_filter_->get_axial_direction();
 
   // another dimnesion of length two, which is related to the zernike
   // responsible for radial and legendre reposible for the axis. first will be
@@ -51,6 +52,62 @@ ZernikeFET::ZernikeFET(std::shared_ptr<CylinderFilter> cylinder_filter,
     max_order = legen_order_;
   }
   tally_shape.push_back(max_order + 1);
+
+  // reallocate and fill with zeros for the taly avg, gen-score and varaince
+  tally_avg_.reallocate(tally_shape);
+  tally_avg_.fill(0.0);
+
+  tally_gen_score_.reallocate(tally_shape);
+  tally_gen_score_.fill(0.0);
+
+  tally_var_.reallocate(tally_shape);
+  tally_var_.fill(0.0);
+}
+
+ZernikeFET::ZernikeFET(std::shared_ptr<CylinderFilter> cylinder_filter,
+                       std::shared_ptr<EnergyFilter> energy_filter,
+                       std::size_t zernike_order,
+                       ZernikeFET::Quantity quantity,
+                       ZernikeFET::Estimator estimator, std::string name)
+    : ITally(quantity, estimator, name),
+      cylinder_filter_(cylinder_filter),
+      energy_filter_(energy_filter),
+      zr_polynomial_(zernike_order),
+      zr_order_(zernike_order),
+      legen_order_(),
+      axial_direction_() {
+  StaticVector6 tally_shape;
+  // add the dimension for energy_in_ only if exist
+  if (energy_filter_) {
+    std::size_t ne = energy_filter_->size();
+    tally_shape.push_back(ne);
+  }
+
+  // get the shape or dimensions for the cylinder-filter
+  // the zernike-fet requires the co-ordinate information
+  if (cylinder_filter_ == nullptr) {
+    fatal_error(
+        "for tally " + name +
+        ", the cylinder-filter information is required for zernike-fet.");
+  }
+  StaticVector3 cylinder_shape = cylinder_filter_->get_shape();
+  tally_shape.insert(tally_shape.end(), cylinder_shape.begin(),
+                     cylinder_shape.end());
+  axial_direction_ = cylinder_filter_->get_axial_direction();
+  // another dimnesion of length two, which is related to the zernike
+  // responsible for radial and legendre reposible for the axis. first will be
+  // zernike and second will be legendre.
+  tally_shape.push_back(1);
+
+  // last-dimension is for the orders, however, the radial will incorporated by
+  // zernike and axial will be legendre, therefore, for both the order can be
+  // same or different, therefore, a max of both will be taken, so all the tally
+  // will remain at one place.
+  std::size_t max_order = zr_order_;
+  tally_shape.push_back(max_order + 1);
+
+  // in-this particular constructor, there will no legendre-order
+  check_for_legendre = false;
 
   // reallocate and fill with zeros for the taly avg, gen-score and varaince
   tally_avg_.reallocate(tally_shape);
@@ -120,24 +177,26 @@ void ZernikeFET::score_collision(const Particle& p, const Tracker& tktr,
   }
 
   // second- score for the legendre
-  indices[poly_index] = 1;
-  const double zmin = cylinder_filter_->z_min(cylinder_index);
-  const double zmax = cylinder_filter_->z_max(cylinder_index);
-  double z = tktr.r().z();
-  if (axial_direction_ == CylinderFilter::Orientation::Y) {
-    z = tktr.r().y();
-  } else if (axial_direction_ == CylinderFilter::Orientation::X) {
-    z = tktr.r().z();
-  }
-  const double scaled_z = 2 * (z - zmin) / (zmin - zmax) - 1.0;
-  for (std::size_t i = 0; i <= legen_order_; i++) {
-    // score for i-th order's basis function
-    beta_n = collision_score * legendre(i, scaled_z);
-    indices[FET_index] = i;
-#ifdef ABEILLE_USE_OMP
-#pragma omp atomic
-#endif
-    tally_gen_score_(indices) += beta_n;
+   if ( check_for_legendre == true ) {
+    indices[poly_index] = 1;
+    const double zmin = cylinder_filter_->z_min(cylinder_index);
+    const double zmax = cylinder_filter_->z_max(cylinder_index);
+    double z = tktr.r().z();
+    if (axial_direction_ == CylinderFilter::Orientation::Y) {
+      z = tktr.r().y();
+    } else if (axial_direction_ == CylinderFilter::Orientation::X) {
+      z = tktr.r().z();
+    }
+    const double scaled_z = 2 * (z - zmin) / (zmin - zmax) - 1.0;
+    for (std::size_t i = 0; i <= legen_order_; i++) {
+      // score for i-th order's basis function
+      beta_n = collision_score * legendre(i, scaled_z);
+      indices[FET_index] = i;
+  #ifdef ABEILLE_USE_OMP
+  #pragma omp atomic
+  #endif
+      tally_gen_score_(indices) += beta_n;
+    }
   }
 }
 
@@ -245,7 +304,7 @@ std::shared_ptr<ZernikeFET> make_zernike_fet(const YAML::Node& node) {
     fatal_error("For " + zernike_fet_tally_name +
                 " tally, a unknown quantity is given.");
   }
-  // get the tallies instanceQ
+  // get the tallies instance
   auto& tallies = Tallies::instance();
   // Get the enrgy filter, if any is given
   std::shared_ptr<EnergyFilter> energy_filter = nullptr;
@@ -288,18 +347,31 @@ std::shared_ptr<ZernikeFET> make_zernike_fet(const YAML::Node& node) {
   }
   std::size_t zernike_fet_order = node["zernike-order"].as<std::size_t>();
 
-  // get the order of legendre
-  if (!node["legendre-order"] && !node["legendre-order"].IsScalar()) {
-    fatal_error("a valid legendre-order is not given for " +
+  // get the order of legendre, if exists
+  bool legendre_exist = true;
+  std::size_t legendre_fet_order;
+  if ( !node["legendre-order"]){
+    legendre_exist = false;
+  } else if ( !node["legendre-order"].IsScalar()){
+        fatal_error("a valid legendre-order is not given for " +
                 zernike_fet_tally_name + "tally.");
+  } else {
+    legendre_fet_order = node["legendre-order"].as<std::size_t>();
   }
-  std::size_t legendre_fet_order = node["legendre-order"].as<std::size_t>();
+  
 
   // make the ZernikeFET class for the given tally description
-  std::shared_ptr<ZernikeFET> itally_zernike_fet_tally =
-      std::make_shared<ZernikeFET>(cylinder_filter, energy_filter,
+  std::shared_ptr<ZernikeFET> itally_zernike_fet_tally;
+  // if we have both legendre and zernike then use the first constructor,
+  if ( legendre_exist == true ){
+    itally_zernike_fet_tally = std::make_shared<ZernikeFET>(cylinder_filter, energy_filter,
                                    zernike_fet_order, legendre_fet_order, quant,
                                    estimator, zernike_fet_tally_name);
-
+  } else if ( legendre_exist == false ){
+  // if we have the zernike only, then use the second constructor 
+    itally_zernike_fet_tally = std::make_shared<ZernikeFET>(cylinder_filter, energy_filter,
+                                   zernike_fet_order, quant,
+                                   estimator, zernike_fet_tally_name);
+  }
   return itally_zernike_fet_tally;
 }

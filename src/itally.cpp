@@ -4,6 +4,7 @@
 #include <tallies/legendre_fet.hpp>
 #include <tallies/regular_cartesian_mesh_filter.hpp>
 #include <tallies/tallies.hpp>
+#include <tallies/zernike_fet.hpp>
 #include <utils/output.hpp>
 
 #include <set>
@@ -127,8 +128,7 @@ void make_itally(Tallies& tallies, const YAML::Node& node) {
   } else if (tally_type_ == "legendre-fet") {
     new_ITally = make_legendre_fet(node);
   } else if (tally_type_ == "zernike-fet") {
-    fatal_error("The zernike-fet for " + tally_name_ +
-                " is not supported yet.");
+    new_ITally = make_zernike_fet(node);
   } else {
     fatal_error("Unknown tally type " + tally_type_ + " found in tally " +
                 tally_name_ + ".");
