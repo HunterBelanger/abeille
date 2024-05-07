@@ -32,11 +32,11 @@ RegularCartesianMeshFilter::RegularCartesianMeshFilter(Position r_low,
     fatal_error("In position-filter with id: " + std::to_string(id) +
                 ", the number of bins in any direction must be a non-zero.");
 
-  if (Nx_ == 1 && Ny_ == 1 && Nz_ == 1) {
+  /*if (Nx_ == 1 && Ny_ == 1 && Nz_ == 1) {
     fatal_error(
         "In position-filter with id: " + std::to_string(id) +
         ", the given shape is [1,1,1], so box filter will should be used.");
-  }
+  }*/
 
   dx_ = (r_high_.x() - r_low_.x()) / static_cast<double>(Nx_);
   dy_ = (r_high_.y() - r_low_.y()) / static_cast<double>(Ny_);
@@ -519,12 +519,12 @@ std::shared_ptr<RegularCartesianMeshFilter> make_regular_cartesian_mesh_filter(
   std::vector<double> high_point = node["high"].as<std::vector<double>>();
   std::vector<std::size_t> shape = node["shape"].as<std::vector<std::size_t>>();
 
-  if (shape[0] == 1 && shape[1] == 1 && shape[2] == 1) {
+  /*if (shape[0] == 1 && shape[1] == 1 && shape[2] == 1) {
     std::stringstream mssg;
     mssg << "For position-filter with id " << id
          << ", the shape [1,1,1] indicates a box filter should be used.";
     fatal_error(mssg.str());
-  }
+  }*/
 
   Position r_low(low_point[0], low_point[1], low_point[2]);
   Position r_high(high_point[0], high_point[1], high_point[2]);

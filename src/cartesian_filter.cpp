@@ -1,4 +1,3 @@
-#include <tallies/box_position_filter.hpp>
 #include <tallies/cartesian_filter.hpp>
 #include <tallies/regular_cartesian_mesh_filter.hpp>
 #include <utils/constants.hpp>
@@ -21,9 +20,7 @@ std::shared_ptr<CartesianFilter> make_cartesian_filter(const YAML::Node& node) {
   }
   const std::string cartesian_filter_type = node["type"].as<std::string>();
 
-  if (cartesian_filter_type == "box") {
-    cartesian_filter_ = make_box_position_filter(node);
-  } else if (cartesian_filter_type == "regular-cartesian-mesh") {
+  if (cartesian_filter_type == "regular-cartesian-mesh") {
     cartesian_filter_ = make_regular_cartesian_mesh_filter(node);
   } else {
     fatal_error(cartesian_filter_type + " is not a valid position-filter.");

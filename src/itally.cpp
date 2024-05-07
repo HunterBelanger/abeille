@@ -1,4 +1,3 @@
-#include <tallies/box_position_filter.hpp>
 #include <tallies/general_tally.hpp>
 #include <tallies/itally.hpp>
 #include <tallies/legendre_fet.hpp>

@@ -24,6 +24,9 @@ class RegularCartesianMeshFilter : public CartesianFilter {
   double z_max(const StaticVector3& index) const override;
 
   StaticVector3 get_shape() override final {
+    if (Nx_ == 1 && Ny_ == 1 && Nz_ == 1){
+      return {1};
+    }
     return reduce_dimension(Nx_, Ny_, Nz_);
   }
 
@@ -49,6 +52,9 @@ class RegularCartesianMeshFilter : public CartesianFilter {
   // function will reduce the dimsion, if there is only one bin in the direction
   StaticVector3 reduce_dimension(const size_t& loc_x, const size_t& loc_y,
                                  const size_t& loc_z) {
+    if (Nx_ == 1 && Ny_ == 1 && Nz_ == 1){
+      return {loc_x};
+    }
     StaticVector3 reduce_;
     if (Nx_ > 1) {
       reduce_.push_back(loc_x);
