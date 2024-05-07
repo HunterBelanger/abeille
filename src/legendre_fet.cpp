@@ -242,6 +242,12 @@ std::shared_ptr<LegendreFET> make_legendre_fet(const YAML::Node& node) {
     quant = LegendreFET::Quantity::Absorption;
   } else if (given_quantity == "elastic") {
     quant = LegendreFET::Quantity::Elastic;
+  } else if (given_quantity == "total") {
+    quant = LegendreFET::Quantity::Total;
+  } else if (given_quantity == "real-flux") {
+    quant = LegendreFET::Quantity::RealFlux;
+  } else if (given_quantity == "imaginary-flux") {
+    quant = LegendreFET::Quantity::ImgFlux;
   } else {
     fatal_error("For " + legendre_fet_tally_name +
                 " tally, a unknown quantity is given.");

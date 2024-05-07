@@ -56,6 +56,18 @@ double ITally::particle_base_score(const Particle& p, MaterialHelper& mat) {
     case Quantity::Elastic:
       collision_score *= p.wgt() * mat.Eelastic(p.E());
       break;
+
+    case Quantity::Total:
+      collision_score *= p.wgt() * mat.Et(p.E());
+      break;
+
+    case Quantity::RealFlux:
+      collision_score *= p.wgt();
+      break;  
+
+    case Quantity::ImgFlux:
+      collision_score *= p.wgt2();
+      break;
   }
   return collision_score;
 }
@@ -127,6 +139,15 @@ std::string ITally::quantity_str() {
       break;
     case Quantity::Elastic:
       return "elastic";
+      break;
+    case Quantity::Total:
+      return "total";
+      break;
+    case Quantity::RealFlux:
+      return "real-flux";
+      break;
+    case Quantity::ImgFlux:
+      return "imarginary-flux";
       break;
   }
 

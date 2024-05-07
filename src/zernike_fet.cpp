@@ -299,6 +299,12 @@ std::shared_ptr<ZernikeFET> make_zernike_fet(const YAML::Node& node) {
     quant = ZernikeFET::Quantity::Absorption;
   } else if (given_quantity == "elastic") {
     quant = ZernikeFET::Quantity::Elastic;
+  } else if (given_quantity == "total") {
+    quant = ZernikeFET::Quantity::Total;
+  } else if (given_quantity == "real-flux") {
+    quant = ZernikeFET::Quantity::RealFlux;
+  } else if (given_quantity == "imaginary-flux") {
+    quant = ZernikeFET::Quantity::ImgFlux;
   } else {
     fatal_error("For " + zernike_fet_tally_name +
                 " tally, a unknown quantity is given.");

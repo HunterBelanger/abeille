@@ -13,9 +13,12 @@ class ITally {
  public:
   enum class Quantity {
     Flux,
+    Total,
     Fission,
     Absorption,
     Elastic,
+    RealFlux,
+    ImgFlux
   };
 
   enum class Estimator { Collision, TrackLength };

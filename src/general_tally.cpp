@@ -230,7 +230,13 @@ std::shared_ptr<GeneralTally> make_general_tally(const YAML::Node& node) {
     quant = GeneralTally::Quantity::Absorption;
   } else if (given_quantity == "elastic") {
     quant = GeneralTally::Quantity::Elastic;
-  } else {
+  } else if (given_quantity == "total") {
+    quant = GeneralTally::Quantity::Total;
+  } else if (given_quantity == "real-flux") {
+    quant = GeneralTally::Quantity::RealFlux;
+  } else if (given_quantity == "imaginary-flux") {
+    quant = GeneralTally::Quantity::ImgFlux;
+  } else{
     fatal_error("For tally " + name + " unknown quantity \"" + given_quantity +
                 "\" is given.");
   }
