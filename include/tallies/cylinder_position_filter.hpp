@@ -19,7 +19,7 @@ class CylinderFilter : public PositionFilter {
   StaticVector3 get_indices(const Tracker& tktr);
 
   StaticVector3 get_shape() {
-    if ( Real_nx == 1 && Real_ny == 1 && Real_nz == 1){
+    if (Real_nx == 1 && Real_ny == 1 && Real_nz == 1) {
       return {1};
     }
     StaticVector3 filter_shape{Nx_, Ny_, Nz_};
@@ -92,7 +92,7 @@ class CylinderFilter : public PositionFilter {
   StaticVector3 reduce_dimension(const size_t& loc_x, const size_t& loc_y,
                                  const size_t& loc_z) {
     StaticVector3 reduce_;
-    if ( Real_nx == 1 && Real_ny == 1 && Real_nz == 1){
+    if (Real_nx == 1 && Real_ny == 1 && Real_nz == 1) {
       return {loc_x};
     }
     if (Real_nx > 1) {

@@ -66,8 +66,7 @@ ZernikeFET::ZernikeFET(std::shared_ptr<CylinderFilter> cylinder_filter,
 
 ZernikeFET::ZernikeFET(std::shared_ptr<CylinderFilter> cylinder_filter,
                        std::shared_ptr<EnergyFilter> energy_filter,
-                       std::size_t zernike_order,
-                       ZernikeFET::Quantity quantity,
+                       std::size_t zernike_order, ZernikeFET::Quantity quantity,
                        ZernikeFET::Estimator estimator, std::string name)
     : ITally(quantity, estimator, name),
       cylinder_filter_(cylinder_filter),
@@ -177,7 +176,7 @@ void ZernikeFET::score_collision(const Particle& p, const Tracker& tktr,
   }
 
   // second- score for the legendre
-   if ( check_for_legendre == true ) {
+  if (check_for_legendre == true) {
     indices[poly_index] = 1;
     const double zmin = cylinder_filter_->z_min(cylinder_index);
     const double zmax = cylinder_filter_->z_max(cylinder_index);
@@ -192,9 +191,9 @@ void ZernikeFET::score_collision(const Particle& p, const Tracker& tktr,
       // score for i-th order's basis function
       beta_n = collision_score * legendre(i, scaled_z);
       indices[FET_index] = i;
-  #ifdef ABEILLE_USE_OMP
-  #pragma omp atomic
-  #endif
+#ifdef ABEILLE_USE_OMP
+#pragma omp atomic
+#endif
       tally_gen_score_(indices) += beta_n;
     }
   }
@@ -350,28 +349,27 @@ std::shared_ptr<ZernikeFET> make_zernike_fet(const YAML::Node& node) {
   // get the order of legendre, if exists
   bool legendre_exist = true;
   std::size_t legendre_fet_order;
-  if ( !node["legendre-order"]){
+  if (!node["legendre-order"]) {
     legendre_exist = false;
-  } else if ( !node["legendre-order"].IsScalar()){
-        fatal_error("a valid legendre-order is not given for " +
+  } else if (!node["legendre-order"].IsScalar()) {
+    fatal_error("a valid legendre-order is not given for " +
                 zernike_fet_tally_name + "tally.");
   } else {
     legendre_fet_order = node["legendre-order"].as<std::size_t>();
   }
-  
 
   // make the ZernikeFET class for the given tally description
   std::shared_ptr<ZernikeFET> itally_zernike_fet_tally;
   // if we have both legendre and zernike then use the first constructor,
-  if ( legendre_exist == true ){
-    itally_zernike_fet_tally = std::make_shared<ZernikeFET>(cylinder_filter, energy_filter,
-                                   zernike_fet_order, legendre_fet_order, quant,
-                                   estimator, zernike_fet_tally_name);
-  } else if ( legendre_exist == false ){
-  // if we have the zernike only, then use the second constructor 
-    itally_zernike_fet_tally = std::make_shared<ZernikeFET>(cylinder_filter, energy_filter,
-                                   zernike_fet_order, quant,
-                                   estimator, zernike_fet_tally_name);
+  if (legendre_exist == true) {
+    itally_zernike_fet_tally = std::make_shared<ZernikeFET>(
+        cylinder_filter, energy_filter, zernike_fet_order, legendre_fet_order,
+        quant, estimator, zernike_fet_tally_name);
+  } else if (legendre_exist == false) {
+    // if we have the zernike only, then use the second constructor
+    itally_zernike_fet_tally = std::make_shared<ZernikeFET>(
+        cylinder_filter, energy_filter, zernike_fet_order, quant, estimator,
+        zernike_fet_tally_name);
   }
   return itally_zernike_fet_tally;
 }

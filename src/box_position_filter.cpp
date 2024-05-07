@@ -331,7 +331,7 @@ std::shared_ptr<BoxFilter> make_box_position_filter(const YAML::Node& node) {
     fatal_error(
         "for id: " + id_str +
         "the given entry for the \"high\" coordinates must be a sequence of "
-          "size 3.");
+        "size 3.");
   }
 
   std::vector<double> low_point = node["low"].as<std::vector<double>>();

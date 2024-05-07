@@ -10,19 +10,20 @@
 
 class ZernikeFET : public ITally {
  public:
-  // following constructor will be called when zernike and legendre both needs to evaluated 
+  // following constructor will be called when zernike and legendre both needs
+  // to evaluated
   ZernikeFET(std::shared_ptr<CylinderFilter> cylinder_filter,
              std::shared_ptr<EnergyFilter> energy_filter,
              std::size_t zernike_order, std::size_t lengendre_order,
              ZernikeFET::Quantity quantity, ZernikeFET::Estimator estimator,
              std::string name);
-  
-  // following constructor will be called when only zernike fet needs to be evaluated
+
+  // following constructor will be called when only zernike fet needs to be
+  // evaluated
   ZernikeFET(std::shared_ptr<CylinderFilter> cylinder_filter,
-            std::shared_ptr<EnergyFilter> energy_filter,
-            std::size_t zernike_order,
-            ZernikeFET::Quantity quantity, ZernikeFET::Estimator estimator,
-            std::string name);
+             std::shared_ptr<EnergyFilter> energy_filter,
+             std::size_t zernike_order, ZernikeFET::Quantity quantity,
+             ZernikeFET::Estimator estimator, std::string name);
 
   void score_collision(const Particle& p, const Tracker& tktr,
                        MaterialHelper& mat) override final;
