@@ -46,7 +46,7 @@ class CylinderFilter : public PositionFilter {
   Orientation length_axis_;
   double radius_, pitch_x_, pitch_y_, dz_, inv_radius_, inv_pitch_x_,
       inv_pitch_y_, inv_dz_;
-
+  bool infinite_length = false; // to incorporate the infinte cylinder
   // To map the indexes to either converting into class co-ordinate or into
   // original
   void map_indexes(StaticVector3& indexes) const {
@@ -84,6 +84,13 @@ class CylinderFilter : public PositionFilter {
     if (Real_nx == 1 && Real_ny == 1 && Real_nz == 1) {
       return {loc_x};
     }
+
+    if ( infinite_length == true ){
+      if ( Nx_ == 1 && Ny_ == 1 ){
+        return {loc_x};
+      }
+    }
+
     if (Real_nx > 1) {
       reduce_.push_back(loc_x);
     }

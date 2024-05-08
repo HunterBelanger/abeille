@@ -26,13 +26,13 @@ tally-filters:
       type: cylinder-filter
       origin: [0., 0., -100.]
       radius: 5.514296811
-      pitch: [12, 0, 200.]
+      pitch: [12, 12., 200.]
       pitch-x: 12.
       pitch-y: 0.
       pitch-z: 1.
       length: 200.
       axis: z
-      shape: [1, 1, 1]
+      shape: [1, 1, 0]
 
   energy-filters:
     - id: 1

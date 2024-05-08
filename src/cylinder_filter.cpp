@@ -54,54 +54,51 @@ CylinderFilter::CylinderFilter(Position origin, double radius, double dx,
   }
 
   // Make sure pitches are all >= 0.
-  if (dx < 0.) {
+  if (dx <= 0.) {
     std::stringstream mssg;
-    mssg << "Cylinder filter with id " << id << " provided with a dx < 0.";
+    mssg << "Cylinder filter with id " << id << " provided with a dx <= 0.";
     fatal_error(mssg.str());
   }
 
-  if (dy < 0.) {
+  if (dy <= 0.) {
     std::stringstream mssg;
-    mssg << "Cylinder filter with id " << id << " provided with a dy < 0.";
+    mssg << "Cylinder filter with id " << id << " provided with a dy <= 0.";
     fatal_error(mssg.str());
   }
 
-  if (dz < 0.) {
+  if (dz <= 0.) {
     std::stringstream mssg;
-    mssg << "Cylinder filter with id " << id << " provided with a dz < 0.";
+    mssg << "Cylinder filter with id " << id << " provided with a dz <= 0.";
     fatal_error(mssg.str());
   }
 
   // Make sure shapes are all > 0
-  if (nx == 0) {
+  if ( nx == 0 && length_axis_ == Orientation::X){
+    infinite_length = true;
+  } else if (nx == 0) {
     std::stringstream mssg;
     mssg << "Cylinder filter with id " << id << " provided with nx = 0.";
     fatal_error(mssg.str());
   }
 
-  if (ny == 0) {
+  if ( ny == 0 && length_axis_ == Orientation::Y){
+    infinite_length = true;
+  } else if (ny == 0) {
     std::stringstream mssg;
     mssg << "Cylinder filter with id " << id << " provided with ny = 0.";
     fatal_error(mssg.str());
   }
 
-  if (nz == 0) {
+  if ( nz == 0 && length_axis_ == Orientation::Z){
+    infinite_length = true;
+  } else if (nz == 0) {
     std::stringstream mssg;
     mssg << "Cylinder filter with id " << id << " provided with nz = 0.";
     fatal_error(mssg.str());
   }
 
   // Make sure the pitch_x and pitch_y are >= diameter
-  // but if pitch_x and pitch_y are zeros, then make sure nx and ny are equal
-  // to 1.
-  if (pitch_x_ == 0. || pitch_y_ == 0.) {
-    if (nx != 1 || ny != 1) {
-      std::stringstream mssg;
-      mssg << "Cylinder filter with id " << id
-           << " has pitches zero, but the number of bins are not 1.";
-      fatal_error(mssg.str());
-    }
-  } else if (pitch_x_ < 2. * radius_ || pitch_y_ < 2. * radius_) {
+  if (pitch_x_ < 2. * radius_ || pitch_y_ < 2. * radius_) {
     std::stringstream mssg;
     mssg << "Cylinder filter with id " << id
          << " has dimensions which are shorter than the diameter.";
@@ -111,12 +108,12 @@ CylinderFilter::CylinderFilter(Position origin, double radius, double dx,
   // Calculate inverse values
   inv_pitch_x_ = 1.0 / pitch_x_;
   inv_pitch_y_ = 1.0 / pitch_y_;
-  if (dz_ <= 0.) {
-    std::stringstream mssg;
-    mssg << "Cylinder filter with id " << id << " provided with length <= 0.";
-    fatal_error(mssg.str());
+  if ( Nz_ == 0){
+    inv_dz_ = 0.; // for infinite cylinder
+    infinite_length = true;
+  } else {
+    inv_dz_ = 1.0 / dz_;
   }
-  inv_dz_ = 1.0 / dz_;
 
   // calculate low point for the purpose of getting the indices
   // r_low_ is mapped, means z-cooridnate will always be axial direction
@@ -127,15 +124,10 @@ CylinderFilter::CylinderFilter(Position origin, double radius, double dx,
 
 StaticVector3 CylinderFilter::get_indices(const Tracker& tktr) const {
   const Position r = map_coordinate(tktr.r());
-  int nx = 0, ny = 0;
 
-  if (pitch_x_ != 0.)
-    nx = static_cast<int>(std::floor((r.x() - r_low_.x()) * inv_pitch_x_));
-
-  if (pitch_y_ != 0.)
-    ny = static_cast<int>(std::floor((r.y() - r_low_.y()) * inv_pitch_y_));
-
-  int nz = static_cast<int>(std::floor((r.z() - r_low_.z()) * inv_dz_));
+  const int nx = static_cast<int>(std::floor((r.x() - r_low_.x()) * inv_pitch_x_));
+  const int ny = static_cast<int>(std::floor((r.y() - r_low_.y()) * inv_pitch_y_));
+  const int nz = static_cast<int>(std::floor((r.z() - r_low_.z()) * inv_dz_));
 
   double new_origin_x = origin_.x() + pitch_x_ * static_cast<double>(nx);
   double new_origin_y = origin_.y() + pitch_y_ * static_cast<double>(ny);
@@ -144,7 +136,8 @@ StaticVector3 CylinderFilter::get_indices(const Tracker& tktr) const {
   // check if nx, ny, and nz are positive
   // and less the number of bins in that direction
   if (nx >= 0 && nx < static_cast<int>(Nx_) && ny >= 0 &&
-      ny < static_cast<int>(Ny_) && nz >= 0 && nz < static_cast<int>(Nz_)) {
+      ny < static_cast<int>(Ny_) &&
+      ((nz >= 0 && nz < static_cast<int>(Nz_)) || infinite_length) ) {
     // check if the position is inside the circular radius or not
     if (sqrt((new_origin_x - r.x()) * (new_origin_x - r.x()) +
              (new_origin_y - r.y()) * (new_origin_y - r.y())) <=
@@ -319,20 +312,13 @@ std::shared_ptr<CylinderFilter> make_cylinder_filter(const YAML::Node& node) {
     length = pitches[1];
   }
 
-  if (pitch_x < 0. || pitch_y < 0. || length <= 0.) {
+  if (pitch_x <= 0. || pitch_y <= 0. || length <= 0.) {
     std::stringstream mssg;
-    mssg << "Cylinder filter with id " << id << " has pitches which are < 0.";
+    mssg << "Cylinder filter with id " << id << " has pitches which are <= 0.";
     fatal_error(mssg.str());
   }
 
-  if (pitch_x == 0. || pitch_y == 0.) {
-    if (nx != 1 || ny != 1) {
-      std::stringstream mssg;
-      mssg << "Cylinder filter with id " << id
-           << " has zero pitches, but number of bins are not 1.";
-      fatal_error(mssg.str());
-    }
-  } else if (pitch_x < 2. * radius || pitch_y < 2. * radius) {
+  if (pitch_x < 2. * radius || pitch_y < 2. * radius) {
     std::stringstream mssg;
     mssg << "Cylinder filter with id " << id
          << " has pitches which are too small for the given radius.";
