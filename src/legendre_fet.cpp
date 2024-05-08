@@ -197,7 +197,7 @@ void LegendreFET::write_tally() {
 
 std::shared_ptr<LegendreFET> make_legendre_fet(const YAML::Node& node) {
   // Check the name of the tally is given or not.
-  if (!node["name"] && !node["name"].IsScalar()) {
+  if (!node["name"] && node["name"].IsScalar() == false) {
     fatal_error("No valid name is provided on tally.");
   }
   std::string name = node["name"].as<std::string>();
@@ -226,7 +226,7 @@ std::shared_ptr<LegendreFET> make_legendre_fet(const YAML::Node& node) {
 
   // Check for the quantity
   std::string given_quantity = "";
-  if (!node["quantity"] || !node["quantity"].IsScalar()) {
+  if (!node["quantity"] || node["quantity"].IsScalar() == false) {
     fatal_error("The tally " + name +
                 " has an invalid/nonexistent quantity entry.");
   }
@@ -253,7 +253,7 @@ std::shared_ptr<LegendreFET> make_legendre_fet(const YAML::Node& node) {
 
   // Get the cartesian type position filter
   std::shared_ptr<CartesianFilter> cartesian_filter = nullptr;
-  if (!node["position-filter"] || !node["position-filter"].IsScalar()) {
+  if (!node["position-filter"] || node["position-filter"].IsScalar() == false) {
     std::stringstream mssg;
     mssg << "Legendre-FET tally " << name
          << " has invalid/nonexistent position-filter entry.";
@@ -278,7 +278,7 @@ std::shared_ptr<LegendreFET> make_legendre_fet(const YAML::Node& node) {
   std::size_t order = node["order"].as<std::size_t>();
 
   // Get the legendre-fet axes
-  if (!node["axes"] || !node["axes"].IsSequence()) {
+  if (!node["axes"] || node["axes"].IsSequence() == false) {
     std::stringstream mssg;
     mssg << "Tally " << name << " does not have a valid axes list entry.";
     fatal_error(mssg.str());

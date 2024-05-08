@@ -1,7 +1,7 @@
 #ifndef ZERNIKE_FET_H
 #define ZERNIKE_FET_H
 
-#include <tallies/cylinder_position_filter.hpp>
+#include <tallies/cylinder_filter.hpp>
 #include <tallies/energy_filter.hpp>
 #include <tallies/itally.hpp>
 #include <tallies/zernike_polynomial.hpp>

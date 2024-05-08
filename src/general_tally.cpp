@@ -192,7 +192,7 @@ void GeneralTally::write_tally() {
 
 std::shared_ptr<GeneralTally> make_general_tally(const YAML::Node& node) {
   // Check the name of the tally is given or not.
-  if (!node["name"] || !node["name"].IsScalar()) {
+  if (!node["name"] || node["name"].IsScalar() == false) {
     fatal_error("No valid name is provided on tally.");
   }
   std::string name = node["name"].as<std::string>();
@@ -216,7 +216,7 @@ std::shared_ptr<GeneralTally> make_general_tally(const YAML::Node& node) {
 
   // Check for the quantity
   std::string given_quantity = "";
-  if (!node["quantity"] || !node["quantity"].IsScalar()) {
+  if (!node["quantity"] || node["quantity"].IsScalar() == false) {
     fatal_error("No valid quantity entry is given for tally " + name + ".");
   }
   given_quantity = node["quantity"].as<std::string>();

@@ -65,7 +65,8 @@ RegularCartesianMeshFilter::RegularCartesianMeshFilter(Position r_low,
   }
 }
 
-StaticVector3 RegularCartesianMeshFilter::get_indices(const Tracker& tktr) {
+StaticVector3 RegularCartesianMeshFilter::get_indices(
+    const Tracker& tktr) const {
   StaticVector3 indices;
   const Position r = tktr.r();
   int index_x = static_cast<int>(std::floor((r.x() - r_low_.x()) * dx_inv_));
@@ -123,7 +124,7 @@ double RegularCartesianMeshFilter::z_max(const StaticVector3& index) const {
 
 std::vector<TracklengthDistance>
 RegularCartesianMeshFilter::get_indices_tracklength(const Tracker& trkr,
-                                                    double d_flight) {
+                                                    double d_flight) const {
   std::vector<TracklengthDistance> indices_tracklength;
   TracklengthDistance trlen_d;
 
@@ -287,10 +288,9 @@ bool RegularCartesianMeshFilter::find_entry_point(Position& r,
   return true;
 }
 
-void RegularCartesianMeshFilter::initialize_indices(const Position& r,
-                                                    const Direction& u, int& i,
-                                                    int& j, int& k,
-                                                    std::array<int, 3>& on) {
+void RegularCartesianMeshFilter::initialize_indices(
+    const Position& r, const Direction& u, int& i, int& j, int& k,
+    std::array<int, 3>& on) const {
   i = static_cast<int>(std::floor((r.x() - r_low_.x()) * dx_inv_));
   j = static_cast<int>(std::floor((r.y() - r_low_.y()) * dy_inv_));
   k = static_cast<int>(std::floor((r.z() - r_low_.z()) * dz_inv_));
@@ -360,7 +360,7 @@ void RegularCartesianMeshFilter::initialize_indices(const Position& r,
 }
 
 void RegularCartesianMeshFilter::update_indices(int key, int& i, int& j, int& k,
-                                                std::array<int, 3>& on) {
+                                                std::array<int, 3>& on) const {
   // Must initially fill with zero, so that we don't stay on top
   // of other surfaces the entire time
   on.fill(0);
@@ -403,7 +403,7 @@ void RegularCartesianMeshFilter::update_indices(int key, int& i, int& j, int& k,
 
 std::pair<double, int> RegularCartesianMeshFilter::distance_to_next_index(
     const Position& r, const Direction& u, const std::array<int, 3>& on, int i,
-    int j, int k) {
+    int j, int k) const {
   // Get position at center of current tile
   double xc = r_low_.x() + i * dx_ + 0.5 * dx_;
   double yc = r_low_.y() + j * dy_ + 0.5 * dy_;

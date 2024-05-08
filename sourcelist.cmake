@@ -78,7 +78,7 @@ set(ABEILLE_SOURCE_FILES ${ABEILLE_SOURCE_FILES}
   src/legendre_fet.cpp
   src/position_filter.cpp
   src/energy_filter.cpp
-  src/cylinder_position_filter.cpp
+  src/cylinder_filter.cpp
   src/zernike_polynomial.cpp
   src/zernike_fet.cpp
 )

@@ -22,12 +22,12 @@ class PositionFilter {
 
   virtual ~PositionFilter() = default;
 
-  virtual StaticVector3 get_indices(const Tracker& tktr) = 0;
+  virtual StaticVector3 get_indices(const Tracker& tktr) const = 0;
 
   virtual std::vector<TracklengthDistance> get_indices_tracklength(
-      const Tracker& trkr, double d_flight) = 0;
+      const Tracker& trkr, double d_flight) const = 0;
 
-  virtual StaticVector3 get_shape() = 0;
+  virtual StaticVector3 get_shape() const = 0;
 
   virtual std::string type_str() const = 0;
 

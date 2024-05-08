@@ -1,4 +1,4 @@
-#include <tallies/cylinder_position_filter.hpp>
+#include <tallies/cylinder_filter.hpp>
 #include <utils/error.hpp>
 
 #include <cmath>
@@ -121,7 +121,7 @@ CylinderFilter::CylinderFilter(Position origin, double radius, double dx,
   r_low_ = Position(low_x, low_y, origin_.z());
 }
 
-StaticVector3 CylinderFilter::get_indices(const Tracker& tktr) {
+StaticVector3 CylinderFilter::get_indices(const Tracker& tktr) const {
   const Position r = map_coordinate(tktr.r());
   int nx = 0, ny = 0;
 
@@ -153,6 +153,23 @@ StaticVector3 CylinderFilter::get_indices(const Tracker& tktr) {
     }
   }
   return indices;
+}
+
+StaticVector3 CylinderFilter::get_shape() const {
+  if (Real_nx == 1 && Real_ny == 1 && Real_nz == 1) {
+    return {1};
+  }
+  StaticVector3 filter_shape{Nx_, Ny_, Nz_};
+
+  map_indexes(filter_shape);
+  return reduce_dimension(filter_shape[0], filter_shape[1], filter_shape[2]);
+}
+
+std::vector<TracklengthDistance> CylinderFilter::get_indices_tracklength(
+    const Tracker& /*trkr*/, double /*d_flight*/) const {
+  fatal_error("Not yet implemented.");
+
+  return {};
 }
 
 double CylinderFilter::z_min(const StaticVector3& indices) const {
@@ -202,8 +219,7 @@ std::pair<double, double> CylinderFilter::get_scaled_radius_and_angle(
   return {scaled_r, theta};
 }
 
-std::shared_ptr<CylinderFilter> make_cylinder_position_filter(
-    const YAML::Node& node) {
+std::shared_ptr<CylinderFilter> make_cylinder_filter(const YAML::Node& node) {
   // get the id
   if (!node["id"] || !node["id"].IsScalar()) {
     fatal_error("Invalid id is given for the position-filter.");

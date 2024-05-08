@@ -16,17 +16,9 @@ class CylinderFilter : public PositionFilter {
                  double dz, std::size_t nx, std::size_t ny, std::size_t nz,
                  Orientation z_, std::size_t id);
 
-  StaticVector3 get_indices(const Tracker& tktr);
+  StaticVector3 get_indices(const Tracker& tktr) const override final;
 
-  StaticVector3 get_shape() {
-    if (Real_nx == 1 && Real_ny == 1 && Real_nz == 1) {
-      return {1};
-    }
-    StaticVector3 filter_shape{Nx_, Ny_, Nz_};
-
-    map_indexes(filter_shape);
-    return reduce_dimension(filter_shape[0], filter_shape[1], filter_shape[2]);
-  }
+  StaticVector3 get_shape() const override final;
 
   double radius() const { return radius_; }
   double inv_radius() const { return inv_radius_; }
@@ -40,13 +32,10 @@ class CylinderFilter : public PositionFilter {
   std::pair<double, double> get_scaled_radius_and_angle(
       const StaticVector3& indices, const Position& r) const;
 
-  std::string type_str() const override { return "cylinderpostionfilter"; }
+  std::string type_str() const override { return "cylinder-filter"; }
 
   std::vector<TracklengthDistance> get_indices_tracklength(
-      const Tracker& /*trkr*/, double /*d_flight*/) {
-    std::vector<TracklengthDistance> index_;
-    return index_;
-  }
+      const Tracker& trkr, double d_flight) const;
 
   Orientation get_axial_direction() { return length_axis_; }
 
@@ -90,7 +79,7 @@ class CylinderFilter : public PositionFilter {
 
   // function will reduce the dimsion, if there is only one bin in the direction
   StaticVector3 reduce_dimension(const size_t& loc_x, const size_t& loc_y,
-                                 const size_t& loc_z) {
+                                 const size_t& loc_z) const {
     StaticVector3 reduce_;
     if (Real_nx == 1 && Real_ny == 1 && Real_nz == 1) {
       return {loc_x};
@@ -110,7 +99,6 @@ class CylinderFilter : public PositionFilter {
   }
 };
 
-std::shared_ptr<CylinderFilter> make_cylinder_position_filter(
-    const YAML::Node& node);
+std::shared_ptr<CylinderFilter> make_cylinder_filter(const YAML::Node& node);
 
 #endif

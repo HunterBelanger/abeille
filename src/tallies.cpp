@@ -398,8 +398,7 @@ void make_tally_filters(Tallies& tallies, const YAML::Node& node) {
           position_filters[i]["type"].as<std::string>();
 
       if (position_filter_type == "cylinder-filter") {
-        auto cylinder_filter =
-            make_cylinder_position_filter(position_filters[i]);
+        auto cylinder_filter = make_cylinder_filter(position_filters[i]);
         tallies.add_cylinder_filter(id, cylinder_filter);
         tallies.add_position_filter(id, cylinder_filter);
       } else {

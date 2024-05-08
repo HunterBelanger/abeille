@@ -30,7 +30,7 @@
 #include <simulation/tracker.hpp>
 #include <tallies/cartesian_filter.hpp>
 #include <tallies/collision_mesh_tally.hpp>
-#include <tallies/cylinder_position_filter.hpp>
+#include <tallies/cylinder_filter.hpp>
 #include <tallies/energy_filter.hpp>
 #include <tallies/itally.hpp>
 #include <tallies/position_filter.hpp>

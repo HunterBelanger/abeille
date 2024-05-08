@@ -252,7 +252,7 @@ void ZernikeFET::write_tally() {
 // make the tally-zernike
 std::shared_ptr<ZernikeFET> make_zernike_fet(const YAML::Node& node) {
   // Check the name of the tally is given or not.
-  if (!node["name"] || !node["name"].IsScalar()) {
+  if (!node["name"] || node["name"].IsScalar() == false) {
     fatal_error("No valid name is provided on tally.");
   }
   std::string name = node["name"].as<std::string>();
@@ -281,7 +281,7 @@ std::shared_ptr<ZernikeFET> make_zernike_fet(const YAML::Node& node) {
 
   // Check for the quantity
   std::string given_quantity = "";
-  if (!node["quantity"] || !node["quantity"].IsScalar()) {
+  if (!node["quantity"] || node["quantity"].IsScalar() == false) {
     fatal_error("No quantity is given for tally " + name + ".");
   }
   given_quantity = node["quantity"].as<std::string>();
@@ -307,7 +307,7 @@ std::shared_ptr<ZernikeFET> make_zernike_fet(const YAML::Node& node) {
 
   // Get the cylinder type position filter
   std::shared_ptr<CylinderFilter> cylinder_filter = nullptr;
-  if (!node["position-filter"] || !node["position-filter"].IsScalar()) {
+  if (!node["position-filter"] || node["position-filter"].IsScalar() == false) {
     std::stringstream mssg;
     mssg << "Zernike-FET tally " << name
          << " has invalid/nonexistent position-filter entry.";
@@ -323,7 +323,7 @@ std::shared_ptr<ZernikeFET> make_zernike_fet(const YAML::Node& node) {
   }
 
   // Get the Zernike order
-  if (!node["zernike-order"] || !node["zernike-order"].IsScalar()) {
+  if (!node["zernike-order"] || node["zernike-order"].IsScalar() == false) {
     fatal_error("a valid zernike-order is not given for " + name + "tally.");
   }
   std::size_t zernike_fet_order = node["zernike-order"].as<std::size_t>();

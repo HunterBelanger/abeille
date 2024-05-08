@@ -1,24 +1,23 @@
-#include <tallies/cylinder_position_filter.hpp>
+#include <tallies/cylinder_filter.hpp>
 #include <tallies/position_filter.hpp>
 #include <tallies/regular_cartesian_mesh_filter.hpp>
 #include <utils/error.hpp>
 
 // make_position_filter will be usded for general tally system
 std::shared_ptr<PositionFilter> make_position_filter(const YAML::Node& node) {
-  if (!node["type"] && !node["type"].IsScalar()) {
-    fatal_error("position-filter is not given.");
+  if (!node["type"] || node["type"].IsScalar() == false) {
+    fatal_error("No type entry on position-filter.");
   }
+  const std::string type = node["type"].as<std::string>();
 
-  const std::string position_filter_type = node["type"].as<std::string>();
-
-  std::shared_ptr<PositionFilter> position_filter_ = nullptr;
-  if (position_filter_type == "regular-cartesian-mesh") {
-    position_filter_ = make_regular_cartesian_mesh_filter(node);
-  } else if (position_filter_type == "cylinder-filter") {
-    position_filter_ = make_cylinder_position_filter(node);
+  std::shared_ptr<PositionFilter> position_filter = nullptr;
+  if (type == "regular-cartesian-mesh") {
+    position_filter = make_regular_cartesian_mesh_filter(node);
+  } else if (type == "cylinder-filter") {
+    position_filter = make_cylinder_filter(node);
   } else {
-    fatal_error(position_filter_type + " is not a valid position-filter.");
+    fatal_error("Unkown position-filter type " + type + ".");
   }
 
-  return position_filter_;
+  return position_filter;
 }

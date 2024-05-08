@@ -11,10 +11,10 @@ class RegularCartesianMeshFilter : public CartesianFilter {
   RegularCartesianMeshFilter(Position r_low, Position r_high, size_t nx,
                              size_t ny, size_t nz, std::size_t id);
 
-  StaticVector3 get_indices(const Tracker& tktr) override final;
+  StaticVector3 get_indices(const Tracker& tktr) const override final;
 
   std::vector<TracklengthDistance> get_indices_tracklength(
-      const Tracker& trkr, double d_flight) override final;
+      const Tracker& trkr, double d_flight) const override final;
 
   double x_min(const StaticVector3& index) const override;
   double x_max(const StaticVector3& index) const override;
@@ -23,8 +23,8 @@ class RegularCartesianMeshFilter : public CartesianFilter {
   double z_min(const StaticVector3& index) const override;
   double z_max(const StaticVector3& index) const override;
 
-  StaticVector3 get_shape() override final {
-    if (Nx_ == 1 && Ny_ == 1 && Nz_ == 1){
+  StaticVector3 get_shape() const override final {
+    if (Nx_ == 1 && Ny_ == 1 && Nz_ == 1) {
       return {1};
     }
     return reduce_dimension(Nx_, Ny_, Nz_);
@@ -37,13 +37,14 @@ class RegularCartesianMeshFilter : public CartesianFilter {
   bool find_entry_point(Position& r, const Direction& u,
                         double& d_flight) const;
   void initialize_indices(const Position& r, const Direction& u, int& i, int& j,
-                          int& k, std::array<int, 3>& on);
-  void update_indices(int key, int& i, int& j, int& k, std::array<int, 3>& on);
+                          int& k, std::array<int, 3>& on) const;
+  void update_indices(int key, int& i, int& j, int& k,
+                      std::array<int, 3>& on) const;
 
   std::pair<double, int> distance_to_next_index(const Position& r,
                                                 const Direction& u,
                                                 const std::array<int, 3>& on,
-                                                int i, int j, int k);
+                                                int i, int j, int k) const;
 
  private:
   double dx_, dy_, dz_, dx_inv_, dy_inv_, dz_inv_;
@@ -51,8 +52,8 @@ class RegularCartesianMeshFilter : public CartesianFilter {
 
   // function will reduce the dimsion, if there is only one bin in the direction
   StaticVector3 reduce_dimension(const size_t& loc_x, const size_t& loc_y,
-                                 const size_t& loc_z) {
-    if (Nx_ == 1 && Ny_ == 1 && Nz_ == 1){
+                                 const size_t& loc_z) const {
+    if (Nx_ == 1 && Ny_ == 1 && Nz_ == 1) {
       return {loc_x};
     }
     StaticVector3 reduce_;
