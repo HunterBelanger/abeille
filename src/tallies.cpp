@@ -22,7 +22,10 @@
  * along with Abeille. If not, see <https://www.gnu.org/licenses/>.
  *
  * */
+#include <tallies/general_tally.hpp>
+#include <tallies/legendre_fet.hpp>
 #include <tallies/tallies.hpp>
+#include <tallies/zernike_fet.hpp>
 #include <utils/error.hpp>
 #include <utils/mpi.hpp>
 #include <utils/output.hpp>
@@ -458,4 +461,36 @@ void add_mesh_tally(Tallies& tallies, const YAML::Node& node) {
   } else {
     make_itally(tallies, node);
   }
+}
+
+void make_itally(Tallies& tallies, const YAML::Node& node) {
+  if (!node["name"] || node["name"].IsScalar() == false) {
+    fatal_error("Tally name is not given.");
+  }
+  std::string tally_name = node["name"].as<std::string>();
+  if (ITally::reserved_tally_names.contains(tally_name)) {
+    fatal_error("The tally name " + tally_name + " is reserved.");
+  }
+
+  std::string tally_type = "general";
+  if (node["tally-type"] && node["tally-type"].IsScalar()) {
+    tally_type = node["tally-type"].as<std::string>();
+  } else if (node["tally-type"]) {
+    fatal_error("Tally " + tally_name + " had invalid type entry.");
+  }
+
+  std::shared_ptr<ITally> t = nullptr;
+  if (tally_type == "general") {
+    t = make_general_tally(node);
+  } else if (tally_type == "legendre-fet") {
+    t = make_legendre_fet(node);
+  } else if (tally_type == "zernike-fet") {
+    t = make_zernike_fet(node);
+  } else {
+    fatal_error("Unknown tally type " + tally_type + " found in tally " +
+                tally_name + ".");
+  }
+
+  // Add the new_ITally of type ITally into the "tallies"
+  tallies.add_ITally(t);
 }

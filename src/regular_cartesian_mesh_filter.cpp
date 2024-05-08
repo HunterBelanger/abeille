@@ -475,7 +475,6 @@ std::shared_ptr<RegularCartesianMeshFilter> make_regular_cartesian_mesh_filter(
     fatal_error("Invalid id is given for the position-filter.");
   }
   std::size_t id = node["id"].as<std::size_t>();
-  std::string id_str = std::to_string(id);
 
   if (!node["low"]) {
     std::stringstream mssg;
@@ -518,13 +517,6 @@ std::shared_ptr<RegularCartesianMeshFilter> make_regular_cartesian_mesh_filter(
   std::vector<double> low_point = node["low"].as<std::vector<double>>();
   std::vector<double> high_point = node["high"].as<std::vector<double>>();
   std::vector<std::size_t> shape = node["shape"].as<std::vector<std::size_t>>();
-
-  /*if (shape[0] == 1 && shape[1] == 1 && shape[2] == 1) {
-    std::stringstream mssg;
-    mssg << "For position-filter with id " << id
-         << ", the shape [1,1,1] indicates a box filter should be used.";
-    fatal_error(mssg.str());
-  }*/
 
   Position r_low(low_point[0], low_point[1], low_point[2]);
   Position r_high(high_point[0], high_point[1], high_point[2]);

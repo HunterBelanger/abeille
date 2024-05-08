@@ -16,12 +16,12 @@ class EnergyFilter {
 
   std::optional<std::size_t> get_index(const double& E) const;
 
-  std::size_t size() { return energy_bounds_.size() - 1; }
+  std::size_t size() const { return energy_bounds_.size() - 1; }
   const std::vector<double>& energy_bounds() const { return energy_bounds_; }
 
-  std::string type_str() { return "energyfilter"; }
+  std::string type_str() const { return "energy-filter"; }
 
-  std::size_t get_id() { return id_; }
+  std::size_t id() const { return id_; }
 
  private:
   std::vector<double> energy_bounds_;

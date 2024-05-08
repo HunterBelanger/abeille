@@ -1,22 +1,30 @@
 #include <tallies/energy_filter.hpp>
 #include <utils/error.hpp>
 
+#include <sstream>
+
 EnergyFilter::EnergyFilter(const std::vector<double> energy_bounds,
                            std::size_t id)
     : energy_bounds_(energy_bounds), id_(id) {
   // Check the size of energy_bounds should be multiple of 2
   // since any bounds has 2 end-point-boundary-elements to define the range.
-  if (energy_bounds.size() < 2) {
-    fatal_error("Size of energy bounds is less than 2 in EnergyFilter.");
+  if (energy_bounds_.size() < 2) {
+    std::stringstream mssg;
+    mssg << "Energy filter with id " << id_
+         << " has less than 2 energy bounds.";
+    fatal_error(mssg.str());
   }
 
   if (std::is_sorted(energy_bounds_.begin(), energy_bounds_.end()) == false) {
-    fatal_error("Energy bounds must be sorted on EnergyFilter.");
+    std::stringstream mssg;
+    mssg << "Energy filter with id " << id_ << " has unsorted energy bounds.";
+    fatal_error(mssg.str());
   }
 
   if (energy_bounds_[0] < 0.0) {
-    fatal_error(
-        "First element of energy bounds is less than zero in EnergyFilter.");
+    std::stringstream mssg;
+    mssg << "Energy filter with id " << id_ << " has negative energy bounds.";
+    fatal_error(mssg.str());
   }
 }
 
@@ -31,18 +39,39 @@ std::optional<std::size_t> EnergyFilter::get_index(const double& E) const {
 }
 
 std::shared_ptr<EnergyFilter> make_energy_filter(const YAML::Node& node) {
-  if (!node["energy-bounds"].IsSequence() ||
-      (node["energy-bounds"].size() < 2)) {
-    fatal_error("Invalid enery-bounds are given on energy-filter.");
-  }
-
   if (!node["id"] || !node["id"].IsScalar()) {
     fatal_error("invalid id is given for energy-fitler.");
   }
   std::size_t id = node["id"].as<std::size_t>();
 
-  std::vector<double> energy_bounds_ =
+  if (!node["energy-bounds"].IsSequence() ||
+      (node["energy-bounds"].size() < 2)) {
+    std::stringstream mssg;
+    mssg << "Invalid enery-bounds are given on energy-filter with id " << id
+         << ".";
+    fatal_error(mssg.str());
+  }
+
+  std::vector<double> energy_bounds =
       node["energy-bounds"].as<std::vector<double>>();
 
-  return std::make_shared<EnergyFilter>(energy_bounds_, id);
+  if (energy_bounds.size() < 2) {
+    std::stringstream mssg;
+    mssg << "Energy filter with id " << id << " has less than 2 energy bounds.";
+    fatal_error(mssg.str());
+  }
+
+  if (std::is_sorted(energy_bounds.begin(), energy_bounds.end()) == false) {
+    std::stringstream mssg;
+    mssg << "Energy filter with id " << id << " has unsorted energy bounds.";
+    fatal_error(mssg.str());
+  }
+
+  if (energy_bounds[0] < 0.0) {
+    std::stringstream mssg;
+    mssg << "Energy filter with id " << id << " has negative energy bounds.";
+    fatal_error(mssg.str());
+  }
+
+  return std::make_shared<EnergyFilter>(energy_bounds, id);
 }

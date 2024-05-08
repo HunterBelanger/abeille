@@ -31,7 +31,7 @@ class PositionFilter {
 
   virtual std::string type_str() const = 0;
 
-  std::size_t get_id() { return id_; }
+  std::size_t id() const { return id_; }
 
  private:
   std::size_t id_;

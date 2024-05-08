@@ -2,6 +2,7 @@
 #include <utils/error.hpp>
 
 #include <cmath>
+#include <sstream>
 #include <vector>
 
 CylinderFilter::CylinderFilter(Position origin, double radius, double dx,
@@ -22,7 +23,7 @@ CylinderFilter::CylinderFilter(Position origin, double radius, double dx,
       pitch_x_(dx),
       pitch_y_(dy),
       dz_(dz),
-      inv_radius_(),
+      inv_radius_(1. / radius_),
       inv_pitch_x_(),
       inv_pitch_y_(),
       inv_dz_() {
@@ -32,87 +33,76 @@ CylinderFilter::CylinderFilter(Position origin, double radius, double dx,
   // however, while return out from this class, parameters
   // will be mapped back to its original orientation
   origin_ = map_coordinate(origin);
-  std::string str_axial = "z";
-  std::string str_pitch_x = "x";
-  std::string str_pitch_y = "y";
   if (length_axis_ == Orientation::X) {
     pitch_x_ = dz;
     dz_ = dx;
     Nx_ = nz;
     Nz_ = nx;
-    str_axial = "x";
-    str_pitch_x = "z";
   } else if (length_axis_ == Orientation::Y) {
     pitch_y_ = dz;
     dz_ = dy;
     Nz_ = ny;
     Ny_ = nz;
-    str_axial = "y";
-    str_pitch_y = "z";
   }
-  std::string id_str = std::to_string(id);
+
   // Check for the valid radius
-  if (radius_ <= 0.)
-    fatal_error("A non-zero value of radius must be provided for the id: " +
-                id_str);
-  inv_radius_ = 1.0 / radius_;
-
-  // Check for a non-zero pitch_x_ and pitch_y_ should be more than cylinder
-  // diameter
-  if ((pitch_x_ == 0.) && (Nx_ != 1)) {
-    std::stringstream messg;
-    messg << "for id: " << id << ", " << str_pitch_x
-          << "-direction pitch is zero, therefore, only one cylinder will be "
-             "considered in "
-          << str_pitch_x << "-direction";
-    warning(messg.str());
-
-    Nx_ = static_cast<size_t>(1);
-    inv_pitch_x_ = 0.;
-  } else if (pitch_x_ != 0. && Nx_ == 1) {
-    std::stringstream messg;
-    messg << "for id: " << id << ", " << str_pitch_x
-          << "-direction pitch is a non-zero value, but the bin size is one, "
-             "so, one cylinder will be considered in "
-          << str_pitch_x << "-direction";
-    warning(messg.str());
-  } else {
-    if (pitch_x_ != 0. && pitch_x_ < (2. * radius_))
-      fatal_error("for id: " + id_str + ", " + str_pitch_x +
-                  "-pitch is less than the radius");
-    inv_pitch_x_ = 1.0 / pitch_x_;
+  if (radius_ <= 0.) {
+    std::stringstream mssg;
+    mssg << "Cylinder filter with id " << id
+         << " was provided with a negative or zero radius.";
+    fatal_error(mssg.str());
   }
 
-  if ((pitch_y_ == 0.) && (Ny_ != 1)) {
-    std::stringstream messg;
-    messg << "for id: " << id << ", " << str_pitch_y
-          << "-direction pitch is zero, therefore, only one cylinder will be "
-             "considered in "
-          << str_pitch_y << "-direction";
-    warning(messg.str());
-
-    Ny_ = static_cast<size_t>(1);
-    inv_pitch_y_ = 0.;
-  } else if (pitch_y_ != 0. && Ny_ == 1) {
-    std::stringstream messg;
-    messg << "for id: " << id << ", " << str_pitch_y
-          << "-direction pitch is a non-zero value, but the bin size is one, "
-             "so, one cylinder will be considered in "
-          << str_pitch_y << "-direction";
-    warning(messg.str());
-  } else {
-    if (pitch_y_ != 0. && pitch_y_ < (2. * radius_))
-      fatal_error("for id: " + id_str + ", " + str_pitch_y +
-                  "pitch is less than the radius ");
-    inv_pitch_y_ = 1.0 / pitch_y_;
+  // Make sure pitches are all > 0.
+  if (dx <= 0.) {
+    std::stringstream mssg;
+    mssg << "Cylinder filter with id " << id << " provided with a dx <= 0.";
+    fatal_error(mssg.str());
   }
 
-  // A finite length the z-direction should be given.
-  if (dz_ == 0.)
-    fatal_error("for id: " + id_str +
-                ",length of the cylinder shouldn't zero.");
-  else
-    inv_dz_ = 1.0 / dz_;
+  if (dy <= 0.) {
+    std::stringstream mssg;
+    mssg << "Cylinder filter with id " << id << " provided with a dy <= 0.";
+    fatal_error(mssg.str());
+  }
+
+  if (dz <= 0.) {
+    std::stringstream mssg;
+    mssg << "Cylinder filter with id " << id << " provided with a dz <= 0.";
+    fatal_error(mssg.str());
+  }
+
+  // Make sure shapes are all > 0
+  if (nx == 0) {
+    std::stringstream mssg;
+    mssg << "Cylinder filter with id " << id << " provided with nx = 0.";
+    fatal_error(mssg.str());
+  }
+
+  if (ny == 0) {
+    std::stringstream mssg;
+    mssg << "Cylinder filter with id " << id << " provided with ny = 0.";
+    fatal_error(mssg.str());
+  }
+
+  if (nz == 0) {
+    std::stringstream mssg;
+    mssg << "Cylinder filter with id " << id << " provided with nz = 0.";
+    fatal_error(mssg.str());
+  }
+
+  // Make sure the pitch_x and pitch_y are >= diameter
+  if (pitch_x_ < 2. * radius_ || pitch_y_ < 2. * radius_) {
+    std::stringstream mssg;
+    mssg << "Cylinder filter with id " << id
+         << " has dimensions which are shorter than the diameter.";
+    fatal_error(mssg.str());
+  }
+
+  // Calculate inverse values
+  inv_pitch_x_ = 1.0 / pitch_x_;
+  inv_pitch_y_ = 1.0 / pitch_y_;
+  inv_dz_ = 1.0 / dz_;
 
   // calculate low point for the purpose of getting the indices
   // r_low_ is mapped, means z-cooridnate will always be axial direction
@@ -220,159 +210,116 @@ std::pair<double, double> CylinderFilter::get_scaled_radius_and_angle(
 }
 
 std::shared_ptr<CylinderFilter> make_cylinder_filter(const YAML::Node& node) {
-  // get the id
-  if (!node["id"] || !node["id"].IsScalar()) {
+  // Get the id
+  if (!node["id"] || node["id"].IsScalar() == false) {
     fatal_error("Invalid id is given for the position-filter.");
   }
   std::size_t id = node["id"].as<std::size_t>();
-  std::string id_str = std::to_string(id);
 
   // check and get the origin
-  if (!node["origin"]) {
-    fatal_error(
-        "for id: " + id_str +
-        "the origin must be provided for the cylinder position filter.");
-  } else if (!node["origin"].IsSequence() || node["origin"].size() != 3) {
-    fatal_error("for id: " + id_str +
-                ", invalid origin coordinated are given.");
+  if (!node["origin"] || node["origin"].IsSequence() == false ||
+      node["origin"].size() != 3) {
+    std::stringstream mssg;
+    mssg << "Cylinder filter with id " << id
+         << " is missing a valid origin entry.";
+    fatal_error(mssg.str());
   }
   std::vector<double> origin_point = node["origin"].as<std::vector<double>>();
   Position origin(origin_point[0], origin_point[1], origin_point[2]);
 
   // Get the radius
-  if (!node["radius"]) {
-    fatal_error("for id: " + id_str +
-                ", the radius must be given for the cylinder position filter.");
-  } else if (!node["radius"].IsScalar()) {
-    fatal_error("for id: " + id_str + ", given radius must be a scalar only.");
+  if (!node["radius"] || node["radius"].IsScalar() == false) {
+    std::stringstream mssg;
+    mssg << "Cylinder filter with id " << id
+         << " is missing a valid radius entry.";
+    fatal_error(mssg.str());
   }
-  double radius = node["radius"].as<double>();
-
-  // get the length of the cylinder
-  if (!node["length"]) {
-    fatal_error("for id: " + id_str + ", the axial length must be given.");
-  } else if (!node["length"].IsScalar()) {
-    fatal_error("for id: " + id_str + ", invalid length is given.");
+  const double radius = node["radius"].as<double>();
+  if (radius <= 0.) {
+    std::stringstream mssg;
+    mssg << "Cylinder filter with id " << id << " has a radius which is <= 0.";
+    fatal_error(mssg.str());
   }
-  double length = node["length"].as<double>();
 
-  // get the axial-direction axis name
-  if (!node["axis"]) {
-    fatal_error(
-        "for id: " + id_str +
-        "axial-direction axis must be given for the cylinder position filter.");
-  } else if (!node["axis"].IsScalar()) {
-    fatal_error("for id: " + id_str +
-                ", invalid axis is given for the cylinder position filter.");
+  // Get the axial-direction axis name
+  if (!node["axis"] || node["axis"].IsScalar() == false) {
+    std::stringstream mssg;
+    mssg << "Cylinder filter with id " << id
+         << " is missing a valid axis entry.";
+    fatal_error(mssg.str());
   }
-  std::string axial_axis = node["axis"].as<std::string>();
+  const std::string axial_axis = node["axis"].as<std::string>();
+  if (axial_axis != "x" && axial_axis != "y" && axial_axis != "z") {
+    std::stringstream mssg;
+    mssg << "Cylinder filter with id " << id
+         << " was provided with invalid axis entry \"" << axial_axis << "\".";
+    fatal_error(mssg.str());
+  }
+  CylinderFilter::Orientation orientation;
+  if (axial_axis == "x")
+    orientation = CylinderFilter::Orientation::X;
+  else if (axial_axis == "y")
+    orientation = CylinderFilter::Orientation::Y;
+  else
+    orientation = CylinderFilter::Orientation::Z;
 
-  // the default shape will nx = 1, ny = 1, and nz = 1;
+  // The default shape will nx = 1, ny = 1, and nz = 1;
   std::size_t nx = 1;
   std::size_t ny = 1;
   std::size_t nz = 1;
-  // get the shape
-  if (!node["shape"]) {
-    warning("for id: " + id_str +
-            ", the shape must be given for the cylinder position filter");
-  } else if (!node["shape"].IsSequence() || node["shape"].size() != 3) {
-    fatal_error("for id: " + id_str +
-                ", invalid shape is given for the cylinder position filter");
-  } else {
+  // Get the shape
+  if (node["shape"] && node["shape"].IsSequence() &&
+      node["shape"].size() != 3) {
     std::vector<std::size_t> shape =
         node["shape"].as<std::vector<std::size_t>>();
     nx = shape[0];
     ny = shape[1];
     nz = shape[2];
+  } else if (node["shape"]) {
+    std::stringstream mssg;
+    mssg << "Cylinder filter with id " << id << " has an invalid shape entry.";
+    fatal_error(mssg.str());
   }
 
-  // get the pitches for each
-  std::string str_pitch_x, str_pitch_y;
-  if (axial_axis == "z" || axial_axis == "Z") {
-    str_pitch_x = "pitch-x";
-    str_pitch_y = "pitch-y";
-  } else if (axial_axis == "x" || axial_axis == "X") {
-    str_pitch_x = "pitch-z";
-    str_pitch_y = "pitch-y";
-  } else if (axial_axis == "y" || axial_axis == "Y") {
-    str_pitch_x = "pitch-x";
-    str_pitch_y = "pitch-z";
+  // Get the pitch of the lattice/box.
+  if (!node["pitch"] || node["pitch"].IsSequence() == false ||
+      node["pitch"].size() != 3) {
+    std::stringstream mssg;
+    mssg << "Cylinder filter with id " << id << " has invalid pitch entry.";
+    fatal_error(mssg.str());
   }
+  std::vector<double> pitches = node["pitch"].as<std::vector<double>>();
 
-  // get the pitch-x
-  double pitch_x = 0.;
-  if (!node[str_pitch_x]) {
-    if (nx != 1) {
-      warning(str_pitch_x +
-              " is not given for the cylinder position filter, so there will "
-              "be one cylinder is x-direction, for id: " +
-              id_str + "");
-    }
-    nx = 1;
+  double pitch_x, pitch_y, length;
+  if (axial_axis == "z") {
+    pitch_x = pitches[0];
+    pitch_y = pitches[1];
+    length = pitches[2];
+  } else if (axial_axis == "x") {
+    pitch_x = pitches[2];
+    pitch_y = pitches[1];
+    length = pitches[0];
   } else {
-    if (!node[str_pitch_x].IsScalar()) {
-      fatal_error("for id: " + id_str + ", invalid " + str_pitch_x +
-                  " is given for the cylinder position filter.");
-    }
-    pitch_x = node[str_pitch_x].as<double>();
-    if (pitch_x == 0. && nx != 1) {
-      warning("for id: " + id_str + ", given" + str_pitch_x +
-              " is 0.0, so, there will be 1 cylinder in x-direction.");
-      nx = 1;
-    }
+    pitch_x = pitches[0];
+    pitch_y = pitches[2];
+    length = pitches[1];
   }
 
-  // get the pitch-y
-  double pitch_y = 0.;
-  if (!node[str_pitch_y]) {
-    if (ny != 1) {
-      warning(str_pitch_y +
-              " is not given for the cylinder position filter, so there will "
-              "be one cylinder is x-direction, for id: " +
-              id_str + "");
-    }
-    ny = 1;
-  } else {
-    if (!node[str_pitch_y].IsScalar()) {
-      fatal_error("for id: " + id_str + ", invalid " + str_pitch_y +
-                  " is given for the cylinder position filter.");
-    }
-    pitch_y = node[str_pitch_y].as<double>();
-    if (pitch_y == 0. && ny != 1) {
-      warning("for id: " + id_str + ", given" + str_pitch_x +
-              " is 0.0, so, there will be 1 cylinder in x-direction.");
-      ny = 1;
-    }
+  if (pitch_x <= 0. || pitch_y <= 0. || length <= 0.) {
+    std::stringstream mssg;
+    mssg << "Cylinder filter with id " << id << " has pitches which are <= 0.";
+    fatal_error(mssg.str());
   }
 
-  // make the cylinder position filter
-  double dx, dy, dz;
-  std::shared_ptr<CylinderFilter> cylinder_filter;
-  if (axial_axis == "x" || axial_axis == "X") {
-    dx = length;
-    dy = pitch_y;
-    dz = pitch_x;
-    cylinder_filter =
-        std::make_shared<CylinderFilter>(origin, radius, dx, dy, dz, nx, ny, nz,
-                                         CylinderFilter::Orientation::X, id);
-  } else if (axial_axis == "y" || axial_axis == "Y") {
-    dx = pitch_x;
-    dy = length;
-    dz = pitch_y;
-    cylinder_filter =
-        std::make_shared<CylinderFilter>(origin, radius, dx, dy, dz, nx, ny, nz,
-                                         CylinderFilter::Orientation::Y, id);
-  } else if (axial_axis == "z" || axial_axis == "Z") {
-    dx = pitch_x;
-    dy = pitch_y;
-    dz = length;
-    cylinder_filter =
-        std::make_shared<CylinderFilter>(origin, radius, dx, dy, dz, nx, ny, nz,
-                                         CylinderFilter::Orientation::Z, id);
-  } else {
-    fatal_error("For id: " + id_str +
-                ", invalid axial direction axis is given.");
+  if (pitch_x < 2. * radius || pitch_y < 2. * radius) {
+    std::stringstream mssg;
+    mssg << "Cylinder filter with id " << id
+         << " has pitches which are too small for the given radius.";
+    fatal_error(mssg.str());
   }
 
-  return cylinder_filter;
+  // Make the filter
+  return std::make_shared<CylinderFilter>(origin, radius, pitches[0],
+                                          pitches[1], pitches[2], nx, ny, nz,
+                                          orientation, id);
 }

@@ -69,8 +69,8 @@ endif()
 # Get NDArray
 message(STATUS "Downloading NDArray")
 FetchContent_Declare(NDArray
-  GIT_REPOSITORY https://github.com/HunterBelanger/ndarray.git
-  GIT_TAG        master
+  GIT_REPOSITORY https://github.com/2018uch0002/ndarray.git
+  GIT_TAG        feature/boost_static_vector
 )
 set(NDARRAY_INSTALL OFF CACHE BOOL "Install NDArray")
 FetchContent_MakeAvailable(NDArray)
