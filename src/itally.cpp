@@ -63,9 +63,9 @@ double ITally::particle_base_score(const Particle& p, MaterialHelper& mat) {
 
     case Quantity::RealFlux:
       collision_score *= p.wgt();
-      break;  
+      break;
 
-    case Quantity::ImgFlux:
+    case Quantity::ImagFlux:
       collision_score *= p.wgt2();
       break;
   }
@@ -146,8 +146,8 @@ std::string ITally::quantity_str() {
     case Quantity::RealFlux:
       return "real-flux";
       break;
-    case Quantity::ImgFlux:
-      return "imarginary-flux";
+    case Quantity::ImagFlux:
+      return "imag-flux";
       break;
   }
 
@@ -185,4 +185,29 @@ void make_itally(Tallies& tallies, const YAML::Node& node) {
 
   // Add the new_ITally of type ITally into the "tallies"
   tallies.add_ITally(t);
+}
+
+Quantity read_quantity(const std::string& quant_str,
+                       const std::string& tally_name) {
+  if (quant_str == "flux") {
+    return Quantity::Flux;
+  } else if (quant_str == "fission") {
+    return Quantity::Fission;
+  } else if (quant_str == "absorption") {
+    return Quantity::Absorption;
+  } else if (quant_str == "elastic") {
+    return Quantity::Elastic;
+  } else if (quant_str == "total") {
+    return Quantity::Total;
+  } else if (quant_str == "real-flux") {
+    return Quantity::RealFlux;
+  } else if (quant_str == "imag-flux") {
+    return Quantity::ImagFlux;
+  } else {
+    fatal_error("For tally " + tally_name + " unknown quantity \"" + quant_str +
+                "\" is given.");
+  }
+
+  // SHOULD NEVER GET HERE
+  return Quantity::Flux;
 }

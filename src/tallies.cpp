@@ -141,9 +141,9 @@ void Tallies::add_energy_filter(std::size_t id,
 void Tallies::add_ITally(std::shared_ptr<ITally> tallly) {
   tallly->set_net_weight(total_weight);
 
-  if (tallly->estimator() == ITally::Estimator::Collision) {
+  if (tallly->estimator() == Estimator::Collision) {
     new_itally_collision_.push_back(tallly);
-  } else if (tallly->estimator() == ITally::Estimator::TrackLength) {
+  } else if (tallly->estimator() == Estimator::TrackLength) {
     new_itally_track_length_.push_back(tallly);
   }
 }

@@ -10,8 +10,7 @@ using StaticVector6 = boost::container::static_vector<std::size_t, 6>;
 ZernikeFET::ZernikeFET(std::shared_ptr<CylinderFilter> cylinder_filter,
                        std::shared_ptr<EnergyFilter> energy_filter,
                        std::size_t zernike_order, std::size_t lengendre_order,
-                       ZernikeFET::Quantity quantity,
-                       ZernikeFET::Estimator estimator, std::string name)
+                       Quantity quantity, Estimator estimator, std::string name)
     : ITally(quantity, estimator, name),
       cylinder_filter_(cylinder_filter),
       energy_filter_(energy_filter),
@@ -29,9 +28,7 @@ ZernikeFET::ZernikeFET(std::shared_ptr<CylinderFilter> cylinder_filter,
   // get the shape or dimensions for the cylinder-filter
   // the zernike-fet requires the co-ordinate information
   if (cylinder_filter_ == nullptr) {
-    fatal_error(
-        "for tally " + name +
-        ", the cylinder-filter information is required for zernike-fet.");
+    fatal_error("ZernikeFET has nullptr cylinder-filer.");
   }
   StaticVector3 cylinder_shape = cylinder_filter_->get_shape();
   tally_shape.insert(tally_shape.end(), cylinder_shape.begin(),
@@ -66,8 +63,8 @@ ZernikeFET::ZernikeFET(std::shared_ptr<CylinderFilter> cylinder_filter,
 
 ZernikeFET::ZernikeFET(std::shared_ptr<CylinderFilter> cylinder_filter,
                        std::shared_ptr<EnergyFilter> energy_filter,
-                       std::size_t zernike_order, ZernikeFET::Quantity quantity,
-                       ZernikeFET::Estimator estimator, std::string name)
+                       std::size_t zernike_order, Quantity quantity,
+                       Estimator estimator, std::string name)
     : ITally(quantity, estimator, name),
       cylinder_filter_(cylinder_filter),
       energy_filter_(energy_filter),
@@ -85,9 +82,7 @@ ZernikeFET::ZernikeFET(std::shared_ptr<CylinderFilter> cylinder_filter,
   // get the shape or dimensions for the cylinder-filter
   // the zernike-fet requires the co-ordinate information
   if (cylinder_filter_ == nullptr) {
-    fatal_error(
-        "for tally " + name +
-        ", the cylinder-filter information is required for zernike-fet.");
+    fatal_error("ZernikeFET has nullptr cylinder-filer.");
   }
   StaticVector3 cylinder_shape = cylinder_filter_->get_shape();
   tally_shape.insert(tally_shape.end(), cylinder_shape.begin(),
@@ -125,13 +120,12 @@ void ZernikeFET::score_collision(const Particle& p, const Tracker& tktr,
   // get the energy-index, if energy-filter exists
   if (energy_filter_) {
     std::optional<std::size_t> E_indx = energy_filter_->get_index(p.E());
-
-    if (E_indx.has_value()) {
-      std::size_t index_E = E_indx.value();
-      indices.push_back(index_E);
-    } else
+    if (E_indx.has_value() == false) {
       // Not inside any energy bin. Don't score.
       return;
+    }
+
+    indices.push_back(E_indx.value());
   }
 
   // get the positional indexes from cylinder_filter
@@ -140,7 +134,7 @@ void ZernikeFET::score_collision(const Particle& p, const Tracker& tktr,
     // Not inside any energy bin. Don't score.
     return;
   }
-  indices.insert(indices.begin(), cylinder_index.begin(), cylinder_index.end());
+  indices.insert(indices.end(), cylinder_index.begin(), cylinder_index.end());
 
   // add one dimension for the different polynomial
   std::size_t poly_index = indices.size();
@@ -150,7 +144,7 @@ void ZernikeFET::score_collision(const Particle& p, const Tracker& tktr,
   std::size_t FET_index = indices.size();
   indices.push_back(0);
 
-  // get the particle base score for the collision
+  // Get the particle base score for the collision
   const double Et = mat.Et(p.E());
   const double collision_score = particle_base_score(p, mat) / Et;
 
@@ -257,98 +251,80 @@ void ZernikeFET::write_tally() {
 
 // make the tally-zernike
 std::shared_ptr<ZernikeFET> make_zernike_fet(const YAML::Node& node) {
-  // Check the name of the tallt is given or not.
-  if (!node["name"] && !node["name"].IsScalar()) {
-    fatal_error("No valid name is provided.");
+  // Check the name of the tally is given or not.
+  if (!node["name"] || !node["name"].IsScalar()) {
+    fatal_error("No valid name is provided on tally.");
   }
-  std::string zernike_fet_tally_name = node["name"].as<std::string>();
+  std::string name = node["name"].as<std::string>();
 
-  // Check the estimator is given or not.
-  if (!node["estimator"] && !node["estimator"].IsScalar()) {
-    fatal_error("No valid estimator is given for " + zernike_fet_tally_name +
-                " tally.");
+  // Check the estimator is given or not. We default to collision estimators.
+  std::string estimator_name = "collision";
+  if (node["estimator"] && node["estimator"].IsScalar()) {
+    estimator_name = node["estimator"].as<std::string>();
+  } else if (node["estimator"]) {
+    fatal_error("Invalid estimator entry is given on tally \"" + name + "\".");
   }
-  std::string estimator_name = node["estimator"].as<std::string>();
-  ZernikeFET::Estimator estimator;
+  Estimator estimator;
   if (estimator_name == "collision") {
-    estimator = ZernikeFET::Estimator::Collision;
+    estimator = Estimator::Collision;
   } else if (estimator_name == "track-length") {
-    estimator = ZernikeFET::Estimator::TrackLength;
+    estimator = Estimator::TrackLength;
     fatal_error(
-        "The track-length for the zernike-fet is not supported as asked in " +
-        zernike_fet_tally_name + " tally. ");
+        "On tally " + name +
+        ", track-length estimator is not yet supported on zernike-fet.");
   } else {
-    fatal_error("Incorrect \"estimator\" is given for the " +
-                zernike_fet_tally_name + " tally.");
+    std::stringstream mssg;
+    mssg << "The tally " << name << " was provided with an unkown estimator \""
+         << estimator_name << "\".";
+    fatal_error(mssg.str());
   }
 
   // Check for the quantity
   std::string given_quantity = "";
-  if (!node["quantity"] && !node["quantity"].IsScalar()) {
-    fatal_error("No valid quantity is given for " + zernike_fet_tally_name +
-                " tally.");
+  if (!node["quantity"] || !node["quantity"].IsScalar()) {
+    fatal_error("No quantity is given for tally " + name + ".");
   }
   given_quantity = node["quantity"].as<std::string>();
-  ZernikeFET::Quantity quant;
+  Quantity quant = read_quantity(given_quantity, name);
 
-  if (given_quantity == "flux") {
-    quant = ZernikeFET::Quantity::Flux;
-  } else if (given_quantity == "fission") {
-    quant = ZernikeFET::Quantity::Fission;
-  } else if (given_quantity == "absorption") {
-    quant = ZernikeFET::Quantity::Absorption;
-  } else if (given_quantity == "elastic") {
-    quant = ZernikeFET::Quantity::Elastic;
-  } else if (given_quantity == "total") {
-    quant = ZernikeFET::Quantity::Total;
-  } else if (given_quantity == "real-flux") {
-    quant = ZernikeFET::Quantity::RealFlux;
-  } else if (given_quantity == "imaginary-flux") {
-    quant = ZernikeFET::Quantity::ImgFlux;
-  } else {
-    fatal_error("For " + zernike_fet_tally_name +
-                " tally, a unknown quantity is given.");
-  }
-  // get the tallies instance
+  // Get the tallies instance
   auto& tallies = Tallies::instance();
-  // Get the enrgy filter, if any is given
+
+  // Get the energy filter, if any is given
   std::shared_ptr<EnergyFilter> energy_filter = nullptr;
-  if (node["energy-filter"]) {
-    if (!node["energy-filter"].IsScalar()) {
-      fatal_error("energy-filter must be given as scalar.");
-    }
+  if (node["energy-filter"] && node["energy-filter"].IsScalar()) {
     std::size_t energy_id = node["energy-filter"].as<std::size_t>();
     energy_filter = tallies.get_energy_filter(energy_id);
     if (energy_filter == nullptr) {
-      std::stringstream messg;
-      messg << "for the tally " << zernike_fet_tally_name
-            << ", the id: " << energy_id
-            << ", for the energy-filters is not provided in the tally-filters.";
-      fatal_error(messg.str());
+      std::stringstream mssg;
+      mssg << "For tally " << name << ", cannot find energy filter with id "
+           << energy_id << ".";
+      fatal_error(mssg.str());
     }
+  } else if (node["energy-filter"]) {
+    fatal_error("Invalid energy-filter entry on tally " + name + ".");
   }
 
   // Get the cylinder type position filter
+  std::shared_ptr<CylinderFilter> cylinder_filter = nullptr;
   if (!node["position-filter"] || !node["position-filter"].IsScalar()) {
-    fatal_error("For " + zernike_fet_tally_name +
-                ", a valid position-filter must be given.");
+    std::stringstream mssg;
+    mssg << "Zernike-FET tally " << name
+         << " has invalid/nonexistent position-filter entry.";
+    fatal_error(mssg.str());
   }
   std::size_t position_id = node["position-filter"].as<std::size_t>();
-  std::shared_ptr<CylinderFilter> cylinder_filter =
-      tallies.get_cylinder_position_filter(position_id);
-
+  cylinder_filter = tallies.get_cylinder_filter(position_id);
   if (cylinder_filter == nullptr) {
-    std::stringstream messg;
-    messg << "for tally " << zernike_fet_tally_name
-          << ", the id: " << position_id
-          << ", for the position-filter is not provided in the tally-filters.";
-    fatal_error(messg.str());
+    std::stringstream mssg;
+    mssg << "Zernike-FET tally " << name << " was provided position-filter id "
+         << position_id << ". No cylinder filter with this id was found.";
+    fatal_error(mssg.str());
   }
 
-  // get the order of zernike
-  if (!node["zernike-order"] && !node["zernike-order"].IsScalar()) {
-    fatal_error("a valid zernike-order is not given for " +
-                zernike_fet_tally_name + "tally.");
+  // Get the Zernike order
+  if (!node["zernike-order"] || !node["zernike-order"].IsScalar()) {
+    fatal_error("a valid zernike-order is not given for " + name + "tally.");
   }
   std::size_t zernike_fet_order = node["zernike-order"].as<std::size_t>();
 
@@ -358,24 +334,22 @@ std::shared_ptr<ZernikeFET> make_zernike_fet(const YAML::Node& node) {
   if (!node["legendre-order"]) {
     legendre_exist = false;
   } else if (!node["legendre-order"].IsScalar()) {
-    fatal_error("a valid legendre-order is not given for " +
-                zernike_fet_tally_name + "tally.");
+    std::stringstream mssg;
+    mssg << "Tally " << name << " has invalid legendre-order entry.";
+    fatal_error(mssg.str());
   } else {
     legendre_fet_order = node["legendre-order"].as<std::size_t>();
   }
 
-  // make the ZernikeFET class for the given tally description
-  std::shared_ptr<ZernikeFET> itally_zernike_fet_tally;
-  // if we have both legendre and zernike then use the first constructor,
-  if (legendre_exist == true) {
-    itally_zernike_fet_tally = std::make_shared<ZernikeFET>(
-        cylinder_filter, energy_filter, zernike_fet_order, legendre_fet_order,
-        quant, estimator, zernike_fet_tally_name);
-  } else if (legendre_exist == false) {
+  // If we have both legendre and zernike then use the first constructor,
+  if (legendre_exist) {
+    return std::make_shared<ZernikeFET>(cylinder_filter, energy_filter,
+                                        zernike_fet_order, legendre_fet_order,
+                                        quant, estimator, name);
+  } else {
     // if we have the zernike only, then use the second constructor
-    itally_zernike_fet_tally = std::make_shared<ZernikeFET>(
-        cylinder_filter, energy_filter, zernike_fet_order, quant, estimator,
-        zernike_fet_tally_name);
+    return std::make_shared<ZernikeFET>(cylinder_filter, energy_filter,
+                                        zernike_fet_order, quant, estimator,
+                                        name);
   }
-  return itally_zernike_fet_tally;
 }

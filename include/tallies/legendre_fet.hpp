@@ -22,8 +22,7 @@ class LegendreFET : public ITally {
   LegendreFET(std::shared_ptr<CartesianFilter> position_filter,
               std::shared_ptr<EnergyFilter> energy_in,
               std::vector<LegendreFET::Axis> axes, size_t fet_order,
-              LegendreFET::Quantity quantity, LegendreFET::Estimator estimator,
-              std::string name);
+              Quantity quantity, Estimator estimator, std::string name);
 
   ~LegendreFET() = default;
 

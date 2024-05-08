@@ -95,7 +95,7 @@ class Tallies {
     }
     return cartesian_filters_[id];
   }
-  std::shared_ptr<CylinderFilter> get_cylinder_position_filter(std::size_t id) {
+  std::shared_ptr<CylinderFilter> get_cylinder_filter(std::size_t id) {
     if (cylinder_filters_.find(id) == cylinder_filters_.end()) {
       return nullptr;
     }

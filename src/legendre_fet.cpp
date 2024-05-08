@@ -10,8 +10,8 @@ using StaticVector6 = boost::container::static_vector<size_t, 6>;
 LegendreFET::LegendreFET(std::shared_ptr<CartesianFilter> position_filter,
                          std::shared_ptr<EnergyFilter> energy_in,
                          std::vector<LegendreFET::Axis> axes, size_t fet_order,
-                         LegendreFET::Quantity quantity,
-                         LegendreFET::Estimator estimator, std::string name)
+                         Quantity quantity, Estimator estimator,
+                         std::string name)
     : ITally(quantity, estimator, name),
       cartesian_filter_(position_filter),
       energy_in_(energy_in),
@@ -28,9 +28,7 @@ LegendreFET::LegendreFET(std::shared_ptr<CartesianFilter> position_filter,
   // the legendre-fet requires the co-ordinate information
 
   if (cartesian_filter_ == nullptr) {
-    fatal_error("For the tally, " + name +
-                ", the positional filter is required to do the legendre "
-                "functional expansion tally.");
+    fatal_error("LegendreFET has nullptr cartesian-filter.");
   }
   StaticVector3 position_shape = cartesian_filter_->get_shape();
   tally_shape.insert(tally_shape.end(), position_shape.begin(),
@@ -38,8 +36,7 @@ LegendreFET::LegendreFET(std::shared_ptr<CartesianFilter> position_filter,
 
   // for legendre, check the size of axis vector should be between than 3.
   if (axes_.size() <= 1 && axes_.size() >= 3)
-    fatal_error("the length of given axes for " + name +
-                " tally is not between 1 to 3.");
+    fatal_error("LegendreFET length of axes must be in [1,3].");
 
   std::size_t n_axis = axes_.size();
   tally_shape.push_back(n_axis);
@@ -65,13 +62,12 @@ void LegendreFET::score_collision(const Particle& p, const Tracker& tktr,
   // get the energy-index, if energy-filter exists
   if (energy_in_) {
     std::optional<std::size_t> E_indx = energy_in_->get_index(p.E());
-
-    if (E_indx.has_value()) {
-      std::size_t index_E = E_indx.value();
-      indices.push_back(index_E);
-    } else
+    if (E_indx.has_value() == false) {
       // Not inside any energy bin. Don't score.
       return;
+    }
+
+    indices.push_back(E_indx.value());
   }
 
   // get the cartisian_filter indices
@@ -202,133 +198,118 @@ void LegendreFET::write_tally() {
 std::shared_ptr<LegendreFET> make_legendre_fet(const YAML::Node& node) {
   // Check the name of the tally is given or not.
   if (!node["name"] && !node["name"].IsScalar()) {
-    fatal_error("No valid name is provided.");
+    fatal_error("No valid name is provided on tally.");
   }
-  std::string legendre_fet_tally_name = node["name"].as<std::string>();
+  std::string name = node["name"].as<std::string>();
 
-  // Check the estimator is given or not.
-  if (!node["estimator"] && !node["estimator"].IsScalar()) {
-    fatal_error("No valid estimator is given for " + legendre_fet_tally_name +
-                " tally.");
+  // Check the estimator is given or not. We default to collision estimators.
+  std::string estimator_name = "collision";
+  if (node["estimator"] && node["estimator"].IsScalar()) {
+    estimator_name = node["estimator"].as<std::string>();
+  } else if (node["estimator"]) {
+    fatal_error("Invalid estimator entry is given on tally " + name + ".");
   }
-  std::string estimator_name = node["estimator"].as<std::string>();
-  LegendreFET::Estimator estimator;
+  Estimator estimator;
   if (estimator_name == "collision") {
-    estimator = LegendreFET::Estimator::Collision;
+    estimator = Estimator::Collision;
   } else if (estimator_name == "track-length") {
-    estimator = LegendreFET::Estimator::TrackLength;
+    estimator = Estimator::TrackLength;
     fatal_error(
-        "The track-length for the legendre-fet is not supported as asked in " +
-        legendre_fet_tally_name + " tally. ");
+        "On tally " + name +
+        ", track-length estimator is not yet supported on legendre-fet.");
   } else {
-    fatal_error("Incorrect \"estimator\" is given for the " +
-                legendre_fet_tally_name + " tally.");
+    std::stringstream mssg;
+    mssg << "The tally " << name << " was provided with an unkown estimator \""
+         << estimator_name << "\".";
+    fatal_error(mssg.str());
   }
 
   // Check for the quantity
   std::string given_quantity = "";
-  if (!node["quantity"] && !node["quantity"].IsScalar()) {
-    fatal_error("No valid quantity is given for " + legendre_fet_tally_name +
-                " tally.");
+  if (!node["quantity"] || !node["quantity"].IsScalar()) {
+    fatal_error("The tally " + name +
+                " has an invalid/nonexistent quantity entry.");
   }
   given_quantity = node["quantity"].as<std::string>();
-  LegendreFET::Quantity quant;
-
-  if (given_quantity == "flux") {
-    quant = LegendreFET::Quantity::Flux;
-  } else if (given_quantity == "fission") {
-    quant = LegendreFET::Quantity::Fission;
-  } else if (given_quantity == "absorption") {
-    quant = LegendreFET::Quantity::Absorption;
-  } else if (given_quantity == "elastic") {
-    quant = LegendreFET::Quantity::Elastic;
-  } else if (given_quantity == "total") {
-    quant = LegendreFET::Quantity::Total;
-  } else if (given_quantity == "real-flux") {
-    quant = LegendreFET::Quantity::RealFlux;
-  } else if (given_quantity == "imaginary-flux") {
-    quant = LegendreFET::Quantity::ImgFlux;
-  } else {
-    fatal_error("For " + legendre_fet_tally_name +
-                " tally, a unknown quantity is given.");
-  }
+  Quantity quant = read_quantity(given_quantity, name);
 
   // get the tallies instance
   auto& tallies = Tallies::instance();
 
-  // Get the enrgy filter, if any is given
+  // Get the energy bounds, if any is given
   std::shared_ptr<EnergyFilter> energy_filter = nullptr;
-  if (node["energy-filter"]) {
-    if (!node["energy-filter"].IsScalar()) {
-      fatal_error("energy-filter is not provided as a scalar.");
-    }
+  if (node["energy-filter"] && node["energy-filter"].IsScalar()) {
     std::size_t energy_id = node["energy-filter"].as<std::size_t>();
     energy_filter = tallies.get_energy_filter(energy_id);
     if (energy_filter == nullptr) {
-      std::stringstream messg;
-      messg << "for the tally " << legendre_fet_tally_name
-            << ", the id: " << energy_id
-            << ", for the energy-filters is not provided in the tally-filters.";
-      fatal_error(messg.str());
+      std::stringstream mssg;
+      mssg << "For tally " << name << ", cannot find energy filter with id "
+           << energy_id << ".";
+      fatal_error(mssg.str());
     }
+  } else if (node["energy-filter"]) {
+    fatal_error("Invalid energy-filter entry on tally " + name + ".");
   }
 
   // Get the cartesian type position filter
+  std::shared_ptr<CartesianFilter> cartesian_filter = nullptr;
   if (!node["position-filter"] || !node["position-filter"].IsScalar()) {
-    fatal_error("For " + legendre_fet_tally_name +
-                ", a valid position-filter must be given.");
+    std::stringstream mssg;
+    mssg << "Legendre-FET tally " << name
+         << " has invalid/nonexistent position-filter entry.";
+    fatal_error(mssg.str());
   }
   std::size_t position_id = node["position-filter"].as<std::size_t>();
-  std::shared_ptr<CartesianFilter> cartesian_filter =
-      tallies.get_cartesian_filter(position_id);
+  cartesian_filter = tallies.get_cartesian_filter(position_id);
   if (cartesian_filter == nullptr) {
-    std::stringstream messg;
-    messg << "for tally " << legendre_fet_tally_name
-          << ", the id: " << position_id
-          << ", for the position-filter is not provided in the tally-filters.";
-    fatal_error(messg.str());
+    std::stringstream mssg;
+    mssg << "Legenre-FET tally " << name << " was provided position-filter id "
+         << position_id << ". No cartesian filter with this id was found.";
+    fatal_error(mssg.str());
   }
 
   // Get the legendre-fet order
-  if (!node["order"] && !node["order"].IsScalar()) {
-    fatal_error("legendre-fet order is not given for the " +
-                legendre_fet_tally_name + "tally.");
+  if (!node["order"] || !node["order"].IsScalar()) {
+    std::stringstream mssg;
+    mssg << "Legendre-FET tally " << name
+         << " was not provided a valid order entry.";
+    fatal_error(mssg.str());
   }
-  int fet_order_int_type = node["order"].as<int>();
-  if (fet_order_int_type < 0) {
-    fatal_error("legendre-fet order should not be negative.");
-  }
-  std::size_t FET_order = static_cast<std::size_t>(fet_order_int_type);
+  std::size_t order = node["order"].as<std::size_t>();
 
   // Get the legendre-fet axes
-  if (!node["axes"] && !node["axes"].IsSequence()) {
-    fatal_error("A valid \"axes\" list for " + legendre_fet_tally_name +
-                " should be given. ");
+  if (!node["axes"] || !node["axes"].IsSequence()) {
+    std::stringstream mssg;
+    mssg << "Tally " << name << " does not have a valid axes list entry.";
+    fatal_error(mssg.str());
   }
-  std::vector<std::string> fet_axis_type_string =
+  std::vector<std::string> axis_strs =
       node["axes"].as<std::vector<std::string>>();
 
-  std::vector<LegendreFET::Axis> fet_axis;
-  fet_axis.reserve(fet_axis_type_string.size());
-
-  for (auto& c : fet_axis_type_string) {
-    if (c == "X") fet_axis.push_back(LegendreFET::Axis::X);
-
-    if (c == "Y") fet_axis.push_back(LegendreFET::Axis::Y);
-
-    if (c == "Z") fet_axis.push_back(LegendreFET::Axis::Z);
+  std::vector<LegendreFET::Axis> axes;
+  axes.reserve(axis_strs.size());
+  for (const auto& c : axis_strs) {
+    if (c == "X")
+      axes.push_back(LegendreFET::Axis::X);
+    else if (c == "Y")
+      axes.push_back(LegendreFET::Axis::Y);
+    else if (c == "Z")
+      axes.push_back(LegendreFET::Axis::Z);
+    else {
+      std::stringstream mssg;
+      mssg << "Tally " << name << " was provided invalid axis \"" << c << "\".";
+      fatal_error(mssg.str());
+    }
   }
-
-  if (!(fet_axis.size() == fet_axis_type_string.size())) {
-    fatal_error("A non-allowable name of the axis is given for " +
-                legendre_fet_tally_name + ".");
+  if (axes.empty() || axes.size() > 3) {
+    std::stringstream mssg;
+    mssg << "Tally " << name << " must have 1 to 3 axis entries.";
+    fatal_error(mssg.str());
   }
 
   // Make the Legendre FET tally class
-  std::shared_ptr<LegendreFET> itally_legendre_fet_tally_ =
-      std::make_shared<LegendreFET>(cartesian_filter, energy_filter, fet_axis,
-                                    FET_order, quant, estimator,
-                                    legendre_fet_tally_name);
+  std::shared_ptr<LegendreFET> tally = std::make_shared<LegendreFET>(
+      cartesian_filter, energy_filter, axes, order, quant, estimator, name);
 
-  return itally_legendre_fet_tally_;
+  return tally;
 }

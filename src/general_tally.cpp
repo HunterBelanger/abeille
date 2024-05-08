@@ -52,19 +52,19 @@ void GeneralTally::score_collision(const Particle& p, const Tracker& tktr,
     // get the index for the energy if exist
     if (energy_in_) {
       std::optional<std::size_t> E_indx = energy_in_->get_index(p.E());
-      if (E_indx.has_value()) {
-        std::size_t index_E = E_indx.value();
-        indices.push_back(index_E);
-      } else {
+      if (E_indx.has_value() == false) {
         // Not inside any energy bin. Don't score.
         return;
       }
+
+      indices.push_back(E_indx.value());
     }
+
     // get the indices for the positions, if exist
     StaticVector3 position_indices;
     if (position_filter_) {
-      position_indices = position_filter_->get_indices(
-          tktr);  // it will provde the reduce dimensions
+      // It will provde the reduce dimensions
+      position_indices = position_filter_->get_indices(tktr);
 
       if (position_indices.empty()) {
         // Not inside any energy bin. Don't score.
@@ -102,12 +102,12 @@ void GeneralTally::score_flight(const Particle& p, const Tracker& trkr,
   if (energy_in_) {
     // get the energy_index if we are in the bounds
     std::optional<std::size_t> E_indx = energy_in_->get_index(p.E());
-    if (E_indx.has_value()) {
-      index_E = E_indx.value();
-    } else {
+    if (E_indx.has_value() == false) {
       // Not inside any energy bin. Don't score.
       return;
     }
+
+    index_E = E_indx.value();
   }
 
   const double flight_score = particle_base_score(p, mat);
@@ -193,7 +193,7 @@ void GeneralTally::write_tally() {
 std::shared_ptr<GeneralTally> make_general_tally(const YAML::Node& node) {
   // Check the name of the tally is given or not.
   if (!node["name"] || !node["name"].IsScalar()) {
-    fatal_error("No valid name is provided.");
+    fatal_error("No valid name is provided on tally.");
   }
   std::string name = node["name"].as<std::string>();
 
@@ -202,47 +202,29 @@ std::shared_ptr<GeneralTally> make_general_tally(const YAML::Node& node) {
   if (node["estimator"] && node["estimator"].IsScalar()) {
     estimator_name = node["estimator"].as<std::string>();
   } else if (node["estimator"]) {
-    fatal_error("Invalid estimator entry is given for \"" + name + "\".");
+    fatal_error("Invalid estimator entry is given on tally " + name + ".");
   }
 
-  GeneralTally::Estimator estimator;
+  Estimator estimator;
   if (estimator_name == "collision") {
-    estimator = GeneralTally::Estimator::Collision;
+    estimator = Estimator::Collision;
   } else if (estimator_name == "track-length") {
-    estimator = GeneralTally::Estimator::TrackLength;
+    estimator = Estimator::TrackLength;
   } else {
-    fatal_error("Invalid estimator is given for \"" + name + ".");
+    fatal_error("Invalid estimator is given for tally " + name + ".");
   }
 
   // Check for the quantity
   std::string given_quantity = "";
   if (!node["quantity"] || !node["quantity"].IsScalar()) {
-    fatal_error("No quantity is given for " + name + " tally.");
+    fatal_error("No valid quantity entry is given for tally " + name + ".");
   }
   given_quantity = node["quantity"].as<std::string>();
-  GeneralTally::Quantity quant;
-
-  if (given_quantity == "flux") {
-    quant = GeneralTally::Quantity::Flux;
-  } else if (given_quantity == "fission") {
-    quant = GeneralTally::Quantity::Fission;
-  } else if (given_quantity == "absorption") {
-    quant = GeneralTally::Quantity::Absorption;
-  } else if (given_quantity == "elastic") {
-    quant = GeneralTally::Quantity::Elastic;
-  } else if (given_quantity == "total") {
-    quant = GeneralTally::Quantity::Total;
-  } else if (given_quantity == "real-flux") {
-    quant = GeneralTally::Quantity::RealFlux;
-  } else if (given_quantity == "imaginary-flux") {
-    quant = GeneralTally::Quantity::ImgFlux;
-  } else{
-    fatal_error("For tally " + name + " unknown quantity \"" + given_quantity +
-                "\" is given.");
-  }
+  Quantity quant = read_quantity(given_quantity, name);
 
   // get the tallies instance
   auto& tallies = Tallies::instance();
+
   // Get the energy bounds, if any is given
   std::shared_ptr<EnergyFilter> energy_filter = nullptr;
   if (node["energy-filter"] && node["energy-filter"].IsScalar()) {

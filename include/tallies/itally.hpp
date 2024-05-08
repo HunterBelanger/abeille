@@ -8,21 +8,22 @@
 #include <ndarray.hpp>
 
 #include <set>
+#include <string>
+
+enum class Quantity {
+  Flux,
+  Total,
+  Fission,
+  Absorption,
+  Elastic,
+  RealFlux,
+  ImagFlux
+};
+
+enum class Estimator { Collision, TrackLength };
 
 class ITally {
  public:
-  enum class Quantity {
-    Flux,
-    Total,
-    Fission,
-    Absorption,
-    Elastic,
-    RealFlux,
-    ImgFlux
-  };
-
-  enum class Estimator { Collision, TrackLength };
-
   ITally(Quantity quantity, Estimator estimator, std::string name);
   virtual ~ITally() = default;
 
@@ -70,5 +71,8 @@ class ITally {
 
   double net_weight_, inv_net_weight_;
 };
+
+Quantity read_quantity(const std::string& quant_str,
+                       const std::string& tally_name);
 
 #endif
