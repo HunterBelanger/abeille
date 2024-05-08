@@ -53,22 +53,22 @@ CylinderFilter::CylinderFilter(Position origin, double radius, double dx,
     fatal_error(mssg.str());
   }
 
-  // Make sure pitches are all > 0.
-  if (dx <= 0.) {
+  // Make sure pitches are all >= 0.
+  if (dx < 0.) {
     std::stringstream mssg;
-    mssg << "Cylinder filter with id " << id << " provided with a dx <= 0.";
+    mssg << "Cylinder filter with id " << id << " provided with a dx < 0.";
     fatal_error(mssg.str());
   }
 
-  if (dy <= 0.) {
+  if (dy < 0.) {
     std::stringstream mssg;
-    mssg << "Cylinder filter with id " << id << " provided with a dy <= 0.";
+    mssg << "Cylinder filter with id " << id << " provided with a dy < 0.";
     fatal_error(mssg.str());
   }
 
-  if (dz <= 0.) {
+  if (dz < 0.) {
     std::stringstream mssg;
-    mssg << "Cylinder filter with id " << id << " provided with a dz <= 0.";
+    mssg << "Cylinder filter with id " << id << " provided with a dz < 0.";
     fatal_error(mssg.str());
   }
 
@@ -92,7 +92,16 @@ CylinderFilter::CylinderFilter(Position origin, double radius, double dx,
   }
 
   // Make sure the pitch_x and pitch_y are >= diameter
-  if (pitch_x_ < 2. * radius_ || pitch_y_ < 2. * radius_) {
+  // but if pitch_x and pitch_y are zeros, then make sure nx and ny are equal
+  // to 1.
+  if (pitch_x_ == 0. || pitch_y_ == 0.) {
+    if (nx != 1 || ny != 1) {
+      std::stringstream mssg;
+      mssg << "Cylinder filter with id " << id
+           << " has pitches zero, but the number of bins are not 1.";
+      fatal_error(mssg.str());
+    }
+  } else if (pitch_x_ < 2. * radius_ || pitch_y_ < 2. * radius_) {
     std::stringstream mssg;
     mssg << "Cylinder filter with id " << id
          << " has dimensions which are shorter than the diameter.";
@@ -102,6 +111,11 @@ CylinderFilter::CylinderFilter(Position origin, double radius, double dx,
   // Calculate inverse values
   inv_pitch_x_ = 1.0 / pitch_x_;
   inv_pitch_y_ = 1.0 / pitch_y_;
+  if (dz_ <= 0.) {
+    std::stringstream mssg;
+    mssg << "Cylinder filter with id " << id << " provided with length <= 0.";
+    fatal_error(mssg.str());
+  }
   inv_dz_ = 1.0 / dz_;
 
   // calculate low point for the purpose of getting the indices
@@ -269,7 +283,7 @@ std::shared_ptr<CylinderFilter> make_cylinder_filter(const YAML::Node& node) {
   std::size_t nz = 1;
   // Get the shape
   if (node["shape"] && node["shape"].IsSequence() &&
-      node["shape"].size() != 3) {
+      node["shape"].size() == 3) {
     std::vector<std::size_t> shape =
         node["shape"].as<std::vector<std::size_t>>();
     nx = shape[0];
@@ -305,13 +319,20 @@ std::shared_ptr<CylinderFilter> make_cylinder_filter(const YAML::Node& node) {
     length = pitches[1];
   }
 
-  if (pitch_x <= 0. || pitch_y <= 0. || length <= 0.) {
+  if (pitch_x < 0. || pitch_y < 0. || length <= 0.) {
     std::stringstream mssg;
-    mssg << "Cylinder filter with id " << id << " has pitches which are <= 0.";
+    mssg << "Cylinder filter with id " << id << " has pitches which are < 0.";
     fatal_error(mssg.str());
   }
 
-  if (pitch_x < 2. * radius || pitch_y < 2. * radius) {
+  if (pitch_x == 0. || pitch_y == 0.) {
+    if (nx != 1 || ny != 1) {
+      std::stringstream mssg;
+      mssg << "Cylinder filter with id " << id
+           << " has zero pitches, but number of bins are not 1.";
+      fatal_error(mssg.str());
+    }
+  } else if (pitch_x < 2. * radius || pitch_y < 2. * radius) {
     std::stringstream mssg;
     mssg << "Cylinder filter with id " << id
          << " has pitches which are too small for the given radius.";

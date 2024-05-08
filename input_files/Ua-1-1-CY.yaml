@@ -26,11 +26,12 @@ tally-filters:
       type: cylinder-filter
       origin: [0., 0., -100.]
       radius: 5.514296811
+      pitch: [12, 0, 200.]
       pitch-x: 12.
       pitch-y: 0.
       pitch-z: 1.
       length: 200.
-      axis: Z
+      axis: z
       shape: [1, 1, 1]
 
   energy-filters:
@@ -39,7 +40,7 @@ tally-filters:
 
 tallies:
   - type: ITally
-    tally-type: zernike-fet
+    #tally-type: zernike-fet
     #tally-type: general
     name: Zr
     zernike-order: 1
