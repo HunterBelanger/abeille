@@ -108,12 +108,7 @@ CylinderFilter::CylinderFilter(Position origin, double radius, double dx,
   // Calculate inverse values
   inv_pitch_x_ = 1.0 / pitch_x_;
   inv_pitch_y_ = 1.0 / pitch_y_;
-  if ( Nz_ == 0){
-    inv_dz_ = 0.; // for infinite cylinder
-    infinite_length = true;
-  } else {
-    inv_dz_ = 1.0 / dz_;
-  }
+  inv_dz_ = 1.0 / dz_;
 
   // calculate low point for the purpose of getting the indices
   // r_low_ is mapped, means z-cooridnate will always be axial direction
@@ -127,7 +122,7 @@ StaticVector3 CylinderFilter::get_indices(const Tracker& tktr) const {
 
   const int nx = static_cast<int>(std::floor((r.x() - r_low_.x()) * inv_pitch_x_));
   const int ny = static_cast<int>(std::floor((r.y() - r_low_.y()) * inv_pitch_y_));
-  const int nz = static_cast<int>(std::floor((r.z() - r_low_.z()) * inv_dz_));
+  const int nz = infinite_length ? 0 : static_cast<int>(std::floor((r.z() - r_low_.z()) * inv_dz_));
 
   double new_origin_x = origin_.x() + pitch_x_ * static_cast<double>(nx);
   double new_origin_y = origin_.y() + pitch_y_ * static_cast<double>(ny);
@@ -135,8 +130,8 @@ StaticVector3 CylinderFilter::get_indices(const Tracker& tktr) const {
   StaticVector3 indices;
   // check if nx, ny, and nz are positive
   // and less the number of bins in that direction
-  if (nx >= 0 && nx < static_cast<int>(Nx_) && ny >= 0 &&
-      ny < static_cast<int>(Ny_) &&
+  if (nx >= 0 && nx < static_cast<int>(Nx_) &&
+      ny >= 0 && ny < static_cast<int>(Ny_) &&
       ((nz >= 0 && nz < static_cast<int>(Nz_)) || infinite_length) ) {
     // check if the position is inside the circular radius or not
     if (sqrt((new_origin_x - r.x()) * (new_origin_x - r.x()) +
