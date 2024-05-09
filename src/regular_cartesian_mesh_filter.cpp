@@ -32,12 +32,6 @@ RegularCartesianMeshFilter::RegularCartesianMeshFilter(Position r_low,
     fatal_error("In position-filter with id: " + std::to_string(id) +
                 ", the number of bins in any direction must be a non-zero.");
 
-  /*if (Nx_ == 1 && Ny_ == 1 && Nz_ == 1) {
-    fatal_error(
-        "In position-filter with id: " + std::to_string(id) +
-        ", the given shape is [1,1,1], so box filter will should be used.");
-  }*/
-
   dx_ = (r_high_.x() - r_low_.x()) / static_cast<double>(Nx_);
   dy_ = (r_high_.y() - r_low_.y()) / static_cast<double>(Ny_);
   dz_ = (r_high_.z() - r_low_.z()) / static_cast<double>(Nz_);
@@ -466,6 +460,59 @@ std::pair<double, int> RegularCartesianMeshFilter::distance_to_next_index(
   }
 
   return {dist, key};
+}
+
+void RegularCartesianMeshFilter::write_to_hdf5(H5::Group& grp) const {
+  // Save id in attributes
+  if (grp.hasAttribute("id")) {
+    grp.deleteAttribute("id");
+  }
+  grp.createAttribute("id", this->id());
+
+  // Save type in attributes
+  if (grp.hasAttribute("type")) {
+    grp.deleteAttribute("type");
+  }
+  grp.createAttribute("type", "regular-cartesian-mesh");
+
+  // Save low position
+  std::array<double, 3> r_low{r_low_.x(), r_low_.y(), r_low_.z()};
+  if (grp.hasAttribute("low")) {
+    grp.deleteAttribute("low");
+  }
+  grp.createAttribute("low", r_low);
+
+  // Save high position
+  std::array<double, 3> r_high{r_high_.x(), r_high_.y(), r_high_.z()};
+  if (grp.hasAttribute("high")) {
+    grp.deleteAttribute("high");
+  }
+  grp.createAttribute("high", r_high);
+
+  // Save shape
+  std::array<std::size_t, 3> shape{Nx_, Ny_, Nz_};
+  if (grp.hasAttribute("shape")) {
+    grp.deleteAttribute("shape");
+  }
+  grp.createAttribute("shape", shape);
+
+  std::vector<double> x_bounds(Nx_ + 1, 0.);
+  for (std::size_t i = 0; i <= Nx_; i++) {
+    x_bounds[i] = (static_cast<double>(i) * dx_) + r_low_.x();
+  }
+  grp.createDataSet("x-bounds", x_bounds);
+
+  std::vector<double> y_bounds(Ny_ + 1, 0.);
+  for (std::size_t i = 0; i <= Ny_; i++) {
+    y_bounds[i] = (static_cast<double>(i) * dy_) + r_low_.y();
+  }
+  grp.createDataSet("y-bounds", y_bounds);
+
+  std::vector<double> z_bounds(Nz_ + 1, 0.);
+  for (std::size_t i = 0; i <= Nz_; i++) {
+    z_bounds[i] = (static_cast<double>(i) * dz_) + r_low_.z();
+  }
+  grp.createDataSet("z-bounds", z_bounds);
 }
 
 // Make the cartesian or position filter class

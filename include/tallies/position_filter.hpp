@@ -7,6 +7,9 @@
 #include <boost/container/static_vector.hpp>
 using StaticVector3 = boost::container::static_vector<size_t, 3>;
 
+#include <highfive/H5File.hpp>
+namespace H5 = HighFive;
+
 #include <memory>
 #include <vector>
 
@@ -32,6 +35,8 @@ class PositionFilter {
   virtual std::string type_str() const = 0;
 
   std::size_t id() const { return id_; }
+
+  virtual void write_to_hdf5(H5::Group& grp) const = 0;
 
  private:
   std::size_t id_;

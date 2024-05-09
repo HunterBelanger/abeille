@@ -38,6 +38,20 @@ std::optional<std::size_t> EnergyFilter::get_index(const double& E) const {
   return std::nullopt;
 }
 
+void EnergyFilter::write_to_hdf5(H5::Group& grp) const {
+  // Save id in attributes
+  if (grp.hasAttribute("id")) {
+    grp.deleteAttribute("id");
+  }
+  grp.createAttribute("id", this->id());
+
+  // Save energy bounds in a dataset
+  if (grp.exist("energy-bounds")) {
+    grp.unlink("energy-bounds");
+  }
+  grp.createDataSet("energy-bounds", this->energy_bounds());
+}
+
 std::shared_ptr<EnergyFilter> make_energy_filter(const YAML::Node& node) {
   if (!node["id"] || !node["id"].IsScalar()) {
     fatal_error("invalid id is given for energy-fitler.");

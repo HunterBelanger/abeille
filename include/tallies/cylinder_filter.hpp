@@ -39,6 +39,8 @@ class CylinderFilter : public PositionFilter {
 
   Orientation get_axial_direction() { return length_axis_; }
 
+  void write_to_hdf5(H5::Group& grp) const override final;
+
  private:
   Position origin_, r_low_;
   std::size_t Nx_, Ny_, Nz_;
@@ -46,7 +48,7 @@ class CylinderFilter : public PositionFilter {
   Orientation length_axis_;
   double radius_, pitch_x_, pitch_y_, dz_, inv_radius_, inv_pitch_x_,
       inv_pitch_y_, inv_dz_;
-  bool infinite_length = false; // to incorporate the infinte cylinder
+  bool infinite_length = false;  // to incorporate the infinte cylinder
   // To map the indexes to either converting into class co-ordinate or into
   // original
   void map_indexes(StaticVector3& indexes) const {
@@ -85,8 +87,8 @@ class CylinderFilter : public PositionFilter {
       return {loc_x};
     }
 
-    if ( infinite_length == true ){
-      if ( Nx_ == 1 && Ny_ == 1 ){
+    if (infinite_length == true) {
+      if (Nx_ == 1 && Ny_ == 1) {
         return {loc_x};
       }
     }

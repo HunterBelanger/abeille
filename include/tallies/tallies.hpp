@@ -297,6 +297,8 @@ class Tallies {
 
   void update_avg_and_var(double x, double& x_avg, double& x_var);
 
+  void write_filters();
+
 };  // Tallies
 
 void add_mesh_tally(Tallies& tallies, const YAML::Node& node);

@@ -100,6 +100,17 @@ void Tallies::verify_track_length_tallies(bool track_length_transporter) const {
         fatal_error(mssg.str());
       }
     }
+
+    for (const auto& tally : new_itally_track_length_) {
+      if (tally->quantity() != Quantity::Flux &&
+          tally->quantity() != Quantity::RealFlux &&
+          tally->quantity() != Quantity::ImagFlux) {
+        std::stringstream mssg;
+        mssg << "Estimator for tally " << tally->name()
+             << " is incompatible with the selected transport operator.";
+        fatal_error(mssg.str());
+      }
+    }
   }
 }
 
@@ -107,7 +118,7 @@ void Tallies::add_position_filter(std::size_t id,
                                   std::shared_ptr<PositionFilter> filter) {
   if (position_filters_.find(id) != position_filters_.end()) {
     std::stringstream mssg;
-    mssg << "the position-filter id - " << id << " must be a unique id.";
+    mssg << "The position-filter id " << id << " already exists.";
     fatal_error(mssg.str());
   }
   position_filters_[id] = filter;
@@ -117,7 +128,7 @@ void Tallies::add_cartesian_filter(std::size_t id,
                                    std::shared_ptr<CartesianFilter> filter) {
   if (cartesian_filters_.find(id) != cartesian_filters_.end()) {
     std::stringstream mssg;
-    mssg << "the position-filter id - " << id << " must be a unique id.";
+    mssg << "The position-filter id " << id << " already exists.";
     fatal_error(mssg.str());
   }
   cartesian_filters_[id] = filter;
@@ -126,7 +137,7 @@ void Tallies::add_cylinder_filter(std::size_t id,
                                   std::shared_ptr<CylinderFilter> filter) {
   if (cylinder_filters_.find(id) != cylinder_filters_.end()) {
     std::stringstream mssg;
-    mssg << "the position-filter id - " << id << " must be a unique id.";
+    mssg << "The position-filter id " << id << " already exists.";
     fatal_error(mssg.str());
   }
   cylinder_filters_[id] = filter;
@@ -135,7 +146,7 @@ void Tallies::add_energy_filter(std::size_t id,
                                 std::shared_ptr<EnergyFilter> filter) {
   if (energy_filters_.find(id) != energy_filters_.end()) {
     std::stringstream mssg;
-    mssg << "the energy-filter id - " << id << " must be a unique id.";
+    mssg << "The energy-filter id " << id << " already exists.";
     fatal_error(mssg.str());
   }
   energy_filters_[id] = filter;
@@ -339,6 +350,9 @@ void Tallies::write_tallies(bool track_length_compatible) {
     results.createAttribute("mig-area-std", mig_area_err());
   }
 
+  // Write filters
+  this->write_filters();
+
   // Write all mesh tallies
   if (gen > 0) {
     for (auto& tally : collision_mesh_tallies_) tally->write_tally();
@@ -352,6 +366,61 @@ void Tallies::write_tallies(bool track_length_compatible) {
     for (auto& tallly : new_itally_collision_) tallly->write_tally();
 
     for (auto& tallly : new_itally_track_length_) tallly->write_tally();
+  }
+}
+
+void Tallies::write_filters() {
+  if (position_filters_.empty() && energy_filters_.empty()) {
+    return;
+  }
+
+  // Writes all filters to hdf5
+  auto& h5 = Output::instance().h5();
+  if (h5.exist("tally-filters") == false) {
+    h5.createGroup("tally-filters");
+  }
+  auto filters = h5.getGroup("tally-filters");
+
+  // First, write energy filters
+  if (energy_filters_.empty() == false) {
+    if (filters.exist("energy-filters") == false) {
+      filters.createGroup("energy-filters");
+    }
+    auto efilters = filters.getGroup("energy-filters");
+
+    for (const auto& id_efilt : energy_filters_) {
+      auto id = id_efilt.first;
+      std::string id_str = std::to_string(id);
+
+      if (efilters.exist(id_str) == false) {
+        efilters.createGroup(id_str);
+      }
+
+      auto efilt_grp = efilters.getGroup(id_str);
+
+      id_efilt.second->write_to_hdf5(efilt_grp);
+    }
+  }
+
+  // Second, write position filters
+  if (position_filters_.empty() == false) {
+    if (filters.exist("position-filters") == false) {
+      filters.createGroup("position-filters");
+    }
+    auto pfilters = filters.getGroup("position-filters");
+
+    for (const auto& id_pfilt : position_filters_) {
+      auto id = id_pfilt.first;
+      std::string id_str = std::to_string(id);
+
+      if (pfilters.exist(id_str) == false) {
+        pfilters.createGroup(id_str);
+      }
+
+      auto pfilt_grp = pfilters.getGroup(id_str);
+
+      id_pfilt.second->write_to_hdf5(pfilt_grp);
+    }
   }
 }
 

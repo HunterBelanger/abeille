@@ -148,35 +148,42 @@ void LegendreFET::write_tally() {
 
   // Create the group for the tally
   auto tally_grp = h5.createGroup("results/" + tally_name_);
-  /*
-    // First write coordinates and number of groups
-    std::vector<double> x_bounds(Nx + 1, 0.);
-    for (std::size_t i = 0; i <= Nx; i++) {
-      x_bounds[i] = (static_cast<double>(i) * dx) + r_low.x();
+
+  // Save the type
+  tally_grp.createAttribute("type", "legendre-fet");
+
+  // Save the energy-in filter
+  if (energy_in_) {
+    tally_grp.createAttribute("energy-filter", energy_in_->id());
+  }
+
+  // Save position filter
+  tally_grp.createAttribute("position-filter", cartesian_filter_->id());
+
+  // Save FET order
+  tally_grp.createAttribute("order", fet_order_);
+
+  // Save the axes
+  std::vector<std::string> axes;
+  for (const auto& ax : axes_) {
+    switch (ax) {
+      case Axis::X:
+        axes.push_back("x");
+        break;
+
+      case Axis::Y:
+        axes.push_back("y");
+        break;
+
+      case Axis::Z:
+        axes.push_back("s");
+        break;
     }
-    tally_grp.createAttribute("x-bounds", x_bounds);
+  }
+  tally_grp.createAttribute("axes", axes);
 
-    std::vector<double> y_bounds(Ny + 1, 0.);
-    for (std::size_t i = 0; i <= Ny; i++) {
-      y_bounds[i] = (static_cast<double>(i) * dy) + r_low.y();
-    }
-    tally_grp.createAttribute("y-bounds", y_bounds);
-
-    std::vector<double> z_bounds(Nz + 1, 0.);
-    for (std::size_t i = 0; i <= Nz; i++) {
-      z_bounds[i] = (static_cast<double>(i) * dz) + r_low.z();
-    }
-    tally_grp.createAttribute("z-bounds", z_bounds);
-
-
-    tally_grp.createAttribute("energy-bounds", energy_bounds);
-  */
   // Save the quantity
   tally_grp.createAttribute("quantity", quantity_str());
-
-  /*if (this->quantity_str() == "mt") {
-    tally_grp.createAttribute("mt", this->mt());
-  }*/
 
   // Save the estimator
   tally_grp.createAttribute("estimator", estimator_str());

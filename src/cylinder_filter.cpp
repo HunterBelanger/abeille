@@ -73,7 +73,7 @@ CylinderFilter::CylinderFilter(Position origin, double radius, double dx,
   }
 
   // Make sure shapes are all > 0
-  if ( nx == 0 && length_axis_ == Orientation::X){
+  if (nx == 0 && length_axis_ == Orientation::X) {
     infinite_length = true;
   } else if (nx == 0) {
     std::stringstream mssg;
@@ -81,7 +81,7 @@ CylinderFilter::CylinderFilter(Position origin, double radius, double dx,
     fatal_error(mssg.str());
   }
 
-  if ( ny == 0 && length_axis_ == Orientation::Y){
+  if (ny == 0 && length_axis_ == Orientation::Y) {
     infinite_length = true;
   } else if (ny == 0) {
     std::stringstream mssg;
@@ -89,7 +89,7 @@ CylinderFilter::CylinderFilter(Position origin, double radius, double dx,
     fatal_error(mssg.str());
   }
 
-  if ( nz == 0 && length_axis_ == Orientation::Z){
+  if (nz == 0 && length_axis_ == Orientation::Z) {
     infinite_length = true;
   } else if (nz == 0) {
     std::stringstream mssg;
@@ -120,9 +120,14 @@ CylinderFilter::CylinderFilter(Position origin, double radius, double dx,
 StaticVector3 CylinderFilter::get_indices(const Tracker& tktr) const {
   const Position r = map_coordinate(tktr.r());
 
-  const int nx = static_cast<int>(std::floor((r.x() - r_low_.x()) * inv_pitch_x_));
-  const int ny = static_cast<int>(std::floor((r.y() - r_low_.y()) * inv_pitch_y_));
-  const int nz = infinite_length ? 0 : static_cast<int>(std::floor((r.z() - r_low_.z()) * inv_dz_));
+  const int nx =
+      static_cast<int>(std::floor((r.x() - r_low_.x()) * inv_pitch_x_));
+  const int ny =
+      static_cast<int>(std::floor((r.y() - r_low_.y()) * inv_pitch_y_));
+  const int nz =
+      infinite_length
+          ? 0
+          : static_cast<int>(std::floor((r.z() - r_low_.z()) * inv_dz_));
 
   double new_origin_x = origin_.x() + pitch_x_ * static_cast<double>(nx);
   double new_origin_y = origin_.y() + pitch_y_ * static_cast<double>(ny);
@@ -130,9 +135,9 @@ StaticVector3 CylinderFilter::get_indices(const Tracker& tktr) const {
   StaticVector3 indices;
   // check if nx, ny, and nz are positive
   // and less the number of bins in that direction
-  if (nx >= 0 && nx < static_cast<int>(Nx_) &&
-      ny >= 0 && ny < static_cast<int>(Ny_) &&
-      ((nz >= 0 && nz < static_cast<int>(Nz_)) || infinite_length) ) {
+  if (nx >= 0 && nx < static_cast<int>(Nx_) && ny >= 0 &&
+      ny < static_cast<int>(Ny_) &&
+      ((nz >= 0 && nz < static_cast<int>(Nz_)) || infinite_length)) {
     // check if the position is inside the circular radius or not
     if (sqrt((new_origin_x - r.x()) * (new_origin_x - r.x()) +
              (new_origin_y - r.y()) * (new_origin_y - r.y())) <=
@@ -209,6 +214,85 @@ std::pair<double, double> CylinderFilter::get_scaled_radius_and_angle(
   const double height = ry - new_origin_y;
   const double theta = std::atan(height / base);
   return {scaled_r, theta};
+}
+
+void CylinderFilter::write_to_hdf5(H5::Group& grp) const {
+  // Save id in attributes
+  if (grp.hasAttribute("id")) {
+    grp.deleteAttribute("id");
+  }
+  grp.createAttribute("id", this->id());
+
+  // Save type in attributes
+  if (grp.hasAttribute("type")) {
+    grp.deleteAttribute("type");
+  }
+  grp.createAttribute("type", "cylinder-filter");
+
+  // Save origin position
+  std::array<double, 3> origin{origin_.x(), origin_.y(), origin_.z()};
+  if (grp.hasAttribute("origin")) {
+    grp.deleteAttribute("origin");
+  }
+  grp.createAttribute("origin", origin);
+
+  // Save radius
+  if (grp.hasAttribute("radius")) {
+    grp.deleteAttribute("radius");
+  }
+  grp.createAttribute("radius", this->radius());
+
+  // Save axis
+  if (grp.hasAttribute("axis")) {
+    grp.deleteAttribute("axis");
+  }
+  switch (length_axis_) {
+    case Orientation::X:
+      grp.createAttribute("axis", "x");
+      break;
+
+    case Orientation::Y:
+      grp.createAttribute("axis", "y");
+      break;
+
+    case Orientation::Z:
+      grp.createAttribute("axis", "z");
+      break;
+  }
+
+  // Save shape
+  std::array<std::size_t, 3> shape{Real_nx, Real_ny, Real_nz};
+  switch (length_axis_) {
+    case Orientation::X:
+      grp.createAttribute("axis", "x");
+      break;
+
+    case Orientation::Y:
+      grp.createAttribute("axis", "y");
+      break;
+
+    case Orientation::Z:
+      grp.createAttribute("axis", "z");
+      break;
+  }
+  if (grp.hasAttribute("shape")) {
+    grp.deleteAttribute("shape");
+  }
+  grp.createAttribute("shape", shape);
+
+  // Save pitch
+  std::array<double, 3> pitch{pitch_x_, pitch_y_, dz_};
+  if (length_axis_ == Orientation::X) {
+    pitch[0] = dz_;
+    pitch[2] = pitch_x_;
+  } else if (length_axis_ == Orientation::Y) {
+    pitch[1] = dz_;
+    pitch[2] = pitch_y_;
+  }
+  if (grp.hasAttribute("pitch")) {
+    grp.deleteAttribute("pitch");
+  }
+  grp.createAttribute("pitch", pitch);
 }
 
 std::shared_ptr<CylinderFilter> make_cylinder_filter(const YAML::Node& node) {

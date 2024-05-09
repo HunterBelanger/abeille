@@ -8,8 +8,8 @@
 
 class RegularCartesianMeshFilter : public CartesianFilter {
  public:
-  RegularCartesianMeshFilter(Position r_low, Position r_high, size_t nx,
-                             size_t ny, size_t nz, std::size_t id);
+  RegularCartesianMeshFilter(Position r_low, Position r_high, std::size_t nx,
+                             std::size_t ny, std::size_t nz, std::size_t id);
 
   StaticVector3 get_indices(const Tracker& tktr) const override final;
 
@@ -46,9 +46,11 @@ class RegularCartesianMeshFilter : public CartesianFilter {
                                                 const std::array<int, 3>& on,
                                                 int i, int j, int k) const;
 
+  void write_to_hdf5(H5::Group& grp) const override final;
+
  private:
   double dx_, dy_, dz_, dx_inv_, dy_inv_, dz_inv_;
-  size_t Nx_, Ny_, Nz_, x_index_, y_index_, z_index_;
+  std::size_t Nx_, Ny_, Nz_, x_index_, y_index_, z_index_;
 
   // function will reduce the dimsion, if there is only one bin in the direction
   StaticVector3 reduce_dimension(const size_t& loc_x, const size_t& loc_y,

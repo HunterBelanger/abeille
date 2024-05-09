@@ -3,6 +3,9 @@
 
 #include <yaml-cpp/yaml.h>
 
+#include <highfive/H5File.hpp>
+namespace H5 = HighFive;
+
 #include <iostream>
 #include <optional>
 #include <string>
@@ -22,6 +25,8 @@ class EnergyFilter {
   std::string type_str() const { return "energy-filter"; }
 
   std::size_t id() const { return id_; }
+
+  void write_to_hdf5(H5::Group& grp) const;
 
  private:
   std::vector<double> energy_bounds_;

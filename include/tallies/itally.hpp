@@ -52,6 +52,8 @@ class ITally {
   Quantity quantity() { return quantity_; }
   std::string quantity_str();
 
+  const std::string& name() const { return tally_name_; }
+
   virtual void write_tally() = 0;
 
   static const std::set<std::string> reserved_tally_names;

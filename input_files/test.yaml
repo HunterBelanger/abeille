@@ -46,30 +46,34 @@ universes:
 
 root-universe: 1
 
+tally-filters:
+  position-filters:
+    - id: 1
+      type: regular-cartesian-mesh
+      low:  [-7.822954, -100., -100.]
+      high: [ 7.822954,  100.,  100.]
+      shape: [500, 1, 1]
+
+  energy-filters:
+    - id: 1
+      energy-bounds: [0., 1., 2.]
 
 tallies:
   - #shape: [1, 1, 1]
-    shape: [1000, 1, 1]
+    shape: [500, 1, 1]
     low: [-7.822954, -100., -100.]
     hi:  [ 7.822954,  100.,  100.]
     energy-bounds: [0., 1., 2.]
     quantity: flux
-    name: flux_PUa
-    estimator: collision
+    name: flux-old
+    estimator: track-length
   
   - type: ITally
-    tally-type: legendre-FET
-    FET-order: 5
-    Position-Filter: regular-reactangular-mesh
-    #Position-Filter: box
-    shape: [2, 1, 1]
-    low: [-7.822954, -100., -100.]
-    high:  [ 7.822954,  100.,  100.]
-    energy-bounds: [1., 2.]
     quantity: flux
-    name: flux-3
-    estimator: collision
-    FET-axis: [X]
+    name: flux-new
+    estimator: track-length
+    energy-filter: 1
+    position-filter: 1
 
 settings: 
   energy-mode: multi-group
