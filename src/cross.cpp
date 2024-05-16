@@ -83,7 +83,7 @@ int Cross::sign(const Position& r, const Direction& u) const {
 
   // Iterate over all possible distance combinations
   int i = 0;
-  int j = static_cast<int>(dists_.size()) - 1;
+  int j = static_cast<int>(dists_.size()) - 2;
   while (i < static_cast<int>(dists_.size()) && j >= 0) {
     const std::size_t i_indx = static_cast<std::size_t>(i);
     const std::size_t j_indx = static_cast<std::size_t>(j);

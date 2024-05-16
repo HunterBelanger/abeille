@@ -1412,10 +1412,19 @@ surfaces.append({"id": 17011, "type": "plane", "A": -float(np.tan(61.*np.pi/180.
 surfaces.append({"id": 17012, "type": "zcylinder", "x0": 0., "y0": 0., "r": 187.96}) # Inner radius of Core barrel
 surfaces.append({"id": 17013, "type": "zcylinder", "x0": 0., "y0": 0., "r": 193.675}) # Outer radius of Core barrel
 
+# Core baffle
+assembly_pitch = 21.50364
+baffle_gap = 0.1627
+baffle_thick = 2.22250
+surfaces.append({"id": 17015, "type": "cross", "distances": [(3.5*assembly_pitch)+baffle_gap,              (5.5*assembly_pitch)+baffle_gap,              (6.5*assembly_pitch)+baffle_gap,              (7.5*assembly_pitch)+baffle_gap]})
+surfaces.append({"id": 17016, "type": "cross", "distances": [(3.5*assembly_pitch)+baffle_gap+baffle_thick, (5.5*assembly_pitch)+baffle_gap+baffle_thick, (6.5*assembly_pitch)+baffle_gap+baffle_thick, (7.5*assembly_pitch)+baffle_gap+baffle_thick]})
+cells.append({"id": 17021, "region": "+17004 & -17005 & +17015 & -17016", "material": SS304}) # Baffle
+
 cells.append({"id": 17001, "region": "-17002 & +17001 & +17004 & -17005", "material": SS304}) # PV Liner
 cells.append({"id": 17002, "region": "-17003 & +17002 & +17004 & -17005", "material": CS}) # PV
 
-cells.append({"id": 17003, "region": "-17012 & +17004 & -17005", "material": BH2O}) # Water inside core barel
+cells.append({"id": 17003, "region": "-17012 & +17004 & -17005 & ~(+17004 & -17005 & +17015 & -17016)", "material": BH2O}) # Water inside core barel
+
 cells.append({"id": 17004, "region": "-17013 & +17012 & +17004 & -17005", "material": SS304}) # Core barel
 
 cells.append({"id": 17005, "region": "-17001 & +17013 & +17004 & -17005 & -17008 & +17010", "material": BH2O}) # N Water reflector
@@ -1440,7 +1449,7 @@ cells.append({"id": 17019, "region": "+17006 & -17007 & +17004 & -17005 & -17010
 cells.append({"id": 17020, "region": "+17007 & -17001 & +17004 & -17005 & -17010 & +17011", "material": BH2O}) # NE outer water
 
 universes.append({"id": 17001, "cells": [17001, 17002, 17003, 17004, 17005, 17006, 17007, 17008, 17009, 17010,
-  17011, 17012, 17013, 17014, 17015, 17016, 17017, 17018, 17019, 17020]})
+  17011, 17012, 17013, 17014, 17015, 17016, 17017, 17018, 17019, 17020, 17021]})
 
 #=============================================================================
 # Lattices
