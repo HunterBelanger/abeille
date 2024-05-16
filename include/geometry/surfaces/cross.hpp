@@ -31,19 +31,20 @@
 #include <vector>
 
 class Cross : public Surface {
-  public:
-    Cross(Position origin, const std::vector<double>& dists, BoundaryType bound, uint32_t id, const std::string& name);
+ public:
+  Cross(Position origin, const std::vector<double>& dists, BoundaryType bound,
+        uint32_t id, const std::string& name);
 
-    int sign(const Position& r, const Direction& u) const override;
+  int sign(const Position& r, const Direction& u) const override;
 
-    double distance(const Position& r, const Direction& u,
-                    bool on_surf) const override;
+  double distance(const Position& r, const Direction& u,
+                  bool on_surf) const override;
 
-    Direction norm(const Position& r) const override;
+  Direction norm(const Position& r) const override;
 
-  private:
-    Position origin_;
-    std::vector<double> dists_;
+ private:
+  Position origin_;
+  std::vector<double> dists_;
 };
 
 std::shared_ptr<Cross> make_cross(const YAML::Node& surface_node);
