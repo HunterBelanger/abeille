@@ -17,11 +17,13 @@ class GeneralTally : public ITally {
 
   ~GeneralTally() = default;
 
-  void score_collision(const Particle& p, const Tracker& tktr,
+  void score_collision(const Particle& p, const Tracker& trkr,
                        MaterialHelper& mat) override final;
 
   void score_flight(const Particle& p, const Tracker& trkr, double d_flight,
                     MaterialHelper& mat) override final;
+
+  void score_source(const BankedParticle& p) override final;
 
   void write_tally() override final;
 

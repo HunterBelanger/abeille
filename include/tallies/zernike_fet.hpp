@@ -5,6 +5,7 @@
 #include <tallies/energy_filter.hpp>
 #include <tallies/itally.hpp>
 #include <tallies/zernike_polynomial.hpp>
+#include <utils/error.hpp>
 
 #include <yaml-cpp/yaml.h>
 
@@ -24,12 +25,16 @@ class ZernikeFET : public ITally {
              std::size_t zernike_order, Quantity quantity, Estimator estimator,
              std::string name);
 
-  void score_collision(const Particle& p, const Tracker& tktr,
+  void score_collision(const Particle& p, const Tracker& trkr,
                        MaterialHelper& mat) override final;
 
   void score_flight(const Particle& /*p*/, const Tracker& /*trkr*/,
                     double /*d_flight*/,
-                    MaterialHelper& /*mat*/) override final {}
+                    MaterialHelper& /*mat*/) override final {
+    fatal_error("the track-length for the legendre-fet is not supoorted yet.");
+  }
+
+  void score_source(const BankedParticle& p) override final;
 
   void write_tally() override final;
 

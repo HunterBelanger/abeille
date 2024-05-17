@@ -102,9 +102,9 @@ void Tallies::verify_track_length_tallies(bool track_length_transporter) const {
     }
 
     for (const auto& tally : new_itally_track_length_) {
-      if (tally->quantity() != Quantity::Flux &&
-          tally->quantity() != Quantity::RealFlux &&
-          tally->quantity() != Quantity::ImagFlux) {
+      if (tally->quantity().type != Quantity::Type::Flux &&
+          tally->quantity().type != Quantity::Type::RealFlux &&
+          tally->quantity().type != Quantity::Type::ImagFlux) {
         std::stringstream mssg;
         mssg << "Estimator for tally " << tally->name()
              << " is incompatible with the selected transport operator.";

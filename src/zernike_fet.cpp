@@ -30,6 +30,17 @@ ZernikeFET::ZernikeFET(std::shared_ptr<CylinderFilter> cylinder_filter,
   if (cylinder_filter_ == nullptr) {
     fatal_error("ZernikeFET has nullptr cylinder-filer.");
   }
+
+  if ((quantity_.type == Quantity::Type::Source ||
+       quantity_.type == Quantity::Type::RealSource ||
+       quantity_.type == Quantity::Type::ImagSource) &&
+      estimator_ != Estimator::Source) {
+    std::stringstream mssg;
+    mssg << "Tally " << tally_name_
+         << " has a source-like qantity but does not use a source estimator.";
+    fatal_error(mssg.str());
+  }
+
   StaticVector3 cylinder_shape = cylinder_filter_->get_shape();
   tally_shape.insert(tally_shape.end(), cylinder_shape.begin(),
                      cylinder_shape.end());
@@ -51,13 +62,13 @@ ZernikeFET::ZernikeFET(std::shared_ptr<CylinderFilter> cylinder_filter,
   tally_shape.push_back(max_order + 1);
 
   // reallocate and fill with zeros for the taly avg, gen-score and varaince
-  tally_avg_.reallocate(tally_shape);
+  tally_avg_.resize(tally_shape);
   tally_avg_.fill(0.0);
 
-  tally_gen_score_.reallocate(tally_shape);
+  tally_gen_score_.resize(tally_shape);
   tally_gen_score_.fill(0.0);
 
-  tally_var_.reallocate(tally_shape);
+  tally_var_.resize(tally_shape);
   tally_var_.fill(0.0);
 }
 
@@ -84,6 +95,17 @@ ZernikeFET::ZernikeFET(std::shared_ptr<CylinderFilter> cylinder_filter,
   if (cylinder_filter_ == nullptr) {
     fatal_error("ZernikeFET has nullptr cylinder-filer.");
   }
+
+  if ((quantity_.type == Quantity::Type::Source ||
+       quantity_.type == Quantity::Type::RealSource ||
+       quantity_.type == Quantity::Type::ImagSource) &&
+      estimator_ != Estimator::Source) {
+    std::stringstream mssg;
+    mssg << "Tally " << tally_name_
+         << " has a source-like qantity but does not use a source estimator.";
+    fatal_error(mssg.str());
+  }
+
   StaticVector3 cylinder_shape = cylinder_filter_->get_shape();
   tally_shape.insert(tally_shape.end(), cylinder_shape.begin(),
                      cylinder_shape.end());
@@ -104,13 +126,13 @@ ZernikeFET::ZernikeFET(std::shared_ptr<CylinderFilter> cylinder_filter,
   check_for_legendre = false;
 
   // reallocate and fill with zeros for the taly avg, gen-score and varaince
-  tally_avg_.reallocate(tally_shape);
+  tally_avg_.resize(tally_shape);
   tally_avg_.fill(0.0);
 
-  tally_gen_score_.reallocate(tally_shape);
+  tally_gen_score_.resize(tally_shape);
   tally_gen_score_.fill(0.0);
 
-  tally_var_.reallocate(tally_shape);
+  tally_var_.resize(tally_shape);
   tally_var_.fill(0.0);
 }
 
@@ -146,7 +168,8 @@ void ZernikeFET::score_collision(const Particle& p, const Tracker& tktr,
 
   // Get the particle base score for the collision
   const double Et = mat.Et(p.E());
-  const double collision_score = particle_base_score(p, mat) / Et;
+  const double collision_score =
+      particle_base_score(p.E(), p.wgt(), p.wgt2(), &mat) / Et;
 
   // varaible for scoring
   double beta_n;
@@ -166,7 +189,7 @@ void ZernikeFET::score_collision(const Particle& p, const Tracker& tktr,
 #ifdef ABEILLE_USE_OMP
 #pragma omp atomic
 #endif
-    tally_gen_score_(indices) += beta_n;
+    tally_gen_score_.element(indices.begin(), indices.end()) += beta_n;
   }
 
   // second- score for the legendre
@@ -188,7 +211,87 @@ void ZernikeFET::score_collision(const Particle& p, const Tracker& tktr,
 #ifdef ABEILLE_USE_OMP
 #pragma omp atomic
 #endif
-      tally_gen_score_(indices) += beta_n;
+      tally_gen_score_.element(indices.begin(), indices.end()) += beta_n;
+    }
+  }
+}
+
+void ZernikeFET::score_source(const BankedParticle& p) {
+  Tracker trkr(p.r, p.u);
+
+  StaticVector6 indices;
+  // get the energy-index, if energy-filter exists
+  if (energy_filter_) {
+    std::optional<std::size_t> E_indx = energy_filter_->get_index(p.E);
+    if (E_indx.has_value() == false) {
+      // Not inside any energy bin. Don't score.
+      return;
+    }
+
+    indices.push_back(E_indx.value());
+  }
+
+  // get the positional indexes from cylinder_filter
+  StaticVector3 cylinder_index = cylinder_filter_->get_indices(trkr);
+  if (cylinder_index.empty()) {
+    // Not inside any energy bin. Don't score.
+    return;
+  }
+  indices.insert(indices.end(), cylinder_index.begin(), cylinder_index.end());
+
+  // add one dimension for the different polynomial
+  std::size_t poly_index = indices.size();
+  indices.push_back(0);
+
+  // add one dimension for the different order
+  std::size_t FET_index = indices.size();
+  indices.push_back(0);
+
+  // Get the particle base score for the collision
+  const double collision_score =
+      particle_base_score(p.E, p.wgt, p.wgt2, nullptr);
+
+  // varaible for scoring
+  double beta_n;
+
+  // first- score for the zernike
+  std::pair<double, double> scaled_r_and_theta =
+      cylinder_filter_->get_scaled_radius_and_angle(cylinder_index, trkr.r());
+  const double scaled_r = scaled_r_and_theta.first;
+  const double theta = scaled_r_and_theta.second;
+  const std::vector<double> zr_value =
+      zr_polynomial_.evaluate_zernikes(scaled_r, theta);
+
+  for (std::size_t i = 0; i <= zr_order_; i++) {
+    // score for i-th order's basis function
+    beta_n = collision_score * zr_value[i];
+    indices[FET_index] = i;
+#ifdef ABEILLE_USE_OMP
+#pragma omp atomic
+#endif
+    tally_gen_score_.element(indices.begin(), indices.end()) += beta_n;
+  }
+
+  // second- score for the legendre
+  if (check_for_legendre == true) {
+    indices[poly_index] = 1;
+    const double zmin = cylinder_filter_->z_min(cylinder_index);
+    const double zmax = cylinder_filter_->z_max(cylinder_index);
+    double z = trkr.r().z();
+    if (axial_direction_ == CylinderFilter::Orientation::Y) {
+      z = trkr.r().y();
+    } else if (axial_direction_ == CylinderFilter::Orientation::X) {
+      z = trkr.r().z();
+    }
+    const double scaled_z = 2 * (z - zmin) / (zmin - zmax) - 1.0;
+    for (std::size_t i = 0; i <= legen_order_; i++) {
+      // score for i-th order's basis function
+      beta_n = collision_score * legendre(i, scaled_z);
+      indices[FET_index] = i;
+#ifdef ABEILLE_USE_OMP
+#pragma omp atomic
+#endif
+      tally_gen_score_.element(indices.begin(), indices.end()) += beta_n;
     }
   }
 }
@@ -208,6 +311,9 @@ void ZernikeFET::write_tally() {
 
   // Save the quantity
   tally_grp.createAttribute("quantity", quantity_str());
+  if (quantity_.type == Quantity::Type::MT) {
+    tally_grp.createAttribute("mt", quantity_.mt);
+  }
 
   // Save the estimator
   tally_grp.createAttribute("estimator", estimator_str());
@@ -231,13 +337,13 @@ void ZernikeFET::write_tally() {
     tally_var_[l] = std::sqrt(tally_var_[l] / static_cast<double>(gen_));
 
   // Add data sets for the average and the standard deviation
-  auto avg_dset =
-      tally_grp.createDataSet<double>("avg", H5::DataSpace(tally_avg_.shape()));
-  avg_dset.write_raw(&tally_avg_[0]);
+  std::vector<std::size_t> shape(tally_avg_.shape().begin(),
+                                 tally_avg_.shape().end());
+  auto avg_dset = tally_grp.createDataSet<double>("avg", H5::DataSpace(shape));
+  avg_dset.write_raw(tally_avg_.data());
 
-  auto std_dset =
-      tally_grp.createDataSet<double>("std", H5::DataSpace(tally_var_.shape()));
-  std_dset.write_raw(&tally_var_[0]);
+  auto std_dset = tally_grp.createDataSet<double>("std", H5::DataSpace(shape));
+  std_dset.write_raw(tally_var_.data());
 }
 
 // make the tally-zernike
@@ -248,13 +354,29 @@ std::shared_ptr<ZernikeFET> make_zernike_fet(const YAML::Node& node) {
   }
   std::string name = node["name"].as<std::string>();
 
-  // Check the estimator is given or not. We default to collision estimators.
+  // Check for the quantity
+  std::string given_quantity = "";
+  if (!node["quantity"] || node["quantity"].IsScalar() == false) {
+    fatal_error("No quantity is given for tally " + name + ".");
+  }
+  given_quantity = node["quantity"].as<std::string>();
+  Quantity quant = read_quantity(node, name);
+  const bool source_like = (quant.type == Quantity::Type::Source ||
+                            quant.type == Quantity::Type::RealSource ||
+                            quant.type == Quantity::Type::ImagSource);
+
   std::string estimator_name = "collision";
+  if (source_like) {
+    estimator_name = "sources";
+  }
+
+  // Check the estimator is given or not. We default to collision estimators.
   if (node["estimator"] && node["estimator"].IsScalar()) {
     estimator_name = node["estimator"].as<std::string>();
   } else if (node["estimator"]) {
     fatal_error("Invalid estimator entry is given on tally \"" + name + "\".");
   }
+
   Estimator estimator;
   if (estimator_name == "collision") {
     estimator = Estimator::Collision;
@@ -263,6 +385,8 @@ std::shared_ptr<ZernikeFET> make_zernike_fet(const YAML::Node& node) {
     fatal_error(
         "On tally " + name +
         ", track-length estimator is not yet supported on zernike-fet.");
+  } else if (estimator_name == "source") {
+    estimator = Estimator::Source;
   } else {
     std::stringstream mssg;
     mssg << "The tally " << name << " was provided with an unkown estimator \""
@@ -270,13 +394,12 @@ std::shared_ptr<ZernikeFET> make_zernike_fet(const YAML::Node& node) {
     fatal_error(mssg.str());
   }
 
-  // Check for the quantity
-  std::string given_quantity = "";
-  if (!node["quantity"] || node["quantity"].IsScalar() == false) {
-    fatal_error("No quantity is given for tally " + name + ".");
+  if (source_like && estimator != Estimator::Source) {
+    std::stringstream mssg;
+    mssg << "Tally " << name
+         << " has a source-like quantity but not a source estimator.";
+    fatal_error(mssg.str());
   }
-  given_quantity = node["quantity"].as<std::string>();
-  Quantity quant = read_quantity(given_quantity, name);
 
   // Get the tallies instance
   auto& tallies = Tallies::instance();

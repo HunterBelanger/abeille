@@ -30,7 +30,7 @@
 #include <utils/output.hpp>
 #include <utils/settings.hpp>
 
-#include <ndarray.hpp>
+#include <xtensor/xtensor.hpp>
 
 #include <functional>
 
@@ -177,7 +177,9 @@ void Simulation::write_source(std::vector<Particle>& bank) const {
 
   if (mpi::rank == 0) {
     // Make an NDArray to contain all particles info first
-    NDArray<double> source({tmp_bank.size(), 9});
+    xt::xtensor<double, 2> source;
+    source.resize({tmp_bank.size(), 9});
+    source.fill(0.);
 
     // Add all particles to the array
     for (std::size_t i = 0; i < tmp_bank.size(); i++) {
@@ -195,9 +197,9 @@ void Simulation::write_source(std::vector<Particle>& bank) const {
     }
 
     auto& h5 = Output::instance().h5();
-    auto source_dset =
-        h5.createDataSet<double>("source", H5::DataSpace(source.shape()));
-    source_dset.write_raw(&source[0]);
+    const std::vector<std::size_t> shape{tmp_bank.size(), 9};
+    auto source_dset = h5.createDataSet<double>("source", H5::DataSpace(shape));
+    source_dset.write_raw(source.data());
   }
 }
 

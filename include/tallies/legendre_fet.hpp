@@ -8,7 +8,6 @@
 
 #include <yaml-cpp/yaml.h>
 #include <boost/container/static_vector.hpp>
-#include <ndarray.hpp>
 using StaticVector6 = boost::container::static_vector<size_t, 6>;
 
 #include <iostream>
@@ -26,7 +25,7 @@ class LegendreFET : public ITally {
 
   ~LegendreFET() = default;
 
-  void score_collision(const Particle& p, const Tracker& tktr,
+  void score_collision(const Particle& p, const Tracker& trkr,
                        MaterialHelper& mat) override final;
 
   void score_flight(const Particle& /*p*/, const Tracker& /*trkr*/,
@@ -34,6 +33,8 @@ class LegendreFET : public ITally {
                     MaterialHelper& /*mat*/) override final {
     fatal_error("the track-length for the legendre-fet is not supoorted yet.");
   }
+
+  void score_source(const BankedParticle& p) override final;
 
   void write_tally() override final;
 

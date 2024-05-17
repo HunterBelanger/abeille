@@ -5,22 +5,45 @@
 #include <simulation/particle.hpp>
 #include <simulation/tracker.hpp>
 
-#include <ndarray.hpp>
+#include <yaml-cpp/yaml.h>
+#include <xtensor/xarray.hpp>
 
 #include <set>
 #include <string>
 
-enum class Quantity {
-  Flux,
-  Total,
-  Fission,
-  Absorption,
-  Elastic,
-  RealFlux,
-  ImagFlux
+struct Quantity {
+  enum class Type {
+    // Flux-like quantities
+    Flux,
+    RealFlux,
+    ImagFlux,
+    // Reaction rates
+    Total,
+    Fission,
+    Absorption,
+    Elastic,
+    MT,
+    // Source-like tallies
+    Source,
+    RealSource,
+    ImagSource
+  };
+
+  Type type;
+  std::uint32_t mt;
+
+  bool operator==(const Quantity& R) const {
+    if (this->type != R.type) return false;
+
+    if (this->type == Type::MT) return this->mt == R.mt;
+
+    return true;
+  }
+
+  bool operator!=(const Quantity& R) const { return !this->operator==(R); }
 };
 
-enum class Estimator { Collision, TrackLength };
+enum class Estimator { Collision, TrackLength, Source };
 
 class ITally {
  public:
@@ -34,6 +57,9 @@ class ITally {
   // For track-length estimator
   virtual void score_flight(const Particle& p, const Tracker& trkr,
                             double d_flight, MaterialHelper& mat) = 0;
+
+  // For source estimator
+  virtual void score_source(const BankedParticle& p) = 0;
 
   // Record the avg and variance for the generation
   void record_generation(double mulitplier = 1.0);
@@ -49,7 +75,7 @@ class ITally {
   Estimator estimator() { return estimator_; }
   std::string estimator_str();
 
-  Quantity quantity() { return quantity_; }
+  const Quantity& quantity() { return quantity_; }
   std::string quantity_str();
 
   const std::string& name() const { return tally_name_; }
@@ -59,11 +85,12 @@ class ITally {
   static const std::set<std::string> reserved_tally_names;
 
  protected:
-  double particle_base_score(const Particle& p, MaterialHelper& mat);
+  double particle_base_score(double E, double wgt, double wgt2,
+                             MaterialHelper* mat);
 
-  NDArray<double> tally_avg_;
-  NDArray<double> tally_gen_score_;
-  NDArray<double> tally_var_;
+  xt::xarray<double> tally_avg_;
+  xt::xarray<double> tally_gen_score_;
+  xt::xarray<double> tally_var_;
 
   size_t gen_ = 0;
 
@@ -74,7 +101,6 @@ class ITally {
   double net_weight_, inv_net_weight_;
 };
 
-Quantity read_quantity(const std::string& quant_str,
-                       const std::string& tally_name);
+Quantity read_quantity(const YAML::Node& node, const std::string& name);
 
 #endif

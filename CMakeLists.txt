@@ -76,6 +76,34 @@ set(NDARRAY_INSTALL OFF CACHE BOOL "Install NDArray")
 FetchContent_MakeAvailable(NDArray)
 
 #===============================================================================
+# Get XTL
+message(STATUS "Downloading xtl v0.7.7")
+FetchContent_Declare(xtl
+  GIT_REPOSITORY https://github.com/xtensor-stack/xtl.git
+  GIT_TAG        0.7.7
+)
+FetchContent_MakeAvailable(xtl)
+
+#===============================================================================
+# Get XSIMD
+message(STATUS "Downloading xsimd v12.1.1")
+FetchContent_Declare(xsimd
+  GIT_REPOSITORY https://github.com/xtensor-stack/xsimd.git
+  GIT_TAG        12.1.1
+)
+FetchContent_MakeAvailable(xsimd)
+
+#===============================================================================
+# Get XTENSOR
+message(STATUS "Downloading xtensor v0.25.0")
+FetchContent_Declare(xtensor
+  GIT_REPOSITORY https://github.com/xtensor-stack/xtensor.git
+  GIT_TAG        0.25.0
+)
+set(XTENSOR_USE_XSIMD ON CACHE BOOL "Enable SIMD acceleration.")
+FetchContent_MakeAvailable(xtensor)
+
+#===============================================================================
 # Get ImApp
 if(ABEILLE_GUI_PLOT)
   message(STATUS "Downloading ImApp")
@@ -138,7 +166,7 @@ execute_process(COMMAND git describe --dirty --always
 add_executable(abeille src/main.cpp ${ABEILLE_SOURCE_FILES})
 target_include_directories(abeille PRIVATE include)
 target_compile_features(abeille PRIVATE cxx_std_17)
-target_link_libraries(abeille PUBLIC docopt_s yaml-cpp PapillonNDL::PapillonNDL NDArray::NDArray PCG::PCG_CXX sobol Boost::unordered Boost::container HighFive)
+target_link_libraries(abeille PUBLIC docopt_s yaml-cpp xtl xtensor PapillonNDL::PapillonNDL NDArray::NDArray PCG::PCG_CXX sobol Boost::unordered Boost::container HighFive)
 target_compile_definitions(abeille PUBLIC ABEILLE_GIT_HASH=\"${ABEILLE_GIT_HASH_RAW}\")
 target_compile_definitions(abeille PUBLIC ABEILLE_COMPILER_NAME=\"${CMAKE_CXX_COMPILER_ID}\")
 target_compile_definitions(abeille PUBLIC ABEILLE_COMPILER_VERSION=\"${CMAKE_CXX_COMPILER_VERSION}\")

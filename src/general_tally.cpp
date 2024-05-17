@@ -32,17 +32,27 @@ GeneralTally::GeneralTally(std::shared_ptr<PositionFilter> position_filter,
     }
   }
 
-  tally_avg_.reallocate(tally_shape);
+  if ((quantity_.type == Quantity::Type::Source ||
+       quantity_.type == Quantity::Type::RealSource ||
+       quantity_.type == Quantity::Type::ImagSource) &&
+      estimator_ != Estimator::Source) {
+    std::stringstream mssg;
+    mssg << "Tally " << tally_name_
+         << " has a source-like qantity but does not use a source estimator.";
+    fatal_error(mssg.str());
+  }
+
+  tally_avg_.resize(tally_shape);
   tally_avg_.fill(0.0);
 
-  tally_gen_score_.reallocate(tally_shape);
+  tally_gen_score_.resize(tally_shape);
   tally_gen_score_.fill(0.0);
 
-  tally_var_.reallocate(tally_shape);
+  tally_var_.resize(tally_shape);
   tally_var_.fill(0.0);
 }
 
-void GeneralTally::score_collision(const Particle& p, const Tracker& tktr,
+void GeneralTally::score_collision(const Particle& p, const Tracker& trkr,
                                    MaterialHelper& mat) {
   StaticVector4 indices;
   // if both energy and position filter don't exist, then index is 0
@@ -64,7 +74,7 @@ void GeneralTally::score_collision(const Particle& p, const Tracker& tktr,
     StaticVector3 position_indices;
     if (position_filter_) {
       // It will provde the reduce dimensions
-      position_indices = position_filter_->get_indices(tktr);
+      position_indices = position_filter_->get_indices(trkr);
 
       if (position_indices.empty()) {
         // Not inside any energy bin. Don't score.
@@ -76,23 +86,25 @@ void GeneralTally::score_collision(const Particle& p, const Tracker& tktr,
   }
 
   const double Et = mat.Et(p.E());
-  const double collision_score = particle_base_score(p, mat) / Et;
+  const double collision_score =
+      particle_base_score(p.E(), p.wgt(), p.wgt2(), &mat) / Et;
 
 #ifdef ABEILLE_USE_OMP
 #pragma omp atomic
 #endif
-  tally_gen_score_(indices) += collision_score;
+  tally_gen_score_.element(indices.begin(), indices.end()) += collision_score;
 }
 
 void GeneralTally::score_flight(const Particle& p, const Tracker& trkr,
                                 double d_flight, MaterialHelper& mat) {
   // if position filter and energy-filter are not exit, then score and return
   if (position_filter_ == nullptr && energy_in_ == nullptr) {
-    const double flight_score = particle_base_score(p, mat);
+    const double flight_score =
+        particle_base_score(p.E(), p.wgt(), p.wgt2(), &mat);
 #ifdef ABEILLE_USE_OMP
 #pragma omp atomic
 #endif
-    tally_gen_score_({0}) += d_flight * flight_score;
+    tally_gen_score_(0) += d_flight * flight_score;
 
     return;
   }
@@ -110,7 +122,8 @@ void GeneralTally::score_flight(const Particle& p, const Tracker& trkr,
     index_E = E_indx.value();
   }
 
-  const double flight_score = particle_base_score(p, mat);
+  const double flight_score =
+      particle_base_score(p.E(), p.wgt(), p.wgt2(), &mat);
 
   // get the all the bins' index along with the distance traveled by the
   // particle
@@ -130,8 +143,53 @@ void GeneralTally::score_flight(const Particle& p, const Tracker& trkr,
 #ifdef ABEILLE_USE_OMP
 #pragma omp atomic
 #endif
-    tally_gen_score_(all_indices) += d * flight_score;
+    tally_gen_score_.element(all_indices.begin(), all_indices.end()) +=
+        d * flight_score;
   }
+}
+
+void GeneralTally::score_source(const BankedParticle& p) {
+  // Initialize a tracker
+  Tracker trkr(p.r, p.u);
+
+  StaticVector4 indices;
+  // if both energy and position filter don't exist, then index is 0
+  if (position_filter_ == nullptr && energy_in_ == nullptr) {
+    indices.push_back(0);
+  } else {
+    // get the index for the energy if exist
+    if (energy_in_) {
+      std::optional<std::size_t> E_indx = energy_in_->get_index(p.E);
+      if (E_indx.has_value() == false) {
+        // Not inside any energy bin. Don't score.
+        return;
+      }
+
+      indices.push_back(E_indx.value());
+    }
+
+    // get the indices for the positions, if exist
+    StaticVector3 position_indices;
+    if (position_filter_) {
+      // It will provde the reduce dimensions
+      position_indices = position_filter_->get_indices(trkr);
+
+      if (position_indices.empty()) {
+        // Not inside any energy bin. Don't score.
+        return;
+      }
+    }
+    indices.insert(indices.end(), position_indices.begin(),
+                   position_indices.end());
+  }
+
+  const double collision_score =
+      particle_base_score(p.E, p.wgt, p.wgt2, nullptr);
+
+#ifdef ABEILLE_USE_OMP
+#pragma omp atomic
+#endif
+  tally_gen_score_.element(indices.begin(), indices.end()) += collision_score;
 }
 
 void GeneralTally::write_tally() {
@@ -149,6 +207,9 @@ void GeneralTally::write_tally() {
 
   // Save the quantity
   tally_grp.createAttribute("quantity", quantity_str());
+  if (quantity_.type == Quantity::Type::MT) {
+    tally_grp.createAttribute("mt", quantity_.mt);
+  }
 
   // Save the estimator
   tally_grp.createAttribute("estimator", estimator_str());
@@ -168,13 +229,13 @@ void GeneralTally::write_tally() {
     tally_var_[l] = std::sqrt(tally_var_[l] / static_cast<double>(gen_));
 
   // Add data sets for the average and the standard deviation
-  auto avg_dset =
-      tally_grp.createDataSet<double>("avg", H5::DataSpace(tally_avg_.shape()));
-  avg_dset.write_raw(&tally_avg_[0]);
+  std::vector<std::size_t> shape(tally_avg_.shape().begin(),
+                                 tally_avg_.shape().end());
+  auto avg_dset = tally_grp.createDataSet<double>("avg", H5::DataSpace(shape));
+  avg_dset.write_raw(tally_avg_.data());
 
-  auto std_dset =
-      tally_grp.createDataSet<double>("std", H5::DataSpace(tally_var_.shape()));
-  std_dset.write_raw(&tally_var_[0]);
+  auto std_dset = tally_grp.createDataSet<double>("std", H5::DataSpace(shape));
+  std_dset.write_raw(tally_var_.data());
 }
 
 std::shared_ptr<GeneralTally> make_general_tally(const YAML::Node& node) {
@@ -184,8 +245,23 @@ std::shared_ptr<GeneralTally> make_general_tally(const YAML::Node& node) {
   }
   std::string name = node["name"].as<std::string>();
 
-  // Check the estimator is given or not. We default to collision estimators.
+  // Check for the quantity
+  std::string given_quantity = "";
+  if (!node["quantity"] || node["quantity"].IsScalar() == false) {
+    fatal_error("No valid quantity entry is given for tally " + name + ".");
+  }
+  given_quantity = node["quantity"].as<std::string>();
+  Quantity quant = read_quantity(node, name);
+  const bool source_like = (quant.type == Quantity::Type::Source ||
+                            quant.type == Quantity::Type::RealSource ||
+                            quant.type == Quantity::Type::ImagSource);
+
   std::string estimator_name = "collision";
+  if (source_like) {
+    estimator_name = "sources";
+  }
+
+  // Check the estimator is given or not. We default to collision estimators.
   if (node["estimator"] && node["estimator"].IsScalar()) {
     estimator_name = node["estimator"].as<std::string>();
   } else if (node["estimator"]) {
@@ -197,17 +273,18 @@ std::shared_ptr<GeneralTally> make_general_tally(const YAML::Node& node) {
     estimator = Estimator::Collision;
   } else if (estimator_name == "track-length") {
     estimator = Estimator::TrackLength;
+  } else if (estimator_name == "source") {
+    estimator = Estimator::Source;
   } else {
     fatal_error("Invalid estimator is given for tally " + name + ".");
   }
 
-  // Check for the quantity
-  std::string given_quantity = "";
-  if (!node["quantity"] || node["quantity"].IsScalar() == false) {
-    fatal_error("No valid quantity entry is given for tally " + name + ".");
+  if (source_like && estimator != Estimator::Source) {
+    std::stringstream mssg;
+    mssg << "Tally " << name
+         << " has a source-like quantity but not a source estimator.";
+    fatal_error(mssg.str());
   }
-  given_quantity = node["quantity"].as<std::string>();
-  Quantity quant = read_quantity(given_quantity, name);
 
   // get the tallies instance
   auto& tallies = Tallies::instance();

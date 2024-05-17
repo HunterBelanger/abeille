@@ -26,7 +26,7 @@
 #include <utils/error.hpp>
 #include <utils/output.hpp>
 
-#include <ndarray.hpp>
+#include <xtensor/xtensor.hpp>
 
 #include <algorithm>
 #include <cmath>
@@ -258,7 +258,9 @@ void ApproximateMeshCancelator::perform_cancellation_vector() {
   std::vector<int> keys = sync_keys();
 
   // change to uint16
-  NDArray<double> wgts({2, keys.size()});
+  xt::xtensor<double, 2> wgts;
+  wgts.resize({2, keys.size()});
+  wgts.fill(0.);
   std::vector<uint16_t> n_totals(keys.size(), 0);
 
   for (std::size_t i = 0; i < keys.size(); i++) {
@@ -282,7 +284,8 @@ void ApproximateMeshCancelator::perform_cancellation_vector() {
   }
 
   // Sum the vectors across all nodes
-  mpi::Allreduce_sum(wgts.data_vector());
+  std::span<double> wgts_vals(wgts.data(), wgts.size());
+  mpi::Allreduce_sum(wgts_vals);
   mpi::Allreduce_sum(n_totals);
 
   // all the vectors have size keys.size() so we use variable x to index them
@@ -307,8 +310,13 @@ void ApproximateMeshCancelator::perform_cancellation_vector() {
 }
 
 void ApproximateMeshCancelator::perform_cancellation_full_vector() {
-  NDArray<double> wgts({2, shape[0], shape[1], shape[2], shape[3]});
-  NDArray<uint16_t> n_totals({shape[0], shape[1], shape[2], shape[3]});
+  xt::xtensor<double, 5> wgts;
+  wgts.resize({2, shape[0], shape[1], shape[2], shape[3]});
+  wgts.fill(0.);
+
+  xt::xtensor<uint16_t, 4> n_totals;
+  n_totals.resize({shape[0], shape[1], shape[2], shape[3]});
+  n_totals.fill(0);
 
   for (auto& key_bin_pair : bins) {
     uint32_t indx = key_bin_pair.first;
@@ -339,8 +347,11 @@ void ApproximateMeshCancelator::perform_cancellation_full_vector() {
   }
 
   // Sum the vectors across all nodes
-  mpi::Allreduce_sum(wgts.data_vector());
-  mpi::Allreduce_sum(n_totals.data_vector());
+  std::span<double> wgts_vals(wgts.data(), wgts.size());
+  mpi::Allreduce_sum(wgts_vals);
+
+  std::span<uint16_t> n_totals_vals(n_totals.data(), n_totals.size());
+  mpi::Allreduce_sum(n_totals_vals);
 
   // all the vectors have size keys.size() so we use variable x to index them
   // since they should match to keys

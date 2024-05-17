@@ -587,6 +587,12 @@ void PowerIterator::comb_particles(std::vector<BankedParticle>& next_gen) {
   const std::size_t Npos = static_cast<std::size_t>(std::round(Wpos));
   const std::size_t Nneg = static_cast<std::size_t>(std::round(std::abs(Wneg)));
 
+  // Update particle numbers due to combing
+  this->Npos = static_cast<int>(Npos);
+  this->Nneg = static_cast<int>(Nneg);
+  Ntot = this->Npos + this->Nneg;
+  Nnet = this->Npos - this->Nneg;
+
   // The + 2 is to account for rounding in the ceil operations between global
   // array vs just the node
   std::vector<BankedParticle> new_next_gen;

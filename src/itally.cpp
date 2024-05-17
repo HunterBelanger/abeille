@@ -33,35 +33,53 @@ ITally::ITally(Quantity quantity, Estimator estimator, std::string name)
   }
 }
 
-double ITally::particle_base_score(const Particle& p, MaterialHelper& mat) {
+double ITally::particle_base_score(double E, double wgt, double wgt2,
+                                   MaterialHelper* mat) {
   double collision_score = inv_net_weight_;
-  switch (quantity_) {
-    case Quantity::Flux:
-      collision_score *= p.wgt();
+  switch (quantity_.type) {
+    case Quantity::Type::Flux:
+      collision_score *= wgt;
       break;
 
-    case Quantity::Fission:
-      collision_score *= p.wgt() * mat.Ef(p.E());
+    case Quantity::Type::RealFlux:
+      collision_score *= wgt;
       break;
 
-    case Quantity::Absorption:
-      collision_score *= p.wgt() * mat.Ea(p.E());
+    case Quantity::Type::ImagFlux:
+      collision_score *= wgt2;
       break;
 
-    case Quantity::Elastic:
-      collision_score *= p.wgt() * mat.Eelastic(p.E());
+    case Quantity::Type::Total:
+      collision_score *= wgt * mat->Et(E);
       break;
 
-    case Quantity::Total:
-      collision_score *= p.wgt() * mat.Et(p.E());
+    case Quantity::Type::Fission:
+      collision_score *= wgt * mat->Ef(E);
       break;
 
-    case Quantity::RealFlux:
-      collision_score *= p.wgt();
+    case Quantity::Type::Absorption:
+      collision_score *= wgt * mat->Ea(E);
       break;
 
-    case Quantity::ImagFlux:
-      collision_score *= p.wgt2();
+    case Quantity::Type::Elastic:
+      collision_score *= wgt * mat->Eelastic(E);
+      break;
+
+    case Quantity::Type::MT: {
+      const double Emt = mat->Emt(quantity_.mt, E);
+      collision_score *= wgt * Emt;
+    } break;
+
+    case Quantity::Type::Source:
+      collision_score *= wgt;
+      break;
+
+    case Quantity::Type::RealSource:
+      collision_score *= wgt;
+      break;
+
+    case Quantity::Type::ImagSource:
+      collision_score *= wgt2;
       break;
   }
   return collision_score;
@@ -77,7 +95,8 @@ void ITally::record_generation(double multiplier) {
   // All worker threads must send their generation score to the master.
   // Master must recieve all generations scores from workers and add
   // them to it's own generation score.
-  mpi::Reduce_sum(tally_gen_score_.data_vector(), 0);
+  std::span<double> gen_vals(tally_gen_score_.data(), tally_gen_score_.size());
+  mpi::Reduce_sum(gen_vals, 0);
 
   // Only try to update average and variance is we are master, as worker
   // processes don't have copies of this data, so it will seg-fault.
@@ -115,6 +134,10 @@ std::string ITally::estimator_str() {
     case Estimator::TrackLength:
       return "track-length";
       break;
+
+    case Estimator::Source:
+      return "source";
+      break;
   }
 
   // NEVER GETS HERE
@@ -122,27 +145,39 @@ std::string ITally::estimator_str() {
 }
 
 std::string ITally::quantity_str() {
-  switch (quantity_) {
-    case Quantity::Flux:
+  switch (quantity_.type) {
+    case Quantity::Type::Flux:
       return "flux";
       break;
-    case Quantity::Fission:
-      return "fission";
-      break;
-    case Quantity::Absorption:
-      return "absorption";
-      break;
-    case Quantity::Elastic:
-      return "elastic";
-      break;
-    case Quantity::Total:
-      return "total";
-      break;
-    case Quantity::RealFlux:
+    case Quantity::Type::RealFlux:
       return "real-flux";
       break;
-    case Quantity::ImagFlux:
+    case Quantity::Type::ImagFlux:
       return "imag-flux";
+      break;
+    case Quantity::Type::Total:
+      return "total";
+      break;
+    case Quantity::Type::Fission:
+      return "fission";
+      break;
+    case Quantity::Type::Absorption:
+      return "absorption";
+      break;
+    case Quantity::Type::Elastic:
+      return "elastic";
+      break;
+    case Quantity::Type::MT:
+      return "mt";
+      break;
+    case Quantity::Type::Source:
+      return "source";
+      break;
+    case Quantity::Type::RealSource:
+      return "real-source";
+      break;
+    case Quantity::Type::ImagSource:
+      return "imag-source";
       break;
   }
 
@@ -150,27 +185,65 @@ std::string ITally::quantity_str() {
   return "unknown";
 }
 
-Quantity read_quantity(const std::string& quant_str,
-                       const std::string& tally_name) {
+Quantity read_quantity(const YAML::Node& node, const std::string& name) {
+  if (!node["quantity"] || node["quantity"].IsScalar() == false) {
+    std::stringstream mssg;
+    mssg << "Tally " << name << " is missing a valid quantity entry.";
+    fatal_error(mssg.str());
+  }
+  std::string quant_str = node["quantity"].as<std::string>();
+
   if (quant_str == "flux") {
-    return Quantity::Flux;
+    return {Quantity::Type::Flux, 0};
   } else if (quant_str == "fission") {
-    return Quantity::Fission;
+    return {Quantity::Type::Fission, 0};
   } else if (quant_str == "absorption") {
-    return Quantity::Absorption;
+    return {Quantity::Type::Absorption, 0};
   } else if (quant_str == "elastic") {
-    return Quantity::Elastic;
+    return {Quantity::Type::Elastic, 0};
   } else if (quant_str == "total") {
-    return Quantity::Total;
+    return {Quantity::Type::Total, 0};
   } else if (quant_str == "real-flux") {
-    return Quantity::RealFlux;
+    return {Quantity::Type::RealFlux, 0};
   } else if (quant_str == "imag-flux") {
-    return Quantity::ImagFlux;
+    return {Quantity::Type::ImagFlux, 0};
+  } else if (quant_str == "mt") {
+    Quantity quant{Quantity::Type::MT, 0};
+
+    if (settings::energy_mode == settings::EnergyMode::MG) {
+      // Can't do an MT tally in MG mode !
+      fatal_error("Cannot do MT tallies in multi-group mode.");
+    }
+
+    // Check for mt
+    if (!node["mt"] || node["mt"].IsScalar() == false) {
+      std::stringstream mssg;
+      mssg << "Tally " << name
+           << " has a quantity of mt, but not provided mt value.";
+      fatal_error(mssg.str());
+    }
+
+    std::uint32_t tmp_mt = node["mt"].as<std::uint32_t>();
+    if (tmp_mt < 4 || tmp_mt > 891) {
+      std::stringstream mssg;
+      mssg << "Tally " << name << " has an invalid mt value " << tmp_mt << ".";
+      fatal_error(mssg.str());
+    }
+
+    quant.mt = tmp_mt;
+
+    return quant;
+  } else if (quant_str == "source") {
+    return {Quantity::Type::Source, 0};
+  } else if (quant_str == "real-source") {
+    return {Quantity::Type::RealSource, 0};
+  } else if (quant_str == "imag-source") {
+    return {Quantity::Type::ImagSource, 0};
   } else {
-    fatal_error("For tally " + tally_name + " unknown quantity \"" + quant_str +
-                "\" is given.");
+    fatal_error("Tally " + name + " has unknown quantity \"" + quant_str +
+                "\".");
   }
 
   // SHOULD NEVER GET HERE
-  return Quantity::Flux;
+  return {Quantity::Type::Flux, 0};
 }

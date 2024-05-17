@@ -159,6 +159,10 @@ class Tallies {
     if (scoring_ && !source_mesh_tallies_.empty()) {
       for (auto& tally : source_mesh_tallies_) tally->score_source(p);
     }
+
+    if (scoring_ && !new_itally_source_.empty()) {
+      for (auto& tally : new_itally_source_) tally->score_source(p);
+    }
   }
 
   void score_source(const std::vector<BankedParticle>& vp) {
@@ -167,11 +171,26 @@ class Tallies {
         for (auto& tally : source_mesh_tallies_) tally->score_source(p);
       }
     }
+
+    if (scoring_ && !new_itally_source_.empty()) {
+      for (const auto& p : vp) {
+        for (auto& tally : new_itally_source_) tally->score_source(p);
+      }
+    }
   }
 
   void score_noise_source(const BankedParticle& p) {
     if (scoring_ && !noise_source_mesh_tallies_.empty()) {
       for (auto& tally : noise_source_mesh_tallies_) tally->score_source(p);
+    }
+
+    if (scoring_) {
+      for (auto& tally : new_itally_source_) {
+        auto typ = tally->quantity().type;
+        if (typ == Quantity::Type::RealSource ||
+            typ == Quantity::Type::ImagSource)
+          tally->score_source(p);
+      }
     }
   }
 
@@ -179,6 +198,17 @@ class Tallies {
     if (scoring_ && !noise_source_mesh_tallies_.empty()) {
       for (const auto& p : vp) {
         for (auto& tally : noise_source_mesh_tallies_) tally->score_source(p);
+      }
+    }
+
+    if (scoring_ && !new_itally_source_.empty()) {
+      for (const auto& p : vp) {
+        for (auto& tally : new_itally_source_) {
+          auto typ = tally->quantity().type;
+          if (typ == Quantity::Type::RealSource ||
+              typ == Quantity::Type::ImagSource)
+            tally->score_source(p);
+        }
       }
     }
   }
@@ -288,6 +318,8 @@ class Tallies {
       new_itally_collision_;  // New "Itally" vector for collision
   std::vector<std::shared_ptr<ITally>>
       new_itally_track_length_;  // New "Itally" vector for track-length
+  std::vector<std::shared_ptr<ITally>>
+      new_itally_source_;  // New "Itally" vector for source
 
   // mapes for the position, cartesian, cylinder-position, and energy-filter
   std::map<std::size_t, std::shared_ptr<PositionFilter>> position_filters_;

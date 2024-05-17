@@ -36,7 +36,7 @@
 #include <PapillonNDL/cross_section.hpp>
 #include <PapillonNDL/energy_grid.hpp>
 
-#include <ndarray.hpp>
+#include <xtensor/xtensor.hpp>
 
 #include <algorithm>
 #include <cmath>
@@ -127,14 +127,17 @@ void CarterTracker::write_output_info(const std::string& base) const {
 
   // We now create a temporary array, which will hold the sampling xs info,
   // so we can save it to the output file.
-  NDArray<double> smp_xs({2, EGrid->size()});
+  xt::xtensor<double, 2> smp_xs;
+  smp_xs.resize({2, EGrid->size()});
+  smp_xs.fill(0.);
   for (std::size_t i = 0; i < EGrid->size(); i++) {
     smp_xs(0, i) = (*EGrid)[i];
     smp_xs(1, i) = (*Esmp)[i];
   }
-  auto smp_xs_ds = h5.createDataSet<double>(base + "sampling-xs",
-                                            H5::DataSpace(smp_xs.shape()));
-  smp_xs_ds.write_raw(&smp_xs[0]);
+  std::vector<std::size_t> shape(smp_xs.shape().begin(), smp_xs.shape().end());
+  auto smp_xs_ds =
+      h5.createDataSet<double>(base + "sampling-xs", H5::DataSpace(shape));
+  smp_xs_ds.write_raw(smp_xs.data());
 }
 
 void CarterTracker::transport(Particle& p, Tracker& trkr, MaterialHelper& mat,

@@ -38,6 +38,16 @@ LegendreFET::LegendreFET(std::shared_ptr<CartesianFilter> position_filter,
   if (axes_.size() <= 1 && axes_.size() >= 3)
     fatal_error("LegendreFET length of axes must be in [1,3].");
 
+  if ((quantity_.type == Quantity::Type::Source ||
+       quantity_.type == Quantity::Type::RealSource ||
+       quantity_.type == Quantity::Type::ImagSource) &&
+      estimator_ != Estimator::Source) {
+    std::stringstream mssg;
+    mssg << "Tally " << tally_name_
+         << " has a source-like qantity but does not use a source estimator.";
+    fatal_error(mssg.str());
+  }
+
   std::size_t n_axis = axes_.size();
   tally_shape.push_back(n_axis);
 
@@ -46,13 +56,13 @@ LegendreFET::LegendreFET(std::shared_ptr<CartesianFilter> position_filter,
   tally_shape.push_back(fet_order_dimension);
 
   // reallocate and fill with zeros for the tally avg, gen-score and variance
-  tally_avg_.reallocate(tally_shape);
+  tally_avg_.resize(tally_shape);
   tally_avg_.fill(0.0);
 
-  tally_gen_score_.reallocate(tally_shape);
+  tally_gen_score_.resize(tally_shape);
   tally_gen_score_.fill(0.0);
 
-  tally_var_.reallocate(tally_shape);
+  tally_var_.resize(tally_shape);
   tally_var_.fill(0.0);
 }
 
@@ -81,7 +91,8 @@ void LegendreFET::score_collision(const Particle& p, const Tracker& tktr,
 
   const double Et = mat.Et(p.E());
 
-  const double collision_score = particle_base_score(p, mat) / Et;
+  const double collision_score =
+      particle_base_score(p.E(), p.wgt(), p.wgt2(), &mat) / Et;
 
   // add one dimension for axis_index
   const size_t axis_index = indices.size();
@@ -132,7 +143,90 @@ void LegendreFET::score_collision(const Particle& p, const Tracker& tktr,
 #ifdef ABEILLE_USE_OMP
 #pragma omp atomic
 #endif
-      tally_gen_score_(indices) += beta_n;
+      tally_gen_score_.element(indices.begin(), indices.end()) += beta_n;
+    }
+
+    it_axis++;
+  }
+}
+
+void LegendreFET::score_source(const BankedParticle& p) {
+  Tracker trkr(p.r, p.u);
+
+  StaticVector6 indices;
+  // get the energy-index, if energy-filter exists
+  if (energy_in_) {
+    std::optional<std::size_t> E_indx = energy_in_->get_index(p.E);
+    if (E_indx.has_value() == false) {
+      // Not inside any energy bin. Don't score.
+      return;
+    }
+
+    indices.push_back(E_indx.value());
+  }
+
+  // get the cartisian_filter indices
+  StaticVector3 position_index = cartesian_filter_->get_indices(trkr);
+  if (position_index.empty()) {
+    // No bin is found, don't score.
+    return;
+  }
+
+  indices.insert(indices.end(), position_index.begin(), position_index.end());
+
+  const double collision_score =
+      particle_base_score(p.E, p.wgt, p.wgt2, nullptr);
+
+  // add one dimension for axis_index
+  const size_t axis_index = indices.size();
+  indices.push_back(0);
+
+  // add one dimesnion for FET-index
+  const size_t FET_index = indices.size();
+  indices.push_back(0);
+
+  // Variables for scoring
+  double beta_n, scaled_loc;
+  // Loop over the different axis and indexing is done
+  for (std::size_t it_axis = 0; it_axis < axes_.size(); it_axis++) {
+    // using the it_axis
+
+    indices[axis_index] = it_axis;
+
+    // get the scaled x, y, or z for legendre polynomial
+    switch (axes_[it_axis]) {
+      case LegendreFET::Axis::X: {
+        const double xmin_ = cartesian_filter_->x_min(position_index);
+        const double xmax_ = cartesian_filter_->x_max(position_index);
+        scaled_loc = 2. * (trkr.r().x() - xmin_) / (xmax_ - xmin_) - 1.;
+      } break;
+
+      case LegendreFET::Axis::Y: {
+        const double ymin_ = cartesian_filter_->y_min(position_index);
+        const double ymax_ = cartesian_filter_->y_max(position_index);
+        scaled_loc = 2 * (trkr.r().y() - ymin_) / (ymax_ - ymin_) - 1;
+      } break;
+
+      case LegendreFET::Axis::Z: {
+        const double zmin_ = cartesian_filter_->z_min(position_index);
+        const double zmax_ = cartesian_filter_->z_max(position_index);
+        scaled_loc = 2 * (trkr.r().z() - zmin_) / (zmax_ - zmin_) - 1;
+      }
+      default:
+        break;
+    }
+
+    // loop over differnt FET order
+    for (size_t i = 0; i < fet_order_ + 1; i++) {
+      // score for i-th order's basis function
+      beta_n = collision_score * legendre(i, scaled_loc);
+
+      indices[FET_index] = i;
+
+#ifdef ABEILLE_USE_OMP
+#pragma omp atomic
+#endif
+      tally_gen_score_.element(indices.begin(), indices.end()) += beta_n;
     }
 
     it_axis++;
@@ -184,6 +278,9 @@ void LegendreFET::write_tally() {
 
   // Save the quantity
   tally_grp.createAttribute("quantity", quantity_str());
+  if (quantity_.type == Quantity::Type::MT) {
+    tally_grp.createAttribute("mt", quantity_.mt);
+  }
 
   // Save the estimator
   tally_grp.createAttribute("estimator", estimator_str());
@@ -193,13 +290,13 @@ void LegendreFET::write_tally() {
     tally_var_[l] = std::sqrt(tally_var_[l] / static_cast<double>(gen_));
 
   // Add data sets for the average and the standard deviation
-  auto avg_dset =
-      tally_grp.createDataSet<double>("avg", H5::DataSpace(tally_avg_.shape()));
-  avg_dset.write_raw(&tally_avg_[0]);
+  std::vector<std::size_t> shape(tally_avg_.shape().begin(),
+                                 tally_avg_.shape().end());
+  auto avg_dset = tally_grp.createDataSet<double>("avg", H5::DataSpace(shape));
+  avg_dset.write_raw(tally_avg_.data());
 
-  auto std_dset =
-      tally_grp.createDataSet<double>("std", H5::DataSpace(tally_var_.shape()));
-  std_dset.write_raw(&tally_var_[0]);
+  auto std_dset = tally_grp.createDataSet<double>("std", H5::DataSpace(shape));
+  std_dset.write_raw(tally_var_.data());
 }
 
 std::shared_ptr<LegendreFET> make_legendre_fet(const YAML::Node& node) {
@@ -209,8 +306,24 @@ std::shared_ptr<LegendreFET> make_legendre_fet(const YAML::Node& node) {
   }
   std::string name = node["name"].as<std::string>();
 
-  // Check the estimator is given or not. We default to collision estimators.
+  // Check for the quantity
+  std::string given_quantity = "";
+  if (!node["quantity"] || node["quantity"].IsScalar() == false) {
+    fatal_error("The tally " + name +
+                " has an invalid/nonexistent quantity entry.");
+  }
+  given_quantity = node["quantity"].as<std::string>();
+  Quantity quant = read_quantity(node, name);
+  const bool source_like = (quant.type == Quantity::Type::Source ||
+                            quant.type == Quantity::Type::RealSource ||
+                            quant.type == Quantity::Type::ImagSource);
+
   std::string estimator_name = "collision";
+  if (source_like) {
+    estimator_name = "sources";
+  }
+
+  // Check the estimator is given or not. We default to collision estimators.
   if (node["estimator"] && node["estimator"].IsScalar()) {
     estimator_name = node["estimator"].as<std::string>();
   } else if (node["estimator"]) {
@@ -224,6 +337,8 @@ std::shared_ptr<LegendreFET> make_legendre_fet(const YAML::Node& node) {
     fatal_error(
         "On tally " + name +
         ", track-length estimator is not yet supported on legendre-fet.");
+  } else if (estimator_name == "source") {
+    estimator = Estimator::Source;
   } else {
     std::stringstream mssg;
     mssg << "The tally " << name << " was provided with an unkown estimator \""
@@ -231,14 +346,12 @@ std::shared_ptr<LegendreFET> make_legendre_fet(const YAML::Node& node) {
     fatal_error(mssg.str());
   }
 
-  // Check for the quantity
-  std::string given_quantity = "";
-  if (!node["quantity"] || node["quantity"].IsScalar() == false) {
-    fatal_error("The tally " + name +
-                " has an invalid/nonexistent quantity entry.");
+  if (source_like && estimator != Estimator::Source) {
+    std::stringstream mssg;
+    mssg << "Tally " << name
+         << " has a source-like quantity but not a source estimator.";
+    fatal_error(mssg.str());
   }
-  given_quantity = node["quantity"].as<std::string>();
-  Quantity quant = read_quantity(given_quantity, name);
 
   // get the tallies instance
   auto& tallies = Tallies::instance();
