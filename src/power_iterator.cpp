@@ -88,6 +88,8 @@ void PowerIterator::write_output_info() const {
 
   if (cancelator) {
     h5.createAttribute("regional-cancellation", true);
+    auto cancelator_grp = h5.createGroup("cancelator");
+    cancelator->write_output_info(cancelator_grp);
   } else {
     h5.createAttribute("regional-cancellation", false);
   }
@@ -226,7 +228,7 @@ void PowerIterator::load_source_from_file() {
 
   Output::instance().write(
       " Total Weight of System: " + std::to_string(std::round(tot_wgt)) + "\n");
-  nparticles = static_cast<int>(std::round(tot_wgt));
+  nparticles = static_cast<std::size_t>(std::round(tot_wgt));
   Tallies::instance().set_total_weight(std::round(tot_wgt));
 }
 
@@ -234,8 +236,9 @@ void PowerIterator::sample_source_from_sources() {
   Output::instance().write(" Generating source particles...\n");
   // Calculate the base number of particles per node to run
   uint64_t base_particles_per_node =
-      static_cast<uint64_t>(nparticles / mpi::size);
-  uint64_t remainder = static_cast<uint64_t>(nparticles % mpi::size);
+      static_cast<uint64_t>(nparticles / static_cast<std::size_t>(mpi::size));
+  uint64_t remainder =
+      static_cast<uint64_t>(nparticles % static_cast<std::size_t>(mpi::size));
 
   // Set the base number of particles per node in the node_nparticles vector
   mpi::node_nparticles.resize(static_cast<std::size_t>(mpi::size),
@@ -414,6 +417,9 @@ void PowerIterator::run() {
   simulation_timer.reset();
   simulation_timer.start();
 
+  // Make sure we have room for the generation times
+  generation_times.reserve(ngenerations);
+
   // Check for immediate convergence (i.e. we read source from file)
   Tallies::instance().set_scoring(false);
   if (nignored == 0) {
@@ -421,6 +427,8 @@ void PowerIterator::run() {
   }
 
   for (gen = 1; gen <= ngenerations; gen++) {
+    generation_timer.start();
+
     if (calc_families) {
       // Before transport, we get the set of all families, so that we can know
       // how many particle families entered the generation.
@@ -515,6 +523,10 @@ void PowerIterator::run() {
     if (gen == nignored) {
       Tallies::instance().set_scoring(true);
     }
+
+    generation_timer.stop();
+    generation_times.push_back(generation_timer.elapsed_time());
+    generation_timer.reset();
   }
 
   // Stop timer
@@ -568,13 +580,13 @@ void PowerIterator::comb_particles(std::vector<BankedParticle>& next_gen) {
       kahan_bank(next_gen.begin(), next_gen.end());
 
   // Get total weights for all nodes
-  std::vector<double> Wpos_each_node(mpi::size, 0.);
-  Wpos_each_node[mpi::rank] = Wpos_node;
+  std::vector<double> Wpos_each_node(static_cast<std::size_t>(mpi::size), 0.);
+  Wpos_each_node[static_cast<std::size_t>(mpi::rank)] = Wpos_node;
   mpi::Allreduce_sum(Wpos_each_node);
   const double Wpos = kahan(Wpos_each_node.begin(), Wpos_each_node.end(), 0.);
 
-  std::vector<double> Wneg_each_node(mpi::size, 0.);
-  Wneg_each_node[mpi::rank] = Wneg_node;
+  std::vector<double> Wneg_each_node(static_cast<std::size_t>(mpi::size), 0.);
+  Wneg_each_node[static_cast<std::size_t>(mpi::rank)] = Wneg_node;
   mpi::Allreduce_sum(Wneg_each_node);
   const double Wneg = kahan(Wneg_each_node.begin(), Wneg_each_node.end(), 0.);
 
@@ -715,6 +727,11 @@ void PowerIterator::write_entropy_families_etc_to_results() const {
   if (Wneg_vec.size() > 0) {
     h5.createDataSet("results/Wneg", Wneg_vec);
   }
+
+  // Write simulation time and number of particle transported
+  h5.createAttribute("simulation-time", simulation_timer.elapsed_time());
+  h5.createAttribute("nparticles-transported", histories_counter);
+  h5.createAttribute("generation-times", generation_times);
 }
 
 void PowerIterator::normalize_weights(std::vector<BankedParticle>& next_gen) {
@@ -970,7 +987,7 @@ void PowerIterator::perform_regional_cancellation(
 std::shared_ptr<PowerIterator> make_power_iterator(const YAML::Node& sim) {
   // Get the number of particles
   if (!sim["nparticles"] || sim["nparticles"].IsScalar() == false) {
-    fatal_error("No nparticles entry in fixed-source simulation.");
+    fatal_error("No nparticles entry in k-eigenvalue simulation.");
   }
   std::size_t nparticles = sim["nparticles"].as<std::size_t>();
 
@@ -1037,7 +1054,7 @@ std::shared_ptr<PowerIterator> make_power_iterator(const YAML::Node& sim) {
   bool empty_entropy_frac = false;
   if (sim["empty-entropy-bins"] && sim["empty-entropy-bins"].IsScalar()) {
     empty_entropy_frac = sim["empty-entropy-bins"].as<bool>();
-  } else if (sim[""]) {
+  } else if (sim["empty-entropy-bins"]) {
     fatal_error("Invalid empty-entropy-bins entry in k-eigenvalue simulation.");
   }
 

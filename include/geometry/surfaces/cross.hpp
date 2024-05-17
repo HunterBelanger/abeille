@@ -1,8 +1,6 @@
 /*
  * Abeille Monte Carlo Code
  * Copyright 2019-2023, Hunter Belanger
- * Copyright 2021-2022, Commissariat à l'Energie Atomique et aux Energies
- * Alternatives
  *
  * hunter.belanger@gmail.com
  *
@@ -22,18 +20,33 @@
  * along with Abeille. If not, see <https://www.gnu.org/licenses/>.
  *
  * */
-#ifndef ALL_SURFACES_H
-#define ALL_SURFACES_H
+#ifndef CROSS_H
+#define CROSS_H
 
-#include <geometry/surfaces/cross.hpp>
-#include <geometry/surfaces/cylinder.hpp>
-#include <geometry/surfaces/plane.hpp>
-#include <geometry/surfaces/sphere.hpp>
-#include <geometry/surfaces/xcylinder.hpp>
-#include <geometry/surfaces/xplane.hpp>
-#include <geometry/surfaces/ycylinder.hpp>
-#include <geometry/surfaces/yplane.hpp>
-#include <geometry/surfaces/zcylinder.hpp>
-#include <geometry/surfaces/zplane.hpp>
+#include <geometry/surfaces/surface.hpp>
+#include <utils/position.hpp>
+
+#include <yaml-cpp/yaml.h>
+
+#include <vector>
+
+class Cross : public Surface {
+ public:
+  Cross(Position origin, const std::vector<double>& dists, BoundaryType bound,
+        uint32_t id, const std::string& name);
+
+  int sign(const Position& r, const Direction& u) const override;
+
+  double distance(const Position& r, const Direction& u,
+                  bool on_surf) const override;
+
+  Direction norm(const Position& r) const override;
+
+ private:
+  Position origin_;
+  std::vector<double> dists_;
+};
+
+std::shared_ptr<Cross> make_cross(const YAML::Node& surface_node);
 
 #endif

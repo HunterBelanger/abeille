@@ -30,7 +30,6 @@
 #include <utils/settings.hpp>
 #include <utils/timer.hpp>
 
-#include <fstream>
 #include <iomanip>
 #include <iostream>
 
@@ -74,8 +73,9 @@ void FixedSource::print_header() {
 void FixedSource::mpi_setup() {
   // Calculate the base number of particles per node to run
   uint64_t base_particles_per_node =
-      static_cast<uint64_t>(nparticles / mpi::size);
-  uint64_t remainder = static_cast<uint64_t>(nparticles % mpi::size);
+      static_cast<uint64_t>(nparticles / static_cast<std::size_t>(mpi::size));
+  uint64_t remainder =
+      static_cast<uint64_t>(nparticles % static_cast<std::size_t>(mpi::size));
 
   // Set the base number of particles per node in the node_nparticles vector
   mpi::node_nparticles.resize(static_cast<std::size_t>(mpi::size),
@@ -118,11 +118,16 @@ void FixedSource::run() {
   simulation_timer.reset();
   simulation_timer.start();
 
+  // Make sure we have enough space for times
+  batch_times.reserve(nbatches);
+
   // Get the number of particles that this node should run
   uint64_t node_nparticles =
       mpi::node_nparticles[static_cast<std::size_t>(mpi::rank)];
 
   for (batch = 1; batch <= nbatches; batch++) {
+    batch_timer.start();
+
     // First, sample the sources and place into bank
     bank = this->sample_sources(sources, node_nparticles);
 
@@ -160,6 +165,10 @@ void FixedSource::run() {
     // Check if we have enough time to finish the simulation. If not,
     // stop now.
     check_time(batch);
+
+    batch_timer.stop();
+    batch_times.push_back(batch_timer.elapsed_time());
+    batch_timer.reset();
   }
 
   // Stop timer
@@ -177,6 +186,14 @@ void FixedSource::run() {
 
   // Write saved warnings
   out.write_saved_warnings();
+
+  // Write simulation time and number of particle transported
+  if (mpi::rank == 0) {
+    auto& h5 = Output::instance().h5();
+    h5.createAttribute("simulation-time", simulation_timer.elapsed_time());
+    h5.createAttribute("nparticles-transported", histories_counter);
+    h5.createAttribute("batch-times", batch_times);
+  }
 
   // Save other outputs
   out.write("\n");

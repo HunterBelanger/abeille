@@ -61,7 +61,7 @@ UniqueCell CellUniverse::get_cell(Position r, Direction u,
       }
 
       ucell = cell->universe()->get_cell(r, u, on_surf);
-      ucell.instance += cell_offset_map[i].at(ucell.id);
+      if (ucell.cell) ucell.instance += cell_offset_map[i].at(ucell.id);
       return ucell;
     }
   }
@@ -99,7 +99,7 @@ UniqueCell CellUniverse::get_cell(std::vector<GeoLilyPad>& stack, Position r,
       }
 
       ucell = cell->universe()->get_cell(stack, r, u, on_surf);
-      ucell.instance += cell_offset_map[i].at(ucell.id);
+      if (ucell.cell) ucell.instance += cell_offset_map[i].at(ucell.id);
       return ucell;
     }
   }

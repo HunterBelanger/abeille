@@ -24,6 +24,7 @@
  * */
 #include <cancelator/exact_mg_cancelator.hpp>
 #include <geometry/geometry.hpp>
+#include <simulation/particle_mover.hpp>
 #include <utils/error.hpp>
 #include <utils/output.hpp>
 #include <utils/settings.hpp>
@@ -112,6 +113,23 @@ ExactMGCancelator::ExactMGCancelator(
   // we will get too many collisions. As such, we must set
   // it equal to 1.
   if (Key::shape[3] == 0) Key::shape[3] = 1;
+}
+
+void ExactMGCancelator::write_output_info(H5::Group& grp) const {
+  const std::array<std::size_t, 3> shp{Key::shape[0], Key::shape[1],
+                                       Key::shape[2]};
+  const std::array<double, 3> rlw{Key::r_low.x(), Key::r_low.y(),
+                                  Key::r_low.z()};
+  const std::array<double, 3> rhi{Key::r_hi.x(), Key::r_hi.y(), Key::r_hi.z()};
+
+  grp.createAttribute("type", "exact-mg");
+  grp.createAttribute("shape", shp);
+  grp.createAttribute("low", rlw);
+  grp.createAttribute("hi", rhi);
+  grp.createAttribute("nsamples", N_SAMPLES);
+  if (Key::group_bins.empty() == false) {
+    grp.createAttribute("group-bins", Key::group_bins);
+  }
 }
 
 void ExactMGCancelator::check_particle_mover_compatibility(
@@ -517,7 +535,11 @@ void ExactMGCancelator::perform_cancellation() {
 
   // Initialize array for transfer of needed bits for cancellation
   xt::xtensor<double, 2> sum_c_and_c_wgts;
-  sum_c_and_c_wgts.resize({3, key_matid_pairs.size()});
+  if (this->cancel_dual_weights()) {
+    sum_c_and_c_wgts.resize({3, key_matid_pairs.size()});
+  } else {
+    sum_c_and_c_wgts.resize({2, key_matid_pairs.size()});
+  }
   sum_c_and_c_wgts.fill(0.);
 
   // Go through all bins and get the averages. This is done in parallel when
@@ -552,7 +574,9 @@ void ExactMGCancelator::perform_cancellation() {
 
     sum_c_and_c_wgts(0, i) = bin.sum_c;
     sum_c_and_c_wgts(1, i) = bin.sum_c_wgt;
-    sum_c_and_c_wgts(2, i) = bin.sum_c_wgt2;
+    if (this->cancel_dual_weights()) {
+      sum_c_and_c_wgts(2, i) = bin.sum_c_wgt2;
+    }
   }
 
   // Get sum of cancellation parameters across all nodes for optimization
@@ -579,7 +603,9 @@ void ExactMGCancelator::perform_cancellation() {
 
       bin.sum_c = sum_c_and_c_wgts(0, i);
       bin.sum_c_wgt = sum_c_and_c_wgts(1, i);
-      bin.sum_c_wgt2 = sum_c_and_c_wgts(2, i);
+      if (this->cancel_dual_weights()) {
+        bin.sum_c_wgt2 = sum_c_and_c_wgts(2, i);
+      }
     }
   }
 
@@ -589,7 +615,11 @@ void ExactMGCancelator::perform_cancellation() {
 
   // Initialize array for transfer of uniform weights which will happen later
   xt::xtensor<double, 2> uniform_wgts;
-  uniform_wgts.resize({2, key_matid_pairs.size()});
+  if (this->cancel_dual_weights()) {
+    uniform_wgts.resize({2, key_matid_pairs.size()});
+  } else {
+    uniform_wgts.resize({key_matid_pairs.size()});
+  }
   uniform_wgts.fill(0.);
 
   // Go through all bins and get uniform/point-wise parts
@@ -627,8 +657,12 @@ void ExactMGCancelator::perform_cancellation() {
     bin.sum_c_wgt = 0.;
     bin.sum_c_wgt2 = 0.;
 
-    uniform_wgts(0, i) = bin.uniform_wgt;
-    uniform_wgts(1, i) = bin.uniform_wgt2;
+    if (this->cancel_dual_weights()) {
+      uniform_wgts(0, i) = bin.uniform_wgt;
+      uniform_wgts(1, i) = bin.uniform_wgt2;
+    } else {
+      uniform_wgts(i) = bin.uniform_wgt;
+    }
   }
 
   // Get total uniform weights on ONLY master node. Only the master will
@@ -656,8 +690,13 @@ void ExactMGCancelator::perform_cancellation() {
       }
 
       CancelBin& bin = bins.at(key).at(mat_id);
-      bin.uniform_wgt = uniform_wgts(0, i);
-      bin.uniform_wgt2 = uniform_wgts(1, i);
+      if (this->cancel_dual_weights()) {
+        bin.uniform_wgt = uniform_wgts(0, i);
+        bin.uniform_wgt2 = uniform_wgts(1, i);
+      } else {
+        bin.uniform_wgt = uniform_wgts(i);
+        bin.uniform_wgt2 = 0.;
+      }
     }
   } else {
     for (auto& key_matbin_pair : bins) {

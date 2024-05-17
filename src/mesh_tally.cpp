@@ -130,10 +130,9 @@ void MeshTally::record_generation(double multiplier) {
 #endif
     for (size_t i = 0; i < tally_gen.size(); i++) {
       // Get new average
-      double old_avg = tally_avg[i];
-      double val = tally_gen[i] * multiplier;
-      double avg = old_avg + (val - old_avg) * invs_dg;
-      tally_avg[i] = avg;
+      const double old_avg = tally_avg[i];
+      const double val = tally_gen[i] * multiplier;
+      tally_avg[i] = old_avg + (val - old_avg) * invs_dg;
 
       // Get new variance
       if (g > 1) {
@@ -190,8 +189,9 @@ void MeshTally::write_tally() {
   tally_grp.createAttribute("estimator", this->estimator_str());
 
   // Convert flux_var to the error on the mean
+  const double invs_g = 1. / static_cast<double>(g);
   for (size_t l = 0; l < tally_var.size(); l++)
-    tally_var[l] = std::sqrt(tally_var[l] / static_cast<double>(g));
+    tally_var[l] = std::sqrt(tally_var[l] * invs_g);
 
   // Add data sets for the average and the standard deviation
   auto avg_dset =

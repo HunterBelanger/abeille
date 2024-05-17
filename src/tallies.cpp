@@ -425,17 +425,18 @@ void Tallies::write_filters() {
 }
 
 void Tallies::update_avg_and_var(double x, double& x_avg, double& x_var) {
-  double dgen = static_cast<double>(gen);
-  double x_avg_old = x_avg;
-  double x_var_old = x_var;
+  const double dgen = static_cast<double>(gen);
+  const double x_avg_old = x_avg;
+  const double x_var_old = x_var;
 
   // Update average
-  x_avg = x_avg_old + (x - x_avg_old) / (dgen);
+  x_avg = x_avg_old + ((x - x_avg_old) / dgen);
 
   // Update variance
-  if (gen > 1)
-    x_var = x_var_old + ((x - x_avg_old) * (x - x_avg_old) / (dgen)) -
-            ((x_var_old) / (dgen - 1.));
+  if (gen > 1) {
+    const double diff = x - x_avg_old;
+    x_var = x_var_old + ((diff * diff) / dgen) - (x_var_old / (dgen - 1.));
+  }
 }
 
 void make_tally_filters(Tallies& tallies, const YAML::Node& node) {

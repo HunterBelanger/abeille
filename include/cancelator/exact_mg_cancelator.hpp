@@ -50,6 +50,8 @@ class ExactMGCancelator : public Cancelator {
   void check_particle_mover_compatibility(
       const std::shared_ptr<IParticleMover>& pmover) const override final;
 
+  void write_output_info(H5::Group& grp) const override final;
+
   // Key which represents a unique cancellation bin for a
   // given position and energy group.
   // Key is public for MPI use

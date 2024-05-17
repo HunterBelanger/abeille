@@ -28,6 +28,7 @@
 #include <materials/material_helper.hpp>
 #include <noise_source/noise_maker.hpp>
 #include <simulation/collision_operators/collision_operator.hpp>
+#include <simulation/collision_operators/noise_branching_collision.hpp>
 #include <simulation/particle.hpp>
 #include <simulation/tracker.hpp>
 #include <simulation/transport_operators/transport_operator.hpp>
@@ -63,15 +64,15 @@ class ParticleMover : public IParticleMover {
   ParticleMover(TransportOp t, CollisionOp c)
       : transport_operator_(t), collision_operator_(c) {}
 
-  bool exact_cancellation_compatible() const override final {
+  bool exact_cancellation_compatible() const override {
     return transport_operator_.exact_cancellation_compatible();
   }
 
-  bool track_length_compatible() const override final {
+  bool track_length_compatible() const override {
     return transport_operator_.track_length_compatible();
   }
 
-  void write_output_info(const std::string& base = "") const {
+  void write_output_info(const std::string& base = "") const override {
     transport_operator_.write_output_info(base);
     collision_operator_.write_output_info(base);
   }
@@ -80,8 +81,7 @@ class ParticleMover : public IParticleMover {
       std::vector<Particle>& bank,
       std::optional<NoiseParameters> noise = std::nullopt,
       std::vector<BankedParticle>* noise_bank = nullptr,
-      const NoiseMaker* noise_maker = nullptr) override final {
-        
+      const NoiseMaker* noise_maker = nullptr) override {
 #ifdef ABEILLE_USE_OMP
 #pragma omp parallel
 #endif
@@ -191,7 +191,7 @@ class ParticleMover : public IParticleMover {
     return fission_neutrons;
   }
 
- private:
+ protected:
   TransportOp transport_operator_;
   CollisionOp collision_operator_;
 
@@ -229,6 +229,54 @@ class ParticleMover : public IParticleMover {
     }
   }
 };
+
+class INoiseParticleMover : public IParticleMover {
+ public:
+  INoiseParticleMover() = default;
+  virtual ~INoiseParticleMover() = default;
+
+  virtual bool noise_generations() const = 0;
+};
+
+template <TransportOperator TransportOp>
+class NoiseParticleMover
+    : public ParticleMover<TransportOp, NoiseBranchingCollision>,
+      public INoiseParticleMover {
+ public:
+  NoiseParticleMover(TransportOp t, NoiseBranchingCollision c)
+      : ParticleMover<TransportOp, NoiseBranchingCollision>(t, c) {}
+
+  std::vector<BankedParticle> transport(
+      std::vector<Particle>& bank,
+      std::optional<NoiseParameters> noise = std::nullopt,
+      std::vector<BankedParticle>* noise_bank = nullptr,
+      const NoiseMaker* noise_maker = nullptr) override final {
+    return ParticleMover<TransportOp, NoiseBranchingCollision>::transport(
+        bank, noise, noise_bank, noise_maker);
+  }
+
+  bool exact_cancellation_compatible() const override final {
+    return ParticleMover<
+        TransportOp, NoiseBranchingCollision>::exact_cancellation_compatible();
+  }
+
+  bool track_length_compatible() const override final {
+    return ParticleMover<TransportOp,
+                         NoiseBranchingCollision>::track_length_compatible();
+  }
+
+  void write_output_info(const std::string& base = "") const override final {
+    ParticleMover<TransportOp, NoiseBranchingCollision>::write_output_info(
+        base);
+  }
+
+  bool noise_generations() const override final {
+    return this->collision_operator_.noise_generations();
+  };
+};
+
+std::shared_ptr<INoiseParticleMover> make_noise_particle_mover(
+    const YAML::Node& sim);
 
 std::shared_ptr<IParticleMover> make_particle_mover(const YAML::Node& sim,
                                                     settings::SimMode mode);

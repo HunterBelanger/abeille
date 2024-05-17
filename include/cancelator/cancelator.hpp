@@ -26,12 +26,18 @@
 #define CANCELATOR_H
 
 #include <simulation/particle.hpp>
-#include <simulation/particle_mover.hpp>
 #include <utils/rng.hpp>
+
+#include <highfive/H5File.hpp>
+namespace H5 = HighFive;
 
 #include <yaml-cpp/yaml.h>
 
 #include <memory>
+
+// Can't include particle_mover.hpp, as that creates a circular include
+// dependency. Instead, we just predefine this here.
+class IParticleMover;
 
 class Cancelator {
  public:
@@ -43,6 +49,14 @@ class Cancelator {
   virtual void clear() = 0;
   virtual void check_particle_mover_compatibility(
       const std::shared_ptr<IParticleMover>& pmover) const = 0;
+
+  bool cancel_dual_weights() const { return dual_weights_; }
+  void set_cancel_dual_weights(bool dw) { dual_weights_ = dw; }
+
+  virtual void write_output_info(H5::Group& grp) const = 0;
+
+ protected:
+  bool dual_weights_{false};
 };
 
 std::shared_ptr<Cancelator> make_cancelator(const YAML::Node& node);

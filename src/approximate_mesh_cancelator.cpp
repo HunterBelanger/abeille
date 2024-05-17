@@ -118,6 +118,20 @@ ApproximateMeshCancelator::ApproximateMeshCancelator(
   Sl = 1;
 }
 
+void ApproximateMeshCancelator::write_output_info(H5::Group& grp) const {
+  const std::array<std::size_t, 3> shp{shape[0], shape[1], shape[2]};
+  const std::array<double, 3> rlw{r_low.x(), r_low.y(), r_low.z()};
+  const std::array<double, 3> rhi{r_hi.x(), r_hi.y(), r_hi.z()};
+
+  grp.createAttribute("type", "approximate");
+  grp.createAttribute("shape", shp);
+  grp.createAttribute("low", rlw);
+  grp.createAttribute("hi", rhi);
+  if (energy_edges.empty() == false) {
+    grp.createAttribute("energy-bounds", energy_edges);
+  }
+}
+
 bool ApproximateMeshCancelator::add_particle(BankedParticle& p) {
   // Get bin indicies for spacial coordinates
   int i = static_cast<int>(std::floor((p.r.x() - r_low.x()) / dx));
@@ -156,7 +170,7 @@ bool ApproximateMeshCancelator::add_particle(BankedParticle& p) {
                             (j + static_cast<int>(shape[1]) * i));
   };
 
-  int bin_key = key(i, j, k, l);
+  uint32_t bin_key = static_cast<uint32_t>(key(i, j, k, l));
 
   if (bins.find(bin_key) == bins.end()) {
     bins[bin_key] = std::vector<BankedParticle*>();
@@ -167,14 +181,14 @@ bool ApproximateMeshCancelator::add_particle(BankedParticle& p) {
   return true;
 }
 
-std::vector<int> ApproximateMeshCancelator::sync_keys() {
+std::vector<uint32_t> ApproximateMeshCancelator::sync_keys() {
   // Each node collects all keys
-  std::vector<int> keys;
+  std::vector<uint32_t> keys;
   keys.reserve(bins.size());
   for (auto& key_bin_pair : bins) {
     keys.push_back(key_bin_pair.first);
   }
-  std::set<int> key_set;
+  std::set<uint32_t> key_set;
 
   // Put master keys into the keyset
   if (mpi::rank == 0) {
@@ -187,14 +201,14 @@ std::vector<int> ApproximateMeshCancelator::sync_keys() {
     if (mpi::rank == i) {
       auto nkeys = keys.size();
       mpi::Send(nkeys, 0);
-      mpi::Send(std::span<int>(keys.begin(), keys.end()), 0);
+      mpi::Send(std::span<uint32_t>(keys.begin(), keys.end()), 0);
       keys.clear();
     } else if (mpi::rank == 0) {
       std::size_t nkeys = 0;
       mpi::Recv(nkeys, i);
       keys.resize(nkeys);
 
-      mpi::Recv(std::span<int>(keys.begin(), keys.end()), i);
+      mpi::Recv(std::span<uint32_t>(keys.begin(), keys.end()), i);
       std::copy(keys.begin(), keys.end(),
                 std::inserter(key_set, key_set.end()));
     }
@@ -215,7 +229,7 @@ std::vector<int> ApproximateMeshCancelator::sync_keys() {
 
 void ApproximateMeshCancelator::perform_cancellation_loop() {
   // Get keys of all non empty bins
-  std::vector<int> keys = sync_keys();
+  std::vector<uint32_t> keys = sync_keys();
 
   for (const auto key : keys) {
     std::uint64_t n_total = 0;
@@ -232,7 +246,9 @@ void ApproximateMeshCancelator::perform_cancellation_loop() {
     }
     // Sum weights of all particles in each bin across all nodes
     mpi::Allreduce_sum(sum_wgt);
-    mpi::Allreduce_sum(sum_wgt2);
+    if (this->cancel_dual_weights()) {
+      mpi::Allreduce_sum(sum_wgt2);
+    }
 
     // Sum total number of positive and negative particles across all nodes
     mpi::Allreduce_sum(n_total);
@@ -255,12 +271,16 @@ void ApproximateMeshCancelator::perform_cancellation_loop() {
 
 void ApproximateMeshCancelator::perform_cancellation_vector() {
   // Get keys of all non empty bins
-  std::vector<int> keys = sync_keys();
+  std::vector<uint32_t> keys = sync_keys();
 
-  // change to uint16
   xt::xtensor<double, 2> wgts;
-  wgts.resize({2, keys.size()});
+  if (this->cancel_dual_weights()) {
+    wgts.resize({2, keys.size()});
+  } else {
+    wgts.resize({keys.size()});
+  }
   wgts.fill(0.);
+
   std::vector<uint16_t> n_totals(keys.size(), 0);
 
   for (std::size_t i = 0; i < keys.size(); i++) {
@@ -279,8 +299,12 @@ void ApproximateMeshCancelator::perform_cancellation_vector() {
 
     // Push the counts to the vectors
     n_totals[i] = static_cast<uint16_t>(n_total);
-    wgts(0, i) = sum_wgt;
-    wgts(1, i) = sum_wgt2;
+    if (this->cancel_dual_weights()) {
+      wgts(0, i) = sum_wgt;
+      wgts(1, i) = sum_wgt2;
+    } else {
+      wgts(i) = sum_wgt;
+    }
   }
 
   // Sum the vectors across all nodes
@@ -295,8 +319,14 @@ void ApproximateMeshCancelator::perform_cancellation_vector() {
 
     // Set the avg weights
     const double inv_n = 1. / static_cast<double>(n_totals[i]);
-    const double avg_wgt = wgts(0, i) * inv_n;
-    const double avg_wgt2 = wgts(1, i) * inv_n;
+    double avg_wgt = 0.;
+    double avg_wgt2 = 0.;
+    if (this->cancel_dual_weights()) {
+      avg_wgt = wgts(0, i) * inv_n;
+      avg_wgt2 = wgts(1, i) * inv_n;
+    } else {
+      avg_wgt = wgts(i) * inv_n;
+    }
 
     for (auto& p : bins[key]) {
       p->wgt = avg_wgt;
@@ -311,7 +341,11 @@ void ApproximateMeshCancelator::perform_cancellation_vector() {
 
 void ApproximateMeshCancelator::perform_cancellation_full_vector() {
   xt::xtensor<double, 5> wgts;
-  wgts.resize({2, shape[0], shape[1], shape[2], shape[3]});
+  if (this->cancel_dual_weights()) {
+    wgts.resize({2, shape[0], shape[1], shape[2], shape[3]});
+  } else {
+    wgts.resize({shape[0], shape[1], shape[2], shape[3]});
+  }
   wgts.fill(0.);
 
   xt::xtensor<uint16_t, 4> n_totals;
@@ -342,8 +376,13 @@ void ApproximateMeshCancelator::perform_cancellation_full_vector() {
 
     // Push the counts to the vectors
     n_totals(i, j, k, l) = n_total;
-    wgts(0, i, j, k, l) = sum_wgt;
-    wgts(1, i, j, k, l) = sum_wgt2;
+
+    if (this->cancel_dual_weights()) {
+      wgts(0, i, j, k, l) = sum_wgt;
+      wgts(1, i, j, k, l) = sum_wgt2;
+    } else {
+      wgts(i, j, k, l) = sum_wgt;
+    }
   }
 
   // Sum the vectors across all nodes
@@ -367,8 +406,14 @@ void ApproximateMeshCancelator::perform_cancellation_full_vector() {
 
     // Set the avg weights
     const double inv_n = 1. / static_cast<double>(n_totals(i, j, k, l));
-    const double avg_wgt = wgts(0, i, j, k, l) * inv_n;
-    const double avg_wgt2 = wgts(1, i, j, k, l) * inv_n;
+    double avg_wgt = 0.;
+    double avg_wgt2 = 0.;
+    if (this->cancel_dual_weights()) {
+      avg_wgt = wgts(0, i, j, k, l) * inv_n;
+      avg_wgt2 = wgts(1, i, j, k, l) * inv_n;
+    } else {
+      avg_wgt = wgts(i, j, k, l) * inv_n;
+    }
 
     for (auto& p : bin) {
       p->wgt = avg_wgt;
