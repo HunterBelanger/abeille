@@ -128,7 +128,7 @@ RegularCartesianMeshFilter::get_indices_tracklength(const Tracker& trkr,
 
   int i = 0, j = 0, k = 0;
   std::array<int, 3> on;
-  on.fill(0.0);
+  on.fill(0);
   initialize_indices(r, u_, i, j, k, on);
 
   // Check if particle inside the bin
