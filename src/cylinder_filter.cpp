@@ -262,19 +262,6 @@ void CylinderFilter::write_to_hdf5(H5::Group& grp) const {
 
   // Save shape
   std::array<std::size_t, 3> shape{Real_nx, Real_ny, Real_nz};
-  switch (length_axis_) {
-    case Orientation::X:
-      grp.createAttribute("axis", "x");
-      break;
-
-    case Orientation::Y:
-      grp.createAttribute("axis", "y");
-      break;
-
-    case Orientation::Z:
-      grp.createAttribute("axis", "z");
-      break;
-  }
   if (grp.hasAttribute("shape")) {
     grp.deleteAttribute("shape");
   }
