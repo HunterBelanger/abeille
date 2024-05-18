@@ -155,11 +155,21 @@ void Tallies::add_energy_filter(std::size_t id,
 void Tallies::add_ITally(std::shared_ptr<ITally> tally) {
   tally->set_net_weight(total_weight);
 
+  // Check if the name is taken
+  if (taken_tally_names_.contains(tally->name())) {
+    std::stringstream mssg;
+    mssg << "Multiple tallies with the name \"" << tally->name()
+         << "\" were found.";
+    fatal_error(mssg.str());
+  }
+
+  taken_tally_names_.insert(tally->name());
+
   switch (tally->estimator()) {
     case Estimator::Collision:
       new_itally_collision_.push_back(tally);
       break;
-    
+
     case Estimator::TrackLength:
       new_itally_track_length_.push_back(tally);
       break;
@@ -254,7 +264,7 @@ void Tallies::clear_generation() {
   for (auto& tally : new_itally_collision_) tally->clear_generation();
 
   for (auto& tally : new_itally_track_length_) tally->clear_generation();
-  
+
   for (auto& tally : new_itally_source_) tally->clear_generation();
 }
 
@@ -298,8 +308,7 @@ void Tallies::record_generation(double multiplier) {
   for (auto& tally : track_length_mesh_tallies_)
     tally->record_generation(multiplier);
 
-  for (auto& tally : source_mesh_tallies_)
-    tally->record_generation(multiplier);
+  for (auto& tally : source_mesh_tallies_) tally->record_generation(multiplier);
 
   for (auto& tally : noise_source_mesh_tallies_)
     tally->record_generation(multiplier);
@@ -310,8 +319,7 @@ void Tallies::record_generation(double multiplier) {
   for (auto& tallly : new_itally_track_length_)
     tallly->record_generation(multiplier);
 
-  for (auto& tallly : new_itally_source_)
-    tallly->record_generation(multiplier);
+  for (auto& tallly : new_itally_source_) tallly->record_generation(multiplier);
 }
 
 void Tallies::write_tallies(bool track_length_compatible) {

@@ -40,6 +40,7 @@
 #include <yaml-cpp/yaml.h>
 
 #include <map>
+#include <set>
 #include <string>
 
 struct ThreadLocalScores {
@@ -327,6 +328,8 @@ class Tallies {
   std::map<std::size_t, std::shared_ptr<CartesianFilter>> cartesian_filters_;
   std::map<std::size_t, std::shared_ptr<CylinderFilter>> cylinder_filters_;
   std::map<std::size_t, std::shared_ptr<EnergyFilter>> energy_filters_;
+
+  std::set<std::string> taken_tally_names_;
 
   void update_avg_and_var(double x, double& x_avg, double& x_var);
 
