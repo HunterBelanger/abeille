@@ -274,6 +274,7 @@ class Tallies {
 
     for (auto& t : new_itally_collision_) t->set_net_weight(total_weight);
     for (auto& t : new_itally_track_length_) t->set_net_weight(total_weight);
+    for (auto& t : new_itally_source_) t->set_net_weight(total_weight);
   }
 
   int generations() const { return gen; }

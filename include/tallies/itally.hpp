@@ -86,7 +86,7 @@ class ITally {
 
  protected:
   double particle_base_score(double E, double wgt, double wgt2,
-                             MaterialHelper* mat);
+                             MaterialHelper* mat) const;
 
   void var_to_std_on_mean();
 

@@ -34,7 +34,7 @@ ITally::ITally(Quantity quantity, Estimator estimator, std::string name)
 }
 
 double ITally::particle_base_score(double E, double wgt, double wgt2,
-                                   MaterialHelper* mat) {
+                                   MaterialHelper* mat) const {
   double collision_score = inv_net_weight_;
   switch (quantity_.type) {
     case Quantity::Type::Flux:
