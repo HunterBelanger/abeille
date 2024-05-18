@@ -107,16 +107,16 @@ void ITally::record_generation(double multiplier) {
     for (std::size_t i = 0; i < tally_avg_.size(); i++) {
       // Get new average
 
-      double old_avg = tally_avg_[i];
-      double val = tally_gen_score_[i] * multiplier;
+      double old_avg = tally_avg_.flat(i);
+      double val = tally_gen_score_.flat(i) * multiplier;
       double avg = old_avg + (val - old_avg) * invs_dg;
-      tally_avg_[i] = avg;
+      tally_avg_.flat(i) = avg;
 
       // Get new variance
       if (gen_ > 1) {
-        const double old_var = tally_var_[i];
+        const double old_var = tally_var_.flat(i);
         const double diff = val - old_avg;
-        tally_var_[i] =
+        tally_var_.flat(i) =
             old_var + (diff * diff * invs_dg) - (old_var * invs_dg_m1);
       }
     }
