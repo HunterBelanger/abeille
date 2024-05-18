@@ -152,13 +152,21 @@ void Tallies::add_energy_filter(std::size_t id,
   energy_filters_[id] = filter;
 }
 
-void Tallies::add_ITally(std::shared_ptr<ITally> tallly) {
-  tallly->set_net_weight(total_weight);
+void Tallies::add_ITally(std::shared_ptr<ITally> tally) {
+  tally->set_net_weight(total_weight);
 
-  if (tallly->estimator() == Estimator::Collision) {
-    new_itally_collision_.push_back(tallly);
-  } else if (tallly->estimator() == Estimator::TrackLength) {
-    new_itally_track_length_.push_back(tallly);
+  switch (tally->estimator()) {
+    case Estimator::Collision:
+      new_itally_collision_.push_back(tally);
+      break;
+    
+    case Estimator::TrackLength:
+      new_itally_track_length_.push_back(tally);
+      break;
+
+    case Estimator::Source:
+      new_itally_source_.push_back(tally);
+      break;
   }
 }
 
@@ -246,6 +254,8 @@ void Tallies::clear_generation() {
   for (auto& tally : new_itally_collision_) tally->clear_generation();
 
   for (auto& tally : new_itally_track_length_) tally->clear_generation();
+  
+  for (auto& tally : new_itally_source_) tally->clear_generation();
 }
 
 void Tallies::calc_gen_values() {
@@ -288,7 +298,8 @@ void Tallies::record_generation(double multiplier) {
   for (auto& tally : track_length_mesh_tallies_)
     tally->record_generation(multiplier);
 
-  for (auto& tally : source_mesh_tallies_) tally->record_generation(multiplier);
+  for (auto& tally : source_mesh_tallies_)
+    tally->record_generation(multiplier);
 
   for (auto& tally : noise_source_mesh_tallies_)
     tally->record_generation(multiplier);
@@ -297,6 +308,9 @@ void Tallies::record_generation(double multiplier) {
     tallly->record_generation(multiplier);
 
   for (auto& tallly : new_itally_track_length_)
+    tallly->record_generation(multiplier);
+
+  for (auto& tallly : new_itally_source_)
     tallly->record_generation(multiplier);
 }
 
@@ -366,6 +380,8 @@ void Tallies::write_tallies(bool track_length_compatible) {
     for (auto& tallly : new_itally_collision_) tallly->write_tally();
 
     for (auto& tallly : new_itally_track_length_) tallly->write_tally();
+
+    for (auto& tallly : new_itally_source_) tallly->write_tally();
   }
 }
 

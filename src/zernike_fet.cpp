@@ -367,7 +367,7 @@ std::shared_ptr<ZernikeFET> make_zernike_fet(const YAML::Node& node) {
 
   std::string estimator_name = "collision";
   if (source_like) {
-    estimator_name = "sources";
+    estimator_name = "source";
   }
 
   // Check the estimator is given or not. We default to collision estimators.

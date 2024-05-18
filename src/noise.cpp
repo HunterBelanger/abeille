@@ -368,15 +368,15 @@ void Noise::run() {
     // power iteration parts.
     power_iteration_timer.start();
     for (int skip = 0; skip < static_cast<int>(nskip) - 1; skip++) {
-      pi_gen++;
       power_iteration(false);
+      pi_gen++;
     }
 
     // We now run the last remaining power iteration, but here we sample the
     // noise source
-    pi_gen++;
     power_iteration(true);
     power_iteration_timer.stop();
+    pi_gen++;
 
     // The noise_bank is now populated with noise particles. We may now simulate
     // these noise particles.
