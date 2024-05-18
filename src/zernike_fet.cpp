@@ -333,8 +333,7 @@ void ZernikeFET::write_tally() {
     tally_grp.createAttribute("legendre-order", legen_order_);
 
   // Convert flux_var to the error on the mean
-  for (size_t l = 0; l < tally_var_.size(); l++)
-    tally_var_[l] = std::sqrt(tally_var_[l] / static_cast<double>(gen_));
+  this->var_to_std_on_mean();
 
   // Add data sets for the average and the standard deviation
   std::vector<std::size_t> shape(tally_avg_.shape().begin(),

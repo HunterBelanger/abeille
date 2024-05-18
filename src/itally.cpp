@@ -185,6 +185,12 @@ std::string ITally::quantity_str() {
   return "unknown";
 }
 
+void ITally::var_to_std_on_mean() {
+  const double invs_g = 1. / static_cast<double>(gen_);
+  tally_var_ *= invs_g;
+  tally_var_ = xt::sqrt(tally_var_);
+}
+
 Quantity read_quantity(const YAML::Node& node, const std::string& name) {
   if (!node["quantity"] || node["quantity"].IsScalar() == false) {
     std::stringstream mssg;

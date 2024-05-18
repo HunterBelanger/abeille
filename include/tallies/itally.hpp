@@ -88,6 +88,8 @@ class ITally {
   double particle_base_score(double E, double wgt, double wgt2,
                              MaterialHelper* mat);
 
+  void var_to_std_on_mean();
+
   xt::xarray<double> tally_avg_;
   xt::xarray<double> tally_gen_score_;
   xt::xarray<double> tally_var_;
