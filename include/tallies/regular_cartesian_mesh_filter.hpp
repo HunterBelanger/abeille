@@ -67,7 +67,7 @@ class RegularCartesianMeshFilter : public CartesianFilter {
       reduce_.push_back(loc_y);
     }
 
-    if (Ny_ > 1) {
+    if (Nz_ > 1) {
       reduce_.push_back(loc_z);
     }
     return reduce_;
