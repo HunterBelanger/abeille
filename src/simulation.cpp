@@ -182,7 +182,7 @@ void Simulation::write_source(std::vector<Particle>& bank) const {
   mpi::Gatherv(tmp_bank, 0);
 
   if (mpi::rank == 0) {
-    // Make an NDArray to contain all particles info first
+    // Make an array to contain all particle's info first
     xt::xtensor<double, 2> source;
     source.resize({tmp_bank.size(), 9});
     source.fill(0.);

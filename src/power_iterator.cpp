@@ -35,6 +35,8 @@
 #include <highfive/H5File.hpp>
 namespace H5 = HighFive;
 
+#include <xtensor/xtensor.hpp>
+
 #include <cmath>
 #include <fstream>
 #include <iomanip>
@@ -171,8 +173,9 @@ void PowerIterator::load_source_from_file() {
   }
 
   // Read in array
-  NDArray<double> source = NDArray<double>(dimensions);
-  source_ds.read<double>(&source[0]);
+  xt::xtensor<double, 2> source;
+  source.resize(dimensions);
+  source_ds.read<double>(source.data());
 
   // Get number of particles
   std::size_t Nprt = source.shape()[0];
