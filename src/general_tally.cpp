@@ -183,13 +183,12 @@ void GeneralTally::score_source(const BankedParticle& p) {
                    position_indices.end());
   }
 
-  const double collision_score =
-      particle_base_score(p.E, p.wgt, p.wgt2, nullptr);
+  const double source_score = particle_base_score(p.E, p.wgt, p.wgt2, nullptr);
 
 #ifdef ABEILLE_USE_OMP
 #pragma omp atomic
 #endif
-  tally_gen_score_.element(indices.begin(), indices.end()) += collision_score;
+  tally_gen_score_.element(indices.begin(), indices.end()) += source_score;
 }
 
 void GeneralTally::write_tally() {

@@ -247,9 +247,8 @@ void ZernikeFET::score_source(const BankedParticle& p) {
   std::size_t FET_index = indices.size();
   indices.push_back(0);
 
-  // Get the particle base score for the collision
-  const double collision_score =
-      particle_base_score(p.E, p.wgt, p.wgt2, nullptr);
+  // Get the particle base score for the source
+  const double source_score = particle_base_score(p.E, p.wgt, p.wgt2, nullptr);
 
   // varaible for scoring
   double beta_n;
@@ -264,7 +263,7 @@ void ZernikeFET::score_source(const BankedParticle& p) {
 
   for (std::size_t i = 0; i <= zr_order_; i++) {
     // score for i-th order's basis function
-    beta_n = collision_score * zr_value[i];
+    beta_n = source_score * zr_value[i];
     indices[FET_index] = i;
 #ifdef ABEILLE_USE_OMP
 #pragma omp atomic
@@ -286,7 +285,7 @@ void ZernikeFET::score_source(const BankedParticle& p) {
     const double scaled_z = 2 * (z - zmin) / (zmin - zmax) - 1.0;
     for (std::size_t i = 0; i <= legen_order_; i++) {
       // score for i-th order's basis function
-      beta_n = collision_score * legendre(i, scaled_z);
+      beta_n = source_score * legendre(i, scaled_z);
       indices[FET_index] = i;
 #ifdef ABEILLE_USE_OMP
 #pragma omp atomic

@@ -174,8 +174,7 @@ void LegendreFET::score_source(const BankedParticle& p) {
 
   indices.insert(indices.end(), position_index.begin(), position_index.end());
 
-  const double collision_score =
-      particle_base_score(p.E, p.wgt, p.wgt2, nullptr);
+  const double source_score = particle_base_score(p.E, p.wgt, p.wgt2, nullptr);
 
   // add one dimension for axis_index
   const size_t axis_index = indices.size();
@@ -219,7 +218,7 @@ void LegendreFET::score_source(const BankedParticle& p) {
     // loop over differnt FET order
     for (size_t i = 0; i < fet_order_ + 1; i++) {
       // score for i-th order's basis function
-      beta_n = collision_score * legendre(i, scaled_loc);
+      beta_n = source_score * legendre(i, scaled_loc);
 
       indices[FET_index] = i;
 
