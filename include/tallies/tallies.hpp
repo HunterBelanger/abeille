@@ -27,12 +27,17 @@
 
 #include <materials/material_helper.hpp>
 #include <simulation/particle.hpp>
-#include <tallies/collision_mesh_tally.hpp>
-#include <tallies/source_mesh_tally.hpp>
-#include <tallies/track_length_mesh_tally.hpp>
+#include <simulation/tracker.hpp>
+#include <tallies/cartesian_filter.hpp>
+#include <tallies/cylinder_filter.hpp>
+#include <tallies/energy_filter.hpp>
+#include <tallies/itally.hpp>
+#include <tallies/position_filter.hpp>
 
 #include <yaml-cpp/yaml.h>
 
+#include <map>
+#include <set>
 #include <string>
 
 struct ThreadLocalScores {
@@ -64,55 +69,100 @@ class Tallies {
 
   static Tallies& instance();
 
-  void add_collision_mesh_tally(std::shared_ptr<CollisionMeshTally> cetally);
-  void add_track_length_mesh_tally(
-      std::shared_ptr<TrackLengthMeshTally> tltally);
-  void add_source_mesh_tally(std::shared_ptr<SourceMeshTally> stally);
-  void add_noise_source_mesh_tally(std::shared_ptr<SourceMeshTally> stally);
+  //===============================================
+  // addding filters instances into the Map
+  void add_position_filter(std::size_t id,
+                           std::shared_ptr<PositionFilter> filter);
+  void add_cartesian_filter(std::size_t id,
+                            std::shared_ptr<CartesianFilter> filter);
+  void add_cylinder_filter(std::size_t id,
+                           std::shared_ptr<CylinderFilter> filter);
+  void add_energy_filter(std::size_t id, std::shared_ptr<EnergyFilter> filter);
+
+  //===============================================
+  // Method to get the filters from Maps
+  std::shared_ptr<PositionFilter> get_position_filter(std::size_t id) {
+    if (position_filters_.find(id) == position_filters_.end()) {
+      return nullptr;
+    }
+    return position_filters_[id];
+  }
+  std::shared_ptr<CartesianFilter> get_cartesian_filter(std::size_t id) {
+    if (cartesian_filters_.find(id) == cartesian_filters_.end()) {
+      return nullptr;
+    }
+    return cartesian_filters_[id];
+  }
+  std::shared_ptr<CylinderFilter> get_cylinder_filter(std::size_t id) {
+    if (cylinder_filters_.find(id) == cylinder_filters_.end()) {
+      return nullptr;
+    }
+    return cylinder_filters_[id];
+  }
+  std::shared_ptr<EnergyFilter> get_energy_filter(std::size_t id) {
+    if (energy_filters_.find(id) == energy_filters_.end()) {
+      return nullptr;
+    }
+    return energy_filters_[id];
+  }
+  void add_tally(std::shared_ptr<ITally> tally);
 
   void allocate_batch_arrays(std::size_t nbatches);
 
   void verify_track_length_tallies(bool track_length_transporter) const;
 
-  void score_collision(const Particle& p, MaterialHelper& mat) {
-    // Only do spacial tallies if scoring is on
-    if (scoring_ && !collision_mesh_tallies_.empty()) {
-      for (auto& tally : collision_mesh_tallies_)
-        tally->score_collision(p, mat);
+  void score_collision(const Particle& p, const Tracker& tktr,
+                       MaterialHelper& mat) {
+    if (scoring_ && !new_itally_collision_.empty()) {
+      for (auto& tally : new_itally_collision_) {
+        tally->score_collision(p, tktr, mat);
+      }
     }
   }
 
-  void score_flight(const Particle& p, double d, MaterialHelper& mat) {
-    if (scoring_ && !track_length_mesh_tallies_.empty()) {
-      for (auto& tally : track_length_mesh_tallies_)
-        tally->score_flight(p, d, mat);
+  void score_flight(const Particle& p, const Tracker& trkr, double d_flight,
+                    MaterialHelper& mat) {
+    if (scoring_ && !new_itally_track_length_.empty()) {
+      for (auto& tally : new_itally_track_length_) {
+        tally->score_flight(p, trkr, d_flight, mat);
+      }
     }
   }
 
   void score_source(const BankedParticle& p) {
-    if (scoring_ && !source_mesh_tallies_.empty()) {
-      for (auto& tally : source_mesh_tallies_) tally->score_source(p);
+    if (scoring_ && !new_itally_source_.empty()) {
+      for (auto& tally : new_itally_source_) tally->score_source(p);
     }
   }
 
   void score_source(const std::vector<BankedParticle>& vp) {
-    if (scoring_ && !source_mesh_tallies_.empty()) {
+    if (scoring_ && !new_itally_source_.empty()) {
       for (const auto& p : vp) {
-        for (auto& tally : source_mesh_tallies_) tally->score_source(p);
+        for (auto& tally : new_itally_source_) tally->score_source(p);
       }
     }
   }
 
   void score_noise_source(const BankedParticle& p) {
-    if (scoring_ && !noise_source_mesh_tallies_.empty()) {
-      for (auto& tally : noise_source_mesh_tallies_) tally->score_source(p);
+    if (scoring_) {
+      for (auto& tally : new_itally_source_) {
+        auto typ = tally->quantity().type;
+        if (typ == Quantity::Type::RealSource ||
+            typ == Quantity::Type::ImagSource)
+          tally->score_source(p);
+      }
     }
   }
 
   void score_noise_source(const std::vector<BankedParticle>& vp) {
-    if (scoring_ && !noise_source_mesh_tallies_.empty()) {
+    if (scoring_ && !new_itally_source_.empty()) {
       for (const auto& p : vp) {
-        for (auto& tally : noise_source_mesh_tallies_) tally->score_source(p);
+        for (auto& tally : new_itally_source_) {
+          auto typ = tally->quantity().type;
+          if (typ == Quantity::Type::RealSource ||
+              typ == Quantity::Type::ImagSource)
+            tally->score_source(p);
+        }
       }
     }
   }
@@ -171,10 +221,10 @@ class Tallies {
 
   void set_total_weight(double tot_wgt) {
     total_weight = tot_wgt;
-    for (auto& t : track_length_mesh_tallies_) t->set_net_weight(total_weight);
-    for (auto& t : collision_mesh_tallies_) t->set_net_weight(total_weight);
-    for (auto& t : source_mesh_tallies_) t->set_net_weight(total_weight);
-    for (auto& t : noise_source_mesh_tallies_) t->set_net_weight(total_weight);
+
+    for (auto& t : new_itally_collision_) t->set_net_weight(total_weight);
+    for (auto& t : new_itally_track_length_) t->set_net_weight(total_weight);
+    for (auto& t : new_itally_source_) t->set_net_weight(total_weight);
   }
 
   int generations() const { return gen; }
@@ -210,15 +260,30 @@ class Tallies {
   double k_tot, k_tot_avg, k_tot_var;  // Weird keff for NWDT
   double mig, mig_avg, mig_var;
 
-  std::vector<std::shared_ptr<CollisionMeshTally>> collision_mesh_tallies_;
-  std::vector<std::shared_ptr<TrackLengthMeshTally>> track_length_mesh_tallies_;
-  std::vector<std::shared_ptr<SourceMeshTally>> source_mesh_tallies_;
-  std::vector<std::shared_ptr<SourceMeshTally>> noise_source_mesh_tallies_;
+  std::vector<std::shared_ptr<ITally>>
+      new_itally_collision_;  // New "Itally" vector for collision
+  std::vector<std::shared_ptr<ITally>>
+      new_itally_track_length_;  // New "Itally" vector for track-length
+  std::vector<std::shared_ptr<ITally>>
+      new_itally_source_;  // New "Itally" vector for source
+
+  // mapes for the position, cartesian, cylinder-position, and energy-filter
+  std::map<std::size_t, std::shared_ptr<PositionFilter>> position_filters_;
+  std::map<std::size_t, std::shared_ptr<CartesianFilter>> cartesian_filters_;
+  std::map<std::size_t, std::shared_ptr<CylinderFilter>> cylinder_filters_;
+  std::map<std::size_t, std::shared_ptr<EnergyFilter>> energy_filters_;
+
+  std::set<std::string> taken_tally_names_;
 
   void update_avg_and_var(double x, double& x_avg, double& x_var);
 
+  void write_filters();
+
 };  // Tallies
 
-void add_mesh_tally(Tallies& tallies, const YAML::Node& node);
+void add_tally(Tallies& tallies, const YAML::Node& node);
+
+// for making the tallies filter
+void make_tally_filters(Tallies& tallies, const YAML::Node& node);
 
 #endif  // MG_TALLIES_H

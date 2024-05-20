@@ -22,7 +22,10 @@
  * along with Abeille. If not, see <https://www.gnu.org/licenses/>.
  *
  * */
+#include <tallies/general_tally.hpp>
+#include <tallies/legendre_fet.hpp>
 #include <tallies/tallies.hpp>
+#include <tallies/zernike_fet.hpp>
 #include <utils/error.hpp>
 #include <utils/mpi.hpp>
 #include <utils/output.hpp>
@@ -64,10 +67,8 @@ Tallies::Tallies()
       mig(0.),
       mig_avg(0.),
       mig_var(0.),
-      collision_mesh_tallies_(),
-      track_length_mesh_tallies_(),
-      source_mesh_tallies_(),
-      noise_source_mesh_tallies_() {}
+      new_itally_collision_(),
+      new_itally_track_length_() {}
 
 Tallies& Tallies::instance() {
   static Tallies tallies;
@@ -85,10 +86,10 @@ void Tallies::allocate_batch_arrays(std::size_t nbatches) {
 
 void Tallies::verify_track_length_tallies(bool track_length_transporter) const {
   if (track_length_transporter == false) {
-    for (const auto& tally : track_length_mesh_tallies_) {
-      if (tally->quantity() != MeshTally::Quantity::Flux &&
-          tally->quantity() != MeshTally::Quantity::RealFlux &&
-          tally->quantity() != MeshTally::Quantity::ImgFlux) {
+    for (const auto& tally : new_itally_track_length_) {
+      if (tally->quantity().type != Quantity::Type::Flux &&
+          tally->quantity().type != Quantity::Type::RealFlux &&
+          tally->quantity().type != Quantity::Type::ImagFlux) {
         std::stringstream mssg;
         mssg << "Estimator for tally " << tally->name()
              << " is incompatible with the selected transport operator.";
@@ -98,27 +99,72 @@ void Tallies::verify_track_length_tallies(bool track_length_transporter) const {
   }
 }
 
-void Tallies::add_collision_mesh_tally(
-    std::shared_ptr<CollisionMeshTally> cetally) {
-  cetally->set_net_weight(total_weight);
-  collision_mesh_tallies_.push_back(cetally);
+void Tallies::add_position_filter(std::size_t id,
+                                  std::shared_ptr<PositionFilter> filter) {
+  if (position_filters_.find(id) != position_filters_.end()) {
+    std::stringstream mssg;
+    mssg << "The position-filter id " << id << " already exists.";
+    fatal_error(mssg.str());
+  }
+  position_filters_[id] = filter;
 }
 
-void Tallies::add_track_length_mesh_tally(
-    std::shared_ptr<TrackLengthMeshTally> tltally) {
-  tltally->set_net_weight(total_weight);
-  track_length_mesh_tallies_.push_back(tltally);
+void Tallies::add_cartesian_filter(std::size_t id,
+                                   std::shared_ptr<CartesianFilter> filter) {
+  if (cartesian_filters_.find(id) != cartesian_filters_.end()) {
+    std::stringstream mssg;
+    mssg << "The position-filter id " << id << " already exists.";
+    fatal_error(mssg.str());
+  }
+  cartesian_filters_[id] = filter;
 }
 
-void Tallies::add_source_mesh_tally(std::shared_ptr<SourceMeshTally> stally) {
-  stally->set_net_weight(total_weight);
-  source_mesh_tallies_.push_back(stally);
+void Tallies::add_cylinder_filter(std::size_t id,
+                                  std::shared_ptr<CylinderFilter> filter) {
+  if (cylinder_filters_.find(id) != cylinder_filters_.end()) {
+    std::stringstream mssg;
+    mssg << "The position-filter id " << id << " already exists.";
+    fatal_error(mssg.str());
+  }
+  cylinder_filters_[id] = filter;
 }
 
-void Tallies::add_noise_source_mesh_tally(
-    std::shared_ptr<SourceMeshTally> stally) {
-  stally->set_net_weight(total_weight);
-  noise_source_mesh_tallies_.push_back(stally);
+void Tallies::add_energy_filter(std::size_t id,
+                                std::shared_ptr<EnergyFilter> filter) {
+  if (energy_filters_.find(id) != energy_filters_.end()) {
+    std::stringstream mssg;
+    mssg << "The energy-filter id " << id << " already exists.";
+    fatal_error(mssg.str());
+  }
+  energy_filters_[id] = filter;
+}
+
+void Tallies::add_tally(std::shared_ptr<ITally> tally) {
+  tally->set_net_weight(total_weight);
+
+  // Check if the name is taken
+  if (taken_tally_names_.contains(tally->name())) {
+    std::stringstream mssg;
+    mssg << "Multiple tallies with the name \"" << tally->name()
+         << "\" were found.";
+    fatal_error(mssg.str());
+  }
+
+  taken_tally_names_.insert(tally->name());
+
+  switch (tally->estimator()) {
+    case Estimator::Collision:
+      new_itally_collision_.push_back(tally);
+      break;
+
+    case Estimator::TrackLength:
+      new_itally_track_length_.push_back(tally);
+      break;
+
+    case Estimator::Source:
+      new_itally_source_.push_back(tally);
+      break;
+  }
 }
 
 void Tallies::score_k_col(double scr) {
@@ -171,13 +217,11 @@ void Tallies::clear_generation() {
   leak_score = 0.;
   mig_area_score = 0.;
 
-  for (auto& tally : collision_mesh_tallies_) tally->clear_generation();
+  for (auto& tally : new_itally_collision_) tally->clear_generation();
 
-  for (auto& tally : track_length_mesh_tallies_) tally->clear_generation();
+  for (auto& tally : new_itally_track_length_) tally->clear_generation();
 
-  for (auto& tally : source_mesh_tallies_) tally->clear_generation();
-
-  for (auto& tally : noise_source_mesh_tallies_) tally->clear_generation();
+  for (auto& tally : new_itally_source_) tally->clear_generation();
 }
 
 void Tallies::calc_gen_values() {
@@ -214,16 +258,13 @@ void Tallies::record_generation(double multiplier) {
   update_avg_and_var(k_tot, k_tot_avg, k_tot_var);
   update_avg_and_var(mig, mig_avg, mig_var);
 
-  for (auto& tally : collision_mesh_tallies_)
-    tally->record_generation(multiplier);
+  for (auto& tallly : new_itally_collision_)
+    tallly->record_generation(multiplier);
 
-  for (auto& tally : track_length_mesh_tallies_)
-    tally->record_generation(multiplier);
+  for (auto& tallly : new_itally_track_length_)
+    tallly->record_generation(multiplier);
 
-  for (auto& tally : source_mesh_tallies_) tally->record_generation(multiplier);
-
-  for (auto& tally : noise_source_mesh_tallies_)
-    tally->record_generation(multiplier);
+  for (auto& tallly : new_itally_source_) tallly->record_generation(multiplier);
 }
 
 void Tallies::write_tallies(bool track_length_compatible) {
@@ -276,15 +317,71 @@ void Tallies::write_tallies(bool track_length_compatible) {
     results.createAttribute("mig-area-std", mig_area_err());
   }
 
+  // Write filters
+  this->write_filters();
+
   // Write all mesh tallies
   if (gen > 0) {
-    for (auto& tally : collision_mesh_tallies_) tally->write_tally();
+    for (auto& tallly : new_itally_collision_) tallly->write_tally();
 
-    for (auto& tally : track_length_mesh_tallies_) tally->write_tally();
+    for (auto& tallly : new_itally_track_length_) tallly->write_tally();
 
-    for (auto& tally : source_mesh_tallies_) tally->write_tally();
+    for (auto& tallly : new_itally_source_) tallly->write_tally();
+  }
+}
 
-    for (auto& tally : noise_source_mesh_tallies_) tally->write_tally();
+void Tallies::write_filters() {
+  if (position_filters_.empty() && energy_filters_.empty()) {
+    return;
+  }
+
+  // Writes all filters to hdf5
+  auto& h5 = Output::instance().h5();
+  if (h5.exist("tally-filters") == false) {
+    h5.createGroup("tally-filters");
+  }
+  auto filters = h5.getGroup("tally-filters");
+
+  // First, write energy filters
+  if (energy_filters_.empty() == false) {
+    if (filters.exist("energy-filters") == false) {
+      filters.createGroup("energy-filters");
+    }
+    auto efilters = filters.getGroup("energy-filters");
+
+    for (const auto& id_efilt : energy_filters_) {
+      auto id = id_efilt.first;
+      std::string id_str = std::to_string(id);
+
+      if (efilters.exist(id_str) == false) {
+        efilters.createGroup(id_str);
+      }
+
+      auto efilt_grp = efilters.getGroup(id_str);
+
+      id_efilt.second->write_to_hdf5(efilt_grp);
+    }
+  }
+
+  // Second, write position filters
+  if (position_filters_.empty() == false) {
+    if (filters.exist("position-filters") == false) {
+      filters.createGroup("position-filters");
+    }
+    auto pfilters = filters.getGroup("position-filters");
+
+    for (const auto& id_pfilt : position_filters_) {
+      auto id = id_pfilt.first;
+      std::string id_str = std::to_string(id);
+
+      if (pfilters.exist(id_str) == false) {
+        pfilters.createGroup(id_str);
+      }
+
+      auto pfilt_grp = pfilters.getGroup(id_str);
+
+      id_pfilt.second->write_to_hdf5(pfilt_grp);
+    }
   }
 }
 
@@ -303,25 +400,101 @@ void Tallies::update_avg_and_var(double x, double& x_avg, double& x_var) {
   }
 }
 
-void add_mesh_tally(Tallies& tallies, const YAML::Node& node) {
-  // First get type of estimator. Default is collision
-  std::string estimator_str = "collision";
-  if (node["estimator"]) {
-    estimator_str = node["estimator"].as<std::string>();
+void make_tally_filters(Tallies& tallies, const YAML::Node& node) {
+  if (!node["tally-filters"]) {
+    return;
   }
 
-  if (estimator_str == "collision") {
-    tallies.add_collision_mesh_tally(make_collision_mesh_tally(node));
-  } else if (estimator_str == "track-length") {
-    tallies.add_track_length_mesh_tally(make_track_length_mesh_tally(node));
-  } else if (estimator_str == "source") {
-    auto stally = make_source_mesh_tally(node);
-    if (stally->noise_like_score()) {
-      tallies.add_noise_source_mesh_tally(stally);
-    } else {
-      tallies.add_source_mesh_tally(stally);
+  // Read all position-filters
+  if (node["tally-filters"]["position-filters"]) {
+    if (!node["tally-filters"]["position-filters"].IsSequence()) {
+      fatal_error("Invalid input for the position-filters are given.");
     }
-  } else {
-    fatal_error("Unknown estimator type of \"" + estimator_str + "\".");
+
+    const YAML::Node& position_filters =
+        node["tally-filters"]["position-filters"];
+
+    for (std::size_t i = 0; i < position_filters.size(); i++) {
+      if (!position_filters[i]["id"] || !position_filters[i]["id"].IsScalar()) {
+        fatal_error(
+            "Invalid \"id\" is given for position filter in tally-filters, the "
+            "possible error entry is " +
+            std::to_string(i) + " from top.");
+      }
+      std::size_t id = position_filters[i]["id"].as<std::size_t>();
+
+      if (!position_filters[i]["type"] ||
+          !position_filters[i]["type"].IsScalar()) {
+        fatal_error("Invalid entry for the position-filter type at id " +
+                    std::to_string(id) + ".");
+      }
+      std::string position_filter_type =
+          position_filters[i]["type"].as<std::string>();
+
+      if (position_filter_type == "cylinder-filter") {
+        auto cylinder_filter = make_cylinder_filter(position_filters[i]);
+        tallies.add_cylinder_filter(id, cylinder_filter);
+        tallies.add_position_filter(id, cylinder_filter);
+      } else {
+        auto cartesian_filter = make_cartesian_filter(position_filters[i]);
+        tallies.add_cartesian_filter(id, cartesian_filter);
+        tallies.add_position_filter(id, cartesian_filter);
+      }
+    }
   }
+
+  // Read all energy-filters
+  if (node["tally-filters"]["energy-filters"]) {
+    if (!node["tally-filters"]["energy-filters"].IsSequence()) {
+      fatal_error("Invalid input for the energy-filters are given.");
+    }
+
+    const YAML::Node& energy_filters = node["tally-filters"]["energy-filters"];
+
+    for (std::size_t i = 0; i < energy_filters.size(); i++) {
+      if (!energy_filters[i]["id"] || !energy_filters[i]["id"].IsScalar()) {
+        fatal_error(
+            "Invalid \"id\" is given for energy filter in tally-filters, the "
+            "possible error entry is " +
+            std::to_string(i) + " from top.");
+      }
+
+      std::size_t id = energy_filters[i]["id"].as<std::size_t>();
+      std::shared_ptr<EnergyFilter> filter =
+          make_energy_filter(energy_filters[i]);
+      tallies.add_energy_filter(id, filter);
+    }
+  }
+}
+
+void add_tally(Tallies& tallies, const YAML::Node& node) {
+  if (!node["name"] || node["name"].IsScalar() == false) {
+    fatal_error("Tally name is not given.");
+  }
+  std::string tally_name = node["name"].as<std::string>();
+  if (ITally::reserved_tally_names.contains(tally_name)) {
+    fatal_error("The tally name " + tally_name + " is reserved.");
+  }
+
+  std::string tally_type = "general";
+  if (node["type"] && node["type"].IsScalar()) {
+    tally_type = node["type"].as<std::string>();
+  } else if (node["type"]) {
+    fatal_error("Tally " + tally_name + " had invalid type entry.");
+  }
+
+  std::shared_ptr<ITally> t = nullptr;
+  if (tally_type == "general") {
+    t = make_general_tally(node);
+  } else if (tally_type == "legendre-fet") {
+    t = make_legendre_fet(node);
+  } else if (tally_type == "zernike-fet") {
+    t = make_zernike_fet(node);
+  } else {
+    fatal_error("Unknown tally type " + tally_type + " found in tally " +
+                tally_name + ".");
+  }
+
+  // Add the new_ITally of type ITally into the "tallies"
+  tallies.add_tally(t);
 }

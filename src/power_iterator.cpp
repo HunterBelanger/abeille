@@ -35,6 +35,8 @@
 #include <highfive/H5File.hpp>
 namespace H5 = HighFive;
 
+#include <xtensor/xtensor.hpp>
+
 #include <cmath>
 #include <fstream>
 #include <iomanip>
@@ -171,8 +173,9 @@ void PowerIterator::load_source_from_file() {
   }
 
   // Read in array
-  NDArray<double> source = NDArray<double>(dimensions);
-  source_ds.read<double>(&source[0]);
+  xt::xtensor<double, 2> source;
+  source.resize(dimensions);
+  source_ds.read<double>(source.data());
 
   // Get number of particles
   std::size_t Nprt = source.shape()[0];
@@ -598,6 +601,12 @@ void PowerIterator::comb_particles(std::vector<BankedParticle>& next_gen) {
 
   const std::size_t Npos = static_cast<std::size_t>(std::round(Wpos));
   const std::size_t Nneg = static_cast<std::size_t>(std::round(std::abs(Wneg)));
+
+  // Update particle numbers due to combing
+  this->Npos = static_cast<int>(Npos);
+  this->Nneg = static_cast<int>(Nneg);
+  Ntot = this->Npos + this->Nneg;
+  Nnet = this->Npos - this->Nneg;
 
   // The + 2 is to account for rounding in the ceil operations between global
   // array vs just the node

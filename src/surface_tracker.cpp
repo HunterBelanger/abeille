@@ -52,7 +52,9 @@ void SurfaceTracker::transport(Particle& p, Tracker& trkr, MaterialHelper& mat,
 
     // score track length tally for boundary distance,
     // no matter what sort of boundary condition
-    Tallies::instance().score_flight(p, std::min(d_coll, bound.distance), mat);
+    Tallies::instance().score_flight(p, trkr, std::min(d_coll, bound.distance),
+                                     mat);
+
     double k_trk_scr =
         p.wgt() * std::min(d_coll, bound.distance) * mat.vEf(p.E());
     thread_scores.k_trk_score += k_trk_scr;

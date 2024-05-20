@@ -72,7 +72,7 @@ class MGAngleDistribution {
 
       // weight modifer should be wm = pdf/g; where g = abs(pdf)/M; leading to
       // wm = +/- M
-     return {sampled_mu, std::copysign(abs_weight_mod_, pdf_xi)};
+      return {sampled_mu, std::copysign(abs_weight_mod_, pdf_xi)};
     }
   }
 

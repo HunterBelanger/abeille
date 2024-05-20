@@ -95,13 +95,13 @@ MGAngleDistribution::MGAngleDistribution(const std::vector<double>& mu,
     abs_weight_mod_ = abs_pdf_tabulated_.integrate(mu_.front(), mu_.back());
     const double inverse_abs_pdf_area = 1. / abs_weight_mod_;
 
-    // pdf reformation based on the abs_pdf 
+    // pdf reformation based on the abs_pdf
     abs_neg_pdf_ = abs_pdf_tabulated_.y();
     abs_neg_pdf_[0] *= inverse_abs_pdf_area;
-    
+
     // cdf corresponds to abs negative distribution
     std::vector<double> abs_neg_cdf_(abs_neg_pdf_.size(), 0.);
-    
+
     for (std::size_t i = 1; i < abs_pdf_tabulated_.x().size(); i++) {
       abs_neg_pdf_[i] *= inverse_abs_pdf_area;  // pdf normalization
       abs_neg_cdf_[i] =
@@ -117,7 +117,7 @@ MGAngleDistribution::MGAngleDistribution(const std::vector<double>& mu,
     if (std::is_sorted(cdf_.begin(), cdf_.end()) == false) {
       fatal_error("CDF is not sorted.");
     }
-      
+
     if (cdf_.front() < 0.) {
       fatal_error("CDF is less than 0.");
     }

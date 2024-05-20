@@ -29,6 +29,11 @@
 #include <utils/settings.hpp>
 #include <utils/timer.hpp>
 
+#include <highfive/H5File.hpp>
+namespace H5 = HighFive;
+
+#include <xtensor/xtensor.hpp>
+
 #include <iomanip>
 #include <limits>
 #include <numeric>
@@ -169,8 +174,9 @@ void Noise::load_source_from_file() {
   }
 
   // Read in array
-  NDArray<double> source = NDArray<double>(dimensions);
-  source_ds.read<double>(&source[0]);
+  xt::xtensor<double, 2> source;
+  source.resize(dimensions);
+  source_ds.read<double>(source.data());
 
   // Get number of particles
   std::size_t Nprt = source.shape()[0];
@@ -368,15 +374,15 @@ void Noise::run() {
     // power iteration parts.
     power_iteration_timer.start();
     for (int skip = 0; skip < static_cast<int>(nskip) - 1; skip++) {
-      pi_gen++;
       power_iteration(false);
+      pi_gen++;
     }
 
     // We now run the last remaining power iteration, but here we sample the
     // noise source
-    pi_gen++;
     power_iteration(true);
     power_iteration_timer.stop();
+    pi_gen++;
 
     // The noise_bank is now populated with noise particles. We may now simulate
     // these noise particles.

@@ -29,8 +29,9 @@
 #include <utils/output.hpp>
 #include <utils/settings.hpp>
 
-#include <ndarray.hpp>
 #include <sobol/sobol.hpp>
+#include <xtensor/xarray.hpp>
+#include <xtensor/xtensor.hpp>
 
 #include <cmath>
 #include <set>
@@ -487,7 +488,8 @@ ExactMGCancelator::sync_keys() {
 
   // From these keys, we need to see which bins have both positive and negative
   // particles, and only those will then be canceled.
-  NDArray<uint16_t> particles_per_bin({4, key_matid_pairs.size()}, false);
+  xt::xtensor<uint16_t, 2> particles_per_bin;
+  particles_per_bin.resize({4, key_matid_pairs.size()});
   particles_per_bin.fill(0);
   for (std::size_t i = 0; i < key_matid_pairs.size(); i++) {
     const auto& key = key_matid_pairs[i].first;
@@ -508,7 +510,9 @@ ExactMGCancelator::sync_keys() {
       }
     }
   }
-  mpi::Allreduce_sum(particles_per_bin.data_vector());
+  std::span<uint16_t> p_per_bin_vals(particles_per_bin.data(),
+                                     particles_per_bin.size());
+  mpi::Allreduce_sum(p_per_bin_vals);
 
   // Now, we only keep pairs with both a positive and negative particle
   std::vector<std::pair<Key, uint32_t>> key_matid_pairs_to_keep;
@@ -531,12 +535,13 @@ void ExactMGCancelator::perform_cancellation() {
   std::vector<std::pair<Key, uint32_t>> key_matid_pairs = sync_keys();
 
   // Initialize array for transfer of needed bits for cancellation
-  NDArray<double> sum_c_and_c_wgts({0});
+  xt::xarray<double> sum_c_and_c_wgts;
   if (this->cancel_dual_weights()) {
-    sum_c_and_c_wgts.reallocate({3, key_matid_pairs.size()});
+    sum_c_and_c_wgts.resize({3, key_matid_pairs.size()});
   } else {
-    sum_c_and_c_wgts.reallocate({2, key_matid_pairs.size()});
+    sum_c_and_c_wgts.resize({2, key_matid_pairs.size()});
   }
+  sum_c_and_c_wgts.fill(0.);
 
   // Go through all bins and get the averages. This is done in parallel when
   // possible, as this part of cancellation is very expensive.
@@ -576,7 +581,9 @@ void ExactMGCancelator::perform_cancellation() {
   }
 
   // Get sum of cancellation parameters across all nodes for optimization
-  mpi::Allreduce_sum(sum_c_and_c_wgts.data_vector());
+  std::span<double> sum_c_cwgt_vals(sum_c_and_c_wgts.data(),
+                                    sum_c_and_c_wgts.size());
+  mpi::Allreduce_sum(sum_c_cwgt_vals);
 
   // Assign all the optimization parameters after doing reduction across nodes.
   // There is no need to do this if we only have 1 node.
@@ -605,15 +612,16 @@ void ExactMGCancelator::perform_cancellation() {
 
   // Shrink this array, as it isn't needed any more, and we want to
   // conserve space with the uniform weight array
-  sum_c_and_c_wgts.reallocate({0});
+  sum_c_and_c_wgts.resize({0, 0});
 
   // Initialize array for transfer of uniform weights which will happen later
-  NDArray<double> uniform_wgts({0});
+  xt::xarray<double> uniform_wgts;
   if (this->cancel_dual_weights()) {
-    uniform_wgts.reallocate({2, key_matid_pairs.size()});
+    uniform_wgts.resize({2, key_matid_pairs.size()});
   } else {
-    uniform_wgts.reallocate({key_matid_pairs.size()});
+    uniform_wgts.resize({key_matid_pairs.size()});
   }
+  uniform_wgts.fill(0.);
 
   // Go through all bins and get uniform/point-wise parts
 #ifdef ABEILLE_USE_OMP
@@ -660,7 +668,8 @@ void ExactMGCancelator::perform_cancellation() {
 
   // Get total uniform weights on ONLY master node. Only the master will
   // sample uniform particles
-  mpi::Reduce_sum(uniform_wgts.data_vector(), 0);
+  std::span<double> unif_wgt_vals(uniform_wgts.data(), uniform_wgts.size());
+  mpi::Reduce_sum(unif_wgt_vals, 0);
 
   // Reasign the CancelBin values for the uniform weights from the vectors
   if (mpi::rank == 0) {

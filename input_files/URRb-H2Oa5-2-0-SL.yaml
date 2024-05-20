@@ -1,0 +1,101 @@
+materials:
+  - name: URRb
+    id: 1
+    total: [0.88721, 2.9727]
+    absorption: [0.00194, 0.053633]
+    fission: [0.000836, 0.029564]
+    nu: [2.5, 2.5]
+    chi: [[1., 0.]]
+    scatter: [[0.83892, 0.04635],
+              [0.000767, 2.9183]]
+
+  - name: H2Oa
+    id: 2
+    total: [0.88798, 2.9865]
+    absorption: [0.00074, 0.018564]
+    fission: [0., 0.]
+    scatter: [[0.83975, 0.04749],
+              [0.000336, 2.9676]]
+
+surfaces:
+  - {type: xplane, x0: -10.494149, boundary: vacuum, id: 1}
+  - {type: xplane, x0: -4.863392, id: 2}
+  - {type: xplane, x0: 4.863392, id: 3}
+  - {type: xplane, x0: 10.494149, boundary: vacuum, id: 4}
+  #
+  - {type: yplane, y0: -100., boundary: reflective, id: 11}
+  - {type: yplane, y0:  100., boundary: reflective, id: 12}
+  - {type: zplane, z0: -100., boundary: reflective, id: 13}
+  - {type: zplane, z0:  100., boundary: reflective, id: 14}
+
+cells:
+  - {id: 1, region: "+1 & -2 & +11 & -12 & +13 & -14", material: 2}
+  - {id: 2, region: "+2 & -3 & +11 & -12 & +13 & -14", material: 1}
+  - {id: 3, region: "+3 & -4 & +11 & -12 & +13 & -14", material: 2}
+
+universes:
+  - {cells: [1,2,3], id: 1}
+
+root-universe: 1
+
+tally-filters:
+  position-filters:
+    - id: 1
+      type: regular-cartesian-mesh
+      low:  [-10.494149, -100., -100.]
+      high: [ 10.494149,  100.,  100.]
+      shape: [200, 1, 1]
+
+    - id: 2
+      type: regular-cartesian-mesh
+      shape: [2, 1, 1]
+      low:  [ -10.494149,  -100.,  -100.]
+      high: [ 10.494149,  100.,  100.]
+
+  energy-filters:
+    - id: 1
+      energy-bounds: [0., 1., 2.]
+
+tallies:
+  - name: flux
+    quantity: flux
+    estimator: track-length
+    position-filter: 1
+    energy-filter: 1
+  
+  - name: flux-3
+    type: legendre-fet
+    quantity: flux
+    estimator: collision
+    order: 30
+    axes: [x]
+    position-filter: 2
+    energy-filter: 1
+
+settings:
+  energy-mode: multi-group
+  ngroups: 2
+  energy-bounds: [0, 1, 2]
+
+simulation:
+  mode: k-eigenvalue
+  nparticles: 10000
+  ngenerations: 1050
+  nignored: 20
+  sources:
+    - spatial:
+        type: point
+        position: [0., 0., 0.]
+      direction:
+        type: isotropic
+      energy:
+        type: mono-energetic
+        energy: 0.5
+      weight: 1.
+
+  entropy:
+    low: [-4.863392, -100., -100.]
+    hi:  [ 4.863392,  100.,  100.]
+    shape: [10, 1, 1]
+
+
