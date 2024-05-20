@@ -31,7 +31,7 @@ class ZernikeFET : public ITally {
   void score_flight(const Particle& /*p*/, const Tracker& /*trkr*/,
                     double /*d_flight*/,
                     MaterialHelper& /*mat*/) override final {
-    fatal_error("the track-length for the legendre-fet is not supoorted yet.");
+    fatal_error("the track-length for the zernike-fet is not supoorted yet.");
   }
 
   void score_source(const BankedParticle& p) override final;
