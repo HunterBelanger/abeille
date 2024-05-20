@@ -82,7 +82,7 @@ void DeltaTracker::transport(Particle& p, Tracker& trkr, MaterialHelper& mat,
     p.set_Esmp(Emajorant);  // Sampling XS saved for cancellation
     double d_coll = p.rng.exponential(Emajorant);
     Boundary bound(INF, -1, BoundaryType::Normal);
-    
+
     // Score track length tally for boundary distance.
     // This is here because flux-like tallies are allowed with DT.
     // No other quantity should be scored with a TLE, as an error

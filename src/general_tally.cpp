@@ -134,7 +134,8 @@ void GeneralTally::score_flight(const Particle& p, const Tracker& trkr,
 #ifdef ABEILLE_USE_OMP
 #pragma omp atomic
 #endif
-    tally_gen_score_.element(all_indices.begin(), all_indices.end()) += d_flight * flight_score;
+    tally_gen_score_.element(all_indices.begin(), all_indices.end()) +=
+        d_flight * flight_score;
 
     return;
   }

@@ -40,7 +40,6 @@
 
 class Tracker {
  public:
-
   Tracker(Position i_r, Direction i_u, int32_t token = 0)
       : r_(i_r), u_(i_u), tree(), surface_token_(token) {
     // Allocate enough space for at least 10 levels

@@ -1,7 +1,8 @@
 #ifndef LEGENDRE_H
 #define LEGENDRE_H
 
-// The following Legendre function is required as the standard library in Mac-OS doesn't have the Legendre function. 
+// The following Legendre function is required as the standard library in Mac-OS
+// doesn't have the Legendre function.
 
 #include <cstdint>
 #include <utility>
