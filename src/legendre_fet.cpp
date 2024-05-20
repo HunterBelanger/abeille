@@ -407,11 +407,11 @@ std::shared_ptr<LegendreFET> make_legendre_fet(const YAML::Node& node) {
   std::vector<LegendreFET::Axis> axes;
   axes.reserve(axis_strs.size());
   for (const auto& c : axis_strs) {
-    if (c == "X")
+    if (c == "X" || c == "x")
       axes.push_back(LegendreFET::Axis::X);
-    else if (c == "Y")
+    else if (c == "Y" || c == "y")
       axes.push_back(LegendreFET::Axis::Y);
-    else if (c == "Z")
+    else if (c == "Z" || c == "z")
       axes.push_back(LegendreFET::Axis::Z);
     else {
       std::stringstream mssg;

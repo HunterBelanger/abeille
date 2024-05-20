@@ -85,46 +85,46 @@ universes:
 
 root-universe: 4
 
-tallies:
- #- low: [-10.79, -10.79, -2.00]
- #  hi: [10.79, 10.79, 2.00]
- #  shape: [138, 138, 1]
- #  energy-bounds: [0., 1., 2.]
- #  quantity: flux
- #  estimator: track-length
- #  name: flux
- 
-  - low: [1.5, -3.5, -2.]
-    hi: [3.5, -1.5, 2.]
-    shape: [50, 50, 1]
-    energy-bounds: [0., 1., 2.]
-    estimator: source
-    quantity: real-source
-    name: real-noise-source
+tally-filters:
+  position-filters:
+    - id: 1
+      type: regular-cartesian-mesh
+      low: [1.5, -3.5, -2.]
+      high: [3.5, -1.5, 2.]
+      shape: [50, 50, 1]
 
-  - low: [1.5, -3.5, -2.]
-    hi: [3.5, -1.5, 2.]
-    shape: [50, 50, 1]
-    energy-bounds: [0., 1., 2.]
-    estimator: source
+    - id: 2
+      type: regular-cartesian-mesh
+      low: [-10.79, -10.79, -2.00]
+      high: [10.79, 10.79, 2.00]
+      shape: [138, 138, 1]
+
+  energy-filters:
+    - id: 1
+      energy-bounds: [0., 1., 2.]
+
+tallies:
+  - name: real-noise-source
+    quantity: real-source
+    position-filter: 1
+    energy-filter: 1
+
+  - name: imag-noise-source
     quantity: imag-source
-    name: imag-noise-source
-  
-  - low: [-10.79, -10.79, -2.00]
-    hi: [10.79, 10.79, 2.00]
-    shape: [138, 138, 1]
-    energy-bounds: [0., 1., 2.]
+    position-filter: 1
+    energy-filter: 1
+
+  - name: real-flux
     quantity: real-flux
     estimator: track-length
-    name: real-flux
+    position-filter: 2
+    energy-filter: 1
 
-  - low: [-10.79, -10.79, -2.00]
-    hi: [10.79, 10.79, 2.00]
-    shape: [138, 138, 1]
-    energy-bounds: [0., 1., 2.]
+  - name: imag-flux
     quantity: imag-flux
     estimator: track-length
-    name: imag-flux
+    position-filter: 2
+    energy-filter: 1
 
 settings:
   ngroups: 2

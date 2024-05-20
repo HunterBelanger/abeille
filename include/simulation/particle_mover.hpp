@@ -123,9 +123,7 @@ class ParticleMover : public IParticleMover {
             }
 
             // Score flux collision estimator with Sigma_t
-            Tallies::instance().score_collision(p, mat);
-            
-            Tallies::instance().score_collision(p,trkr, mat);
+            Tallies::instance().score_collision(p, trkr, mat);
 
             // Contribute to keff collision estimator and migration area scores
             thread_scores.k_col_score +=

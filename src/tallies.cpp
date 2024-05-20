@@ -67,10 +67,6 @@ Tallies::Tallies()
       mig(0.),
       mig_avg(0.),
       mig_var(0.),
-      collision_mesh_tallies_(),
-      track_length_mesh_tallies_(),
-      source_mesh_tallies_(),
-      noise_source_mesh_tallies_(),
       new_itally_collision_(),
       new_itally_track_length_() {}
 
@@ -90,17 +86,6 @@ void Tallies::allocate_batch_arrays(std::size_t nbatches) {
 
 void Tallies::verify_track_length_tallies(bool track_length_transporter) const {
   if (track_length_transporter == false) {
-    for (const auto& tally : track_length_mesh_tallies_) {
-      if (tally->quantity() != MeshTally::Quantity::Flux &&
-          tally->quantity() != MeshTally::Quantity::RealFlux &&
-          tally->quantity() != MeshTally::Quantity::ImgFlux) {
-        std::stringstream mssg;
-        mssg << "Estimator for tally " << tally->name()
-             << " is incompatible with the selected transport operator.";
-        fatal_error(mssg.str());
-      }
-    }
-
     for (const auto& tally : new_itally_track_length_) {
       if (tally->quantity().type != Quantity::Type::Flux &&
           tally->quantity().type != Quantity::Type::RealFlux &&
@@ -133,6 +118,7 @@ void Tallies::add_cartesian_filter(std::size_t id,
   }
   cartesian_filters_[id] = filter;
 }
+
 void Tallies::add_cylinder_filter(std::size_t id,
                                   std::shared_ptr<CylinderFilter> filter) {
   if (cylinder_filters_.find(id) != cylinder_filters_.end()) {
@@ -142,6 +128,7 @@ void Tallies::add_cylinder_filter(std::size_t id,
   }
   cylinder_filters_[id] = filter;
 }
+
 void Tallies::add_energy_filter(std::size_t id,
                                 std::shared_ptr<EnergyFilter> filter) {
   if (energy_filters_.find(id) != energy_filters_.end()) {
@@ -152,7 +139,7 @@ void Tallies::add_energy_filter(std::size_t id,
   energy_filters_[id] = filter;
 }
 
-void Tallies::add_ITally(std::shared_ptr<ITally> tally) {
+void Tallies::add_tally(std::shared_ptr<ITally> tally) {
   tally->set_net_weight(total_weight);
 
   // Check if the name is taken
@@ -178,29 +165,6 @@ void Tallies::add_ITally(std::shared_ptr<ITally> tally) {
       new_itally_source_.push_back(tally);
       break;
   }
-}
-
-void Tallies::add_collision_mesh_tally(
-    std::shared_ptr<CollisionMeshTally> cetally) {
-  cetally->set_net_weight(total_weight);
-  collision_mesh_tallies_.push_back(cetally);
-}
-
-void Tallies::add_track_length_mesh_tally(
-    std::shared_ptr<TrackLengthMeshTally> tltally) {
-  tltally->set_net_weight(total_weight);
-  track_length_mesh_tallies_.push_back(tltally);
-}
-
-void Tallies::add_source_mesh_tally(std::shared_ptr<SourceMeshTally> stally) {
-  stally->set_net_weight(total_weight);
-  source_mesh_tallies_.push_back(stally);
-}
-
-void Tallies::add_noise_source_mesh_tally(
-    std::shared_ptr<SourceMeshTally> stally) {
-  stally->set_net_weight(total_weight);
-  noise_source_mesh_tallies_.push_back(stally);
 }
 
 void Tallies::score_k_col(double scr) {
@@ -253,14 +217,6 @@ void Tallies::clear_generation() {
   leak_score = 0.;
   mig_area_score = 0.;
 
-  for (auto& tally : collision_mesh_tallies_) tally->clear_generation();
-
-  for (auto& tally : track_length_mesh_tallies_) tally->clear_generation();
-
-  for (auto& tally : source_mesh_tallies_) tally->clear_generation();
-
-  for (auto& tally : noise_source_mesh_tallies_) tally->clear_generation();
-
   for (auto& tally : new_itally_collision_) tally->clear_generation();
 
   for (auto& tally : new_itally_track_length_) tally->clear_generation();
@@ -301,17 +257,6 @@ void Tallies::record_generation(double multiplier) {
   update_avg_and_var(leak, leak_avg, leak_var);
   update_avg_and_var(k_tot, k_tot_avg, k_tot_var);
   update_avg_and_var(mig, mig_avg, mig_var);
-
-  for (auto& tally : collision_mesh_tallies_)
-    tally->record_generation(multiplier);
-
-  for (auto& tally : track_length_mesh_tallies_)
-    tally->record_generation(multiplier);
-
-  for (auto& tally : source_mesh_tallies_) tally->record_generation(multiplier);
-
-  for (auto& tally : noise_source_mesh_tallies_)
-    tally->record_generation(multiplier);
 
   for (auto& tallly : new_itally_collision_)
     tallly->record_generation(multiplier);
@@ -377,14 +322,6 @@ void Tallies::write_tallies(bool track_length_compatible) {
 
   // Write all mesh tallies
   if (gen > 0) {
-    for (auto& tally : collision_mesh_tallies_) tally->write_tally();
-
-    for (auto& tally : track_length_mesh_tallies_) tally->write_tally();
-
-    for (auto& tally : source_mesh_tallies_) tally->write_tally();
-
-    for (auto& tally : noise_source_mesh_tallies_) tally->write_tally();
-
     for (auto& tallly : new_itally_collision_) tallly->write_tally();
 
     for (auto& tallly : new_itally_track_length_) tallly->write_tally();
@@ -530,34 +467,7 @@ void make_tally_filters(Tallies& tallies, const YAML::Node& node) {
   }
 }
 
-void add_mesh_tally(Tallies& tallies, const YAML::Node& node) {
-  // First get type of estimator. Default is collision
-  if (!node["type"]) {
-    std::string estimator_str = "collision";
-    if (node["estimator"]) {
-      estimator_str = node["estimator"].as<std::string>();
-    }
-
-    if (estimator_str == "collision") {
-      tallies.add_collision_mesh_tally(make_collision_mesh_tally(node));
-    } else if (estimator_str == "track-length") {
-      tallies.add_track_length_mesh_tally(make_track_length_mesh_tally(node));
-    } else if (estimator_str == "source") {
-      auto stally = make_source_mesh_tally(node);
-      if (stally->noise_like_score()) {
-        tallies.add_noise_source_mesh_tally(stally);
-      } else {
-        tallies.add_source_mesh_tally(stally);
-      }
-    } else {
-      fatal_error("Unknown estimator type of \"" + estimator_str + "\".");
-    }
-  } else {
-    make_itally(tallies, node);
-  }
-}
-
-void make_itally(Tallies& tallies, const YAML::Node& node) {
+void add_tally(Tallies& tallies, const YAML::Node& node) {
   if (!node["name"] || node["name"].IsScalar() == false) {
     fatal_error("Tally name is not given.");
   }
@@ -567,9 +477,9 @@ void make_itally(Tallies& tallies, const YAML::Node& node) {
   }
 
   std::string tally_type = "general";
-  if (node["tally-type"] && node["tally-type"].IsScalar()) {
-    tally_type = node["tally-type"].as<std::string>();
-  } else if (node["tally-type"]) {
+  if (node["type"] && node["type"].IsScalar()) {
+    tally_type = node["type"].as<std::string>();
+  } else if (node["type"]) {
     fatal_error("Tally " + tally_name + " had invalid type entry.");
   }
 
@@ -586,5 +496,5 @@ void make_itally(Tallies& tallies, const YAML::Node& node) {
   }
 
   // Add the new_ITally of type ITally into the "tallies"
-  tallies.add_ITally(t);
+  tallies.add_tally(t);
 }

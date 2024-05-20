@@ -112,7 +112,6 @@ void ImplicitLeakageDeltaTracker::transport(
       // Score the TLE for the portion which would have leaked
       p.set_weight(wgt_leak);
       p.set_weight2(wgt2_leak);
-      Tallies::instance().score_flight(p, bound.distance, mat);
       Tallies::instance().score_flight(p, trkr, bound.distance, mat);
 
       // Reduce weight
@@ -120,7 +119,6 @@ void ImplicitLeakageDeltaTracker::transport(
       p.set_weight2(wgt2_collides);
 
       // Score TLE for the portion which only goes to the collision site
-      Tallies::instance().score_flight(p, d_coll, mat);
       Tallies::instance().score_flight(p, trkr, d_coll, mat);
     } else {
       d_coll = p.rng.exponential(Emajorant);
@@ -129,8 +127,6 @@ void ImplicitLeakageDeltaTracker::transport(
       // This is here because flux-like tallies are allowed with DT.
       // No other quantity should be scored with a TLE, as an error
       // should have been thrown when building all tallies.
-      Tallies::instance().score_flight(p, std::min(d_coll, bound.distance),
-                                       mat);
       Tallies::instance().score_flight(p, trkr,
                                        std::min(d_coll, bound.distance), mat);
     }

@@ -30,6 +30,7 @@
 #include <utils/settings.hpp>
 
 #include <sobol/sobol.hpp>
+#include <xtensor/xarray.hpp>
 #include <xtensor/xtensor.hpp>
 
 #include <cmath>
@@ -534,7 +535,7 @@ void ExactMGCancelator::perform_cancellation() {
   std::vector<std::pair<Key, uint32_t>> key_matid_pairs = sync_keys();
 
   // Initialize array for transfer of needed bits for cancellation
-  xt::xtensor<double, 2> sum_c_and_c_wgts;
+  xt::xarray<double> sum_c_and_c_wgts;
   if (this->cancel_dual_weights()) {
     sum_c_and_c_wgts.resize({3, key_matid_pairs.size()});
   } else {
@@ -614,7 +615,7 @@ void ExactMGCancelator::perform_cancellation() {
   sum_c_and_c_wgts.resize({0, 0});
 
   // Initialize array for transfer of uniform weights which will happen later
-  xt::xtensor<double, 2> uniform_wgts;
+  xt::xarray<double> uniform_wgts;
   if (this->cancel_dual_weights()) {
     uniform_wgts.resize({2, key_matid_pairs.size()});
   } else {

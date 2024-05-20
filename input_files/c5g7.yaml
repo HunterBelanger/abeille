@@ -309,17 +309,27 @@ universes:
 # This is the universe id which is designated a the root of the geometry.
 root-universe: 100
 
+tally-filters:
+  position-filters:
+    - id: 1
+      type: regular-cartesian-mesh
+      shape: [510, 510, 1]
+      low: [-32.13, -32.13, -107.1]
+      high: [32.13, 32.13, 107.1] 
+
+  energy-filters:
+    - id: 1
+      energy-bounds: [0, 1, 2, 3, 4, 5, 6, 7] 
+
 # Here, the cartesian mesh for the flux tally is defined. The ebtries
 # have the same definitions as above. If this element is not defined,
 # no flux tally we be performed.
 tallies:
-  - shape: [1224, 1224, 10]
-    low: [-32.13, -32.13, -107.1]
-    hi: [32.13, 32.13, 107.1] 
-    name: flux_c5g7
+  - name: flux
     quantity: flux
     estimator: track-length
-    energy-bounds: [0, 1, 2, 3, 4, 5, 6, 7]
+    position-filter: 1
+    energy-filter: 1
 
 # The main simulation settings are controlled here. nparticles is the
 # initial number of particles in the system. insource defines the name

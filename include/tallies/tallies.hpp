@@ -29,13 +29,10 @@
 #include <simulation/particle.hpp>
 #include <simulation/tracker.hpp>
 #include <tallies/cartesian_filter.hpp>
-#include <tallies/collision_mesh_tally.hpp>
 #include <tallies/cylinder_filter.hpp>
 #include <tallies/energy_filter.hpp>
 #include <tallies/itally.hpp>
 #include <tallies/position_filter.hpp>
-#include <tallies/source_mesh_tally.hpp>
-#include <tallies/track_length_mesh_tally.hpp>
 
 #include <yaml-cpp/yaml.h>
 
@@ -108,19 +105,12 @@ class Tallies {
     }
     return energy_filters_[id];
   }
-  void add_ITally(std::shared_ptr<ITally> tally);
-  void add_collision_mesh_tally(std::shared_ptr<CollisionMeshTally> cetally);
-  void add_track_length_mesh_tally(
-      std::shared_ptr<TrackLengthMeshTally> tltally);
-  void add_source_mesh_tally(std::shared_ptr<SourceMeshTally> stally);
-  void add_noise_source_mesh_tally(std::shared_ptr<SourceMeshTally> stally);
+  void add_tally(std::shared_ptr<ITally> tally);
 
   void allocate_batch_arrays(std::size_t nbatches);
 
   void verify_track_length_tallies(bool track_length_transporter) const;
 
-  //===============================================
-  // NEW TALLY INTERFACE
   void score_collision(const Particle& p, const Tracker& tktr,
                        MaterialHelper& mat) {
     if (scoring_ && !new_itally_collision_.empty()) {
@@ -139,40 +129,13 @@ class Tallies {
     }
   }
 
-  //===============================================
-  // OLD TALLY INTERFACE
-  void score_collision(const Particle& p, MaterialHelper& mat) {
-    // Only do spacial tallies if scoring is on
-    if (scoring_ && !collision_mesh_tallies_.empty()) {
-      for (auto& tally : collision_mesh_tallies_)
-        tally->score_collision(p, mat);
-    }
-  }
-
-  void score_flight(const Particle& p, double d, MaterialHelper& mat) {
-    if (scoring_ && !track_length_mesh_tallies_.empty()) {
-      for (auto& tally : track_length_mesh_tallies_)
-        tally->score_flight(p, d, mat);
-    }
-  }
-
   void score_source(const BankedParticle& p) {
-    if (scoring_ && !source_mesh_tallies_.empty()) {
-      for (auto& tally : source_mesh_tallies_) tally->score_source(p);
-    }
-
     if (scoring_ && !new_itally_source_.empty()) {
       for (auto& tally : new_itally_source_) tally->score_source(p);
     }
   }
 
   void score_source(const std::vector<BankedParticle>& vp) {
-    if (scoring_ && !source_mesh_tallies_.empty()) {
-      for (const auto& p : vp) {
-        for (auto& tally : source_mesh_tallies_) tally->score_source(p);
-      }
-    }
-
     if (scoring_ && !new_itally_source_.empty()) {
       for (const auto& p : vp) {
         for (auto& tally : new_itally_source_) tally->score_source(p);
@@ -181,10 +144,6 @@ class Tallies {
   }
 
   void score_noise_source(const BankedParticle& p) {
-    if (scoring_ && !noise_source_mesh_tallies_.empty()) {
-      for (auto& tally : noise_source_mesh_tallies_) tally->score_source(p);
-    }
-
     if (scoring_) {
       for (auto& tally : new_itally_source_) {
         auto typ = tally->quantity().type;
@@ -196,12 +155,6 @@ class Tallies {
   }
 
   void score_noise_source(const std::vector<BankedParticle>& vp) {
-    if (scoring_ && !noise_source_mesh_tallies_.empty()) {
-      for (const auto& p : vp) {
-        for (auto& tally : noise_source_mesh_tallies_) tally->score_source(p);
-      }
-    }
-
     if (scoring_ && !new_itally_source_.empty()) {
       for (const auto& p : vp) {
         for (auto& tally : new_itally_source_) {
@@ -268,10 +221,6 @@ class Tallies {
 
   void set_total_weight(double tot_wgt) {
     total_weight = tot_wgt;
-    for (auto& t : track_length_mesh_tallies_) t->set_net_weight(total_weight);
-    for (auto& t : collision_mesh_tallies_) t->set_net_weight(total_weight);
-    for (auto& t : source_mesh_tallies_) t->set_net_weight(total_weight);
-    for (auto& t : noise_source_mesh_tallies_) t->set_net_weight(total_weight);
 
     for (auto& t : new_itally_collision_) t->set_net_weight(total_weight);
     for (auto& t : new_itally_track_length_) t->set_net_weight(total_weight);
@@ -311,11 +260,6 @@ class Tallies {
   double k_tot, k_tot_avg, k_tot_var;  // Weird keff for NWDT
   double mig, mig_avg, mig_var;
 
-  std::vector<std::shared_ptr<CollisionMeshTally>> collision_mesh_tallies_;
-  std::vector<std::shared_ptr<TrackLengthMeshTally>> track_length_mesh_tallies_;
-  std::vector<std::shared_ptr<SourceMeshTally>> source_mesh_tallies_;
-  std::vector<std::shared_ptr<SourceMeshTally>> noise_source_mesh_tallies_;
-
   std::vector<std::shared_ptr<ITally>>
       new_itally_collision_;  // New "Itally" vector for collision
   std::vector<std::shared_ptr<ITally>>
@@ -337,11 +281,9 @@ class Tallies {
 
 };  // Tallies
 
-void add_mesh_tally(Tallies& tallies, const YAML::Node& node);
+void add_tally(Tallies& tallies, const YAML::Node& node);
 
 // for making the tallies filter
 void make_tally_filters(Tallies& tallies, const YAML::Node& node);
-
-void make_itally(Tallies& tallies, const YAML::Node& node);
 
 #endif  // MG_TALLIES_H

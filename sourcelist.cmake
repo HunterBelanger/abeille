@@ -38,10 +38,6 @@ set(ABEILLE_SOURCE_FILES ${ABEILLE_SOURCE_FILES}
   src/watt.cpp
   src/tabulated_energy.cpp
   src/tallies.cpp
-  src/mesh_tally.cpp
-  src/source_mesh_tally.cpp
-  src/collision_mesh_tally.cpp
-  src/track_length_mesh_tally.cpp
   src/parser.cpp
   src/simulation.cpp
   src/slice_plot.cpp

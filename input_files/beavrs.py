@@ -1518,41 +1518,72 @@ universes.append({"id": 20000, "type": "rectlinear", "shape": [15,15,1],
   "universes": core_unis})
 CORE = 20000
 
-
 #=============================================================================
 # Tallies
+position_filters = []
+
+position_filters.append({})
+position_filters[-1]["id"] = 1
+position_filters[-1]["type"] = "regular-cartesian-mesh"
+position_filters[-1]["low"] = [-204.28458, -204.28458,   0.]
+position_filters[-1]["high"] =  [ 204.28458,  204.28458, 460.]
+position_filters[-1]["shape"] = [323,323,50]
+
+position_filters.append({})
+position_filters[-1]["id"] = 2
+position_filters[-1]["type"] = "regular-cartesian-mesh"
+position_filters[-1]["low"] = [-161.2773, -161.2773, 36.748]
+position_filters[-1]["high"] = [ 161.2773,  161.2773, 402.508]
+position_filters[-1]["shape"] = [255, 255, 1]
+
+position_filters.append({})
+position_filters[-1]["id"] = 3
+position_filters[-1]["type"] = "regular-cartesian-mesh"
+position_filters[-1]["low"] = [-190., -190., 0.]
+position_filters[-1]["high"] = [190., 190., 460.]
+position_filters[-1]["shape"] = [1, 1, 1]
+
+energy_filters = []
+
+energy_filters.append({})
+energy_filters[-1]["id"] = 1
+energy_filters[-1]["energy-bounds"] = [1.E-11,0.625E-6, 20.]
+
+energy_filters.append({})
+energy_filters[-1]["id"] = 2
+energy_filters[-1]["energy-bounds"] = []
+Ebns = list(np.logspace(np.log10(1.E-11), np.log10(20.), 2000))
+for E in Ebns:
+  energy_filters[-1]["energy-bounds"].append(float(E))
+
+energy_filters.append({})
+energy_filters[-1]["id"] = 3
+energy_filters[-1]["energy-bounds"] = [1.E-11, 20.]
+
+tally_filters = {"position-filters": position_filters, "energy-filters": energy_filters}
+
 tallies = []
 
 tallies.append({})
 tallies[-1]["quantity"] = "flux"
 tallies[-1]["estimator"] = "track-length"
 tallies[-1]["name"] = "flux_beavrs"
-tallies[-1]["low"] = [-204.28458, -204.28458,   0.]
-tallies[-1]["hi"] =  [ 204.28458,  204.28458, 460.]
-tallies[-1]["shape"] = [323,323,50]
-tallies[-1]['energy-bounds'] = [1.E-11,0.625E-6, 20.]
+tallies[-1]["position-filter"] = 1
+tallies[-1]['energy-filter'] = 1
 
 tallies.append({})
 tallies[-1]["quantity"] = "flux"
 tallies[-1]["estimator"] = "track-length"
 tallies[-1]["name"] = "flux_spectrum_beavrs"
-tallies[-1]["low"] = [-190., -190., 0.]
-tallies[-1]["hi"] = [190., 190., 460.]
-tallies[-1]["shape"] = [1,1,1]
-Ebounds = []
-Ebounds_array = list(np.logspace(np.log10(1.E-11), np.log10(20.), 2000))
-for Ebound in Ebounds_array:
-  Ebounds.append(float(Ebound))
-tallies[-1]['energy-bounds'] = Ebounds
+tallies[-1]["position-filter"] = 3
+tallies[-1]['energy-filter'] = 2
 
 tallies.append({})
 tallies[-1]["quantity"] = "fission"
 tallies[-1]["estimator"] = "track-length"
 tallies[-1]["name"] = "fission_beavrs"
-tallies[-1]["low"] = [-161.2773, -161.2773, 36.748]
-tallies[-1]["hi"] =  [ 161.2773,  161.2773, 402.508]
-tallies[-1]["shape"] = [255,255,1]
-tallies[-1]['energy-bounds'] = [1.E-11, 20.]
+tallies[-1]["position-filter"] = 2
+tallies[-1]["energy-filter"] = 3
 
 #=============================================================================
 # Settings
@@ -1612,6 +1643,7 @@ beavrs['surfaces'] = surfaces
 beavrs['cells'] = cells
 beavrs['universes'] = universes
 beavrs['root-universe'] = CORE
+beavrs['tally-filters'] = tally_filters
 beavrs['tallies'] = tallies
 beavrs['settings'] = settings
 beavrs['simulation'] = simulation

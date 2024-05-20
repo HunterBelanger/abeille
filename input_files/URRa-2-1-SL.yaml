@@ -1,4 +1,4 @@
-#Case of negative scattring distribution
+# Case of negative scattring distribution
 # Analytical Benchmark Test set for criticallity test
 # Problem No 71 URRa-2-1-SL
 # k_eff = 1.0
@@ -37,26 +37,6 @@ entropy:
   shape: [10, 1, 1]
   low: [-9.491600, -100., -100.]
   hi:  [ 9.491600,  100.,  100.]
-
-
-
-tallies:
-  - shape: [1, 1, 1]
-    low: [-9.491600, -100, -100]
-    hi: [9.491600, 100, 100] 
-    name: fission
-    quantity: fission
-    estimator: collision
-    energy-bounds: [0, 2]
-
-  - shape: [1, 1, 1]
-    low: [-9.491600, -100, -100]
-    hi: [9.491600, 100, 100] 
-    name: flux
-    quantity: flux
-    estimator: collision
-    energy-bounds: [0, 2]
-
 
 settings:
   energy-mode: multi-group

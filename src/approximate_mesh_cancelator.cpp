@@ -26,7 +26,7 @@
 #include <utils/error.hpp>
 #include <utils/output.hpp>
 
-#include <xtensor/xtensor.hpp>
+#include <xtensor/xarray.hpp>
 
 #include <algorithm>
 #include <cmath>
@@ -273,7 +273,7 @@ void ApproximateMeshCancelator::perform_cancellation_vector() {
   // Get keys of all non empty bins
   std::vector<uint32_t> keys = sync_keys();
 
-  xt::xtensor<double, 2> wgts;
+  xt::xarray<double> wgts;
   if (this->cancel_dual_weights()) {
     wgts.resize({2, keys.size()});
   } else {
@@ -340,7 +340,7 @@ void ApproximateMeshCancelator::perform_cancellation_vector() {
 }
 
 void ApproximateMeshCancelator::perform_cancellation_full_vector() {
-  xt::xtensor<double, 5> wgts;
+  xt::xarray<double> wgts;
   if (this->cancel_dual_weights()) {
     wgts.resize({2, shape[0], shape[1], shape[2], shape[3]});
   } else {
@@ -348,7 +348,7 @@ void ApproximateMeshCancelator::perform_cancellation_full_vector() {
   }
   wgts.fill(0.);
 
-  xt::xtensor<uint16_t, 4> n_totals;
+  xt::xarray<uint16_t> n_totals;
   n_totals.resize({shape[0], shape[1], shape[2], shape[3]});
   n_totals.fill(0);
 

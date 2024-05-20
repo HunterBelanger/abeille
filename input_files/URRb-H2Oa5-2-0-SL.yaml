@@ -38,29 +38,39 @@ universes:
 
 root-universe: 1
 
+tally-filters:
+  position-filters:
+    - id: 1
+      type: regular-cartesian-mesh
+      low:  [-10.494149, -100., -100.]
+      high: [ 10.494149,  100.,  100.]
+      shape: [200, 1, 1]
+
+    - id: 2
+      type: regular-cartesian-mesh
+      shape: [2, 1, 1]
+      low:  [ -10.494149,  -100.,  -100.]
+      high: [ 10.494149,  100.,  100.]
+
+  energy-filters:
+    - id: 1
+      energy-bounds: [0., 1., 2.]
+
 tallies:
-  - low: [-10.494149, -100., -100.]
-    hi:  [ 10.494149,  100.,  100.]
-    shape: [200, 1, 1]
-    energy-bounds: [0., 1., 2.]
+  - name: flux
     quantity: flux
-    name: flux
     estimator: track-length
+    position-filter: 1
+    energy-filter: 1
   
-  - type: ITally
-    #tally-type: general
-    tally-type: legendre-FET
-    FET-order: 30
-    #Position-Filter: regular-reactangular-mesh
-    Position-Filter: box
-    shape: [2, 1, 1]
-    low: [ -10.494149,  -100.,  -100.]
-    high: [ 10.494149,  100.,  100.]
-    energy-bounds: [0., 1., 2.]
+  - name: flux-3
+    type: legendre-fet
     quantity: flux
-    name: flux-3
     estimator: collision
-    FET-axis: [X]
+    order: 30
+    axes: [x]
+    position-filter: 2
+    energy-filter: 1
 
 settings:
   energy-mode: multi-group

@@ -125,7 +125,21 @@ void GeneralTally::score_flight(const Particle& p, const Tracker& trkr,
   const double flight_score =
       particle_base_score(p.E(), p.wgt(), p.wgt2(), &mat);
 
-  // get the all the bins' index along with the distance traveled by the
+  if (position_filter_ == nullptr) {
+    StaticVector4 all_indices;
+    if (energy_in_) {
+      all_indices.push_back(index_E);
+    }
+
+#ifdef ABEILLE_USE_OMP
+#pragma omp atomic
+#endif
+    tally_gen_score_.element(all_indices.begin(), all_indices.end()) += d_flight * flight_score;
+
+    return;
+  }
+
+  // Get the all the bin indices along with the distance traveled by the
   // particle
   std::vector<TracklengthDistance> position_indices =
       position_filter_->get_indices_tracklength(trkr, d_flight);

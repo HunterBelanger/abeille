@@ -404,29 +404,44 @@ if __name__ == "__main__":
  
   #=============================================================================
   # Tallies
+  position_filters = []
+
+  position_filters.append({})
+  position_filters[-1]["id"] = 1
+  position_filters[-1]["type"] = "regular-cartesian-mesh"
+  position_filters[-1]["low"] =  [-65., -65., 0.]
+  position_filters[-1]["high"] = [ 65.,  65., H]
+  position_filters[-1]["shape"] = [500, 500, 100]
+
+  energy_filters = []
+
+  energy_filters.append({})
+  energy_filters[-1]["id"] = 1
+  energy_filters[-1]["energy-bounds"] = [1.E-11,0.625E-6, 20.]
+
+  energy_filters.append({})
+  energy_filters[-1]["id"] = 2
+  energy_filters[-1]["energy-bounds"] = []
+  Ebns = list(np.logspace(np.log10(1.E-11), np.log10(20.), 2000))
+  for E in Ebns:
+    energy_filters[-1]["energy-bounds"].append(float(E))
+
+  tally_filters = {"position-filters": position_filters, "energy-filters": energy_filters}
+
   tallies = []
 
   tallies.append({})
-  tallies[0]['shape'] = [500, 500, 100]
-  tallies[0]['low'] = [-65., -65., 0.]
-  tallies[0]['hi'] = [65., 65., H]
   tallies[0]['name'] = "flux"
   tallies[0]['quantity'] = "flux"
   tallies[0]['estimator'] = "track-length"
-  tallies[0]['energy-bounds'] = [1.E-11, 0.625E-6, 20.]
+  tallies[0]['position-filter'] = 1
+  tallies[0]['energy-filter'] = 1
 
   tallies.append({})
-  tallies[1]['shape'] = [1, 1, 1]
-  tallies[1]['low'] = [-65., -65., 0.]
-  tallies[1]['hi'] = [65., 65., H]
   tallies[1]['name'] = "flux_spectrum"
   tallies[1]['quantity'] = "flux"
   tallies[1]['estimator'] = "track-length"
-  Ebounds = []
-  Ebounds_array = list(np.logspace(np.log10(1.E-11), np.log10(20.), 2000))
-  for Ebound in Ebounds_array:
-    Ebounds.append(float(Ebound))
-  tallies[1]['energy-bounds'] = Ebounds 
+  tallies[1]['energy-filter'] = 2
 
   #=============================================================================
   # Settings
@@ -483,6 +498,7 @@ if __name__ == "__main__":
   crocus['cells'] = cells
   crocus['universes'] = universes
   crocus['root-universe'] = root_universe
+  crocus['tally-filters'] = tally_filters
   crocus['tallies'] = tallies
   crocus['settings'] = settings
   crocus['simulation'] = simulation
