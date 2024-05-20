@@ -267,10 +267,6 @@ Inner_Lattice.universes = [n, n, n, n, n, n, n, n, U, U, U, U, U, U, n, n, n, n,
 #                     energy_bounds=list(np.logspace(np.log10(1.E-11), np.log10(20.), 2000))))
 
 #===============================================================================
-# Settings
-settings = Settings()
-
-#===============================================================================
 # Simulation
 sources = [Source(spatial=Box(Point(-29.17, -29.17, 0.05), Point(29.17, 29.17, 96.), fissile_only=True),
                   direction=Isotropic(),
@@ -283,5 +279,5 @@ entropy = Entropy(Point(-29.17, -29.17, -2.7), Point(29.17, 29.17, 100.), (5,5,5
 simulation = PowerIterator(nparticles=100000, ngenerations=3100, nignored=100, sources=sources)
 simulation.entropy = entropy
 
-input = Input(Inner_Lattice, settings, simulation)
+input = Input(Inner_Lattice, simulation)
 input.to_file('crocus.yaml')

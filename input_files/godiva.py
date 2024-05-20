@@ -19,16 +19,10 @@ surf = Sphere(r=8.7407, boundary_type='vacuum')
 sphr = Cell(-surf, fuel)
 root_uni = CellUniverse([sphr])
 
-# Sources
+# Simulation
 sources = [Source(Point(0., 0., 0.), Isotropic(), MonoEnergetic(0.7), 1.)]
-
-# Settings
-settings = Settings()
-settings.nparticles = 10000
-settings.ngenerations = 2100
-settings.nignored = 100
-settings.use_dbrc = False
+simulation = PowerIterator(10000, 2100, 100, sources)
 
 # Write input file
-inpt = Input(root_uni, sources, settings)
+inpt = Input(root_uni, simulation)
 inpt.to_file('godiva.yaml')

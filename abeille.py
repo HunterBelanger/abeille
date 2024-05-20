@@ -971,7 +971,7 @@ class Settings:
 
 
 class Input:
-    def __init__(self, root_universe: Universe, settings: Settings, simulation : Simulation):
+    def __init__(self, root_universe: Universe, simulation : Simulation, settings: Settings = Settings()):
         self.root_universe = root_universe
         self.settings = settings
         self.simulation = simulation
