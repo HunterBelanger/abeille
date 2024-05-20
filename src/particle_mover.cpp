@@ -205,7 +205,7 @@ std::shared_ptr<IParticleMover> make_particle_mover(const YAML::Node& sim,
   }
 
   if (splitting && type == "branching") {
-    fatal_error("Cannot use splitting with branchless collisions.");
+    fatal_error("Cannot use splitting with branching collisions.");
   }
 
   if (type == "branching") {
