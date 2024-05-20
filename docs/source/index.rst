@@ -10,7 +10,7 @@ Abeille is a 3D Monte Carlo transport code, which solves the Boltzmann transport
 equation for neutrons. It is capable of solving fixed-source, k-eigenvalue, and
 neutron noise problems with both continuous energy and multi-group physics.
 ACE files are used for continuous energy data, like other popular transport
-codes. Input files are written in easy to read yaml, which if very friendly for
+codes. Input files are written in easy to read yaml, which is very friendly for
 new users. The geometry may be constructed using combinations of surface
 half-spaces to create cells. Like in other Monte Carlo codes, Universes and
 Lattices may be used to construct more complex geometries such as for fuel

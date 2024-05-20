@@ -55,6 +55,8 @@ to install HDF5:
 
   sudo apt install libhdf5-dev # Ubuntu
 
+.. _mpi:
+
 MPI (Optional)
 ==============
 
@@ -76,6 +78,8 @@ installed with one of the following commands:
 .. code-block:: bash
 
   sudo apt install libopenmpi-dev # Ubuntu
+
+.. _graphics_dependencies:
 
 Graphics Libraries (Optional)
 =============================
@@ -144,13 +148,13 @@ ABEILLE_USE_LTO
 ABEILLE_USE_MPI
   This option builds Abeille with MPI support for distributed memory
   parallelism. Using MPI requires an MPI library be installed, in addition to
-  the header files (see `MPI section <#mpi-optional>`_ above). This is turned
+  the header files (see :ref:`MPI <mpi>` above). This is turned
   OFF by default.
 
 ABEILLE_GUI_PLOT
   This option builds the graphical geometry plotter with Abeille. This might
   require additional dependencies, depending on your operating system
-  (see `Graphics Libraries section <#graphics-libraries-optional>`_ above). It
+  (see :ref:`Graphics Libraries <graphics_dependencies>` above). It
   is turned OFF by default on Linux systems and turned ON by default on Windows.
 
 To configure your build, you must run the CMake command, with your desired
