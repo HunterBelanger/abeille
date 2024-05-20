@@ -681,6 +681,7 @@ class Source:
         out += "      weight: {}\n".format(self.weight)
         return out
 
+
 class Entropy:
     def __init__(self, low: Point, hi: Point, shape: Tuple[int, int, int]):
         self.low = low
@@ -699,6 +700,163 @@ class Entropy:
         out += '    hi: [{}, {}, {}]\n'.format(self.hi.x, self.hi.y, self.hi.z)
         out += '    shape: [{}, {}, {}]\n\n'.format(self.shape[0], self.shape[1], self.shape[2])
 
+        return out
+    
+
+class EnergyFilter:
+    _id_counter = 1
+
+    def __init__(self, energy_bounds : Iterable[float]):
+        self.id = EnergyFilter._id_counter
+        EnergyFilter._id_counter += 1
+        self.energy_bounds = list(energy_bounds)
+
+    def to_string(self) -> str:
+        out =  '    - id: {}\n'.format(self.id)
+        out += '      energy-bounds: {}\n'.format(self.energy_bounds)
+        return out
+
+
+class PositionFilter(ABC):
+    _id_counter = 1
+
+    def __init__(self):
+        self.id = PositionFilter._id_counter
+        PositionFilter._id_counter += 1
+
+    @abstractmethod
+    def to_string(self) -> str:
+        pass
+
+
+class RegularCartesianMeshFilter(PositionFilter):
+    def __init__(self, low : Point, high : Point, shape: Tuple[int, int, int]):
+        self.low = low
+        self.high = high
+        self.shape = shape
+        super(RegularCartesianMeshFilter, self).__init__()
+
+    def to_string(self) -> str:
+        out =  '    - id: {}\n'.format(self.id)
+        out += '      type: regular-cartesian-mesh\n'
+        out += '      low:  [{}, {}, {}]\n'.format(self.low.x, self.low.y, self.low.z)
+        out += '      high: [{}, {}, {}]\n'.format(self.high.x, self.high.y, self.high.z)
+        out += '      shape: [{}, {}, {}]\n'.format(self.shape[0], self.shape[1], self.shape[2])
+        return out
+
+
+class TallyQuantity(Enum):
+    Flux = 1
+    RealFlux = 2
+    ImagFlux = 3
+    Total = 4
+    Fission = 5
+    Absorption = 6
+    Elastic = 7
+    MT = 8
+    Source = 9
+    RealSource = 10
+    ImagSource = 11
+
+    def __str__(self) -> str:
+        if self.name == "Flux":
+            return "flux"
+        elif self.name == "RealFlux":
+            return "real-flux"
+        elif self.name == "ImagFlux":
+            return "imag-flux"
+        elif self.name == "Total":
+            return "total"
+        elif self.name == "Fission":
+            return "fission"
+        elif self.name == "Absorption":
+            return "absorption"
+        elif self.name == "Elastic":
+            return "elastic"
+        elif self.name == "MT":
+            return "mt"
+        elif self.name == "Source":
+            return "source"
+        elif self.name == "RealSource":
+            return "real-source"
+        elif self.name == "ImagSource":
+            return "imag-source"
+        else:
+            raise RuntimeError("Unkown TallyQuantity {}".format(self.name))
+
+
+class TallyEstimator(Enum):
+    Collision = 1
+    TrackLength = 2
+    Source = 3
+
+    def __str__(self):
+        if self.name == "Collision":
+            return "collision"
+        elif self.name == "TrackLength":
+            return "track-length"
+        elif self.name == "Source":
+            return "source"
+        else:
+            raise RuntimeError("Unkown TallyEstimator {}".format(self.name))
+
+
+class Tally(ABC):
+    def __init__(self, name : str):
+        self.name = name
+    
+    @abstractmethod
+    def add_energy_filters(self, energy_filters : Dict[int, EnergyFilter]) -> None:
+        pass
+
+    @abstractmethod
+    def add_position_filters(self, position_filters : Dict[int, PositionFilter]) -> None:
+        pass
+
+    @abstractmethod
+    def to_string(self) -> str:
+        pass
+
+
+class GeneralTally(Tally):
+    def __init__(self, name : str, quantity : TallyQuantity, estimator : Optional[TallyEstimator], position_filter : Optional[PositionFilter] = None, energy_filter : Optional[EnergyFilter] = None, mt : Optional[int] = None):
+        super(GeneralTally, self).__init__(name)
+        self.quantity = quantity
+        self.mt = mt
+        self.estimator = estimator
+        self.position_filter = position_filter
+        self.energy_filter = energy_filter
+
+        if self.quantity in [TallyQuantity.Source, TallyQuantity.RealSource, TallyQuantity.ImagSource]:
+            self.estimator = TallyEstimator.Source
+
+        if self.quantity == TallyQuantity.MT and self.mt is None:
+            raise RuntimeError("TallyQuantity is MT, but no mt value was provided")
+
+    def add_energy_filters(self, energy_filters: Dict[int, EnergyFilter]) -> None:
+        if self.energy_filter is None:
+            return
+
+        if self.energy_filter.id not in energy_filters:
+            energy_filters[self.energy_filter.id] = self.energy_filter
+
+    def add_position_filters(self, position_filters: Dict[int, PositionFilter]) -> None:
+        if self.position_filter is None:
+            return
+
+        if self.position_filter.id not in position_filters:
+            position_filters[self.position_filter.id] = self.position_filter
+
+    def to_string(self) -> str:
+        out =  '  - name: {}\n'.format(self.name)
+        out += '    quantity: {}\n'.format(self.quantity)
+        if self.quantity == TallyQuantity.MT:
+            out += '    mt: {}\n'.format(self.mt)
+        out += '    estimator: {}\n'.format(self.estimator)
+        if self.position_filter is not None:
+            out += '    position-filter: {}\n'.format(self.position_filter.id)
+        if self.energy_filter is not None:
+            out += '    energy-filter: {}\n'.format(self.energy_filter.id)
         return out
 
 
@@ -971,10 +1129,11 @@ class Settings:
 
 
 class Input:
-    def __init__(self, root_universe: Universe, simulation : Simulation, settings: Settings = Settings()):
+    def __init__(self, root_universe: Universe, simulation : Simulation, tallies : Optional[List[Tally]] = None, settings: Settings = Settings()):
         self.root_universe = root_universe
         self.settings = settings
         self.simulation = simulation
+        self.tallies = tallies
 
     def to_file(self, fname: str):
         # Get everything we need for the input
@@ -1038,6 +1197,36 @@ class Input:
         # Write root universe id 
         input_str += "root-universe: {:}\n".format(self.root_universe.id)
         input_str += "\n"
+
+        # Write tallies
+        if self.tallies is not None:
+            # Get tally filters
+            position_filters = {}
+            energy_filters = {}
+            for tally in self.tallies:
+                tally.add_energy_filters(energy_filters)
+                tally.add_position_filters(position_filters)
+
+            # Write filters
+            if len(position_filters) > 0 or len(energy_filters) > 0:
+                input_str += "tally-filters:\n"
+                if len(position_filters) > 0:
+                    input_str += "  position-filters:\n"
+                    for pfilt in position_filters:
+                        input_str += position_filters[pfilt].to_string() + "\n"
+                    input_str += "\n"
+                if len(energy_filters) > 0:
+                    input_str += "  energy-filters:\n"
+                    for efilt in energy_filters:
+                        input_str += energy_filters[efilt].to_string() + "\n"
+                    input_str += "\n"
+
+            # Now write the actual tallies
+            if len(self.tallies) > 0:
+                input_str += "tallies:\n"
+                for tally in self.tallies:
+                    input_str += tally.to_string()
+                input_str += "\n"
 
         # Write settings
         input_str += self.settings.to_string()

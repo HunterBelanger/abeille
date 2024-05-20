@@ -256,15 +256,15 @@ Inner_Lattice.universes = [n, n, n, n, n, n, n, n, U, U, U, U, U, U, n, n, n, n,
 
 #===============================================================================
 # Tallies
-#tallies = []
-#
-#tallies.append(Tally(low=Point(-65., -65., 0.), hi=Point(65., 65., 96.5),
-#                     shape=(500, 500, 100), energy_bounds=[1.E-11, 0.625E-6, 20.],
-#                     quantity='flux', name='flux', estimator='track-length'))
-#
-#tallies.append(Tally(low=Point(-65., -65., 0.), hi=Point(65., 65., 96.5),
-#                     shape=(1, 1, 1), quantity='flux', name='flux-spectrum', estimator='track-length',
-#                     energy_bounds=list(np.logspace(np.log10(1.E-11), np.log10(20.), 2000))))
+pos_mesh = RegularCartesianMeshFilter(low=Point(-65., -65., 0.), high=Point(65., 65., 96.5), shape=(500, 500, 100))
+engy_fast_therm = EnergyFilter([1.E-11, 0.625E-6, 20.])
+engy_spec = EnergyFilter(np.logspace(np.log10(1.E-11), np.log10(20.), 2000))
+
+tallies = []
+
+tallies.append(GeneralTally("flux", TallyQuantity.Flux, TallyEstimator.TrackLength, pos_mesh, engy_fast_therm))
+
+tallies.append(GeneralTally('flux-spectrum', TallyQuantity.Flux, TallyEstimator.TrackLength, energy_filter=engy_spec))
 
 #===============================================================================
 # Simulation
@@ -276,8 +276,8 @@ sources = [Source(spatial=Box(Point(-29.17, -29.17, 0.05), Point(29.17, 29.17, 9
 
 entropy = Entropy(Point(-29.17, -29.17, -2.7), Point(29.17, 29.17, 100.), (5,5,5))
 
-simulation = PowerIterator(nparticles=100000, ngenerations=3100, nignored=100, sources=sources)
+simulation = PowerIterator(nparticles=10000, ngenerations=3100, nignored=100, sources=sources)
 simulation.entropy = entropy
 
-input = Input(Inner_Lattice, simulation)
+input = Input(Inner_Lattice, simulation, tallies)
 input.to_file('crocus.yaml')
