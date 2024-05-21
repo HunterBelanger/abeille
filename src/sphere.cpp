@@ -88,25 +88,39 @@ std::shared_ptr<Sphere> make_sphere(const YAML::Node& surface_node) {
   uint32_t id = 1;
   std::string name = "";
 
-  // Get x0
-  if (surface_node["x0"])
-    x0 = surface_node["x0"].as<double>();
+  // Get id
+  if (surface_node["id"])
+    id = surface_node["id"].as<uint32_t>();
   else {
-    fatal_error("Sphere surface must have x0 defined.");
+    fatal_error(
+        "Surface must have an id attribute with a unique positive integer.");
+  }
+
+  // Get x0
+  if (surface_node["x0"] && surface_node["x0"].IsScalar() == false) {
+    std::stringstream mssg;
+    mssg << "sphere with id " << id << " has invalid x0 entry.";
+    fatal_error(mssg.str());
+  } else if (surface_node["x0"]) {
+    x0 = surface_node["x0"].as<double>();
   }
 
   // Get y0
-  if (surface_node["y0"])
+  if (surface_node["y0"] && surface_node["y0"].IsScalar() == false) {
+    std::stringstream mssg;
+    mssg << "sphere with id " << id << " has invalid y0 entry.";
+    fatal_error(mssg.str());
+  } else if (surface_node["y0"]) {
     y0 = surface_node["y0"].as<double>();
-  else {
-    fatal_error("Sphere surface must have y0 defined.");
   }
 
   // Get z0
-  if (surface_node["z0"])
+  if (surface_node["z0"] && surface_node["z0"].IsScalar() == false) {
+    std::stringstream mssg;
+    mssg << "sphere with id " << id << " has invalid z0 entry.";
+    fatal_error(mssg.str());
+  } else if (surface_node["z0"]) {
     z0 = surface_node["z0"].as<double>();
-  else {
-    fatal_error("Sphere surface must have z0 defined.");
   }
 
   // Get r
@@ -130,15 +144,7 @@ std::shared_ptr<Sphere> make_sphere(const YAML::Node& surface_node) {
     }
   } else {
     boundary = BoundaryType::Normal;
-  }
-
-  // Get id
-  if (surface_node["id"])
-    id = surface_node["id"].as<uint32_t>();
-  else {
-    fatal_error(
-        "Surface must have an id attribute with a unique positive integer.");
-  }
+  } 
 
   // Get name
   if (surface_node["name"])
