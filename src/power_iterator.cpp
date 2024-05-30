@@ -418,6 +418,7 @@ void PowerIterator::run() {
 
   // Start timer
   simulation_timer.reset();
+  mpi::synchronize(); // Make sure everyone is here before starting the timer
   simulation_timer.start();
 
   // Make sure we have room for the generation times
