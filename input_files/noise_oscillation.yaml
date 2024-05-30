@@ -13,6 +13,7 @@ materials:
     delayed_groups:
       probabilities: [1.]
       constants: [0.0851]
+      chi: [[1., 0.]]
     group-speeds: [1.82304E7, 4.13067E5] # [cm / s]
     
   - id: 2

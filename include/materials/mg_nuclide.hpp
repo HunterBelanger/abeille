@@ -44,7 +44,8 @@ class MGNuclide : public Nuclide {
             const std::vector<std::vector<double>>& yield,
             const std::vector<std::vector<MGAngleDistribution>>& angle,
             const std::vector<double>& P_dlyd_grp,
-            const std::vector<double>& decay_cnsts);
+            const std::vector<double>& decay_cnsts,
+            const std::vector<std::vector<double>>& delayed_chi);
 
   bool fissile() const override final;
   bool has_urr() const override final;
@@ -114,6 +115,7 @@ class MGNuclide : public Nuclide {
   std::vector<double> nu_prmpt_;
   std::vector<double> nu_delyd_;
   std::vector<std::vector<double>> chi_;
+  std::vector<std::vector<double>> delayed_chi_;
   std::vector<std::vector<double>> Ps_;
   std::vector<std::vector<double>> mult_;
   std::vector<std::vector<MGAngleDistribution>> angle_dists_;
