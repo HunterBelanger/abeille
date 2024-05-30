@@ -3,29 +3,29 @@ import numpy as np
 
 #===============================================================================
 # Materials
-UO2 = Material("UO2")
+UO2 = CEMaterial("UO2")
 UO2.add_nuclide("O16", 4.70902E-02)
 UO2.add_nuclide("U235", 4.30565E-04)
 UO2.add_nuclide("U238", 2.31145E-02)
 
-Umetal = Material("UMetal")
+Umetal = CEMaterial("UMetal")
 Umetal.add_nuclide("U235", 4.53160E-04)
 Umetal.add_nuclide("U238", 4.68003E-02)
 
-UO2_Clad = Material("UO2 Cladding")
+UO2_Clad = CEMaterial("UO2 Cladding")
 UO2_Clad.add_nuclide("Al27", 5.00614E-02)
 
-Umetal_Clad = Material("UMetal Cladding")
+Umetal_Clad = CEMaterial("UMetal Cladding")
 Umetal_Clad.add_nuclide("Al27", 5.17799E-02)
 
-Moderator = Material("Moderator")
+Moderator = CEMaterial("Moderator")
 Moderator.add_nuclide("H1_H2O", 6.67578E-02)
 Moderator.add_nuclide("O16", 3.33789E-02)
 
-Base_Plate = Material("Base Plate")
+Base_Plate = CEMaterial("Base Plate")
 Base_Plate.add_nuclide("Al27", 6.02611E-02)
 
-Cadmium = Material("Cadmium")
+Cadmium = CEMaterial("Cadmium")
 Cadmium.add_nuclide("Cd106", 0.01245*4.63334E-02)
 Cadmium.add_nuclide("Cd108", 0.00888*4.63334E-02)
 Cadmium.add_nuclide("Cd110", 0.12470*4.63334E-02)
@@ -35,14 +35,14 @@ Cadmium.add_nuclide("Cd113", 0.12227*4.63334E-02)
 Cadmium.add_nuclide("Cd114", 0.28754*4.63334E-02)
 Cadmium.add_nuclide("Cd116", 0.07512*4.63334E-02)
 
-Filler_Gas = Material("Filler Gas")
+Filler_Gas = CEMaterial("Filler Gas")
 Filler_Gas.add_nuclide("He4", 1.6400E-04)
 
-Air = Material("Air")
+Air = CEMaterial("Air")
 Air.add_nuclide("N14", 4.1400E-05)
 Air.add_nuclide("O16", 9.0700E-06)
 
-Void = Material("Void")
+Void = CEMaterial("Void")
 Void.add_nuclide("He4", 1.E-16)
 
 #===============================================================================

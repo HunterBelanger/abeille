@@ -9,13 +9,13 @@
 from abeille import *
 
 # Materials
-fuel = Material('U233 Fuel')
+fuel = CEMaterial('U233 Fuel')
 fuel.add_nuclide('U233', 4.6710E-2)
 fuel.add_nuclide('U234', 5.8772E-4)
 fuel.add_nuclide('U235', 1.4158E-5)
 fuel.add_nuclide('U238', 2.7959E-4)
 
-ref = Material('U Reflector')
+ref = CEMaterial('U Reflector')
 ref.add_nuclide('U235', 3.5050E-4)
 ref.add_nuclide('U238', 4.7719E-2)
 

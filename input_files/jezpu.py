@@ -9,7 +9,7 @@
 from abeille import *
 
 # Material
-fuel = Material('Pu Metal')
+fuel = CEMaterial('Pu Metal')
 fuel.add_nuclide('Pu239', 3.7047E-2)
 fuel.add_nuclide('Pu240', 1.7512E-3)
 fuel.add_nuclide('Pu241', 1.1674E-4)

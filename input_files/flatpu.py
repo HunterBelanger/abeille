@@ -9,14 +9,14 @@
 from abeille import *
 
 # Materials
-fuel = Material('Pu Fuel')
+fuel = CEMaterial('Pu Fuel')
 fuel.add_nuclide('Pu239', 3.6697E-2)
 fuel.add_nuclide('Pu240', 1.8700E-3)
 fuel.add_nuclide('Pu241', 1.1639E-4)
 fuel.add_nuclide('Ga69',  8.8692E-5)
 fuel.add_nuclide('Ga71',  5.8858E-5)
 
-ref = Material('U Reflector')
+ref = CEMaterial('U Reflector')
 ref.add_nuclide('U234', 2.6438E-6)
 ref.add_nuclide('U235', 3.4610E-4)
 ref.add_nuclide('U238', 4.7721E-2)

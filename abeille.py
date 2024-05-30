@@ -4,18 +4,83 @@ from abc import ABC, abstractmethod
 import numpy as np
 from enum import Enum
 
-class Material:
-    _id_counter = 1
+def to_list(a):
+    if isinstance(a, np.ndarray):
+        return a.tolist()
+    else:
+        return list(a)
 
+class Material(ABC):
+  _id_counter = 1
+
+  def __init__(self, name: str=''):
+    self.id = Material._id_counter
+    Material._id_counter += 1
+    self.name = name
+  
+  @abstractmethod
+  def to_string(self) -> str:
+    pass
+
+class MGMaterial(Material):
+  def __init__(self, name: str=''):
+    super(MGMaterial, self).__init__(name)
+
+    self.Et = None 
+    self.Ea = None
+    self.Ef = None
+    self.Es = None
+    self.nu = None
+    self.nu_prompt = None
+    self.nu_delayed = None
+    self.chi = None
+    self.group_speeds = None
+    self.color = None
+
+    # Delayed Info
+    self.delayed_probabilities = None
+    self.delayed_constants = None
+    self.delayed_chi = None
+
+  def to_string(self) -> str:
+    out = "  - id: {}\n".format(self.id)
+    if len(self.name) > 0:
+      out += "    name: {}\n".format(self.name)
+    if self.color is not None:
+      out += "    color: [{}, {}, {}]\n".format(self.color[0], self.color[1], self.color[2])
+    out += "    total: {}\n".format(to_list(self.Et))
+    out += "    absorption: {}\n".format(to_list(self.Ea))
+    out += "    scatter: {}".format(to_list(self.Es)).replace("\n", "").replace(", [", ",\n              [") + "\n"
+    out += "    fission: {}".format(to_list(self.Ef)).replace("\n", "") + "\n"
+
+    if self.chi is not None:
+        out += "    chi: {}".format(to_list(self.chi)).replace("\n", "").replace(", [", ",\n          [") + "\n"
+
+    if self.nu is not None and self.nu_delayed is None:
+      out += "    nu: {}".format(to_list(self.nu)).replace("\n", "") + "\n"
+    elif self.nu_prompt is not None and self.nu_delayed is not None:
+      out += "    nu_prompt: {}".format(to_list(self.nu_prompt)).replace("\n", "") + "\n"
+      out += "    nu_delayed: {}".format(to_list(self.nu_delayed)).replace("\n", "") + "\n"
+
+    if self.delayed_chi is not None and self.delayed_probabilities is not None and self.delayed_constants is not None:
+      out += "    delayed_groups:\n"
+      out += "      probabilities: {}".format(to_list(self.delayed_probabilities)).replace("\n", "") + "\n"
+      out += "      constants: {}".format(to_list(self.delayed_constants)).replace("\n", "") + "\n"
+      out += "      chi: {}".format(to_list(self.delayed_chi)).replace("\n", "").replace(", [", ",\n            [") + "\n"
+
+    out += "\n"
+
+    return out
+
+
+class CEMaterial(Material):
     def __init__(self, name: str='', temperature: float=293.6, density_units: str = 'sum', fractions: str = 'atoms', density: float = 0.):
-        self.name = name
-        self.id = Material._id_counter
-        Material._id_counter += 1
         self.temperature = temperature
         self.density = density
         self.density_units = density_units
         self.fractions = fractions
         self.nuclides = []
+        super(CEMaterial, self).__init__(name)
 
     def _update_density(self):
         if self.density_units == 'sum':
