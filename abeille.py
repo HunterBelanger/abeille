@@ -61,6 +61,9 @@ class MGMaterial(Material):
     elif self.nu_prompt is not None and self.nu_delayed is not None:
       out += "    nu_prompt: {}".format(to_list(self.nu_prompt)).replace("\n", "") + "\n"
       out += "    nu_delayed: {}".format(to_list(self.nu_delayed)).replace("\n", "") + "\n"
+    
+    if self.group_speeds is not None:
+        out += "    group-speeds: {}".format(to_list(self.group_speeds)).replace("\n", "") + "\n"
 
     if self.delayed_chi is not None and self.delayed_probabilities is not None and self.delayed_constants is not None:
       out += "    delayed_groups:\n"
