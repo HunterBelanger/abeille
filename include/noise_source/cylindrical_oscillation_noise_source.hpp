@@ -22,19 +22,17 @@
  * along with Abeille. If not, see <https://www.gnu.org/licenses/>.
  *
  * */
-#ifndef SQUARE_OSCILLATION_NOISE_SOURCE_H
-#define SQUARE_OSCILLATION_NOISE_SOURCE_H
+#ifndef CYLINDRICAL_OSCILLATION_NOISE_SOURCE_H
+#define CYLINDRICAL_OSCILLATION_NOISE_SOURCE_H
 
 #include <noise_source/oscillation_noise_source.hpp>
 #include <utils/position.hpp>
 
 #include <yaml-cpp/yaml.h>
 
-class SquareOscillationNoiseSource : public OscillationNoiseSource {
+class CylindricalOscillationNoiseSource : public OscillationNoiseSource {
  public:
-  SquareOscillationNoiseSource(Position low, Position hi, double eps_tot,
-                               double eps_fis, double eps_sct,
-                               double angular_frequency, double phase);
+  CylindricalOscillationNoiseSource(Position origin, double len, double rad, char ax, double eps_tot, double eps_fis, double eps_sct, double angular_frequency);
 
   bool is_inside(const Position& r) const override final;
   std::complex<double> dEt(const Position& r, double E,
@@ -50,14 +48,15 @@ class SquareOscillationNoiseSource : public OscillationNoiseSource {
                                 double w) const override final;
 
  private:
-  Position low_, hi_;
-  double w0_, phase_;
+  Position origin_;
+  double length_, radius_;
+  char axis_;
+  double w0_;
   double eps_t_;
   double eps_f_;
   double eps_s_;
 };
 
-std::shared_ptr<OscillationNoiseSource> make_square_oscillation_noise_source(
-    const YAML::Node& snode);
+std::shared_ptr<OscillationNoiseSource> make_cylindrical_oscillation_noise_source(const YAML::Node& snode);
 
 #endif

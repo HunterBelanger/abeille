@@ -22,6 +22,7 @@ set(ABEILLE_SOURCE_FILES ${ABEILLE_SOURCE_FILES}
   src/modified_fixed_source.cpp
   src/noise_maker.cpp
   src/square_oscillation_noise_source.cpp
+  src/cylindrical_oscillation_noise_source.cpp
   src/flat_vibration_noise_source.cpp
   src/source.cpp
   src/particle.cpp
