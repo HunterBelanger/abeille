@@ -32,7 +32,10 @@
 
 class CylindricalOscillationNoiseSource : public OscillationNoiseSource {
  public:
-  CylindricalOscillationNoiseSource(Position origin, double len, double rad, char ax, double eps_tot, double eps_fis, double eps_sct, double angular_frequency);
+  CylindricalOscillationNoiseSource(Position origin, double len, double rad,
+                                    char ax, double eps_tot, double eps_fis,
+                                    double eps_sct, double angular_frequency,
+                                    double phase);
 
   bool is_inside(const Position& r) const override final;
   std::complex<double> dEt(const Position& r, double E,
@@ -51,12 +54,13 @@ class CylindricalOscillationNoiseSource : public OscillationNoiseSource {
   Position origin_;
   double length_, radius_;
   char axis_;
-  double w0_;
+  double w0_, phase_;
   double eps_t_;
   double eps_f_;
   double eps_s_;
 };
 
-std::shared_ptr<OscillationNoiseSource> make_cylindrical_oscillation_noise_source(const YAML::Node& snode);
+std::shared_ptr<OscillationNoiseSource>
+make_cylindrical_oscillation_noise_source(const YAML::Node& snode);
 
 #endif

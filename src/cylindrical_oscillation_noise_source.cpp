@@ -35,12 +35,15 @@
 // without having the direction sent.
 const Direction u(1., 0., 0.);
 
-CylindricalOscillationNoiseSource::CylindricalOscillationNoiseSource(Position origin, double len, double rad, char ax, double eps_tot, double eps_fis, double eps_sct, double angular_frequency)
+CylindricalOscillationNoiseSource::CylindricalOscillationNoiseSource(
+    Position origin, double len, double rad, char ax, double eps_tot,
+    double eps_fis, double eps_sct, double angular_frequency, double phase)
     : origin_(origin),
       length_(len),
       radius_(rad),
       axis_(ax),
       w0_(angular_frequency),
+      phase_(phase),
       eps_t_(eps_tot),
       eps_f_(eps_fis),
       eps_s_(eps_sct) {
@@ -53,7 +56,7 @@ CylindricalOscillationNoiseSource::CylindricalOscillationNoiseSource(Position or
     fatal_error("Radius is <= 0.");
   }
 
-  // Make sure axis is valid 
+  // Make sure axis is valid
   if (axis_ != 'x' && axis_ != 'y' && axis_ != 'z') {
     std::stringstream mssg;
     mssg << "Unknown axis \"" << axis_ << "\".";
@@ -87,7 +90,7 @@ bool CylindricalOscillationNoiseSource::is_inside(const Position& r) const {
   const Position r_loc = r - origin_;
 
   if (axis_ == 'x') {
-    if (std::abs(r_loc.x()) >= 0.5*length_) {
+    if (std::abs(r_loc.x()) >= 0.5 * length_) {
       return false;
     }
 
@@ -95,13 +98,13 @@ bool CylindricalOscillationNoiseSource::is_inside(const Position& r) const {
       return false;
     }
 
-    if (std::sqrt(r_loc.y()*r_loc.y() + r_loc.z()*r_loc.z()) >= radius_) {
+    if (std::sqrt(r_loc.y() * r_loc.y() + r_loc.z() * r_loc.z()) >= radius_) {
       return false;
     }
 
     return true;
   } else if (axis_ == 'y') {
-    if (std::abs(r_loc.y()) >= 0.5*length_) {
+    if (std::abs(r_loc.y()) >= 0.5 * length_) {
       return false;
     }
 
@@ -109,13 +112,13 @@ bool CylindricalOscillationNoiseSource::is_inside(const Position& r) const {
       return false;
     }
 
-    if (std::sqrt(r_loc.x()*r_loc.x() + r_loc.z()*r_loc.z()) >= radius_) {
+    if (std::sqrt(r_loc.x() * r_loc.x() + r_loc.z() * r_loc.z()) >= radius_) {
       return false;
     }
 
     return true;
   } else {
-    if (std::abs(r_loc.z()) >= 0.5*length_) {
+    if (std::abs(r_loc.z()) >= 0.5 * length_) {
       return false;
     }
 
@@ -123,7 +126,7 @@ bool CylindricalOscillationNoiseSource::is_inside(const Position& r) const {
       return false;
     }
 
-    if (std::sqrt(r_loc.y()*r_loc.y() + r_loc.x()*r_loc.x()) >= radius_) {
+    if (std::sqrt(r_loc.y() * r_loc.y() + r_loc.x() * r_loc.x()) >= radius_) {
       return false;
     }
 
@@ -131,7 +134,9 @@ bool CylindricalOscillationNoiseSource::is_inside(const Position& r) const {
   }
 }
 
-std::complex<double> CylindricalOscillationNoiseSource::dEt(const Position& r, double E, double w) const {
+std::complex<double> CylindricalOscillationNoiseSource::dEt(const Position& r,
+                                                            double E,
+                                                            double w) const {
   // Get the material
   Tracker trkr(r, u);
   auto material = trkr.material();
@@ -152,68 +157,94 @@ std::complex<double> CylindricalOscillationNoiseSource::dEt(const Position& r, d
 
   double err = (n * w0_ - w) / w;
 
-  if ((n == 1 || n == -1) && std::abs(err) < 0.01) {
-    return {eps_t_ * xs * PI, 0.};
+  if (n == 1 && std::abs(err) < 0.01) {
+    return std::complex<double>(0., -eps_t_ * xs * PI) *
+           std::exp(std::complex<double>(0., phase_));
+  } else if (n == -1 && std::abs(err) < 0.01) {
+    return std::complex<double>(0., -eps_t_ * xs * PI) *
+           std::exp(std::complex<double>(0., -phase_));
   } else {
     return {0., 0.};
   }
 }
 
-std::complex<double> CylindricalOscillationNoiseSource::dEt_Et(const Position& /*r*/, double /*E*/, double w) const {
+std::complex<double> CylindricalOscillationNoiseSource::dEt_Et(
+    const Position& /*r*/, double /*E*/, double w) const {
   // Get the frequency multiple n
   int32_t n = static_cast<int32_t>(std::round(w / w0_));
 
   double err = (n * w0_ - w) / w;
 
-  if ((n == 1 || n == -1) && std::abs(err) < 0.01) {
-    return {eps_t_ * PI, 0.};
+  if (n == 1 && std::abs(err) < 0.01) {
+    return std::complex<double>(0., -eps_t_ * PI) *
+           std::exp(std::complex<double>(0., phase_));
+  } else if (n == -1 && std::abs(err) < 0.01) {
+    return std::complex<double>(0., -eps_t_ * PI) *
+           std::exp(std::complex<double>(0., -phase_));
   } else {
     return {0., 0.};
   }
 }
 
-std::complex<double> CylindricalOscillationNoiseSource::dEf_Ef(const Position& /*r*/, double /*E*/, double w) const {
+std::complex<double> CylindricalOscillationNoiseSource::dEf_Ef(
+    const Position& /*r*/, double /*E*/, double w) const {
   // Get the frequency multiple n
   int32_t n = static_cast<int32_t>(std::round(w / w0_));
 
   double err = (n * w0_ - w) / w;
 
-  if ((n == 1 || n == -1) && std::abs(err) < 0.01) {
-    return {eps_f_ * PI, 0.};
+  if (n == 1 && std::abs(err) < 0.01) {
+    return std::complex<double>(0., -eps_f_ * PI) *
+           std::exp(std::complex<double>(0., phase_));
+  } else if (n == -1 && std::abs(err) < 0.01) {
+    return std::complex<double>(0., -eps_f_ * PI) *
+           std::exp(std::complex<double>(0., -phase_));
   } else {
     return {0., 0.};
   }
 }
 
-std::complex<double> CylindricalOscillationNoiseSource::dEelastic_Eelastic(const Position& /*r*/, double /*E*/, double w) const {
+std::complex<double> CylindricalOscillationNoiseSource::dEelastic_Eelastic(
+    const Position& /*r*/, double /*E*/, double w) const {
   // Get the frequency multiple n
   int32_t n = static_cast<int32_t>(std::round(w / w0_));
 
   double err = (n * w0_ - w) / w;
 
-  if ((n == 1 || n == -1) && std::abs(err) < 0.01) {
-    return {eps_s_ * PI, 0.};
+  if (n == 1 && std::abs(err) < 0.01) {
+    return std::complex<double>(0., -eps_s_ * PI) *
+           std::exp(std::complex<double>(0., phase_));
+  } else if (n == -1 && std::abs(err) < 0.01) {
+    return std::complex<double>(0., -eps_s_ * PI) *
+           std::exp(std::complex<double>(0., -phase_));
   } else {
     return {0., 0.};
   }
 }
 
-std::complex<double> CylindricalOscillationNoiseSource::dEmt_Emt(uint32_t /*mt*/, const Position& /*r*/, double /*E*/, double w) const {
+std::complex<double> CylindricalOscillationNoiseSource::dEmt_Emt(
+    uint32_t /*mt*/, const Position& /*r*/, double /*E*/, double w) const {
   // Get the frequency multiple n
   int32_t n = static_cast<int32_t>(std::round(w / w0_));
 
   double err = (n * w0_ - w) / w;
 
-  if ((n == 1 || n == -1) && std::abs(err) < 0.01) {
-    return {eps_s_ * PI, 0.};
+  if (n == 1 && std::abs(err) < 0.01) {
+    return std::complex<double>(0., -eps_s_ * PI) *
+           std::exp(std::complex<double>(0., phase_));
+  } else if (n == -1 && std::abs(err) < 0.01) {
+    return std::complex<double>(0., -eps_s_ * PI) *
+           std::exp(std::complex<double>(0., -phase_));
   } else {
     return {0., 0.};
   }
 }
 
-std::shared_ptr<OscillationNoiseSource> make_cylindrical_oscillation_noise_source(const YAML::Node& snode) {
-  // Get origin 
-  if (!snode["origin"] || !snode["origin"].IsSequence() || !(snode["origin"].size() == 3)) {
+std::shared_ptr<OscillationNoiseSource>
+make_cylindrical_oscillation_noise_source(const YAML::Node& snode) {
+  // Get origin
+  if (!snode["origin"] || !snode["origin"].IsSequence() ||
+      !(snode["origin"].size() == 3)) {
     fatal_error("No valid origin entry for oscillation noise source.");
   }
 
@@ -228,7 +259,9 @@ std::shared_ptr<OscillationNoiseSource> make_cylindrical_oscillation_noise_sourc
   }
   const double len = snode["length"].as<double>();
   if (len <= 0.) {
-    fatal_error("Noise source of type cylindrical-oscillation has a length that is <= 0.");
+    fatal_error(
+        "Noise source of type cylindrical-oscillation has a length that is <= "
+        "0.");
   }
 
   // Get radius
@@ -237,7 +270,9 @@ std::shared_ptr<OscillationNoiseSource> make_cylindrical_oscillation_noise_sourc
   }
   const double rad = snode["radius"].as<double>();
   if (len <= 0.) {
-    fatal_error("Noise source of type cylindrical-oscillation has a radius that is <= 0.");
+    fatal_error(
+        "Noise source of type cylindrical-oscillation has a radius that is <= "
+        "0.");
   }
 
   // Get axis
@@ -247,13 +282,18 @@ std::shared_ptr<OscillationNoiseSource> make_cylindrical_oscillation_noise_sourc
   std::string axis_str = snode["axis"].as<std::string>();
   if (axis_str != "x" && axis_str != "y" && axis_str != "z") {
     std::stringstream mssg;
-    mssg << "Noise source of type cylindrical-oscillation was provided unkown axis \"" << axis_str << "\".";
+    mssg << "Noise source of type cylindrical-oscillation was provided unkown "
+            "axis \""
+         << axis_str << "\".";
     fatal_error(mssg.str());
   }
   char axis;
-  if (axis_str == "x") axis = 'x';
-  else if (axis_str == "y") axis = 'y';
-  else axis = 'z';
+  if (axis_str == "x")
+    axis = 'x';
+  else if (axis_str == "y")
+    axis = 'y';
+  else
+    axis = 'z';
 
   // Get frequency
   if (!snode["angular-frequency"] || !snode["angular-frequency"].IsScalar()) {
@@ -267,6 +307,14 @@ std::shared_ptr<OscillationNoiseSource> make_cylindrical_oscillation_noise_sourc
     fatal_error(
         "Angular frequency can not be negative or zero for oscillation noise "
         "source.");
+  }
+
+  // Get phase (is present)
+  double phase = 0.;
+  if (snode["phase"] && snode["phase"].IsScalar()) {
+    phase = snode["phase"].as<double>();
+  } else if (snode["phase"]) {
+    fatal_error("Invalid phase entry for oscillation noise source.");
   }
 
   // Get epsilons
@@ -306,5 +354,6 @@ std::shared_ptr<OscillationNoiseSource> make_cylindrical_oscillation_noise_sourc
         "source.");
   }
 
-  return std::make_shared<CylindricalOscillationNoiseSource>(r_orig, len, rad, axis, eps_t, eps_f, eps_s, w0);
+  return std::make_shared<CylindricalOscillationNoiseSource>(
+      r_orig, len, rad, axis, eps_t, eps_f, eps_s, w0, phase);
 }
