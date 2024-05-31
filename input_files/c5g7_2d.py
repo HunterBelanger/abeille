@@ -3,13 +3,13 @@ import numpy as np
 
 # Results from Abeille
 # -----------------------------------
-# | kcol    = 1.165292 +/- 0.000046 |
-# | ktrk    = 1.165348 +/- 0.000061 |
+# | kcol    = 1.186558 +/- 0.000047 |
+# | ktrk    = 1.186427 +/- 0.000063 |
 # -----------------------------------
 
 # This is for normalizing the fission production so that the system will be critical
 keff = 1.
-#keff = 1.165292
+#keff = 1.186558
 norm = 1. / keff
 
 # Same for all materials
@@ -181,61 +181,33 @@ WTR.Es = [[4.44777E-02, 1.13400E-01, 7.23470E-04, 3.74990E-06, 5.31840E-08, 0.00
           [0.00000E+00, 0.00000E+00, 0.00000E+00, 0.00000E+00, 0.00000E+00, 1.32440E-01, 2.48070E+00]]
 WTR.group_speeds = [2.23517E+09, 4.98880E+08, 3.84974E+07, 5.12639E+06, 1.67542E+06, 7.26031E+05, 2.81629E+05]
 
-
-CR = MGMaterial("Control Rod")
-CR.color = [0, 0, 0]
-CR.Et = [2.16768E-01, 4.80098E-01, 8.86369E-01, 9.70009E-01, 9.10482E-01, 1.13775E+00, 1.84048E+00]
-CR.Ea = [1.70490E-03, 8.36224E-03, 8.37901E-02, 3.97797E-01, 6.98763E-01, 9.29508E-01, 1.17836E+00]
-CR.Ef = [0.,          0.,          0.,          0.,          0.,          0.,          0.]
-CR. Es = [[1.7056E-01, 4.4401E-02, 9.8367E-05, 1.2779E-07, 0.0000E+00, 0.0000E+00, 0.0000E+00,],
-          [0.0000E+00, 4.7105E-01, 6.8548E-04, 3.9140E-10, 0.0000E+00, 0.0000E+00, 0.0000E+00,],
-          [0.0000E+00, 0.0000E+00, 8.0186E-01, 7.2013E-04, 0.0000E+00, 0.0000E+00, 0.0000E+00,],
-          [0.0000E+00, 0.0000E+00, 0.0000E+00, 5.7075E-01, 1.4602E-03, 0.0000E+00, 0.0000E+00,],
-          [0.0000E+00, 0.0000E+00, 0.0000E+00, 6.5556E-05, 2.0784E-01, 3.8149E-03, 3.6976E-09,],
-          [0.0000E+00, 0.0000E+00, 0.0000E+00, 0.0000E+00, 1.0243E-03, 2.0247E-01, 4.7529E-03,],
-          [0.0000E+00, 0.0000E+00, 0.0000E+00, 0.0000E+00, 0.0000E+00, 3.5304E-03, 6.5860E-01,]]
-CR.group_speeds = [2.18553E+09, 4.21522E+08, 8.76487E+07, 7.47375E+06, 2.28533E+06, 1.01738E+06, 4.11374E+05]
-
-
 pin_rad = 0.54
 pin_pitch = 1.26
 fuel_len = 128.52
-cr_rest_pos = .5*fuel_len
-cr_insertion = 0.
-geom_height = 21.42 + fuel_len + 21.42
+geom_height = 21.42
 asmbly_pitch = 17 * pin_pitch
-core_bottom = 0.
 
 # Surfaces for fuel pins
 pin_cyl = ZCylinder(pin_rad)
-pin_bot = ZPlane(-0.5*fuel_len)
-pin_top = ZPlane(0.5*fuel_len)
 
 # Create fuel pin cells
-UO2_pin = Cell(-pin_cyl & +pin_bot & -pin_top, UO2)
-M4_pin = Cell(-pin_cyl & +pin_bot & -pin_top, M4)
-M7_pin = Cell(-pin_cyl & +pin_bot & -pin_top, M7)
-M8_pin = Cell(-pin_cyl & +pin_bot & -pin_top, M8)
-FC_pin = Cell(-pin_cyl & +pin_bot & -pin_top, FC)
+UO2_pin = Cell(-pin_cyl, UO2)
+M4_pin  = Cell(-pin_cyl, M4)
+M7_pin  = Cell(-pin_cyl, M7)
+M8_pin  = Cell(-pin_cyl, M8)
+FC_pin  = Cell(-pin_cyl, FC)
+GT_pin  = Cell(-pin_cyl, GT)
 
 # Create moderator cells for water around, above, and bellow pins
-Mod_pin = Cell(+pin_cyl & +pin_bot & -pin_top, WTR)
-Mod_bot = Cell(-pin_bot, WTR)
-Mod_top = Cell(+pin_top, WTR)
-
-# Create cells for control rods
-cr_bottom = ZPlane(cr_rest_pos - cr_insertion)
-GT_pin = Cell(-pin_cyl & +pin_bot & -cr_bottom, GT)
-CR_pin = Cell(-pin_cyl & +cr_bottom, CR)
-CR_mod = Cell(+pin_cyl & +cr_bottom, WTR)
+Mod_pin = Cell(+pin_cyl, WTR)
 
 # Create universes for the pins
-U2u = CellUniverse([UO2_pin, Mod_pin, Mod_bot, Mod_top])
-M4u = CellUniverse([M4_pin, Mod_pin, Mod_bot, Mod_top])
-M7u = CellUniverse([M7_pin, Mod_pin, Mod_bot, Mod_top])
-M8u = CellUniverse([M8_pin, Mod_pin, Mod_bot, Mod_top])
-FCu = CellUniverse([FC_pin, Mod_pin, Mod_bot, Mod_top])
-GTu = CellUniverse([GT_pin, Mod_pin, Mod_bot, CR_pin, CR_mod])
+U2u = CellUniverse([UO2_pin, Mod_pin])
+M4u = CellUniverse([M4_pin,  Mod_pin])
+M7u = CellUniverse([M7_pin,  Mod_pin])
+M8u = CellUniverse([M8_pin,  Mod_pin])
+FCu = CellUniverse([FC_pin,  Mod_pin])
+GTu = CellUniverse([GT_pin,  Mod_pin])
 
 # Create fuel assemblies
 UO2_asmbly = RectLattice(shape=(17, 17, 1), pitch=(pin_pitch, pin_pitch, geom_height), origin=[0., 0., 0.])
@@ -285,27 +257,27 @@ xl = XPlane(-0.5*3*asmbly_pitch, boundary_type="reflective")
 xh = XPlane( 0.5*3*asmbly_pitch, boundary_type="vacuum")
 yl = YPlane(-0.5*3*asmbly_pitch, boundary_type="reflective")
 yh = YPlane( 0.5*3*asmbly_pitch, boundary_type="vacuum")
-zl = ZPlane(core_bottom, boundary_type="vacuum")
-zh = ZPlane(core_bottom + geom_height, boundary_type="vacuum")
+zl = ZPlane(-0.5*geom_height, boundary_type="reflective")
+zh = ZPlane( 0.5*geom_height, boundary_type="reflective")
 outer = CellUniverse([Cell(+xl & -xh & +yl & -yh & +zl & -zh, WTR)])
 
 # Make the core assembly
-core = RectLattice(shape=(3,3,1), pitch=(asmbly_pitch, asmbly_pitch, geom_height), origin=(0., 0., core_bottom + 0.5*geom_height))
+core = RectLattice(shape=(3,3,1), pitch=(asmbly_pitch, asmbly_pitch, geom_height), origin=(0., 0., 0.))
 core.outer_universe = outer
 core.universes = [UO2_asmbly, MOX_asmbly, WTR_asmbly,
                   MOX_asmbly, UO2_asmbly, WTR_asmbly,
                   WTR_asmbly, WTR_asmbly, WTR_asmbly]
 
 
-sources = [Source(spatial=Box(Point(xl.x0, yl.y0, core_bottom+21.42), Point(xl.x0 + 2.*asmbly_pitch, yl.y0 + 2.*asmbly_pitch, core_bottom+21.42+128.52), fissile_only=True),
+sources = [Source(spatial=Box(Point(xl.x0, yl.y0, -0.5*geom_height), Point(xl.x0 + 2.*asmbly_pitch, yl.y0 + 2.*asmbly_pitch, 0.5*geom_height), fissile_only=True),
                   direction=Isotropic(),
                   energy=MonoEnergetic(0.5),
                   weight=1.)
           ]
 
-entropy = Entropy(Point(xl.x0, yl.y0, core_bottom+21.42), Point(xl.x0 + 2.*asmbly_pitch, yl.y0 + 2.*asmbly_pitch, core_bottom+21.42+128.52), (8,8,8))
+entropy = Entropy(Point(xl.x0, yl.y0, -0.5*geom_height), Point(xl.x0 + 2.*asmbly_pitch, yl.y0 + 2.*asmbly_pitch, 0.5*geom_height), (8,8,1))
 
-simulation = PowerIterator(nparticles=100000, ngenerations=3500, nignored=500, sources=sources)
+simulation = PowerIterator(nparticles=100000, ngenerations=3100, nignored=100, sources=sources)
 simulation.entropy = entropy
 
 settings = Settings()
@@ -314,4 +286,4 @@ settings.ngroups = 7
 settings.energy_bounds = [0., 1., 2., 3., 4., 5., 6., 7.]
 
 input = Input(core, simulation, settings=settings)
-input.to_file('c5g7_td.yaml')
+input.to_file('c5g7_2d.yaml')
