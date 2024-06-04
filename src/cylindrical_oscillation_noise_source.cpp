@@ -47,7 +47,7 @@ CylindricalOscillationNoiseSource::CylindricalOscillationNoiseSource(
       eps_t_(eps_tot),
       eps_f_(eps_fis),
       eps_s_(eps_sct) {
-  // Check length and radisu
+  // Check length and radius
   if (length_ <= 0.) {
     fatal_error("Length is <= 0.");
   }
