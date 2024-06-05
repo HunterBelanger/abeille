@@ -31,10 +31,6 @@
 
 #include <sstream>
 
-// This is here, just so I can use a Tracker to get materials fast,
-// without having the direction sent.
-const Direction u(1., 0., 0.);
-
 CylindricalOscillationNoiseSource::CylindricalOscillationNoiseSource(
     Position origin, double len, double rad, char ax, double eps_tot,
     double eps_fis, double eps_sct, double angular_frequency, double phase)
@@ -65,24 +61,20 @@ CylindricalOscillationNoiseSource::CylindricalOscillationNoiseSource(
 
   // Make sure frequency is positive
   if (w0_ <= 0.) {
-    fatal_error(
-        "Negative or zero frequency provided to OscillationNoiseSource.");
+    fatal_error("Negative or zero noise frequency.");
   }
 
   // Make sure epsilons are positive
   if (eps_t_ <= 0.) {
-    fatal_error(
-        "Negative or zero epsilon total provided to OscillationNoiseSource.");
+    fatal_error("Negative or zero epsilon total.");
   }
 
   if (eps_f_ <= 0.) {
-    fatal_error(
-        "Negative or zero epsilon fission provided to OscillationNoiseSource.");
+    fatal_error("Negative or zero epsilon fission.");
   }
 
   if (eps_s_ <= 0.) {
-    fatal_error(
-        "Negative or zero epsilon scatter provided to OscillationNoiseSource.");
+    fatal_error("Negative or zero epsilon scatter.");
   }
 }
 
@@ -138,7 +130,7 @@ std::complex<double> CylindricalOscillationNoiseSource::dEt(const Position& r,
                                                             double E,
                                                             double w) const {
   // Get the material
-  Tracker trkr(r, u);
+  Tracker trkr(r, {1., 0., 0.});
   auto material = trkr.material();
 
   // Make sure material is valid
@@ -245,7 +237,8 @@ make_cylindrical_oscillation_noise_source(const YAML::Node& snode) {
   // Get origin
   if (!snode["origin"] || !snode["origin"].IsSequence() ||
       !(snode["origin"].size() == 3)) {
-    fatal_error("No valid origin entry for oscillation noise source.");
+    fatal_error(
+        "No valid origin entry for cylindrical oscillation noise source.");
   }
 
   const double xo = snode["origin"][0].as<double>();
@@ -255,34 +248,37 @@ make_cylindrical_oscillation_noise_source(const YAML::Node& snode) {
 
   // Get length
   if (!snode["length"] || !snode["length"].IsScalar()) {
-    fatal_error("No valid length entry for oscillation noise source.");
+    fatal_error(
+        "No valid length entry for cylindrical oscillation noise source.");
   }
   const double len = snode["length"].as<double>();
   if (len <= 0.) {
     fatal_error(
-        "Noise source of type cylindrical-oscillation has a length that is <= "
+        "Noise source of type cylindrical oscillation has a length that is <= "
         "0.");
   }
 
   // Get radius
   if (!snode["radius"] || !snode["radius"].IsScalar()) {
-    fatal_error("No valid radius entry for oscillation noise source.");
+    fatal_error(
+        "No valid radius entry for cylindrical oscillation noise source.");
   }
   const double rad = snode["radius"].as<double>();
-  if (len <= 0.) {
+  if (rad <= 0.) {
     fatal_error(
-        "Noise source of type cylindrical-oscillation has a radius that is <= "
+        "Noise source of type cylindrical oscillation has a radius that is <= "
         "0.");
   }
 
   // Get axis
   if (!snode["axis"] || !snode["axis"].IsScalar()) {
-    fatal_error("No valid axis entry for oscillation noise source.");
+    fatal_error(
+        "No valid axis entry for cylindrical oscillation noise source.");
   }
   std::string axis_str = snode["axis"].as<std::string>();
   if (axis_str != "x" && axis_str != "y" && axis_str != "z") {
     std::stringstream mssg;
-    mssg << "Noise source of type cylindrical-oscillation was provided unkown "
+    mssg << "Noise source of type cylindrical oscillation was provided unkown "
             "axis \""
          << axis_str << "\".";
     fatal_error(mssg.str());
@@ -298,7 +294,8 @@ make_cylindrical_oscillation_noise_source(const YAML::Node& snode) {
   // Get frequency
   if (!snode["angular-frequency"] || !snode["angular-frequency"].IsScalar()) {
     fatal_error(
-        "No valid angular-frequency entry for oscillation noise source.");
+        "No valid angular-frequency entry for cylindrical oscillation noise "
+        "source.");
   }
 
   double w0 = snode["angular-frequency"].as<double>();
@@ -314,44 +311,51 @@ make_cylindrical_oscillation_noise_source(const YAML::Node& snode) {
   if (snode["phase"] && snode["phase"].IsScalar()) {
     phase = snode["phase"].as<double>();
   } else if (snode["phase"]) {
-    fatal_error("Invalid phase entry for oscillation noise source.");
+    fatal_error(
+        "Invalid phase entry for cylindrical oscillation noise source.");
   }
 
   // Get epsilons
   if (!snode["epsilon-total"] || !snode["epsilon-total"].IsScalar()) {
-    fatal_error("No valid epsilon-total entry for oscillation noise source.");
+    fatal_error(
+        "No valid epsilon-total entry for cylindrical oscillation noise "
+        "source.");
   }
 
   double eps_t = snode["epsilon-total"].as<double>();
 
   if (eps_t <= 0.) {
     fatal_error(
-        "Epsilon total can not be negative or zero for oscillation noise "
-        "source.");
+        "Epsilon total can not be negative or zero for cylindrical oscillation "
+        "noise source.");
   }
 
   if (!snode["epsilon-fission"] || !snode["epsilon-fission"].IsScalar()) {
-    fatal_error("No valid epsilon-fission entry for oscillation noise source.");
+    fatal_error(
+        "No valid epsilon-fission entry for cylindrical oscillation noise "
+        "source.");
   }
 
   double eps_f = snode["epsilon-fission"].as<double>();
 
   if (eps_f <= 0.) {
     fatal_error(
-        "Epsilon fission can not be negative or zero for oscillation noise "
-        "source.");
+        "Epsilon fission can not be negative or zero for cylindrical "
+        "oscillation noise source.");
   }
 
   if (!snode["epsilon-scatter"] || !snode["epsilon-scatter"].IsScalar()) {
-    fatal_error("No valid epsilon-scatter entry for oscillation noise source.");
+    fatal_error(
+        "No valid epsilon-scatter entry for cylindrical oscillation noise "
+        "source.");
   }
 
   double eps_s = snode["epsilon-scatter"].as<double>();
 
   if (eps_s <= 0.) {
     fatal_error(
-        "Epsilon scatter can not be negative or zero for oscillation noise "
-        "source.");
+        "Epsilon scatter can not be negative or zero for cylindrical "
+        "oscillation noise source.");
   }
 
   return std::make_shared<CylindricalOscillationNoiseSource>(

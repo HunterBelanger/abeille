@@ -24,9 +24,10 @@
  * */
 #include <materials/material.hpp>
 #include <materials/nuclide.hpp>
+#include <noise_source/cylindrical_oscillation_noise_source.hpp>
 #include <noise_source/flat_vibration_noise_source.hpp>
 #include <noise_source/noise_maker.hpp>
-#include <noise_source/cylindrical_oscillation_noise_source.hpp>
+#include <noise_source/propagating_channel_oscillation_noise_source.hpp>
 #include <noise_source/square_oscillation_noise_source.hpp>
 #include <utils/error.hpp>
 #include <utils/rng.hpp>
@@ -55,6 +56,9 @@ void NoiseMaker::add_noise_source(const YAML::Node& snode) {
     this->add_noise_source(make_square_oscillation_noise_source(snode));
   } else if (type == "cylindrical-oscillation") {
     this->add_noise_source(make_cylindrical_oscillation_noise_source(snode));
+  } else if (type == "propagating-channel-oscillation") {
+    this->add_noise_source(
+        make_propagating_channel_oscillation_noise_source(snode));
   } else {
     fatal_error("Invalid noise source type " + type + ".");
   }
