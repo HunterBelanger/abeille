@@ -75,7 +75,7 @@ GuiPlotter::GuiPlotter()
 
 void GuiPlotter::render() {
   // We put a Dockspace over the entire viewport.
-  ImGui::DockSpaceOverViewport(ImGui::GetMainViewport());
+  ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport());
 
   this->render_viewport();
   this->render_controls();
