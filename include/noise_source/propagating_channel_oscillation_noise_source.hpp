@@ -1,7 +1,7 @@
 #ifndef PROPAGATING_CHANNEL_OSCILLATION_NOISE_SOURCE_H
 #define PROPAGATING_CHANNEL_OSCILLATION_NOISE_SOURCE_H
-
 #include <noise_source/oscillation_noise_source.hpp>
+#include <utils/tabulated_1d.hpp>
 
 #include <yaml-cpp/yaml.h>
 
@@ -9,8 +9,9 @@ class PropagatingChannelOscillationNoiseSource : public OscillationNoiseSource {
  public:
   PropagatingChannelOscillationNoiseSource(Position low, Position hi,
                                            double radius, char axis,
-                                           double eps_tot, double eps_fis,
-                                           double eps_sct,
+                                           const pndl::Tabulated1D& eps_tot,
+                                           const pndl::Tabulated1D& eps_fis,
+                                           const pndl::Tabulated1D& eps_sct,
                                            double angular_frequency,
                                            double velocity, double phase);
 
@@ -33,9 +34,9 @@ class PropagatingChannelOscillationNoiseSource : public OscillationNoiseSource {
   double radius_;
   char axis_;
   double w0_, phase_, velocity_;
-  double eps_t_;
-  double eps_f_;
-  double eps_s_;
+  pndl::Tabulated1D eps_t_;
+  pndl::Tabulated1D eps_f_;
+  pndl::Tabulated1D eps_s_;
 
   double calc_center_line_radius(const Position& r) const;
   double calc_total_phase(const Position& r) const;

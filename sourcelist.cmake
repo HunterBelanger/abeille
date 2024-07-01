@@ -66,6 +66,7 @@ set(ABEILLE_SOURCE_FILES ${ABEILLE_SOURCE_FILES}
   src/surface.cpp
   src/majorant.cpp
   src/pctable.cpp
+  src/tabulated_1d.cpp
   src/error.cpp
   src/mpi.cpp
   src/settings.cpp
