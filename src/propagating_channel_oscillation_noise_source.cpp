@@ -377,7 +377,7 @@ make_propagating_channel_oscillation_noise_source(const YAML::Node& snode) {
         "energies.");
   }
 
-  if (!snode["epsilon-scatter"] || !snode["epsilon-scatter"].IsScalar()) {
+  if (!snode["epsilon-scatter"] || !snode["epsilon-scatter"].IsMap()) {
     fatal_error("No valid epsilon-scatter entry for oscillation noise source.");
   }
   pndl::Tabulated1D eps_s =
