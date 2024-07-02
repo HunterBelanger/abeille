@@ -79,4 +79,4 @@ simulation:
       energy:
         type: mono-energetic
         energy: 0.5
-      weight: 1.
+      weight: 1.0
