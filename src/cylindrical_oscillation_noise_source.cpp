@@ -68,20 +68,20 @@ CylindricalOscillationNoiseSource::CylindricalOscillationNoiseSource(
 
   // Make sure epsilons are positive
   for (const auto et : eps_t_.y()) {
-    if (et <= 0.) {
-      fatal_error("Negative or zero epsilon total.");
+    if (et < 0.) {
+      fatal_error("Negative epsilon total.");
     }
   }
 
   for (const auto ef : eps_f_.y()) {
-    if (ef <= 0.) {
-      fatal_error("Negative or zero epsilon fission.");
+    if (ef < 0.) {
+      fatal_error("Negative epsilon fission.");
     }
   }
 
   for (const auto es : eps_s_.y()) {
-    if (es <= 0.) {
-      fatal_error("Negative or zero epsilon scatter.");
+    if (es < 0.) {
+      fatal_error("Negative epsilon scatter.");
     }
   }
 }
@@ -330,10 +330,9 @@ make_cylindrical_oscillation_noise_source(const YAML::Node& snode) {
   pndl::Tabulated1D eps_t =
       make_tabulated_1d(snode["epsilon-total"], "energy", "value");
   for (const auto et : eps_t.y()) {
-    if (et <= 0.) {
+    if (et < 0.) {
       fatal_error(
-          "Epsilon total can not be negative or zero for oscillation noise "
-          "source.");
+          "Epsilon total can not be negative for oscillation noise source.");
     }
   }
   if (eps_t.min_x() > settings::min_energy ||
@@ -349,10 +348,9 @@ make_cylindrical_oscillation_noise_source(const YAML::Node& snode) {
   pndl::Tabulated1D eps_f =
       make_tabulated_1d(snode["epsilon-fission"], "energy", "value");
   for (const auto ef : eps_f.y()) {
-    if (ef <= 0.) {
+    if (ef < 0.) {
       fatal_error(
-          "Epsilon fission can not be negative or zero for oscillation noise "
-          "source.");
+          "Epsilon fission can not be negative for oscillation noise source.");
     }
   }
   if (eps_f.min_x() > settings::min_energy ||
@@ -368,10 +366,9 @@ make_cylindrical_oscillation_noise_source(const YAML::Node& snode) {
   pndl::Tabulated1D eps_s =
       make_tabulated_1d(snode["epsilon-scatter"], "energy", "value");
   for (const auto es : eps_s.y()) {
-    if (es <= 0.) {
+    if (es < 0.) {
       fatal_error(
-          "Epsilon scatter can not be negative or zero for oscillation noise "
-          "source.");
+          "Epsilon scatter can not be negative for oscillation noise source.");
     }
   }
   if (eps_s.min_x() > settings::min_energy ||
