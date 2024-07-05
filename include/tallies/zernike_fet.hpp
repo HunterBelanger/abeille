@@ -5,6 +5,7 @@
 #include <tallies/energy_filter.hpp>
 #include <tallies/itally.hpp>
 #include <tallies/zernike_polynomial.hpp>
+#include <tallies/legendre_polynomial.hpp>
 #include <utils/error.hpp>
 
 #include <yaml-cpp/yaml.h>
@@ -15,7 +16,7 @@ class ZernikeFET : public ITally {
   // to evaluated
   ZernikeFET(std::shared_ptr<CylinderFilter> cylinder_filter,
              std::shared_ptr<EnergyFilter> energy_filter,
-             std::size_t zernike_order, std::size_t lengendre_order,
+             std::size_t zernike_order, std::size_t legendre_order,
              Quantity quantity, Estimator estimator, std::string name);
 
   // following constructor will be called when only zernike fet needs to be
@@ -45,9 +46,10 @@ class ZernikeFET : public ITally {
   std::shared_ptr<CylinderFilter> cylinder_filter_;
   std::shared_ptr<EnergyFilter> energy_filter_;
 
-  // Zernike Polynomials can hold the polynomials upto that order
+  // Zernike and Legendre Polynomials can hold the polynomials upto that order
   // can return the std::vector<double> calculated for each order
-  ZernikePolynomials zr_polynomial_;
+  ZernikePolynomials zr_polynomial_; 
+  LegendrePolynomials legendre_polynomial_;
   std::size_t zr_order_, legen_order_;
 
   CylinderFilter::Orientation axial_direction_;

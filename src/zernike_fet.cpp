@@ -9,14 +9,15 @@ using StaticVector6 = boost::container::static_vector<std::size_t, 6>;
 
 ZernikeFET::ZernikeFET(std::shared_ptr<CylinderFilter> cylinder_filter,
                        std::shared_ptr<EnergyFilter> energy_filter,
-                       std::size_t zernike_order, std::size_t lengendre_order,
+                       std::size_t zernike_order, std::size_t legendre_order,
                        Quantity quantity, Estimator estimator, std::string name)
     : ITally(quantity, estimator, name),
       cylinder_filter_(cylinder_filter),
       energy_filter_(energy_filter),
       zr_polynomial_(zernike_order),
+      legendre_polynomial_(legendre_order),
       zr_order_(zernike_order),
-      legen_order_(lengendre_order),
+      legen_order_(legendre_order),
       axial_direction_() {
   StaticVector6 tally_shape;
   // add the dimension for energy_in_ only if exist
@@ -80,6 +81,7 @@ ZernikeFET::ZernikeFET(std::shared_ptr<CylinderFilter> cylinder_filter,
       cylinder_filter_(cylinder_filter),
       energy_filter_(energy_filter),
       zr_polynomial_(zernike_order),
+      legendre_polynomial_(),
       zr_order_(zernike_order),
       legen_order_(),
       axial_direction_() {
@@ -204,9 +206,10 @@ void ZernikeFET::score_collision(const Particle& p, const Tracker& tktr,
       z = tktr.r().z();
     }
     const double scaled_z = 2 * (z - zmin) / (zmin - zmax) - 1.0;
+    const std::vector<double> legendre_values = legendre_polynomial_.evaluate_legendres(scaled_z);
     for (std::size_t i = 0; i <= legen_order_; i++) {
       // score for i-th order's basis function
-      beta_n = collision_score * legendre(i, scaled_z);
+      beta_n = collision_score * legendre(i, scaled_z); //legendre_values[i];
       indices[FET_index] = i;
 #ifdef ABEILLE_USE_OMP
 #pragma omp atomic

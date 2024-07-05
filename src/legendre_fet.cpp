@@ -16,6 +16,7 @@ LegendreFET::LegendreFET(std::shared_ptr<CartesianFilter> position_filter,
       cartesian_filter_(position_filter),
       energy_in_(energy_in),
       axes_(axes.begin(), axes.end()),
+      legendre_polynomial_(fet_order),
       fet_order_(fet_order) {
   StaticVector6 tally_shape;
   // add the dimension for energy_in_ only if exist
@@ -134,10 +135,9 @@ void LegendreFET::score_collision(const Particle& p, const Tracker& tktr,
     }
 
     // loop over differnt FET order
-    for (size_t i = 0; i < fet_order_ + 1; i++) {
-      // score for i-th order's basis function
-      beta_n = collision_score * legendre(i, scaled_loc);
-
+    const std::vector<double> legendre_values = legendre_polynomial_.evaluate_legendres(scaled_loc);
+    for (std::size_t i = 0; i <= fet_order_; i++){
+      beta_n = collision_score * legendre_values[i];
       indices[FET_index] = i;
 
 #ifdef ABEILLE_USE_OMP
@@ -145,8 +145,6 @@ void LegendreFET::score_collision(const Particle& p, const Tracker& tktr,
 #endif
       tally_gen_score_.element(indices.begin(), indices.end()) += beta_n;
     }
-
-    it_axis++;
   }
 }
 
@@ -216,10 +214,9 @@ void LegendreFET::score_source(const BankedParticle& p) {
     }
 
     // loop over differnt FET order
-    for (size_t i = 0; i < fet_order_ + 1; i++) {
-      // score for i-th order's basis function
-      beta_n = source_score * legendre(i, scaled_loc);
-
+    const std::vector<double> lgendre_value = legendre_polynomial_.evaluate_legendres(scaled_loc);
+    for (std::size_t i = 0; i <= fet_order_; i++){
+      beta_n = source_score * lgendre_value[i];
       indices[FET_index] = i;
 
 #ifdef ABEILLE_USE_OMP
@@ -227,8 +224,6 @@ void LegendreFET::score_source(const BankedParticle& p) {
 #endif
       tally_gen_score_.element(indices.begin(), indices.end()) += beta_n;
     }
-
-    it_axis++;
   }
 }
 

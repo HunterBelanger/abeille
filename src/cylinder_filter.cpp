@@ -1,5 +1,6 @@
 #include <tallies/cylinder_filter.hpp>
 #include <utils/error.hpp>
+#include <utils/constants.hpp>
 
 #include <cmath>
 #include <sstream>
@@ -15,9 +16,9 @@ CylinderFilter::CylinderFilter(Position origin, double radius, double dx,
       Nx_(nx),
       Ny_(ny),
       Nz_(nz),
-      Real_nx(nx),
-      Real_ny(ny),
-      Real_nz(nz),
+      Real_nx_(nx),
+      Real_ny_(ny),
+      Real_nz_(nz),
       length_axis_(z_),
       radius_(radius),
       pitch_x_(dx),
@@ -153,7 +154,7 @@ StaticVector3 CylinderFilter::get_indices(const Tracker& tktr) const {
 }
 
 StaticVector3 CylinderFilter::get_shape() const {
-  if (Real_nx == 1 && Real_ny == 1 && Real_nz == 1) {
+  if (Real_nx_ == 1 && Real_ny_ == 1 && Real_nz_ == 1) {
     return {1};
   }
   StaticVector3 filter_shape{Nx_, Ny_, Nz_};
@@ -170,49 +171,56 @@ std::vector<TracklengthDistance> CylinderFilter::get_indices_tracklength(
 }
 
 double CylinderFilter::z_min(const StaticVector3& indices) const {
+  // the indices are in the reduced-dimesnions format, so reversal is required.
+  StaticVector3 index = unreduce_dimension(indices);
   // the indicies is not according to the class, so map it.
-  StaticVector3 index = indices;
   map_indexes(index);
   return (r_low_.z() + static_cast<double>(index[2]) * dz_);
 }
 
 double CylinderFilter::z_max(const StaticVector3& indices) const {
+  // the indices are in the reduced-dimesnions format, so reversal is required.
+  StaticVector3 index = unreduce_dimension(indices);
   // the indicies is not according to the class, so map it.
-  StaticVector3 index = indices;
   map_indexes(index);
   return (r_low_.z() + static_cast<double>(index[2]) * dz_ + dz_);
 }
 
-Position CylinderFilter::get_center(const StaticVector3& indices) const {
+Position CylinderFilter::get_center(const StaticVector3& indices, const bool is_map = true) const {
   // the indicies is not according to the class, so map it.
-  StaticVector3 index = indices;
+  StaticVector3 index = unreduce_dimension(indices);
   map_indexes(index);
+
   double new_origin_x = origin_.x() + pitch_x_ * static_cast<double>(index[0]);
   double new_origin_y = origin_.y() + pitch_y_ * static_cast<double>(index[1]);
   double new_origin_z = origin_.z() + dz_ * static_cast<double>(index[2]);
+
+  // if is_map is false, the send the Position based on the class-orientation
+  if( is_map == false){
+    return Position(new_origin_x, new_origin_y, new_origin_z);
+  }
   return map_coordinate(Position(new_origin_x, new_origin_y, new_origin_z));
 }
 
 // first will be the scaled radius and second will be the angle
 std::pair<double, double> CylinderFilter::get_scaled_radius_and_angle(
     const StaticVector3& indices, const Position& r) const {
-  // the indicies and Position is not according to the class, so map it.
-  StaticVector3 index = indices;
-  map_indexes(index);
+  // the Position is not according to the class, so map it.
   Position mapped_r = map_coordinate(r);
-  const double rx = r.x();
-  const double ry = r.y();
-  // get new centre points
-  const double new_origin_x =
-      origin_.x() + pitch_x_ * static_cast<double>(index[0]);
-  const double new_origin_y =
-      origin_.y() + pitch_y_ * static_cast<double>(index[1]);
+  // get the new-origin cooredinates based on the indices
+  // the new-origin should be according to the class orientation
+  Position new_origin = get_center(indices, false);
+
+  const double base = mapped_r.x() - new_origin.x();
+  const double height = mapped_r.y() - new_origin.y();
   // scaled-radius
-  const double scaled_r = (std::sqrt(rx * rx + ry * ry)) * inv_radius_;
-  // for tan(theta) = x/ y; get x and y
-  const double base = rx - new_origin_x;
-  const double height = ry - new_origin_y;
-  const double theta = std::atan(height / base);
+  const double scaled_r = (std::sqrt(base * base + height * height)) * inv_radius_;
+  // theta
+  double theta = std::atan2(height , base);
+  // atan2 provides the anlges between [-PI, PI], instead of [0, 2*PI]
+  if ( theta < 0. ){
+    return {scaled_r, theta + 2*PI};
+  }
   return {scaled_r, theta};
 }
 
@@ -261,7 +269,7 @@ void CylinderFilter::write_to_hdf5(H5::Group& grp) const {
   }
 
   // Save shape
-  std::array<std::size_t, 3> shape{Real_nx, Real_ny, Real_nz};
+  std::array<std::size_t, 3> shape{Real_nx_, Real_ny_, Real_nz_};
   if (grp.hasAttribute("shape")) {
     grp.deleteAttribute("shape");
   }
