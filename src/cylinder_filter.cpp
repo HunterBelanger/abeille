@@ -75,7 +75,7 @@ CylinderFilter::CylinderFilter(Position origin, double radius, double dx,
 
   // Make sure shapes are all > 0
   if (nx == 0 && length_axis_ == Orientation::X) {
-    infinite_length = true;
+    infinite_length_ = true;
   } else if (nx == 0) {
     std::stringstream mssg;
     mssg << "Cylinder filter with id " << id << " provided with nx = 0.";
@@ -83,7 +83,7 @@ CylinderFilter::CylinderFilter(Position origin, double radius, double dx,
   }
 
   if (ny == 0 && length_axis_ == Orientation::Y) {
-    infinite_length = true;
+    infinite_length_ = true;
   } else if (ny == 0) {
     std::stringstream mssg;
     mssg << "Cylinder filter with id " << id << " provided with ny = 0.";
@@ -91,7 +91,7 @@ CylinderFilter::CylinderFilter(Position origin, double radius, double dx,
   }
 
   if (nz == 0 && length_axis_ == Orientation::Z) {
-    infinite_length = true;
+    infinite_length_ = true;
   } else if (nz == 0) {
     std::stringstream mssg;
     mssg << "Cylinder filter with id " << id << " provided with nz = 0.";
@@ -126,7 +126,7 @@ StaticVector3 CylinderFilter::get_indices(const Tracker& tktr) const {
   const int ny =
       static_cast<int>(std::floor((r.y() - r_low_.y()) * inv_pitch_y_));
   const int nz =
-      infinite_length
+      infinite_length_
           ? 0
           : static_cast<int>(std::floor((r.z() - r_low_.z()) * inv_dz_));
 
@@ -138,7 +138,7 @@ StaticVector3 CylinderFilter::get_indices(const Tracker& tktr) const {
   // and less the number of bins in that direction
   if (nx >= 0 && nx < static_cast<int>(Nx_) && ny >= 0 &&
       ny < static_cast<int>(Ny_) &&
-      ((nz >= 0 && nz < static_cast<int>(Nz_)) || infinite_length)) {
+      ((nz >= 0 && nz < static_cast<int>(Nz_)) || infinite_length_)) {
     // check if the position is inside the circular radius or not
     if (sqrt((new_origin_x - r.x()) * (new_origin_x - r.x()) +
              (new_origin_y - r.y()) * (new_origin_y - r.y())) <=

@@ -42,6 +42,13 @@ ZernikeFET::ZernikeFET(std::shared_ptr<CylinderFilter> cylinder_filter,
     fatal_error(mssg.str());
   }
 
+  // throw the error if the infinte-cylinder and legendre-fet is given
+  if ( cylinder_filter_->is_infinite_cylinder() == true ){
+    std::stringstream mssg;
+    mssg << "Tally " << name << "cannot evaluate the legendre-fet over a infinte-cylinder with position-filter id: " << cylinder_filter_->id();
+    fatal_error(mssg.str());
+  } 
+
   StaticVector3 cylinder_shape = cylinder_filter_->get_shape();
   tally_shape.insert(tally_shape.end(), cylinder_shape.begin(),
                      cylinder_shape.end());
@@ -458,6 +465,12 @@ std::shared_ptr<ZernikeFET> make_zernike_fet(const YAML::Node& node) {
 
   // If we have both legendre and zernike then use the first constructor,
   if (legendre_exist) {
+    // check if the legendre exist, then make sure, it doesn't have a infinte-cylinder
+    if ( cylinder_filter->is_infinite_cylinder() == true){
+      std::stringstream mssg;
+      mssg << "Tally " << name << "cannot evaluate the legendre-fet over a infinte-cylinder with position-filter id: " << position_id;
+      fatal_error(mssg.str());
+    }
     return std::make_shared<ZernikeFET>(cylinder_filter, energy_filter,
                                         zernike_fet_order, legendre_fet_order,
                                         quant, estimator, name);

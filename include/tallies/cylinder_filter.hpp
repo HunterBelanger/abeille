@@ -28,7 +28,8 @@ class CylinderFilter : public PositionFilter {
   double z_max(const StaticVector3& indices) const;
   double dz() const { return dz_; }
   double inv_dz() const { return inv_dz_; }
-  
+  bool is_infinite_cylinder() const { return infinite_length_; }
+
   Position get_center(const StaticVector3& indices, const bool is_map) const;
 
   std::pair<double, double> get_scaled_radius_and_angle(
@@ -50,7 +51,7 @@ class CylinderFilter : public PositionFilter {
   Orientation length_axis_;
   double radius_, pitch_x_, pitch_y_, dz_, inv_radius_, inv_pitch_x_,
       inv_pitch_y_, inv_dz_;
-  bool infinite_length = false;  // to incorporate the infinte cylinder
+  bool infinite_length_ = false;  // to incorporate the infinte cylinder
   // To map the indexes to either converting into class co-ordinate or into
   // original
   void map_indexes(StaticVector3& indexes) const {
@@ -89,7 +90,7 @@ class CylinderFilter : public PositionFilter {
       return {loc_x};
     }
 
-    if (infinite_length == true) {
+    if (infinite_length_ == true) {
       if (Nx_ == 1 && Ny_ == 1) {
         return {loc_x};
       }
