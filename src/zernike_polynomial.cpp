@@ -1,4 +1,5 @@
 #include <tallies/zernike_polynomial.hpp>
+#include <utils/constants.hpp>
 
 ZernikePolynomials::ZernikePolynomials(std::size_t order)
     : order_(order), max_n_(), Zr_coefficients_(), m_(), n_(), Zr_types_() {
@@ -118,4 +119,15 @@ std::vector<double> ZernikePolynomials::evaluate_zernikes(
   }
 
   return zr_values;
+}
+
+// orthonormalsation constnat will be achieved by the inverse of square of L-2 norm. 
+double ZernikePolynomials::orthonormalization_constant (const std::size_t& order) const{
+  std::pair<int, int> n_and_l = get_n_and_l(order);
+  const double n = static_cast<double>(n_and_l.first);
+  const double l = static_cast<double>(n_and_l.second);
+  if (l == 0){
+    return PI / (n+1.); 
+  }
+  return 0.5 * PI / (n+1.);
 }

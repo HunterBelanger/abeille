@@ -23,6 +23,8 @@ class ZernikePolynomials {
   std::vector<double> evaluate_zernikes(const double r,
                                         const double theta) const;
 
+  double orthonormalization_constant (const std::size_t& order) const;
+
  private:
   std::size_t order_, max_n_;
   std::vector<std::vector<double>> Zr_coefficients_;

@@ -14,6 +14,7 @@ using StaticVector6 = boost::container::static_vector<size_t, 6>;
 #include <iostream>
 #include <memory>
 #include <vector>
+#include <span>
 
 class LegendreFET : public ITally {
  public:
@@ -36,6 +37,8 @@ class LegendreFET : public ITally {
   }
 
   void score_source(const BankedParticle& p) override final;
+
+  std::vector<double> evaluate_FET(std::span<Position> coordinates, const double En) const ;
 
   void write_tally() override final;
 

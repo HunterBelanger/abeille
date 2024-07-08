@@ -119,14 +119,14 @@ tallies:
     name: general-zernike
     estimator: collision
 
-  - type: legendre-fet
-    order: 2
-    axes: [X]
-    position-filter: 7
-    energy-filter: 1
-    quantity: flux
-    name: fet-1
-    estimator: collision
+  # - type: legendre-fet
+  #   order: 2
+  #   axes: [X]
+  #   position-filter: 7
+  #   energy-filter: 1
+  #   quantity: flux
+  #   name: fet-1
+  #   estimator: collision
  
   - type: zernike-fet
     zernike-order: 5

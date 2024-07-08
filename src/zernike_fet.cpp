@@ -205,18 +205,18 @@ void ZernikeFET::score_collision(const Particle& p, const Tracker& tktr,
   if (check_for_legendre == true) {
     indices[poly_index] = 1;
     const double zmin = cylinder_filter_->z_min(cylinder_index);
-    const double zmax = cylinder_filter_->z_max(cylinder_index);
+    const double inv_dz = cylinder_filter_->inv_dz();
     double z = tktr.r().z();
     if (axial_direction_ == CylinderFilter::Orientation::Y) {
       z = tktr.r().y();
     } else if (axial_direction_ == CylinderFilter::Orientation::X) {
       z = tktr.r().z();
     }
-    const double scaled_z = 2 * (z - zmin) / (zmin - zmax) - 1.0;
+    const double scaled_z = 2. * (z - zmin) * inv_dz - 1.0;
     const std::vector<double> legendre_values = legendre_polynomial_.evaluate_legendres(scaled_z);
     for (std::size_t i = 0; i <= legen_order_; i++) {
       // score for i-th order's basis function
-      beta_n = collision_score * legendre(i, scaled_z); //legendre_values[i];
+      beta_n = collision_score * legendre_values[i];
       indices[FET_index] = i;
 #ifdef ABEILLE_USE_OMP
 #pragma omp atomic
@@ -285,17 +285,18 @@ void ZernikeFET::score_source(const BankedParticle& p) {
   if (check_for_legendre == true) {
     indices[poly_index] = 1;
     const double zmin = cylinder_filter_->z_min(cylinder_index);
-    const double zmax = cylinder_filter_->z_max(cylinder_index);
+    const double inv_dz = cylinder_filter_->inv_dz();
     double z = trkr.r().z();
     if (axial_direction_ == CylinderFilter::Orientation::Y) {
       z = trkr.r().y();
     } else if (axial_direction_ == CylinderFilter::Orientation::X) {
       z = trkr.r().z();
     }
-    const double scaled_z = 2 * (z - zmin) / (zmin - zmax) - 1.0;
+    const double scaled_z = 2. * (z - zmin) / inv_dz - 1.0;
+    const std::vector<double> legendre_values = legendre_polynomial_.evaluate_legendres(scaled_z);
     for (std::size_t i = 0; i <= legen_order_; i++) {
       // score for i-th order's basis function
-      beta_n = source_score * legendre(i, scaled_z);
+      beta_n = source_score * legendre_values[i];
       indices[FET_index] = i;
 #ifdef ABEILLE_USE_OMP
 #pragma omp atomic
@@ -303,6 +304,89 @@ void ZernikeFET::score_source(const BankedParticle& p) {
       tally_gen_score_.element(indices.begin(), indices.end()) += beta_n;
     }
   }
+}
+
+std::vector<double> ZernikeFET::evaluate_FET(std::span<Position> coordinates, const double En) const {
+  // store the tally values
+  std::vector<double> tallied_values;
+  tallied_values.reserve(coordinates.size());
+
+  // loop over the coordinates to get first the energy and position index
+  for (std::size_t i = 0; i < coordinates.size(); i++ ){
+    
+    StaticVector6 indices;
+    // get the energy-index, if energy-filter exists
+    if (energy_filter_) {
+      std::optional<std::size_t> E_indx = energy_filter_->get_index(En);
+      if (E_indx.has_value() == false) {
+        // Not inside any energy bin. Don't evaluate.
+        continue;
+      }
+      indices.push_back(E_indx.value());
+    }
+
+    // create a temperaroy tracker for getting a position index
+    Direction dir(coordinates[i].x(), coordinates[i].y(), coordinates[i].z() );
+    Tracker trkr(coordinates[i], dir);
+    // get the positional indexes from cylinder_filter
+    StaticVector3 cylinder_index = cylinder_filter_->get_indices(trkr);
+    indices.insert(indices.end(), cylinder_index.begin(), cylinder_index.end());
+
+    // add one dimension for the different polynomial
+    std::size_t poly_index = indices.size();
+    indices.push_back(0);
+
+    // add one dimension for the different order
+    std::size_t FET_index = indices.size();
+    indices.push_back(0);
+
+    const double inv_radius_ = cylinder_filter_->inv_radius();
+    const double inv_dz_ = cylinder_filter_->inv_dz();
+
+    double tally_value = 1.;
+    
+    // first evaluate the zernike
+    std::pair<double, double> scaled_r_and_theta =
+      cylinder_filter_->get_scaled_radius_and_angle(cylinder_index, trkr.r());
+    const double scaled_r = scaled_r_and_theta.first;
+    const double theta = scaled_r_and_theta.second;
+    const std::vector<double> zr_value =
+        zr_polynomial_.evaluate_zernikes(scaled_r, theta);
+    
+    double tally_zr = 0.;
+    for (std::size_t order = 0; order <= zr_order_; order++){
+      indices[FET_index] = order;
+      const double kn_ = zr_polynomial_.orthonormalization_constant(order);
+      tally_zr += kn_ * tally_avg_.element(indices.begin(), indices.end()) * zr_value[order];
+    }
+
+    // second- evaluate the legendre if exist
+    if (check_for_legendre == true) {
+      indices[poly_index] = 1;
+      const double zmin = cylinder_filter_->z_min(cylinder_index);
+      double z = trkr.r().z();
+      if (axial_direction_ == CylinderFilter::Orientation::Y) {
+        z = trkr.r().y();
+      } else if (axial_direction_ == CylinderFilter::Orientation::X) {
+        z = trkr.r().z();
+      }
+      const double scaled_z = 2. * (z - zmin) * inv_dz_ - 1.0;
+      const std::vector<double> legendre_values = legendre_polynomial_.evaluate_legendres(scaled_z);
+
+      indices[FET_index] = 0;
+      tally_value /= tally_avg_.element(indices.begin(), indices.end());
+
+      double tally_legndre = 0.;
+      for (std::size_t order = 0; order <= legen_order_; order++ ){
+        indices[FET_index] = order;
+        tally_legndre += static_cast<double>(2*order + 1) * tally_avg_.element(indices.begin(), indices.end()) * legendre_values[order];
+      }
+
+    }
+    tally_value *= tally_zr * inv_radius_ * inv_radius_ * inv_dz_;
+    tallied_values.push_back(tally_value);
+  }
+  return tallied_values;
 }
 
 void ZernikeFET::write_tally() {

@@ -10,6 +10,8 @@
 
 #include <yaml-cpp/yaml.h>
 
+#include <span>
+
 class ZernikeFET : public ITally {
  public:
   // following constructor will be called when zernike and legendre both needs
@@ -36,6 +38,8 @@ class ZernikeFET : public ITally {
   }
 
   void score_source(const BankedParticle& p) override final;
+
+  std::vector<double> evaluate_FET(std::span<Position> coordinates, const double En) const ;
 
   void write_tally() override final;
 
