@@ -115,20 +115,20 @@ void LegendreFET::score_collision(const Particle& p, const Tracker& tktr,
     switch (axes_[it_axis]) {
       case LegendreFET::Axis::X: {
         const double xmin_ = cartesian_filter_->x_min(position_index);
-        const double xmax_ = cartesian_filter_->x_max(position_index);
-        scaled_loc = 2. * (tktr.r().x() - xmin_) / (xmax_ - xmin_) - 1.;
+        const double inv_dx_ = cartesian_filter_->inv_dx(position_index);
+        scaled_loc = 2. * (tktr.r().x() - xmin_) * inv_dx_ - 1.;
       } break;
 
       case LegendreFET::Axis::Y: {
         const double ymin_ = cartesian_filter_->y_min(position_index);
-        const double ymax_ = cartesian_filter_->y_max(position_index);
-        scaled_loc = 2 * (tktr.r().y() - ymin_) / (ymax_ - ymin_) - 1;
+        const double inv_dy_ = cartesian_filter_->inv_dy(position_index);
+        scaled_loc = 2. * (tktr.r().y() - ymin_) * inv_dy_ - 1.;
       } break;
 
       case LegendreFET::Axis::Z: {
         const double zmin_ = cartesian_filter_->z_min(position_index);
-        const double zmax_ = cartesian_filter_->z_max(position_index);
-        scaled_loc = 2 * (tktr.r().z() - zmin_) / (zmax_ - zmin_) - 1;
+        const double inv_dz_ = cartesian_filter_->inv_dz(position_index);
+        scaled_loc = 2. * (tktr.r().z() - zmin_) * inv_dz_ - 1.;
       }
       default:
         break;
@@ -194,20 +194,20 @@ void LegendreFET::score_source(const BankedParticle& p) {
     switch (axes_[it_axis]) {
       case LegendreFET::Axis::X: {
         const double xmin_ = cartesian_filter_->x_min(position_index);
-        const double xmax_ = cartesian_filter_->x_max(position_index);
-        scaled_loc = 2. * (trkr.r().x() - xmin_) / (xmax_ - xmin_) - 1.;
+        const double inv_dx_ = cartesian_filter_->inv_dx(position_index);
+        scaled_loc = 2. * (trkr.r().x() - xmin_) * inv_dx_ - 1.;
       } break;
 
       case LegendreFET::Axis::Y: {
         const double ymin_ = cartesian_filter_->y_min(position_index);
-        const double ymax_ = cartesian_filter_->y_max(position_index);
-        scaled_loc = 2 * (trkr.r().y() - ymin_) / (ymax_ - ymin_) - 1;
+        const double inv_dy_ = cartesian_filter_->inv_dy(position_index);
+        scaled_loc = 2. * (trkr.r().y() - ymin_) * inv_dy_ - 1.;
       } break;
 
       case LegendreFET::Axis::Z: {
         const double zmin_ = cartesian_filter_->z_min(position_index);
-        const double zmax_ = cartesian_filter_->z_max(position_index);
-        scaled_loc = 2 * (trkr.r().z() - zmin_) / (zmax_ - zmin_) - 1;
+        const double inv_dz_ = cartesian_filter_->inv_dz(position_index);
+        scaled_loc = 2. * (trkr.r().z() - zmin_) * inv_dz_ - 1.;
       }
       default:
         break;

@@ -51,6 +51,8 @@ class CylinderFilter : public PositionFilter {
   Orientation length_axis_;
   double radius_, pitch_x_, pitch_y_, dz_, inv_radius_, inv_pitch_x_,
       inv_pitch_y_, inv_dz_;
+  std::size_t x_index, y_index, z_index; // to incorporate the reduce-dimension of indices
+  // these index-locations are based on the real-position of x, y, z. Not based on the class orientation
   bool infinite_length_ = false;  // to incorporate the infinte cylinder
   // To map the indexes to either converting into class co-ordinate or into
   // original

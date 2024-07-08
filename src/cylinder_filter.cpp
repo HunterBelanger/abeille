@@ -27,7 +27,10 @@ CylinderFilter::CylinderFilter(Position origin, double radius, double dx,
       inv_radius_(1. / radius_),
       inv_pitch_x_(),
       inv_pitch_y_(),
-      inv_dz_() {
+      inv_dz_(),
+      x_index(),
+      y_index(),
+      z_index() {
   // Map the parameters according to the orientation
   // since this class can do the caluclation assumind z-axis as axial
   // therefore, all the parameter will be mapped to z-axis,
@@ -116,6 +119,26 @@ CylinderFilter::CylinderFilter(Position origin, double radius, double dx,
   double low_x = origin_.x() - pitch_x_ * 0.5;
   double low_y = origin_.y() - pitch_y_ * 0.5;
   r_low_ = Position(low_x, low_y, origin_.z());
+
+  // Assign the x_index, y_index, and z_index
+  // these location will be based on the real_nx, real_ny, and real_nz
+  x_index = 0;
+  y_index = 1;
+  z_index = 2;
+  if ( Real_nx_ == 1){
+    x_index = 0;
+    y_index--;
+    z_index--;
+  }
+
+  if (Real_ny_ == 1){
+    y_index = 0;
+    z_index--;
+  }
+
+  if (Real_nz_ == 1){
+    z_index = 0;
+  }
 }
 
 StaticVector3 CylinderFilter::get_indices(const Tracker& tktr) const {
@@ -170,30 +193,38 @@ std::vector<TracklengthDistance> CylinderFilter::get_indices_tracklength(
   return {};
 }
 
-double CylinderFilter::z_min(const StaticVector3& indices) const {
-  // the indices are in the reduced-dimesnions format, so reversal is required.
-  StaticVector3 index = unreduce_dimension(indices);
-  // the indicies is not according to the class, so map it.
-  map_indexes(index);
-  return (r_low_.z() + static_cast<double>(index[2]) * dz_);
+double CylinderFilter::z_min(const StaticVector3& index) const {
+  // note that "index" is not orientated according to class in general
+  if ( Real_nz_ == 1){
+    return r_low_.z();
+  }
+  return (r_low_.z() + static_cast<double>(index[z_index]) * dz_);
 }
 
-double CylinderFilter::z_max(const StaticVector3& indices) const {
-  // the indices are in the reduced-dimesnions format, so reversal is required.
-  StaticVector3 index = unreduce_dimension(indices);
-  // the indicies is not according to the class, so map it.
-  map_indexes(index);
-  return (r_low_.z() + static_cast<double>(index[2]) * dz_ + dz_);
+double CylinderFilter::z_max(const StaticVector3& index) const {
+  // note that "index" is not orientated according to class in general
+  if ( Real_nz_ == 1){
+    return r_low_.z() + dz_;
+  }
+  return (r_low_.z() + static_cast<double>(index[z_index]) * dz_ + dz_);
 }
 
-Position CylinderFilter::get_center(const StaticVector3& indices, const bool is_map = true) const {
-  // the indicies is not according to the class, so map it.
-  StaticVector3 index = unreduce_dimension(indices);
-  map_indexes(index);
+Position CylinderFilter::get_center(const StaticVector3& index, const bool is_map = true) const {
+  // note that "index" is not orientated according to class in general
+  double new_origin_x = origin_.x();
+  double new_origin_y = origin_.y();
+  double new_origin_z = origin_.z();
+  if ( Real_nx_ > 1 ){
+    new_origin_x += pitch_x_ * static_cast<double>(index[x_index]);
+  }
 
-  double new_origin_x = origin_.x() + pitch_x_ * static_cast<double>(index[0]);
-  double new_origin_y = origin_.y() + pitch_y_ * static_cast<double>(index[1]);
-  double new_origin_z = origin_.z() + dz_ * static_cast<double>(index[2]);
+  if ( Real_ny_ > 1 ){
+    new_origin_y += pitch_y_ * static_cast<double>(index[y_index]);
+  }
+
+  if ( Real_nz_ > 1 ) {
+    new_origin_z += dz_ * static_cast<double>(index[z_index]);
+  }
 
   // if is_map is false, the send the Position based on the class-orientation
   if( is_map == false){

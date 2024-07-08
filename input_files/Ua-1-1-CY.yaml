@@ -1,3 +1,8 @@
+define: &l1 -3.
+define: &l2 3.
+#define: &l1 -5.514296811
+#define: &l2 5.514296811
+
 materials:
   - name: U-235-a
     id: 1
@@ -36,23 +41,29 @@ tally-filters:
 
     - id: 2
       type: regular-cartesian-mesh
-      low: [-3., -3., -10.]
-      high:  [ 3.,  3.,  10.]
+      low: [*l1, *l1, -10.]
+      high:  [ *l2,  *l2,  10.]
       shape: [1000, 100, 10]
 
     - id: 3
       type: regular-cartesian-mesh
-      low: [-3., -0.06, -2.]
-      high:  [ 3.,  0.,  0.]
+      low: [*l1, -0.11028593622, -2.]
+      high:  [ *l2, 0.,  0.]
       shape: [1, 1, 1]
-
+    
     - id: 4
       type: regular-cartesian-mesh
-      low: [-3., -3., -10.]
-      high:  [ 3.,  3.,  10.]
+      low: [*l1, *l1, -10.]
+      high:  [ *l2,  *l2,  10.]
       shape: [1, 1, 1]
     
     - id: 5
+      type: regular-cartesian-mesh
+      low: [-5.514296811, -5.514296811, -100.]
+      high:  [ 5.514296811,  5.514296811,  100.]
+      shape: [1, 1, 1]
+    
+    - id: 6
       type: cylinder-filter
       origin: [0., 0., -100.]
       radius: 5.514296811
@@ -60,56 +71,66 @@ tally-filters:
       shape: [1, 1, 1]
       pitch: [12., 12., 200.]
 
-    - id: 6
-      type: regular-cartesian-mesh
-      low: [-5.514296811, -0.06, -100.]
-      high:  [ 5.514296811,  +0.06,  100.]
-      shape: [1, 1, 1]
     - id: 7
       type: regular-cartesian-mesh
       low: [-5.514296811, -0.06, -100.]
       high:  [ 5.514296811,  +0.06,  100.]
-      shape: [100, 1, 1]
+      shape: [1, 1, 1]
+    
+    - id: 8
+      type: regular-cartesian-mesh
+      low: [-5.514296811, -5.514296811, -100.]
+      high:  [ 5.514296811,  5.514296811,  100.]
+      shape: [1000, 1000, 1]
   energy-filters:
     - id: 1
       energy-bounds: [0., 1.]
 
 tallies:
   - type: general
-    position-filter: 7
+    position-filter: 2
     energy-filter: 1
     quantity: flux
-    name: general
+    name: general-legendre
     estimator: collision
 
   - type: legendre-fet
     order: 2
     axes: [X]
-    position-filter: 6
+    position-filter: 3
+    energy-filter: 1
+    quantity: flux
+    name: fet-x
+    estimator: collision
+
+  - type: legendre-fet
+    order: 2
+    axes: [X, Y, Z]
+    position-filter: 4
+    energy-filter: 1
+    quantity: flux
+    name: fet-xy
+    estimator: collision
+
+  - type: general
+    position-filter: 8
+    energy-filter: 1
+    quantity: flux
+    name: general-zernike
+    estimator: collision
+
+  - type: legendre-fet
+    order: 2
+    axes: [X]
+    position-filter: 7
     energy-filter: 1
     quantity: flux
     name: fet-1
     estimator: collision
-
-  # - type: legendre-fet
-  #   order: 2
-  #   axes: [X, Y, Z]
-  #   position-filter: 4
-  #   energy-filter: 1
-  #   quantity: flux
-  #   name: fet-xy
-  #   estimator: collision
-
-  - type: general
-    position-filter: 5
-    energy-filter: 1
-    quantity: flux
-    name: cy-general
-    estimator: collision
-  
+ 
   - type: zernike-fet
     zernike-order: 5
-    position-filter: 5
+    position-filter: 6
     energy-filter: 1
     quantity: flux
     name: zernike-fet

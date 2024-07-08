@@ -18,10 +18,16 @@ class RegularCartesianMeshFilter : public CartesianFilter {
 
   double x_min(const StaticVector3& index) const override;
   double x_max(const StaticVector3& index) const override;
+  double dx (const StaticVector3& /*index*/) const override { return dx_; }
+  double inv_dx (const StaticVector3& /*index*/) const override { return dx_inv_; }
   double y_min(const StaticVector3& index) const override;
   double y_max(const StaticVector3& index) const override;
+  double dy(const StaticVector3& /*index*/) const override { return dy_; }
+  double inv_dy(const StaticVector3& /*index*/) const override { return dy_inv_; }
   double z_min(const StaticVector3& index) const override;
   double z_max(const StaticVector3& index) const override;
+  double dz(const StaticVector3& /*index*/) const override { return dz_; }
+  double inv_dz(const StaticVector3& /*index*/) const override { return dz_inv_; }
 
   StaticVector3 get_shape() const override final {
     if (Nx_ == 1 && Ny_ == 1 && Nz_ == 1) {
