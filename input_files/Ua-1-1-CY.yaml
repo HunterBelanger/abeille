@@ -87,30 +87,30 @@ tally-filters:
       energy-bounds: [0., 1.]
 
 tallies:
-  - type: general
-    position-filter: 2
-    energy-filter: 1
-    quantity: flux
-    name: general-legendre
-    estimator: collision
+  # - type: general
+  #   position-filter: 2
+  #   energy-filter: 1
+  #   quantity: flux
+  #   name: general-legendre
+  #   estimator: collision
 
-  - type: legendre-fet
-    order: 2
-    axes: [X]
-    position-filter: 3
-    energy-filter: 1
-    quantity: flux
-    name: fet-x
-    estimator: collision
+  # - type: legendre-fet
+  #   order: 2
+  #   axes: [X]
+  #   position-filter: 3
+  #   energy-filter: 1
+  #   quantity: flux
+  #   name: fet-x
+  #   estimator: collision
 
-  - type: legendre-fet
-    order: 2
-    axes: [X, Y, Z]
-    position-filter: 4
-    energy-filter: 1
-    quantity: flux
-    name: fet-xy
-    estimator: collision
+  # - type: legendre-fet
+  #   order: 2
+  #   axes: [X, Y, Z]
+  #   position-filter: 4
+  #   energy-filter: 1
+  #   quantity: flux
+  #   name: fet-xy
+  #   estimator: collision
 
   - type: general
     position-filter: 8
@@ -119,17 +119,17 @@ tallies:
     name: general-zernike
     estimator: collision
 
-  # - type: legendre-fet
-  #   order: 2
-  #   axes: [X]
-  #   position-filter: 7
-  #   energy-filter: 1
-  #   quantity: flux
-  #   name: fet-1
-  #   estimator: collision
+  - type: legendre-fet
+    order: 4
+    axes: [X]
+    position-filter: 7
+    energy-filter: 1
+    quantity: flux
+    name: fet-1
+    estimator: collision
  
   - type: zernike-fet
-    zernike-order: 5
+    zernike-order: 14
     position-filter: 6
     energy-filter: 1
     quantity: flux
@@ -143,10 +143,10 @@ settings:
 
 simulation:
   mode: k-eigenvalue
-  #nparticles: 1000000
   nparticles: 100000
-  ngenerations: 550
-  #ngenerations: 1050
+  #nparticles: 1000000
+  #ngenerations: 550
+  ngenerations: 1050
   nignored: 50
   sources:
     - spatial:
