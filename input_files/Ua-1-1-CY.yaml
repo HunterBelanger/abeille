@@ -129,7 +129,7 @@ tallies:
     estimator: collision
  
   - type: zernike-fet
-    zernike-order: 14
+    zernike-order: 12
     position-filter: 6
     energy-filter: 1
     quantity: flux

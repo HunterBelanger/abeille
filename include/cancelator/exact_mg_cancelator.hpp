@@ -38,7 +38,7 @@
 class ExactMGCancelator : public Cancelator {
  public:
   ExactMGCancelator(const Position& r_low, const Position& r_hi,
-                    const std::array<std::size_t, 4>& shape,
+                    const std::array<uint64_t, 4>& shape,
                     const std::vector<std::vector<std::size_t>>& group_bins,
                     bool chi_matrix, bool use_virtual_collisions,
                     uint32_t n_samples);
