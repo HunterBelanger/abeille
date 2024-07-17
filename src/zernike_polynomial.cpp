@@ -67,10 +67,8 @@ double ZernikePolynomials::evaluate_zernike_at_order(
   const double x_k2 = x * x;
 
   const std::vector<double> coeffs = Zr_coefficients_[order];
-  std::size_t k = m;
   double value = 0.;
   for (std::size_t i = 0; i < coeffs.size(); i++) {
-    k += 2 * i;
     value += coeffs[i] * x_k;
     x_k *= x_k2;
   }
@@ -106,8 +104,8 @@ std::vector<double> ZernikePolynomials::evaluate_zernikes(
     double value = 0.0;
     std::size_t k = m;
     for (std::size_t i = 0; i < coeffs.size(); i++) {
-      k += 2 * i;
       value += coeffs[i] * r_powers[k];
+      k += 2;
     }
     double mtheta = static_cast<double>(m) * theta;
     if (zr_type == ZernikeType::Even) {
