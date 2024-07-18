@@ -1,0 +1,155 @@
+# RCF-2D Problem
+
+materials:
+  - id: 1
+    name: water
+    temperature: 293.6
+    density-units: g/cm3
+    density: 1.
+    fractions: atoms
+    composition: [ {nuclide: H1_H2O, fraction: 2. },
+                    {nuclide: O16, fraction: 1. }]
+  
+  - id: 2
+    name: ss-tank
+    temperature: 293.6
+    density-units: g/cm3
+    density: 8.
+    fractions: atoms
+    composition: [ {nuclide: Fe56, fraction: 0.965 },
+                    {nuclide: Cr52, fraction: 0.19},
+                    {nuclide: Ni58, fraction: 0.095},
+                    {nuclide: Mn55, fraction: 0.02}]
+
+  - id: 3
+    name: UO2
+    temperature: 293.6
+    density-units: g/cm3
+    density: 10.048
+    fractions: weight
+    composition: [ {nuclide: U233, fraction: 3.5168E-6 },
+                    {nuclide: U234, fraction: 2.22438E-4 },
+                    {nuclide: U235, fraction: 0.042263144 },
+                    {nuclide: U236, fraction: 4.11466E-4 },
+                    {nuclide: U238, fraction: 0.836299436 },
+                    {nuclide: O16, fraction: 0.1208 }]
+
+  - id: 4
+    name: clad
+    temperature: 293.6
+    density-units: g/cm3
+    density: 8.
+    fractions: weight
+    composition: [ {nuclide: Co59, fraction: 8.4E-4 },
+                    {nuclide: Mn55, fraction: 0.0106 },
+                    {nuclide: Fe54, fraction: 0.041105547 },
+                    {nuclide: Fe56, fraction: 0.64526918 },
+                    {nuclide: Fe57, fraction: 0.014902079 },
+                    {nuclide: Fe58, fraction: 0.001983193 },
+                    {nuclide: Cr50, fraction: 0.0080817 },
+                    {nuclide: Cr52, fraction: 0.15584754 },
+                    {nuclide: Cr53, fraction: 0.01767186 },
+                    {nuclide: Cr54, fraction: 0.0043989 },
+                    {nuclide: Ni58, fraction: 0.065081612 },
+                    {nuclide: Ni60, fraction: 0.025069188 },
+                    {nuclide: Ni61, fraction: 0.00108984 },
+                    {nuclide: Ni62, fraction: 0.003474104 },
+                    {nuclide: Ni64, fraction: 8.85256E-4 },
+                    {nuclide: Mo92, fraction: 2.968E-4 },
+                    {nuclide: Mo94, fraction: 1.85E-4 },
+                    {nuclide: Mo95, fraction: 3.184E-4 },
+                    {nuclide: Mo96, fraction: 3.336E-4 },
+                    {nuclide: Mo97, fraction: 1.91E-4 },
+                    {nuclide: Mo98, fraction: 4.826E-4 },
+                    {nuclide: Mo100, fraction: 1.926E-4},
+                    {nuclide: Cu63, fraction: 0.00117589 },
+                    {nuclide: Cu65, fraction:  5.2411E-4 },]
+
+  - id: 5
+    name: gas
+    temperature: 293.6
+    density-units: g/cm3
+    density: 1.78E-4
+    fractions: atoms
+    composition: [ {nuclide: H1, fraction: 0.5 },
+                    {nuclide: He4, fraction: 0.5 } ]
+
+surfaces:
+  - {type: zcylinder, x0: 0., y0: 0., r: 0.53340, id: 1} # fuel-radius
+  - {type: zcylinder, x0: 0., y0: 0., r: 0.54102, id: 2} # gap-radius
+  - {type: zcylinder, x0: 0., y0: 0., r: 0.59128, id: 3} # clad-radius
+  - {type: zcylinder, x0: 0., y0: 0., r: 106.68, id: 4} # tank-inner radius
+  - {type: zcylinder, x0: 0., y0: 0., r: 107.8, id: 5, boundary: vacuum} # tank-outer radius
+  - {type: zplane, z0: -50., id: 6, boundary: reflective}
+  - {type: zplane, z0:  50., id: 7, boundary: reflective}
+
+cells:
+  - {id: 1, material: 3, region: "-1", name: UO2 pin cell}      
+  - {id: 2, material: 5, region: "+1 & -2", name: gas-cell} 
+  - {id: 3, material: 4, region: "+2 & -3", name: clad-cell} 
+  - {id: 4, material: 1, region: "+3", name: water-outside-cell}
+  - {id: 6, material: 2, region: "+4 & -5 & +6 & -7", name: ss-tank} 
+  - {id: 7, material: 1, region: "-4 & +6 & -7", name: water-pool}
+
+universes:
+  - id: 1
+    name: fuel pin cell
+    cells: [1, 2, 3, 4]
+  
+  - id: 2
+    name: tank and water-pool
+    cells: [6, 7]
+    
+  - id: 10
+    type: rectlinear
+    name: "lattice"
+    shape: [21, 21, 1]
+    pitch: [1.6256, 1.6256, 100.]
+    origin: [0., 0., 0.]
+    outer: 2
+    universes: [2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2,
+                2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2,
+                2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2,
+                2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2,
+                2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2,
+                2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2,
+                2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2,
+                1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2,
+                2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2,
+                2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2,
+                2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2,
+                2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2,
+                2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2,
+                2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2]
+
+root-universe: 10
+
+simulation:
+  mode: k-eigenvalue
+  nparticles: 100000
+  ngenerations: 1200
+  nignored: 200
+
+  transport-operator:
+    type: delta-tracking
+
+  sources:
+    - spatial:
+        type: box
+        low: [-17.07, -17.07, -50.]
+        hi: [17.07, 17.07, 50.]
+      fissile-only: true
+      direction:
+        type: isotropic
+      energy:
+        type: watt
+        a: 0.977
+        b: 2.546
+      weight: 1.
