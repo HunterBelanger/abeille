@@ -43,7 +43,7 @@ tally-filters:
       type: regular-cartesian-mesh
       low: [*l1, *l1, -10.]
       high:  [ *l2,  *l2,  10.]
-      shape: [1000, 100, 10]
+      shape: [60, 60, 1]
 
     - id: 3
       type: regular-cartesian-mesh
@@ -53,8 +53,8 @@ tally-filters:
     
     - id: 4
       type: regular-cartesian-mesh
-      low: [*l1, *l1, -10.]
-      high:  [ *l2,  *l2,  10.]
+      low: [*l1, *l1, -100.]
+      high:  [ *l2,  *l2,  100.]
       shape: [1, 1, 1]
     
     - id: 5
@@ -82,35 +82,48 @@ tally-filters:
       low: [-5.514296811, -5.514296811, -100.]
       high:  [ 5.514296811,  5.514296811,  100.]
       shape: [1000, 1000, 1]
+    
+    - id: 9
+      type: regular-cartesian-mesh
+      low: [-3., -5., -100.]
+      high:  [ 3.,  5.,  100.]
+      shape: [60, 200, 1]
+
+    - id: 10
+      type: regular-cartesian-mesh
+      low: [-5., -5., -100.]
+      high:  [ 5.,  5.,  100.]
+      shape: [100, 100, 1]
+  
   energy-filters:
     - id: 1
       energy-bounds: [0., 1.]
 
 tallies:
-  # - type: general
-  #   position-filter: 2
-  #   energy-filter: 1
-  #   quantity: flux
-  #   name: general-legendre
-  #   estimator: collision
+  - type: general
+    position-filter: 2
+    energy-filter: 1
+    quantity: flux
+    name: general-legendre
+    estimator: collision
 
-  # - type: legendre-fet
-  #   order: 2
-  #   axes: [X]
-  #   position-filter: 3
-  #   energy-filter: 1
-  #   quantity: flux
-  #   name: fet-x
-  #   estimator: collision
+  - type: legendre-fet
+    order: 2
+    axes: [X]
+    position-filter: 3
+    energy-filter: 1
+    quantity: flux
+    name: fet-x
+    estimator: collision
 
-  # - type: legendre-fet
-  #   order: 2
-  #   axes: [X, Y, Z]
-  #   position-filter: 4
-  #   energy-filter: 1
-  #   quantity: flux
-  #   name: fet-xy
-  #   estimator: collision
+  - type: legendre-fet
+    order: 2
+    axes: [X, Y, Z]
+    position-filter: 4
+    energy-filter: 1
+    quantity: flux
+    name: fet-xy
+    estimator: collision
 
   - type: general
     position-filter: 8
@@ -135,6 +148,21 @@ tallies:
     quantity: flux
     name: zernike-fet
     estimator: collision
+
+  - type: general
+    position-filter: 9
+    energy-filter: 1
+    quantity: flux
+    name: general-3
+    estimator: collision
+  
+  - type: general
+    position-filter: 10
+    energy-filter: 1
+    quantity: flux
+    name: general-5
+    estimator: collision
+
 
 settings: 
   energy-mode: multi-group

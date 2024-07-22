@@ -23,7 +23,7 @@ class ZernikePolynomials {
   std::vector<double> evaluate_zernikes(const double r,
                                         const double theta) const;
 
-  double orthonormalization_constant (const std::size_t& order) const;
+  double orthonormalization_constant (const std::size_t& order,  bool is_pi_multiply = true) const;
 
  private:
   std::size_t order_, max_n_;

@@ -229,26 +229,125 @@ void LegendreFET::score_source(const BankedParticle& p) {
   }
 }
 
-std::vector<double> LegendreFET::evaluate_FET(std::span<Position> coordinates, const double En) const {
+double LegendreFET::evaluate(const Position r, const double E) const {
+
+  StaticVector6 indices;
+  // get the energy-index, if energy-filter exists
+  if (energy_in_) {
+    std::optional<std::size_t> E_indx = energy_in_->get_index(E);
+    if (E_indx.has_value() == false) {
+      // Not inside any energy bin.return 0. 
+      return 0.;
+    }
+    indices.push_back(E_indx.value());
+  }
+  // create a temporary tracker to get a position index
+  Direction u;
+  Tracker tktr(r, u);
+  // get the cartisian_filter indices
+  StaticVector3 position_index = cartesian_filter_->get_indices(tktr);
+  indices.insert(indices.end(), position_index.begin(), position_index.end());
+
+  // add one dimension for axis_index
+  const size_t axis_index = indices.size();
+  indices.push_back(0);
+
+  // add one dimesnion for FET-index
+  const size_t FET_index = indices.size();
+  indices.push_back(0);
+
+  // get the inverse of dx, dy, and dz
+  const double inv_dx_ = cartesian_filter_->inv_dx(position_index);
+  const double inv_dy_ = cartesian_filter_->inv_dy(position_index);
+  const double inv_dz_ = cartesian_filter_->inv_dz(position_index);
+
+  double tally_value = 1.; // for evaluation of tally at a given Position
+  for (std::size_t it_axis = 0; it_axis < axes_.size(); it_axis++ ){
+    
+    indices[axis_index] = it_axis;
+    // check every existing axis and calculate for each and every order
+    switch (axes_[it_axis]) {
+      case LegendreFET::Axis::X: {
+        // get the x-min of the position bin and calculate the scaled-x
+        const double xmin_ = cartesian_filter_->x_min(position_index);
+        const double scaled_x = 2. * (tktr.r().x() - xmin_) * inv_dx_ - 1.;
+        // get the value of each legendre polynomial for calculated scaled-x
+        const std::vector<double> lgendre_value = legendre_polynomial_.evaluate_legendres(scaled_x);
+        // do the loop over each order and calculate the fet in x-direction
+        double fet_value_x = 0.;
+        for ( std::size_t order = 0; order <= fet_order_; order++ ){
+          indices[FET_index] = order;
+          fet_value_x += (2.*static_cast<double>(order) + 1.) * tally_avg_.element(indices.begin(), indices.end()) * lgendre_value[order];
+        }
+        tally_value *= fet_value_x;
+      } break;
+
+      case LegendreFET::Axis::Y: {
+        // get the y-min of the position bin and calculate the scaled-y
+        const double ymin_ = cartesian_filter_->y_min(position_index);
+        const double scaled_y = 2. * (tktr.r().y() - ymin_) * inv_dy_ - 1.;
+        // get the value of each legendre polynomial for calculated scaled-y
+        const std::vector<double> lgendre_value = legendre_polynomial_.evaluate_legendres(scaled_y);
+        // do the loop over each order and calculate the fet in y-direction
+        double fet_value_y = 0.; 
+        for ( std::size_t order = 0; order <= fet_order_; order++ ){
+          indices[FET_index] = order;
+          fet_value_y += (2.*static_cast<double>(order) + 1.) * tally_avg_.element(indices.begin(), indices.end()) * lgendre_value[order];
+        }
+        tally_value *= fet_value_y;
+      } break;
+
+      case LegendreFET::Axis::Z: {
+        // get the z-min of the position bin and calculate the scaled-z
+        const double zmin_ = cartesian_filter_->z_min(position_index);
+        const double scaled_z = 2. * (tktr.r().z() - zmin_) * inv_dz_ - 1.;
+        // get the value of each legendre polynomial for calculated scaled-z
+        const std::vector<double> lgendre_value = legendre_polynomial_.evaluate_legendres(scaled_z);
+        // do the loop over each order and calculate the fet in z-direction
+        double fet_value_z = 0;
+        for ( std::size_t order = 0; order <= fet_order_; order++ ){
+          indices[FET_index] = order;
+          fet_value_z += (2.*static_cast<double>(order) + 1.) * tally_avg_.element(indices.begin(), indices.end()) * lgendre_value[order];
+        }
+        tally_value *= fet_value_z;
+      }
+      default:
+        break;
+    }
+    
+    // The normalisation is required and done by dividing zero-moment 
+    if (it_axis > 0){ 
+      indices[FET_index] = 0;
+      tally_value /= tally_avg_.element(indices.begin(), indices.end());
+    }
+  }
+
+  // divide the value by the volume of the bin
+  tally_value *= inv_dx_ * inv_dy_ * inv_dz_;
+  return tally_value;
+}
+
+std::vector<double> LegendreFET::evaluate(const std::vector<Position> positions, const double E) const {
   // store the tally values
   std::vector<double> tallied_values;
-  tallied_values.reserve(coordinates.size());
+  tallied_values.reserve(positions.size());
 
-  // loop over the coordinates to get first the energy and position index
-  for ( std::size_t i = 0; i < coordinates.size(); i++){
+  // loop over the positions to get first the energy and position index
+  for ( std::size_t i = 0; i < positions.size(); i++){
     StaticVector6 indices;
     // get the energy-index, if energy-filter exists
     if (energy_in_) {
-      std::optional<std::size_t> E_indx = energy_in_->get_index(En);
+      std::optional<std::size_t> E_indx = energy_in_->get_index(E);
       if (E_indx.has_value() == false) {
-        // Not inside any energy bin. Don't evaluate.
+        // Not inside any energy bin. push_back 0. in talied_values and continue.
+        tallied_values.push_back(0.);
         continue;
       }
       indices.push_back(E_indx.value());
     }
-    // create a temperaroy tracker for getting a position index
-    Direction dir(coordinates[i].x(), coordinates[i].y(), coordinates[i].z() );
-    Tracker tktr(coordinates[i], dir);
+    // create a temporary tracker to get a position index
+    Direction u;
+    Tracker tktr(positions[i], u);
     // get the cartisian_filter indices
     StaticVector3 position_index = cartesian_filter_->get_indices(tktr);
     indices.insert(indices.end(), position_index.begin(), position_index.end());
@@ -261,19 +360,24 @@ std::vector<double> LegendreFET::evaluate_FET(std::span<Position> coordinates, c
     const size_t FET_index = indices.size();
     indices.push_back(0);
 
+    // get the inverse of dx, dy, and dz
     const double inv_dx_ = cartesian_filter_->inv_dx(position_index);
     const double inv_dy_ = cartesian_filter_->inv_dy(position_index);
     const double inv_dz_ = cartesian_filter_->inv_dz(position_index);
 
-    double tally_value = 1.; // for evaluation of tally at given Position
+    double tally_value = 1.; // for evaluation of tally at a given Position
     for (std::size_t it_axis = 0; it_axis < axes_.size(); it_axis++ ){
+      
       indices[axis_index] = it_axis;
-
+      // check every existing axis and calculate for each and every order
       switch (axes_[it_axis]) {
         case LegendreFET::Axis::X: {
+          // get the x-min of the position bin and calculate the scaled-x
           const double xmin_ = cartesian_filter_->x_min(position_index);
           const double scaled_x = 2. * (tktr.r().x() - xmin_) * inv_dx_ - 1.;
+          // get the value of each legendre polynomial for calculated scaled-x
           const std::vector<double> lgendre_value = legendre_polynomial_.evaluate_legendres(scaled_x);
+          // do the loop over each order and calculate the fet in x-direction
           double fet_value_x = 0.;
           for ( std::size_t order = 0; order <= fet_order_; order++ ){
             indices[FET_index] = order;
@@ -283,11 +387,12 @@ std::vector<double> LegendreFET::evaluate_FET(std::span<Position> coordinates, c
         } break;
 
         case LegendreFET::Axis::Y: {
+          // get the y-min of the position bin and calculate the scaled-y
           const double ymin_ = cartesian_filter_->y_min(position_index);
           const double scaled_y = 2. * (tktr.r().y() - ymin_) * inv_dy_ - 1.;
+          // get the value of each legendre polynomial for calculated scaled-y
           const std::vector<double> lgendre_value = legendre_polynomial_.evaluate_legendres(scaled_y);
-          indices[FET_index] = 0;
-          tally_value /= tally_avg_.element(indices.begin(), indices.end());
+          // do the loop over each order and calculate the fet in y-direction
           double fet_value_y = 0.; 
           for ( std::size_t order = 0; order <= fet_order_; order++ ){
             indices[FET_index] = order;
@@ -297,11 +402,12 @@ std::vector<double> LegendreFET::evaluate_FET(std::span<Position> coordinates, c
         } break;
 
         case LegendreFET::Axis::Z: {
+          // get the z-min of the position bin and calculate the scaled-z
           const double zmin_ = cartesian_filter_->z_min(position_index);
           const double scaled_z = 2. * (tktr.r().z() - zmin_) * inv_dz_ - 1.;
+          // get the value of each legendre polynomial for calculated scaled-z
           const std::vector<double> lgendre_value = legendre_polynomial_.evaluate_legendres(scaled_z);
-          indices[FET_index] = 0;
-          tally_value /= tally_avg_.element(indices.begin(), indices.end());
+          // do the loop over each order and calculate the fet in z-direction
           double fet_value_z = 0;
           for ( std::size_t order = 0; order <= fet_order_; order++ ){
             indices[FET_index] = order;
@@ -312,8 +418,15 @@ std::vector<double> LegendreFET::evaluate_FET(std::span<Position> coordinates, c
         default:
           break;
       }
+      
+      // The normalisation is required and done by dividing zero-moment 
+      if (it_axis > 0){ 
+        indices[FET_index] = 0;
+        tally_value /= tally_avg_.element(indices.begin(), indices.end());
+      }
     }
 
+    // divide the value by the volume of the bin
     tally_value *= inv_dx_ * inv_dy_ * inv_dz_;
     tallied_values.push_back(tally_value);
   }
@@ -383,6 +496,14 @@ void LegendreFET::write_tally() {
 
   auto std_dset = tally_grp.createDataSet<double>("std", H5::DataSpace(shape));
   std_dset.write_raw(tally_var_.data());
+
+  // temp
+  Position r(1.12, 0.17, 0.75);
+  std::cout<<"Legendre \n";
+  std::cout<<"r(1.12, 0.17, 0.75)\t" << evaluate(r, 0.)<<"\n";
+  std::vector<Position> positions {r};
+  std::vector<double> c = evaluate(positions, 0.);
+  std::cout<<"r(1.12, 0.17, 0.75)\t" << c[0]<<"\n----\n";
 }
 
 std::shared_ptr<LegendreFET> make_legendre_fet(const YAML::Node& node) {

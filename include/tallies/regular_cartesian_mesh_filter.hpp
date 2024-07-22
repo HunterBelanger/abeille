@@ -16,18 +16,21 @@ class RegularCartesianMeshFilter : public CartesianFilter {
   std::vector<TracklengthDistance> get_indices_tracklength(
       const Tracker& trkr, double d_flight) const override final;
 
-  double x_min(const StaticVector3& index) const override;
-  double x_max(const StaticVector3& index) const override;
-  double dx (const StaticVector3& /*index*/) const override { return dx_; }
-  double inv_dx (const StaticVector3& /*index*/) const override { return dx_inv_; }
-  double y_min(const StaticVector3& index) const override;
-  double y_max(const StaticVector3& index) const override;
-  double dy(const StaticVector3& /*index*/) const override { return dy_; }
-  double inv_dy(const StaticVector3& /*index*/) const override { return dy_inv_; }
-  double z_min(const StaticVector3& index) const override;
-  double z_max(const StaticVector3& index) const override;
-  double dz(const StaticVector3& /*index*/) const override { return dz_; }
-  double inv_dz(const StaticVector3& /*index*/) const override { return dz_inv_; }
+  double x_min(const StaticVector3& index) const override final;
+  double x_max(const StaticVector3& index) const override final;
+  double dx (const StaticVector3& /*index*/) const override final { return dx_; }
+  double inv_dx (const StaticVector3& /*index*/) const override final { return dx_inv_; }
+  double y_min(const StaticVector3& index) const override final;
+  double y_max(const StaticVector3& index) const override final;
+  double dy(const StaticVector3& /*index*/) const override final { return dy_; }
+  double inv_dy(const StaticVector3& /*index*/) const override final { return dy_inv_; }
+  double z_min(const StaticVector3& index) const override final;
+  double z_max(const StaticVector3& index) const override final;
+  double dz(const StaticVector3& /*index*/) const override final { return dz_; }
+  double inv_dz(const StaticVector3& /*index*/) const override final { return dz_inv_; }
+  double dV(StaticVector3 /*index*/) const override final { return dx_ * dy_* dz_ ;}
+  double inv_dV(StaticVector3 /*index*/) const override final { return dx_inv_ * dy_inv_ * dz_inv_; } 
+
 
   StaticVector3 get_shape() const override final {
     if (Nx_ == 1 && Ny_ == 1 && Nz_ == 1) {
