@@ -389,11 +389,12 @@ double ZernikeFET::evaluate(const Position r, const double E) const {
                        tally_avg_.element(indices.begin(), indices.end()) *
                        legendre_values[order];
     }
+    tally_value *= tally_legndre;
   }
   // get the inverse of radius for area
-  const double inv_radius_ = cylinder_filter_->inv_radius();
+  const double inv_dV = cylinder_filter_->dV(cylinder_index);
   // divide the tally_value by volume
-  tally_value *= tally_zr * inv_radius_ * inv_radius_ * inv_dz_ / PI;
+  tally_value *= tally_zr * inv_dV;
   return tally_value;
 }
 
@@ -484,11 +485,12 @@ std::vector<double> ZernikeFET::evaluate(const std::vector<Position> positions,
                          tally_avg_.element(indices.begin(), indices.end()) *
                          legendre_values[order];
       }
+      tally_value *= tally_legndre;
     }
     // get the inverse of radius for area
-    const double inv_radius_ = cylinder_filter_->inv_radius();
+    const double inv_dV = cylinder_filter_->dV(cylinder_index);
     // divide the tally_value by volume
-    tally_value *= tally_zr * inv_radius_ * inv_radius_ * inv_dz_ / PI;
+    tally_value *= tally_zr * inv_dV;
     tallied_values.push_back(tally_value);
   }
   return tallied_values;
