@@ -496,14 +496,6 @@ void LegendreFET::write_tally() {
 
   auto std_dset = tally_grp.createDataSet<double>("std", H5::DataSpace(shape));
   std_dset.write_raw(tally_var_.data());
-
-  // temp
-  Position r(1.12, 0.17, 0.75);
-  std::cout<<"Legendre \n";
-  std::cout<<"r(1.12, 0.17, 0.75)\t" << evaluate(r, 0.)<<"\n";
-  std::vector<Position> positions {r};
-  std::vector<double> c = evaluate(positions, 0.);
-  std::cout<<"r(1.12, 0.17, 0.75)\t" << c[0]<<"\n----\n";
 }
 
 std::shared_ptr<LegendreFET> make_legendre_fet(const YAML::Node& node) {

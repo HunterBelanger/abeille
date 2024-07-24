@@ -210,8 +210,6 @@ void GeneralTally::score_source(const BankedParticle& p) {
 double GeneralTally::evaluate(const Position r, const double E) const {
   StaticVector4 indices;
   double inv_dV;
-  // get the inverse of the volume of the bin
-  inv_dV = position_filter_->inv_dV(position_indices);
   // if both energy and position filter don't exist, then index is 0
   if (position_filter_ == nullptr && energy_in_ == nullptr) {
     indices.push_back(0);
@@ -240,6 +238,8 @@ double GeneralTally::evaluate(const Position r, const double E) const {
       }
       indices.insert(indices.end(), position_indices.begin(),
                    position_indices.end());
+      // get the inverse of the volume of the bin
+      inv_dV = position_filter_->inv_dV(position_indices);
     }
   }
   const double tally_value = inv_dV * tally_avg_.element(indices.begin(), indices.end());
@@ -337,14 +337,6 @@ void GeneralTally::write_tally() {
 
   auto std_dset = tally_grp.createDataSet<double>("std", H5::DataSpace(shape));
   std_dset.write_raw(tally_var_.data());
-
-    // temp
-  Position r(1.12, 0.17, 0.75);
-  std::cout<<"General \n";
-  std::cout<<"r(1.12, 0.17, 0.75)\t" << evaluate(r, 0.)  * 10000<<"\n";
-  std::vector<Position> positions {r};
-  std::vector<double> c = evaluate(positions, 0.);
-  std::cout<<"r(1.12, 0.17, 0.75)\t" << c[0] * 10000<<"\n----\n";
 }
 
 std::shared_ptr<GeneralTally> make_general_tally(const YAML::Node& node) {
