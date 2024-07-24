@@ -32,7 +32,7 @@ class PositionFilter {
 
   virtual StaticVector3 get_shape() const = 0;
 
-  // method to get the volume and inverse of the volume 
+  // method to get the volume and inverse of the volume
   virtual double dV(StaticVector3 index) const = 0;
   virtual double inv_dV(StaticVector3 index) const = 0;
 

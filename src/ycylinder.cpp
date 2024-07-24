@@ -87,7 +87,7 @@ std::shared_ptr<YCylinder> make_ycylinder(const YAML::Node& surface_node) {
   BoundaryType boundary = BoundaryType::Normal;
   uint32_t id = 1;
   std::string name = "";
-  
+
   // Get id
   if (surface_node["id"])
     id = surface_node["id"].as<uint32_t>();

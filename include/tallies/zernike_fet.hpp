@@ -4,8 +4,8 @@
 #include <tallies/cylinder_filter.hpp>
 #include <tallies/energy_filter.hpp>
 #include <tallies/itally.hpp>
-#include <tallies/zernike_polynomial.hpp>
 #include <tallies/legendre_polynomial.hpp>
+#include <tallies/zernike_polynomial.hpp>
 #include <utils/error.hpp>
 
 #include <yaml-cpp/yaml.h>
@@ -39,10 +39,12 @@ class ZernikeFET : public ITally {
 
   void score_source(const BankedParticle& p) override final;
 
-  std::vector<double> evaluate_FET(std::span<Position> coordinates, const double En) const ;
-  
+  std::vector<double> evaluate_FET(std::span<Position> coordinates,
+                                   const double En) const;
+
   double evaluate(const Position r, const double E) const override final;
-  std::vector<double> evaluate(const std::vector<Position> positions, const double E) const override final;
+  std::vector<double> evaluate(const std::vector<Position> positions,
+                               const double E) const override final;
 
   void write_tally() override final;
 
@@ -55,7 +57,7 @@ class ZernikeFET : public ITally {
 
   // Zernike and Legendre Polynomials can hold the polynomials upto that order
   // can return the std::vector<double> calculated for each order
-  ZernikePolynomials zr_polynomial_; 
+  ZernikePolynomials zr_polynomial_;
   LegendrePolynomials legendre_polynomial_;
   std::size_t zr_order_, legen_order_;
 

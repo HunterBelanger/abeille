@@ -237,20 +237,22 @@ double GeneralTally::evaluate(const Position r, const double E) const {
         return 0.;
       }
       indices.insert(indices.end(), position_indices.begin(),
-                   position_indices.end());
+                     position_indices.end());
       // get the inverse of the volume of the bin
       inv_dV = position_filter_->inv_dV(position_indices);
     }
   }
-  const double tally_value = inv_dV * tally_avg_.element(indices.begin(), indices.end());
-  return tally_value; 
+  const double tally_value =
+      inv_dV * tally_avg_.element(indices.begin(), indices.end());
+  return tally_value;
 }
 
-std::vector<double> GeneralTally::evaluate(const std::vector<Position> positions, const double E) const{
+std::vector<double> GeneralTally::evaluate(
+    const std::vector<Position> positions, const double E) const {
   std::vector<double> tallied_values;
   tallied_values.reserve(positions.size());
 
-  for( std::size_t i = 0; i <= positions.size(); i++){
+  for (std::size_t i = 0; i <= positions.size(); i++) {
     StaticVector4 indices;
     double inv_dV;
     // if both energy and position filter don't exist, then index is 0
@@ -263,7 +265,8 @@ std::vector<double> GeneralTally::evaluate(const std::vector<Position> positions
         if (E_indx.has_value() == false) {
           // Not inside any energy bin. push_back 0 and continue
           tallied_values.push_back(0.);
-          continue;;
+          continue;
+          ;
         }
         indices.push_back(E_indx.value());
       }
@@ -282,14 +285,15 @@ std::vector<double> GeneralTally::evaluate(const std::vector<Position> positions
           continue;
         }
         indices.insert(indices.end(), position_indices.begin(),
-                   position_indices.end());
+                       position_indices.end());
         // get the inverse of the volume of the bin
         inv_dV = position_filter_->inv_dV(position_indices);
       }
     }
-    
-    const double tally_value = inv_dV * tally_avg_.element(indices.begin(), indices.end());
-    tallied_values.push_back(tally_value); 
+
+    const double tally_value =
+        inv_dV * tally_avg_.element(indices.begin(), indices.end());
+    tallied_values.push_back(tally_value);
   }
   return tallied_values;
 }

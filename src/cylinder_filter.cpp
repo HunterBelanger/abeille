@@ -1,6 +1,6 @@
 #include <tallies/cylinder_filter.hpp>
-#include <utils/error.hpp>
 #include <utils/constants.hpp>
+#include <utils/error.hpp>
 
 #include <cmath>
 #include <sstream>
@@ -125,18 +125,18 @@ CylinderFilter::CylinderFilter(Position origin, double radius, double dx,
   x_index = 0;
   y_index = 1;
   z_index = 2;
-  if ( Real_nx_ == 1){
+  if (Real_nx_ == 1) {
     x_index = 0;
     y_index--;
     z_index--;
   }
 
-  if (Real_ny_ == 1){
+  if (Real_ny_ == 1) {
     y_index = 0;
     z_index--;
   }
 
-  if (Real_nz_ == 1){
+  if (Real_nz_ == 1) {
     z_index = 0;
   }
 }
@@ -195,7 +195,7 @@ std::vector<TracklengthDistance> CylinderFilter::get_indices_tracklength(
 
 double CylinderFilter::z_min(const StaticVector3& index) const {
   // note that "index" is not orientated according to class in general
-  if ( Real_nz_ == 1){
+  if (Real_nz_ == 1) {
     return r_low_.z();
   }
   return (r_low_.z() + static_cast<double>(index[z_index]) * dz_);
@@ -203,31 +203,32 @@ double CylinderFilter::z_min(const StaticVector3& index) const {
 
 double CylinderFilter::z_max(const StaticVector3& index) const {
   // note that "index" is not orientated according to class in general
-  if ( Real_nz_ == 1){
+  if (Real_nz_ == 1) {
     return r_low_.z() + dz_;
   }
   return (r_low_.z() + static_cast<double>(index[z_index]) * dz_ + dz_);
 }
 
-Position CylinderFilter::get_center(const StaticVector3& index, const bool is_map = true) const {
+Position CylinderFilter::get_center(const StaticVector3& index,
+                                    const bool is_map = true) const {
   // note that "index" is not orientated according to class in general
   double new_origin_x = origin_.x();
   double new_origin_y = origin_.y();
   double new_origin_z = origin_.z();
-  if ( Real_nx_ > 1 ){
+  if (Real_nx_ > 1) {
     new_origin_x += pitch_x_ * static_cast<double>(index[x_index]);
   }
 
-  if ( Real_ny_ > 1 ){
+  if (Real_ny_ > 1) {
     new_origin_y += pitch_y_ * static_cast<double>(index[y_index]);
   }
 
-  if ( Real_nz_ > 1 ) {
+  if (Real_nz_ > 1) {
     new_origin_z += dz_ * static_cast<double>(index[z_index]);
   }
 
   // if is_map is false, the send the Position based on the class-orientation
-  if( is_map == false){
+  if (is_map == false) {
     return Position(new_origin_x, new_origin_y, new_origin_z);
   }
   return map_coordinate(Position(new_origin_x, new_origin_y, new_origin_z));
@@ -245,12 +246,13 @@ std::pair<double, double> CylinderFilter::get_scaled_radius_and_angle(
   const double base = mapped_r.x() - new_origin.x();
   const double height = mapped_r.y() - new_origin.y();
   // scaled-radius
-  const double scaled_r = (std::sqrt(base * base + height * height)) * inv_radius_;
+  const double scaled_r =
+      (std::sqrt(base * base + height * height)) * inv_radius_;
   // theta
-  double theta = std::atan2(height , base);
+  double theta = std::atan2(height, base);
   // atan2 provides the anlges between [-PI, PI], instead of [0, 2*PI]
-  if ( theta < 0. ){
-    return {scaled_r, theta + 2*PI};
+  if (theta < 0.) {
+    return {scaled_r, theta + 2 * PI};
   }
   return {scaled_r, theta};
 }

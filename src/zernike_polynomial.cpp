@@ -119,13 +119,15 @@ std::vector<double> ZernikePolynomials::evaluate_zernikes(
   return zr_values;
 }
 
-// orthonormalsation constnat will be achieved by the inverse of square of L-2 norm. 
-double ZernikePolynomials::orthonormalization_constant (const std::size_t& order, bool is_pi_multiply) const{
+// orthonormalsation constnat will be achieved by the inverse of square of L-2
+// norm.
+double ZernikePolynomials::orthonormalization_constant(
+    const std::size_t& order, bool is_pi_multiply) const {
   std::pair<int, int> n_and_l = get_n_and_l(order);
   const double n = static_cast<double>(n_and_l.first);
   const double l = static_cast<double>(n_and_l.second);
-  if (l == 0){
-    return is_pi_multiply ? PI / (n+1.) : 1./(n+1.); 
+  if (l == 0) {
+    return is_pi_multiply ? PI / (n + 1.) : 1. / (n + 1.);
   }
-  return is_pi_multiply ? 0.5 * PI / (n+1.) : 0.5 / (n+1.);
+  return is_pi_multiply ? 0.5 * PI / (n + 1.) : 0.5 / (n + 1.);
 }

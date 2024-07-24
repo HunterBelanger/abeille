@@ -2,8 +2,8 @@
 #define CYLINDER_POSITION_FILTER_H
 
 #include <tallies/position_filter.hpp>
-#include <utils/position.hpp>
 #include <utils/constants.hpp>
+#include <utils/position.hpp>
 
 #include <yaml-cpp/yaml.h>
 
@@ -30,8 +30,12 @@ class CylinderFilter : public PositionFilter {
   double dz() const { return dz_; }
   double inv_dz() const { return inv_dz_; }
   bool is_infinite_cylinder() const { return infinite_length_; }
-  double dV(StaticVector3 /*index*/) const override final { return PI * radius_ * radius_ * dz_;}
-  double inv_dV(StaticVector3 /*index*/) const override final { return inv_radius_ * inv_radius_ * inv_dz_ / PI; }
+  double dV(StaticVector3 /*index*/) const override final {
+    return PI * radius_ * radius_ * dz_;
+  }
+  double inv_dV(StaticVector3 /*index*/) const override final {
+    return inv_radius_ * inv_radius_ * inv_dz_ / PI;
+  }
 
   Position get_center(const StaticVector3& indices, const bool is_map) const;
 
@@ -54,8 +58,10 @@ class CylinderFilter : public PositionFilter {
   Orientation length_axis_;
   double radius_, pitch_x_, pitch_y_, dz_, inv_radius_, inv_pitch_x_,
       inv_pitch_y_, inv_dz_;
-  std::size_t x_index, y_index, z_index; // to incorporate the reduce-dimension of indices
-  // these index-locations are based on the real-position of x, y, z. Not based on the class orientation
+  std::size_t x_index, y_index,
+      z_index;  // to incorporate the reduce-dimension of indices
+  // these index-locations are based on the real-position of x, y, z. Not based
+  // on the class orientation
   bool infinite_length_ = false;  // to incorporate the infinte cylinder
   // To map the indexes to either converting into class co-ordinate or into
   // original
@@ -116,25 +122,25 @@ class CylinderFilter : public PositionFilter {
   }
 
   // the function is required as certain parameter need the indices [x, y, z]
-  // then, the reduced for of indices must be reversed, 
+  // then, the reduced for of indices must be reversed,
   StaticVector3 unreduce_dimension(const StaticVector3& indices) const {
     StaticVector3 index;
     std::size_t loc = 0;
-    if (Real_nx_ > 1){
-      index.push_back(indices[loc]);
-      loc++;
-    } else {
-      index.push_back(0);
-    }
-    
-    if( Real_ny_ > 1){
+    if (Real_nx_ > 1) {
       index.push_back(indices[loc]);
       loc++;
     } else {
       index.push_back(0);
     }
 
-    if (Real_nz_ > 1){
+    if (Real_ny_ > 1) {
+      index.push_back(indices[loc]);
+      loc++;
+    } else {
+      index.push_back(0);
+    }
+
+    if (Real_nz_ > 1) {
       index.push_back(indices[loc]);
     } else {
       index.push_back(0);

@@ -144,7 +144,7 @@ std::shared_ptr<Sphere> make_sphere(const YAML::Node& surface_node) {
     }
   } else {
     boundary = BoundaryType::Normal;
-  } 
+  }
 
   // Get name
   if (surface_node["name"])
