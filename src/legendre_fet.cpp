@@ -7,8 +7,6 @@
 #include <boost/container/static_vector.hpp>
 using StaticVector6 = boost::container::static_vector<size_t, 6>;
 
-#include <span>
-
 LegendreFET::LegendreFET(std::shared_ptr<CartesianFilter> position_filter,
                          std::shared_ptr<EnergyFilter> energy_in,
                          std::vector<LegendreFET::Axis> axes, size_t fet_order,
@@ -231,7 +229,7 @@ void LegendreFET::score_source(const BankedParticle& p) {
   }
 }
 
-double LegendreFET::evaluate(const Position r, const double E) const {
+double LegendreFET::evaluate(const Position& r, const double& E) const {
   StaticVector6 indices;
   // get the energy-index, if energy-filter exists
   if (energy_in_) {
@@ -330,21 +328,19 @@ double LegendreFET::evaluate(const Position r, const double E) const {
       tally_value /= tally_avg_.element(indices.begin(), indices.end());
     }
   }
-
-  // divide the value by the volume of the bin
-  tally_value *= inv_dx_ * inv_dy_ * inv_dz_;
   return tally_value;
 }
 
-std::vector<double> LegendreFET::evaluate(const std::vector<Position> positions,
-                                          const double E) const {
+std::vector<double> LegendreFET::evaluate(const std::vector<std::pair<Position, double>> r_E) const {
   // store the tally values
   std::vector<double> tallied_values;
-  tallied_values.reserve(positions.size());
+  tallied_values.reserve(r_E.size());
 
   // loop over the positions to get first the energy and position index
-  for (std::size_t i = 0; i < positions.size(); i++) {
+  for (std::size_t i = 0; i < r_E.size(); i++) {
     StaticVector6 indices;
+    const Position r = r_E[i].first;
+    const double E = r_E[i].second;
     // get the energy-index, if energy-filter exists
     if (energy_in_) {
       std::optional<std::size_t> E_indx = energy_in_->get_index(E);
@@ -358,7 +354,7 @@ std::vector<double> LegendreFET::evaluate(const std::vector<Position> positions,
     }
     // create a temporary tracker to get a position index
     Direction u;
-    Tracker tktr(positions[i], u);
+    Tracker tktr(r, u);
     // get the cartisian_filter indices
     StaticVector3 position_index = cartesian_filter_->get_indices(tktr);
     indices.insert(indices.end(), position_index.begin(), position_index.end());
@@ -444,9 +440,6 @@ std::vector<double> LegendreFET::evaluate(const std::vector<Position> positions,
         tally_value /= tally_avg_.element(indices.begin(), indices.end());
       }
     }
-
-    // divide the value by the volume of the bin
-    tally_value *= inv_dx_ * inv_dy_ * inv_dz_;
     tallied_values.push_back(tally_value);
   }
   return tallied_values;

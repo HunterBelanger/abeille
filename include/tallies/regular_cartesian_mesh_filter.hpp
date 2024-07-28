@@ -34,12 +34,6 @@ class RegularCartesianMeshFilter : public CartesianFilter {
   double inv_dz(const StaticVector3& /*index*/) const override final {
     return dz_inv_;
   }
-  double dV(StaticVector3 /*index*/) const override final {
-    return dx_ * dy_ * dz_;
-  }
-  double inv_dV(StaticVector3 /*index*/) const override final {
-    return dx_inv_ * dy_inv_ * dz_inv_;
-  }
 
   StaticVector3 get_shape() const override final {
     if (Nx_ == 1 && Ny_ == 1 && Nz_ == 1) {

@@ -2,7 +2,6 @@
 #define CYLINDER_POSITION_FILTER_H
 
 #include <tallies/position_filter.hpp>
-#include <utils/constants.hpp>
 #include <utils/position.hpp>
 
 #include <yaml-cpp/yaml.h>
@@ -30,12 +29,6 @@ class CylinderFilter : public PositionFilter {
   double dz() const { return dz_; }
   double inv_dz() const { return inv_dz_; }
   bool is_infinite_cylinder() const { return infinite_length_; }
-  double dV(StaticVector3 /*index*/) const override final {
-    return PI * radius_ * radius_ * dz_;
-  }
-  double inv_dV(StaticVector3 /*index*/) const override final {
-    return inv_radius_ * inv_radius_ * inv_dz_ / PI;
-  }
 
   Position get_center(const StaticVector3& indices, const bool is_map) const;
 

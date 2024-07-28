@@ -207,9 +207,8 @@ void GeneralTally::score_source(const BankedParticle& p) {
 }
 
 // method to evaluate the tally
-double GeneralTally::evaluate(const Position r, const double E) const {
+double GeneralTally::evaluate(const Position& r, const double& E) const {
   StaticVector4 indices;
-  double inv_dV;
   // if both energy and position filter don't exist, then index is 0
   if (position_filter_ == nullptr && energy_in_ == nullptr) {
     indices.push_back(0);
@@ -238,23 +237,20 @@ double GeneralTally::evaluate(const Position r, const double E) const {
       }
       indices.insert(indices.end(), position_indices.begin(),
                      position_indices.end());
-      // get the inverse of the volume of the bin
-      inv_dV = position_filter_->inv_dV(position_indices);
     }
   }
-  const double tally_value =
-      inv_dV * tally_avg_.element(indices.begin(), indices.end());
+  const double tally_value = tally_avg_.element(indices.begin(), indices.end());
   return tally_value;
 }
 
-std::vector<double> GeneralTally::evaluate(
-    const std::vector<Position> positions, const double E) const {
+std::vector<double> GeneralTally::evaluate(const std::vector<std::pair<Position, double>> r_E) const {
   std::vector<double> tallied_values;
-  tallied_values.reserve(positions.size());
+  tallied_values.reserve(r_E.size());
 
-  for (std::size_t i = 0; i <= positions.size(); i++) {
+  for (std::size_t i = 0; i <= r_E.size(); i++) {
     StaticVector4 indices;
-    double inv_dV;
+    const Position r = r_E[i].first;
+    const double E = r_E[i].second;
     // if both energy and position filter don't exist, then index is 0
     if (position_filter_ == nullptr && energy_in_ == nullptr) {
       indices.push_back(0);
@@ -272,7 +268,7 @@ std::vector<double> GeneralTally::evaluate(
       }
       // create a temporary tracker
       Direction u;
-      Tracker trkr(positions[i], u);
+      Tracker trkr(r, u);
       // get the indices for the positions, if exist
       StaticVector3 position_indices;
       if (position_filter_) {
@@ -286,13 +282,9 @@ std::vector<double> GeneralTally::evaluate(
         }
         indices.insert(indices.end(), position_indices.begin(),
                        position_indices.end());
-        // get the inverse of the volume of the bin
-        inv_dV = position_filter_->inv_dV(position_indices);
       }
     }
-
-    const double tally_value =
-        inv_dV * tally_avg_.element(indices.begin(), indices.end());
+    const double tally_value = tally_avg_.element(indices.begin(), indices.end());
     tallied_values.push_back(tally_value);
   }
   return tallied_values;

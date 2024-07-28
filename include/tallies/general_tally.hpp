@@ -25,10 +25,9 @@ class GeneralTally : public ITally {
 
   void score_source(const BankedParticle& p) override final;
 
-  virtual double evaluate(const Position r,
-                          const double E) const override final;
-  virtual std::vector<double> evaluate(const std::vector<Position> r,
-                                       const double E) const override final;
+  virtual double evaluate(const Position& r,
+                          const double& E) const override final;
+  virtual std::vector<double> evaluate(const std::vector<std::pair<Position, double>> r_E) const override final;
 
   void write_tally() override final;
 

@@ -311,7 +311,7 @@ void ZernikeFET::score_source(const BankedParticle& p) {
   }
 }
 
-double ZernikeFET::evaluate(const Position r, const double E) const {
+double ZernikeFET::evaluate(const Position& r, const double& E) const {
   StaticVector6 indices;
   // get the energy-index, if energy-filter exists
   if (energy_filter_) {
@@ -391,22 +391,19 @@ double ZernikeFET::evaluate(const Position r, const double E) const {
     }
     tally_value *= tally_legndre;
   }
-  // get the inverse of radius for area
-  const double inv_dV = cylinder_filter_->dV(cylinder_index);
-  // divide the tally_value by volume
-  tally_value *= tally_zr * inv_dV;
   return tally_value;
 }
 
-std::vector<double> ZernikeFET::evaluate(const std::vector<Position> positions,
-                                         const double E) const {
+std::vector<double> ZernikeFET::evaluate(const std::vector<std::pair<Position, double>> r_E) const {
   // store the tally values
   std::vector<double> tallied_values;
-  tallied_values.reserve(positions.size());
+  tallied_values.reserve(r_E.size());
 
   // loop over the positions to get first the energy and position index
-  for (std::size_t i = 0; i < positions.size(); i++) {
+  for (std::size_t i = 0; i < r_E.size(); i++) {
     StaticVector6 indices;
+    const Position r = r_E[i].first;
+    const double E = r_E[i].second;
     // get the energy-index, if energy-filter exists
     if (energy_filter_) {
       std::optional<std::size_t> E_indx = energy_filter_->get_index(E);
@@ -419,7 +416,7 @@ std::vector<double> ZernikeFET::evaluate(const std::vector<Position> positions,
     }
     // create a temperaroy tracker for getting a position index
     Direction dir;
-    Tracker trkr(positions[i], dir);
+    Tracker trkr(r, dir);
     // get the positional indexes from cylinder_filter
     StaticVector3 cylinder_index = cylinder_filter_->get_indices(trkr);
     indices.insert(indices.end(), cylinder_index.begin(), cylinder_index.end());
@@ -487,10 +484,7 @@ std::vector<double> ZernikeFET::evaluate(const std::vector<Position> positions,
       }
       tally_value *= tally_legndre;
     }
-    // get the inverse of radius for area
-    const double inv_dV = cylinder_filter_->dV(cylinder_index);
-    // divide the tally_value by volume
-    tally_value *= tally_zr * inv_dV;
+    tally_value *= tally_zr;
     tallied_values.push_back(tally_value);
   }
   return tallied_values;
