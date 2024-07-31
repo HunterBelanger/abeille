@@ -16,15 +16,25 @@ class LegendrePolynomials {
   std::vector<double> evaluate_legendres(const double x) const;
 
  private:
-  std::vector<std::vector<double>> legendre_coeff_;
+  std::vector<double> legendre_coeff_;
   std::size_t order_;
 
-  // function for the factorial
-  std::size_t factorial(std::size_t N) {
-    if (N == 1 || N == 0)
-      return 1;
-    else
-      return N * factorial(N - 1);
+  // function to evaluate the factorial calculations for coefficients for given order and term
+  double coeff_factorial_evaluation(const std::size_t& n, const std::size_t& k){
+    double value = 1.; 
+    std::size_t Nk = n-k;
+    for (std::size_t i = 1; i <= Nk; i++ ){
+      double factorial_n_2k = 1.;
+      double factorial_k = 1.;
+      if ( i < k + 1 ){
+        factorial_k = i;
+      }
+      if ( (n-2*k) + 1 > i ){
+        factorial_n_2k = i;
+      }
+      value *= (n-k  + i) / ( factorial_k * factorial_n_2k );
+    }
+    return value;
   }
 };
 
