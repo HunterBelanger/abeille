@@ -352,7 +352,7 @@ double ZernikeFET::evaluate(const Position& r, const double& E) const {
   for (std::size_t order = 0; order <= zr_order_; order++) {
     indices[FET_index] = order;
     const double kn = zr_polynomial_.orthonormalization_constant(
-        order, false);  // pi is not multiplied here
+        order);  // pi is not multiplied here
     tally_zr += (1. / kn) * tally_avg_.element(indices.begin(), indices.end()) *
                 zr_value[order];
   }
@@ -444,7 +444,7 @@ std::vector<double> ZernikeFET::evaluate(const std::vector<std::pair<Position, d
     for (std::size_t order = 0; order <= zr_order_; order++) {
       indices[FET_index] = order;
       const double kn = zr_polynomial_.orthonormalization_constant(
-          order, false);  // pi is not multiplied here
+          order);  // pi is not multiplied here
       tally_zr += (1. / kn) *
                   tally_avg_.element(indices.begin(), indices.end()) *
                   zr_value[order];

@@ -11,10 +11,10 @@ LegendrePolynomials::LegendrePolynomials(std::size_t order)
   std::size_t coeff_length = 1;
   if (order_ != 0){
     if (order_ % 2 == 0){
-      const std::size_t length = static_cast<std::size_t>((order_-1)/2 + 1);
-      coeff_length = length * (length + 1) + static_cast<std::size_t>(order_/2 + 1);
+      const std::size_t length = static_cast<std::size_t>((order_-1)*0.5 + 1);
+      coeff_length = length * (length + 1) + static_cast<std::size_t>(order_*0.5 + 1);
     } else {
-      const std::size_t length = static_cast<std::size_t>(order_/2 + 1);
+      const std::size_t length = static_cast<std::size_t>(order_*0.5 + 1);
       coeff_length = length * (length + 1);
     }
   }
@@ -29,7 +29,7 @@ LegendrePolynomials::LegendrePolynomials(std::size_t order)
     } else if (low_pow == 0) {
       low_pow = 1;
     }
-    std::size_t high_pow = static_cast<std::size_t>(i / 2);
+    std::size_t high_pow = static_cast<std::size_t>(i * 0.5 );
     double sign_change = 1.;
     if (high_pow % 2 == 1) sign_change = -1.;
 

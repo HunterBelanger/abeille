@@ -23,22 +23,21 @@ class ZernikePolynomials {
   std::vector<double> evaluate_zernikes(const double r,
                                         const double theta) const;
 
-  double orthonormalization_constant(const std::size_t& order,
-                                     bool is_pi_multiply = true) const;
+  double orthonormalization_constant(const std::size_t& order) const;
 
  private:
   std::size_t order_, max_n_;
-  std::vector<std::vector<double>> Zr_coefficients_;
+  std::vector<double> Zr_coefficients_;
   std::vector<std::size_t> m_;
   std::vector<std::size_t> n_;
   std::vector<ZernikeType> Zr_types_;
 
   // function for the factorial
-  std::size_t factorial(std::size_t N) {
+  double factorial(std::size_t N) {
     if (N == 1 || N == 0)
       return 1;
     else
-      return N * factorial(N - 1);
+      return static_cast<double>(N) * factorial(N - 1);
   }
 
   // from the order get the n and m.

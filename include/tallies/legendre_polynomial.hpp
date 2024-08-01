@@ -24,15 +24,13 @@ class LegendrePolynomials {
     double value = 1.; 
     std::size_t Nk = n-k;
     for (std::size_t i = 1; i <= Nk; i++ ){
-      double factorial_n_2k = 1.;
-      double factorial_k = 1.;
       if ( i < k + 1 ){
-        factorial_k = i;
+        value /= static_cast<double>(i);
       }
-      if ( (n-2*k) + 1 > i ){
-        factorial_n_2k = i;
+      if ( i < (n-2*k) + 1 ){
+        value /= static_cast<double>(i);
       }
-      value *= (n-k  + i) / ( factorial_k * factorial_n_2k );
+      value *= static_cast<double>(n-k  + i);
     }
     return value;
   }
