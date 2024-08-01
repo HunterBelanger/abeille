@@ -1,7 +1,6 @@
 #include <tallies/tallies.hpp>
 #include <tallies/zernike_fet.hpp>
 #include <utils/error.hpp>
-#include <utils/legendre.hpp>
 #include <utils/output.hpp>
 
 #include <boost/container/static_vector.hpp>
@@ -356,10 +355,10 @@ double ZernikeFET::evaluate(const Position& r, const double& E) const {
     tally_zr += (1. / kn) * tally_avg_.element(indices.begin(), indices.end()) *
                 zr_value[order];
   }
+  tally_value *= tally_zr;
 
   // get the inverse of cylinder length for scaled-z and volume calculation
   const double inv_dz_ = cylinder_filter_->inv_dz();
-
   // second- evaluate the legendre if exist
   if (check_for_legendre == true) {
     // get the correct index of legendre
@@ -394,7 +393,8 @@ double ZernikeFET::evaluate(const Position& r, const double& E) const {
   return tally_value;
 }
 
-std::vector<double> ZernikeFET::evaluate(const std::vector<std::pair<Position, double>> r_E) const {
+std::vector<double> ZernikeFET::evaluate(
+    const std::vector<std::pair<Position, double>> r_E) const {
   // store the tally values
   std::vector<double> tallied_values;
   tallied_values.reserve(r_E.size());
@@ -449,10 +449,10 @@ std::vector<double> ZernikeFET::evaluate(const std::vector<std::pair<Position, d
                   tally_avg_.element(indices.begin(), indices.end()) *
                   zr_value[order];
     }
+    tally_value *= tally_zr;
 
     // get the inverse of cylinder length for scaled-z and volume calculation
     const double inv_dz_ = cylinder_filter_->inv_dz();
-
     // second- evaluate the legendre if exist
     if (check_for_legendre == true) {
       // get the correct index of legendre
@@ -484,7 +484,6 @@ std::vector<double> ZernikeFET::evaluate(const std::vector<std::pair<Position, d
       }
       tally_value *= tally_legndre;
     }
-    tally_value *= tally_zr;
     tallied_values.push_back(tally_value);
   }
   return tallied_values;

@@ -27,7 +27,8 @@ class GeneralTally : public ITally {
 
   virtual double evaluate(const Position& r,
                           const double& E) const override final;
-  virtual std::vector<double> evaluate(const std::vector<std::pair<Position, double>> r_E) const override final;
+  virtual std::vector<double> evaluate(
+      const std::vector<std::pair<Position, double>> r_E) const override final;
 
   void write_tally() override final;
 

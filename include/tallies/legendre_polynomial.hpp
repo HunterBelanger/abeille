@@ -19,18 +19,20 @@ class LegendrePolynomials {
   std::vector<double> legendre_coeff_;
   std::size_t order_;
 
-  // function to evaluate the factorial calculations for coefficients for given order and term
-  double coeff_factorial_evaluation(const std::size_t& n, const std::size_t& k){
-    double value = 1.; 
-    std::size_t Nk = n-k;
-    for (std::size_t i = 1; i <= Nk; i++ ){
-      if ( i < k + 1 ){
+  // function to evaluate the factorial calculations for coefficients for given
+  // order and term
+  double coeff_factorial_evaluation(const std::size_t& n,
+                                    const std::size_t& k) {
+    double value = 1.;
+    std::size_t Nk = n - k;
+    for (std::size_t i = 1; i <= Nk; i++) {
+      if (i < k + 1) {
         value /= static_cast<double>(i);
       }
-      if ( i < (n-2*k) + 1 ){
+      if (i < (n - 2 * k) + 1) {
         value /= static_cast<double>(i);
       }
-      value *= static_cast<double>(n-k  + i);
+      value *= static_cast<double>(n - k + i);
     }
     return value;
   }

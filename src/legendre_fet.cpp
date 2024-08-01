@@ -331,7 +331,8 @@ double LegendreFET::evaluate(const Position& r, const double& E) const {
   return tally_value;
 }
 
-std::vector<double> LegendreFET::evaluate(const std::vector<std::pair<Position, double>> r_E) const {
+std::vector<double> LegendreFET::evaluate(
+    const std::vector<std::pair<Position, double>> r_E) const {
   // store the tally values
   std::vector<double> tallied_values;
   tallied_values.reserve(r_E.size());

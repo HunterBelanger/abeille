@@ -12,16 +12,16 @@ ZernikePolynomials::ZernikePolynomials(std::size_t order)
   std::pair<int, int> high_n_and_l = get_n_and_l(order_);
   // store the n for highest order
   // this is required as we have to evaluate upto this power
-  max_n_ = high_n_and_l.first;
+  max_n_ = static_cast<std::size_t>(high_n_and_l.first);
   std::size_t max_possible_size = 1;
-  if ( order_ != 0 ){
-    if ( max_n_ % 2 == 0 ){
-      std::size_t i = (max_n_)/2;
-      max_possible_size = i * (i+1) * (2*i+1) / 3 + i * (i + 1) + (max_n_+2)*(max_n_+4)/4;
-    }
-    else{
-      std::size_t i = (max_n_+1)/2;
-      max_possible_size = i * (i+1) * (2*i+1) / 3 + i * (i + 1) ;
+  if (order_ != 0) {
+    if (max_n_ % 2 == 0) {
+      std::size_t i = (max_n_) / 2;
+      max_possible_size = i * (i + 1) * (2 * i + 1) / 3 + i * (i + 1) +
+                          (max_n_ + 2) * (max_n_ + 4) / 4;
+    } else {
+      std::size_t i = (max_n_ + 1) / 2;
+      max_possible_size = i * (i + 1) * (2 * i + 1) / 3 + i * (i + 1);
     }
   }
   Zr_coefficients_.reserve(max_possible_size);
@@ -55,17 +55,18 @@ ZernikePolynomials::ZernikePolynomials(std::size_t order)
     std::size_t k;
     for (std::size_t i = 0; i <= max_k; i++) {
       k = max_k - i;
-      const double numeriator = static_cast<double>(factorial(n - k));
+      const double numeriator = factorial(n - k);
       const std::size_t avg_n_m = static_cast<std::size_t>((n + m) * 0.5);
       const std::size_t mid_n_m = static_cast<std::size_t>((n - m) * 0.5);
-      const double denominator = static_cast<double>(
-          factorial(k) * factorial(avg_n_m - k) * factorial(mid_n_m - k));
+      const double denominator =
+          factorial(k) * factorial(avg_n_m - k) * factorial(mid_n_m - k);
 
       const double coeff = sign_change * numeriator / denominator;
       Zr_coefficients_.push_back(coeff);
       sign_change = -1 * sign_change;
     }
   }
+  Zr_coefficients_.shrink_to_fit();
 }
 
 double ZernikePolynomials::evaluate_zernike_at_order(
@@ -79,17 +80,17 @@ double ZernikePolynomials::evaluate_zernike_at_order(
   // get the start and end location of desired order's coefficients
   std::size_t it_coeff_start = 0;
   std::size_t it_coeff_end = 0;
-  if ( order != 0 ){
-    for (std::size_t ord = 0; ord < order; ord++){
+  if (order != 0) {
+    for (std::size_t ord = 0; ord < order; ord++) {
       std::pair<int, int> n_and_l = get_n_and_l(ord);
-      const std::size_t n = n_and_l.first;
-      const std::size_t m = std::abs(n_and_l.second);
-      it_coeff_start += static_cast<std::size_t>((n-m) * 0.5 + 1);
+      const std::size_t n = static_cast<std::size_t>(n_and_l.first);
+      const std::size_t m = static_cast<std::size_t>(std::abs(n_and_l.second));
+      it_coeff_start += static_cast<std::size_t>((n - m) * 0.5 + 1);
     }
     std::pair<int, int> n_and_l = get_n_and_l(order);
-    const std::size_t n = n_and_l.first;
-    const std::size_t m = std::abs(n_and_l.second);
-    it_coeff_end = it_coeff_start + static_cast<std::size_t>((n-m) * 0.5 + 1);
+    const std::size_t n =static_cast<std::size_t>(n_and_l.first);
+    const std::size_t m = static_cast<std::size_t>(std::abs(n_and_l.second));
+    it_coeff_end = it_coeff_start + static_cast<std::size_t>((n - m) * 0.5 + 1);
   }
 
   const std::size_t m = m_[order];
@@ -130,7 +131,8 @@ std::vector<double> ZernikePolynomials::evaluate_zernikes(
   for (std::size_t order = 0; order <= order_; order++) {
     const std::size_t m = m_[order];
     const std::size_t n = n_[order];
-    const std::size_t order_coeff_size = static_cast<std::size_t>((n-m)*0.5 + 1);
+    const std::size_t order_coeff_size =
+        static_cast<std::size_t>((n - m) * 0.5 + 1);
     const ZernikeType zr_type = Zr_types_[order];
     double value = 0.0;
     std::size_t k = m;
