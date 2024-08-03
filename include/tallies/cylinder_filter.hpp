@@ -38,7 +38,7 @@ class CylinderFilter : public PositionFilter {
   std::string type_str() const override { return "cylinder-filter"; }
 
   std::vector<TracklengthDistance> get_indices_tracklength(
-      const Tracker& trkr, double d_flight) const;
+      const Tracker& trkr, double d_flight) const override final;
 
   Orientation get_axial_direction() { return length_axis_; }
 
