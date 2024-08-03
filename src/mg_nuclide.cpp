@@ -405,8 +405,8 @@ double MGNuclide::elastic_xs(double /*E_in*/, std::size_t i) const {
 }
 
 double MGNuclide::heating_xs(double /*E_in*/, std::size_t i) const {
-    if ( Eh_.empty() ) return 0.;
-    return Eh_[i];    
+  if (Eh_.empty()) return 0.;
+  return Eh_[i];
 }
 
 std::size_t MGNuclide::energy_grid_index(double E) const {
@@ -1008,10 +1008,11 @@ std::shared_ptr<MGNuclide> make_mg_nuclide(const YAML::Node& mat, uint32_t id) {
   //===========================================================================
   // Get the heating cross-section, if given
   std::vector<double> Eh;
-  if (mat["heating"]){
-    if (!mat["heating"].IsSequence() || mat["heating"].size() != settings::ngroups){
+  if (mat["heating"]) {
+    if (!mat["heating"].IsSequence() ||
+        mat["heating"].size() != settings::ngroups) {
       std::stringstream mssg;
-      mssg << "Invalid entry of heating in material " << id <<".";
+      mssg << "Invalid entry of heating in material " << id << ".";
       fatal_error(mssg.str());
     }
     Eh = mat["heating"].as<std::vector<double>>();

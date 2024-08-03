@@ -247,7 +247,7 @@ Quantity read_quantity(const YAML::Node& node, const std::string& name) {
     quant.mt = tmp_mt;
 
     return quant;
-  } else if (quant_str == "heating"){
+  } else if (quant_str == "heating") {
     return {Quantity::Type::Heating, 0};
   } else if (quant_str == "source") {
     return {Quantity::Type::Source, 0};

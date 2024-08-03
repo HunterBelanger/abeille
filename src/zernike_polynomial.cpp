@@ -88,7 +88,7 @@ double ZernikePolynomials::evaluate_zernike_at_order(
       it_coeff_start += static_cast<std::size_t>((n - m) * 0.5 + 1);
     }
     std::pair<int, int> n_and_l = get_n_and_l(order);
-    const std::size_t n =static_cast<std::size_t>(n_and_l.first);
+    const std::size_t n = static_cast<std::size_t>(n_and_l.first);
     const std::size_t m = static_cast<std::size_t>(std::abs(n_and_l.second));
     it_coeff_end = it_coeff_start + static_cast<std::size_t>((n - m) * 0.5 + 1);
   }

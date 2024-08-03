@@ -23,7 +23,7 @@ struct Quantity {
     Absorption,
     Elastic,
     MT,
-    // Heating 
+    // Heating
     Heating,
     // Source-like tallies
     Source,
