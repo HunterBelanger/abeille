@@ -49,15 +49,14 @@ ZernikePolynomials::ZernikePolynomials(std::size_t order)
     std::vector<double> single_order_Zr_coeff;
     single_order_Zr_coeff.reserve(max_k + 1);
     double sign_change = 1.;
-
     if (static_cast<int>(max_k % 2) == 1) sign_change = -1.;
 
     std::size_t k;
     for (std::size_t i = 0; i <= max_k; i++) {
       k = max_k - i;
-      const double numeriator = factorial(n - k);
+      const double numeriator = factorial(static_cast<std::size_t>(n - static_cast<int>(k)));
       const std::size_t avg_n_m = static_cast<std::size_t>((n + m) * 0.5);
-      const std::size_t mid_n_m = static_cast<std::size_t>((n - m) * 0.5);
+      const std::size_t mid_n_m = static_cast<std::size_t>(static_cast<double>(n - m) * 0.5);
       const double denominator =
           factorial(k) * factorial(avg_n_m - k) * factorial(mid_n_m - k);
 
@@ -85,12 +84,12 @@ double ZernikePolynomials::evaluate_zernike_at_order(
       std::pair<int, int> n_and_l = get_n_and_l(ord);
       const std::size_t n = static_cast<std::size_t>(n_and_l.first);
       const std::size_t m = static_cast<std::size_t>(std::abs(n_and_l.second));
-      it_coeff_start += static_cast<std::size_t>((n - m) * 0.5 + 1);
+      it_coeff_start += static_cast<std::size_t>( static_cast<double>(n - m) * 0.5 + 1);
     }
     std::pair<int, int> n_and_l = get_n_and_l(order);
     const std::size_t n = static_cast<std::size_t>(n_and_l.first);
     const std::size_t m = static_cast<std::size_t>(std::abs(n_and_l.second));
-    it_coeff_end = it_coeff_start + static_cast<std::size_t>((n - m) * 0.5 + 1);
+    it_coeff_end = it_coeff_start + static_cast<std::size_t>(static_cast<double>(n - m) * 0.5 + 1);
   }
 
   const std::size_t m = m_[order];
@@ -132,7 +131,7 @@ std::vector<double> ZernikePolynomials::evaluate_zernikes(
     const std::size_t m = m_[order];
     const std::size_t n = n_[order];
     const std::size_t order_coeff_size =
-        static_cast<std::size_t>((n - m) * 0.5 + 1.);
+        static_cast<std::size_t>(static_cast<double>(n - m) * 0.5 + 1.);
     const ZernikeType zr_type = Zr_types_[order];
     double value = 0.0;
     std::size_t k = m;

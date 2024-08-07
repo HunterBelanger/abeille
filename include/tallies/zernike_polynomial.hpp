@@ -50,7 +50,7 @@ class ZernikePolynomials {
     while (m <= j) {
       l = m * sign_change;
       // get n
-      n = static_cast<int>(-1. + std::sqrt(2 * order + 1 - l));
+      n = static_cast<int>(-1. + std::sqrt(2. * static_cast<double>(order) + 1. - static_cast<double>(l)));
       // check if selected and m and n are correct or not
       if (j == 0.5 * (n * (n + 2) + l)) {
         return {n, l};
