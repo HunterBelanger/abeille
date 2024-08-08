@@ -199,7 +199,7 @@ class MaterialHelper {
     return Emt_;
   }
 
-  double Eh(double E) {
+  double heating(double E) {
     this->set_energy(E);
 
     double Eh_ = 0.;

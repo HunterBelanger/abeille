@@ -44,8 +44,7 @@ MGNuclide::MGNuclide(const std::vector<double>& speeds,
                      const std::vector<std::vector<MGAngleDistribution>>& angle,
                      const std::vector<double>& P_dlyd_grp,
                      const std::vector<double>& decay_cnsts,
-                     const std::vector<std::vector<double>>& delayed_chi,
-                     const std::vector<double>& Eh)
+                     const std::vector<std::vector<double>>& delayed_chi)
     : group_speeds_(speeds),
       Et_(Et),
       Ea_(Ea),
@@ -60,7 +59,6 @@ MGNuclide::MGNuclide(const std::vector<double>& speeds,
       angle_dists_(angle),
       P_delayed_group(P_dlyd_grp),
       delayed_group_decay_constants(decay_cnsts),
-      Eh_(Eh),
       fissile_(false) {
   make_scatter_xs();
   normalize_chi();
@@ -404,9 +402,14 @@ double MGNuclide::elastic_xs(double /*E_in*/, std::size_t i) const {
   return Es_[i];
 }
 
+<<<<<<< HEAD
 double MGNuclide::heating_xs(double /*E_in*/, std::size_t i) const {
   if (Eh_.empty()) return 0.;
   return Eh_[i];
+=======
+double MGNuclide::heating(double /*E_in*/, std::size_t i) const {
+  return 0.;   
+>>>>>>> 4a80b14 (changes in the  heating tally)
 }
 
 std::size_t MGNuclide::energy_grid_index(double E) const {
@@ -436,7 +439,7 @@ MicroXSs MGNuclide::get_micro_xs(double E,
   xs.nu_delayed = this->nu_delayed(E, xs.energy_index);
   xs.concentration = 0.;  // We set this as zero for now
   xs.noise_copy = 0.;     // We also leave this as zero
-  xs.heating = this->heating_xs(E, xs.energy_index);
+  xs.heating = this->heating(E, xs.energy_index);
   return xs;
 }
 
@@ -1005,6 +1008,7 @@ std::shared_ptr<MGNuclide> make_mg_nuclide(const YAML::Node& mat, uint32_t id) {
     fatal_error(mssg.str());
   }
 
+<<<<<<< HEAD
   //===========================================================================
   // Get the heating cross-section, if given
   std::vector<double> Eh;
@@ -1018,10 +1022,12 @@ std::shared_ptr<MGNuclide> make_mg_nuclide(const YAML::Node& mat, uint32_t id) {
     Eh = mat["heating"].as<std::vector<double>>();
   }
 
+=======
+>>>>>>> 4a80b14 (changes in the  heating tally)
   // We should have all info ! Now we can return the nuclide
   auto nuclide_to_return = std::make_shared<MGNuclide>(
       grp_speeds, Et, Ea, Ef, nu_prmpt, nu_dlyd, chi, Es, yields, angles,
-      P_delayed_grp, delayed_constants, delayed_chi, Eh);
+      P_delayed_grp, delayed_constants, delayed_chi);
 
   // Record nuclide in nuclides map
   nuclides[nuclide_to_return->id()] = nuclide_to_return;

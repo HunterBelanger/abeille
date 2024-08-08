@@ -71,8 +71,8 @@ double ITally::particle_base_score(double E, double wgt, double wgt2,
     } break;
 
     case Quantity::Type::Heating: {
-      const double Eh = mat->Eh(E);
-      collision_score *= wgt * Eh;
+      const double heating = mat->heating(E);
+      collision_score *= wgt * heating;
     } break;
 
     case Quantity::Type::Source:
