@@ -402,14 +402,8 @@ double MGNuclide::elastic_xs(double /*E_in*/, std::size_t i) const {
   return Es_[i];
 }
 
-<<<<<<< HEAD
-double MGNuclide::heating_xs(double /*E_in*/, std::size_t i) const {
-  if (Eh_.empty()) return 0.;
-  return Eh_[i];
-=======
 double MGNuclide::heating(double /*E_in*/, std::size_t i) const {
   return 0.;   
->>>>>>> 4a80b14 (changes in the  heating tally)
 }
 
 std::size_t MGNuclide::energy_grid_index(double E) const {
@@ -1008,22 +1002,6 @@ std::shared_ptr<MGNuclide> make_mg_nuclide(const YAML::Node& mat, uint32_t id) {
     fatal_error(mssg.str());
   }
 
-<<<<<<< HEAD
-  //===========================================================================
-  // Get the heating cross-section, if given
-  std::vector<double> Eh;
-  if (mat["heating"]) {
-    if (!mat["heating"].IsSequence() ||
-        mat["heating"].size() != settings::ngroups) {
-      std::stringstream mssg;
-      mssg << "Invalid entry of heating in material " << id << ".";
-      fatal_error(mssg.str());
-    }
-    Eh = mat["heating"].as<std::vector<double>>();
-  }
-
-=======
->>>>>>> 4a80b14 (changes in the  heating tally)
   // We should have all info ! Now we can return the nuclide
   auto nuclide_to_return = std::make_shared<MGNuclide>(
       grp_speeds, Et, Ea, Ef, nu_prmpt, nu_dlyd, chi, Es, yields, angles,

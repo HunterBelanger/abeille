@@ -57,11 +57,7 @@ class MGNuclide : public Nuclide {
   double nu_delayed(double E_in, std::size_t i) const override final;
   double reaction_xs(uint32_t mt, double E_in, size_t i) const override final;
   double elastic_xs(double E_in, std::size_t i) const override final;
-<<<<<<< HEAD
-  double heating_xs(double E_in, std::size_t i) const override final;
-=======
   double heating(double /*E_in*/, std::size_t i) const override final;
->>>>>>> 4a80b14 (changes in the  heating tally)
   std::size_t energy_grid_index(double E) const override final;
   MicroXSs get_micro_xs(double E, std::optional<double> urr_rand =
                                       std::nullopt) const override final;

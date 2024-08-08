@@ -96,15 +96,9 @@ double CENuclide::elastic_xs(double E_in, std::size_t i) const {
   return cedata_->elastic_xs()(E_in, i);
 }
 
-<<<<<<< HEAD
-double CENuclide::heating_xs(double E_in, std::size_t i) const {
-  return cedata_->heating_number()(E_in, i);
-}
-=======
 double CENuclide::heating(double E_in, std::size_t i) const {
     return cedata_->heating_number()(E_in, i);
   }
->>>>>>> 4a80b14 (changes in the  heating tally)
 
 std::size_t CENuclide::energy_grid_index(double E) const {
   return cedata_->energy_grid().get_lower_index(E);
@@ -142,12 +136,8 @@ MicroXSs CENuclide::get_micro_xs(double E,
     xs.absorption = xs.fission + this->disappearance_xs(E, xs.energy_index);
     xs.elastic = this->elastic_xs(E, xs.energy_index);
     xs.inelastic = xs.total - xs.absorption - xs.elastic;
-<<<<<<< HEAD
-=======
-    xs.heating = this->heating(E, xs.energy_index);
->>>>>>> 4a80b14 (changes in the  heating tally)
     if (xs.inelastic < 0.) xs.inelastic = 0.;
-    xs.heating = this->heating_xs(E, xs.energy_index);
+    xs.heating = this->heating(E, xs.energy_index);
   }
 
   return xs;
