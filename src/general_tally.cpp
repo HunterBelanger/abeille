@@ -239,8 +239,8 @@ double GeneralTally::evaluate(const Position& r, const double& E) const {
                      position_indices.end());
     }
   }
-  const double tally_value = tally_avg_.element(indices.begin(), indices.end());
-  return tally_value;
+
+  return tally_avg_.element(indices.begin(), indices.end());
 }
 
 std::vector<double> GeneralTally::evaluate(
@@ -289,6 +289,7 @@ std::vector<double> GeneralTally::evaluate(
         tally_avg_.element(indices.begin(), indices.end());
     tallied_values.push_back(tally_value);
   }
+  
   return tallied_values;
 }
 

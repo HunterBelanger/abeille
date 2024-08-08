@@ -432,7 +432,7 @@ std::vector<double> LegendreFET::evaluate(
           tally_value *= fet_value_z;
         }
         default:
-          break;
+          fatal_error("invalid legendre-fet evaluation for axis.");
       }
 
       // The normalisation is required and done by dividing zero-moment

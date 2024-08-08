@@ -10,7 +10,6 @@
 
 #include <yaml-cpp/yaml.h>
 
-#include <span>
 
 class ZernikeFET : public ITally {
  public:

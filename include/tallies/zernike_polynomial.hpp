@@ -17,9 +17,6 @@ class ZernikePolynomials {
 
   ZernikePolynomials(std::size_t order);
 
-  double evaluate_zernike_at_order(const double x, const double theta,
-                                   const std::size_t order) const;
-
   std::vector<double> evaluate_zernikes(const double r,
                                         const double theta) const;
 
@@ -33,42 +30,24 @@ class ZernikePolynomials {
   std::vector<ZernikeType> Zr_types_;
 
   // function for the factorial
-  double factorial(std::size_t N) {
+  double factorial(std::size_t N) const {
     if (N == 1 || N == 0)
       return 1;
     else
       return static_cast<double>(N) * factorial(N - 1);
   }
 
-  // from the order get the n and m.
-  // order = 0.5 * ( n*(n+2) + m )
-  // assume the m = 0 and get the n,
+  // from the order get the n and l.
+  // order = 0.5 * ( n*(n+2) + l )
+  // assume the n = 0 and get the l, if not satisfied then increase the l
   // there will be a unique pair in theory
-  std::pair<int, int> get_n_and_l(const std::size_t& order) const {
-    int j = static_cast<int>(order);
-    int m = 0, n, l, sign_change = 1;
-    while (m <= j) {
-      l = m * sign_change;
-      // get n
-      n = static_cast<int>(-1. + std::sqrt(2. * static_cast<double>(order) + 1. - static_cast<double>(l)));
-      // check if selected and m and n are correct or not
-      if (j == 0.5 * (n * (n + 2) + l)) {
-        return {n, l};
-        break;
-      }
-
-      // incement for the new m
-      if (sign_change > 0) {
-        m++;
-        sign_change = -1;
-      } else {
-        sign_change = 1;
-      }
-    }
-    // in theory, the n and m should be found, but
-    // if didn't get the n and m, then give the fatal error
-    if (m == j + 1) {
-      fatal_error("the n and m for zernike is not found.");
+  std::pair<std::size_t, int> get_n_and_l(const std::size_t& order) const {
+    int n = 0;
+    while ( n <= static_cast<int>(order) ) {
+      int l = 2 * static_cast<int>(order) - n * (n+2);
+      if ( std::abs(l) <= n )
+        return {static_cast<std::size_t>(n), l};
+      n++;
     }
     return {0, 0};
   }

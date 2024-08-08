@@ -11,18 +11,17 @@ LegendrePolynomials::LegendrePolynomials(std::size_t order)
   std::size_t coeff_length = 1;
   if (order_ != 0) {
     if (order_ % 2 == 0) {
-      const std::size_t length =
-          static_cast<std::size_t>((static_cast<double>(order_) - 1.) * 0.5 + 1.);
+      const std::size_t length = order_ / 2;
       coeff_length =
-          length * (length + 1) + static_cast<std::size_t>(static_cast<double>(order_) * 0.5 + 1);
+          length * (length + 1) + (order / 2 + 1);
     } else {
-      const std::size_t length = static_cast<std::size_t>(static_cast<double>(order_) * 0.5 + 1);
+      const std::size_t length = (order + 1) / 2;
       coeff_length = length * (length + 1);
     }
   }
   legendre_coeff_.reserve(coeff_length);
 
-  double inv_2 = 1.;
+  double inv_2n = 1.;
   std::size_t low_pow = 1;
 
   for (std::size_t i = 0; i <= order_; i++) {
@@ -37,16 +36,11 @@ LegendrePolynomials::LegendrePolynomials(std::size_t order)
 
     for (std::size_t j = 0; j <= high_pow; j++) {
       std::size_t k = high_pow - j;
-      double value = inv_2 * sign_change * coeff_factorial_evaluation(i, k);
+      double value = inv_2n * sign_change * coeff_factorial_evaluation(i, k);
       sign_change *= -1;
       legendre_coeff_.push_back(value);
     }
-    inv_2 *= 0.5;
-  }
-
-  std::vector<double> sol = evaluate_legendres(0.1);
-  for (std::size_t i = 0; i < sol.size(); i++) {
-    std::cout << "order = " << i << "\t\t" << sol[i] << "\n";
+    inv_2n *= 0.5;
   }
 }
 

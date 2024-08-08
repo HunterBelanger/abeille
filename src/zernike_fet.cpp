@@ -90,7 +90,7 @@ ZernikeFET::ZernikeFET(std::shared_ptr<CylinderFilter> cylinder_filter,
       cylinder_filter_(cylinder_filter),
       energy_filter_(energy_filter),
       zr_polynomial_(zernike_order),
-      legendre_polynomial_(),
+      legendre_polynomial_(0),
       zr_order_(zernike_order),
       legen_order_(),
       axial_direction_() {
@@ -454,7 +454,7 @@ std::vector<double> ZernikeFET::evaluate(
     // get the inverse of cylinder length for scaled-z and volume calculation
     const double inv_dz_ = cylinder_filter_->inv_dz();
     // second- evaluate the legendre if exist
-    if (check_for_legendre == true) {
+    if (check_for_legendre) {
       // get the correct index of legendre
       indices[poly_index] = 1;
       // get the zmin and correct z for scaled_z
