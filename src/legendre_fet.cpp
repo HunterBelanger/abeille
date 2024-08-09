@@ -130,8 +130,6 @@ void LegendreFET::score_collision(const Particle& p, const Tracker& tktr,
         const double inv_dz_ = cartesian_filter_->inv_dz(position_index);
         scaled_loc = 2. * (tktr.r().z() - zmin_) * inv_dz_ - 1.;
       }
-      default:
-        break;
     }
 
     // loop over differnt FET order
@@ -210,8 +208,6 @@ void LegendreFET::score_source(const BankedParticle& p) {
         const double inv_dz_ = cartesian_filter_->inv_dz(position_index);
         scaled_loc = 2. * (trkr.r().z() - zmin_) * inv_dz_ - 1.;
       }
-      default:
-        break;
     }
 
     // loop over differnt FET order
@@ -318,8 +314,6 @@ double LegendreFET::evaluate(const Position& r, const double& E) const {
         }
         tally_value *= fet_value_z;
       }
-      default:
-        break;
     }
 
     // The normalisation is required and done by dividing zero-moment
@@ -431,8 +425,6 @@ std::vector<double> LegendreFET::evaluate(
           }
           tally_value *= fet_value_z;
         }
-        default:
-          fatal_error("invalid legendre-fet evaluation for axis.");
       }
 
       // The normalisation is required and done by dividing zero-moment

@@ -109,7 +109,7 @@ std::vector<double> ZernikePolynomials::evaluate_zernikes(
   return zr_values;
 }
 
-// orthonormalsation constnat will be achieved by the inverse of square of L-2
+// orthonormalsation constant will be achieved by the inverse of square of L-2
 // norm.
 double ZernikePolynomials::orthonormalization_constant(
     const std::size_t& order) const {
@@ -118,5 +118,6 @@ double ZernikePolynomials::orthonormalization_constant(
   if (n_and_l.second == 0) {
     return 1. / (n + 1.);
   }
+  
   return 0.5 / (n + 1.);
 }
