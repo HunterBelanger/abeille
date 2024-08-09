@@ -236,11 +236,8 @@ double LegendreFET::evaluate(const Position& r, const double& E) const {
     }
     indices.push_back(E_indx.value());
   }
-  // create a temporary tracker to get a position index
-  Direction u;
-  Tracker tktr(r, u);
   // get the cartisian_filter indices
-  StaticVector3 position_index = cartesian_filter_->get_indices(tktr);
+  StaticVector3 position_index = cartesian_filter_->get_position_index(r);
   indices.insert(indices.end(), position_index.begin(), position_index.end());
 
   // add one dimension for axis_index
@@ -264,7 +261,7 @@ double LegendreFET::evaluate(const Position& r, const double& E) const {
       case LegendreFET::Axis::X: {
         // get the x-min of the position bin and calculate the scaled-x
         const double xmin_ = cartesian_filter_->x_min(position_index);
-        const double scaled_x = 2. * (tktr.r().x() - xmin_) * inv_dx_ - 1.;
+        const double scaled_x = 2. * (r.x() - xmin_) * inv_dx_ - 1.;
         // get the value of each legendre polynomial for calculated scaled-x
         const std::vector<double> lgendre_value =
             legendre_polynomial_.evaluate_legendres(scaled_x);
@@ -282,7 +279,7 @@ double LegendreFET::evaluate(const Position& r, const double& E) const {
       case LegendreFET::Axis::Y: {
         // get the y-min of the position bin and calculate the scaled-y
         const double ymin_ = cartesian_filter_->y_min(position_index);
-        const double scaled_y = 2. * (tktr.r().y() - ymin_) * inv_dy_ - 1.;
+        const double scaled_y = 2. * (r.y() - ymin_) * inv_dy_ - 1.;
         // get the value of each legendre polynomial for calculated scaled-y
         const std::vector<double> lgendre_value =
             legendre_polynomial_.evaluate_legendres(scaled_y);
@@ -300,7 +297,7 @@ double LegendreFET::evaluate(const Position& r, const double& E) const {
       case LegendreFET::Axis::Z: {
         // get the z-min of the position bin and calculate the scaled-z
         const double zmin_ = cartesian_filter_->z_min(position_index);
-        const double scaled_z = 2. * (tktr.r().z() - zmin_) * inv_dz_ - 1.;
+        const double scaled_z = 2. * (r.z() - zmin_) * inv_dz_ - 1.;
         // get the value of each legendre polynomial for calculated scaled-z
         const std::vector<double> lgendre_value =
             legendre_polynomial_.evaluate_legendres(scaled_z);
@@ -347,11 +344,8 @@ std::vector<double> LegendreFET::evaluate(
       }
       indices.push_back(E_indx.value());
     }
-    // create a temporary tracker to get a position index
-    Direction u;
-    Tracker tktr(r, u);
     // get the cartisian_filter indices
-    StaticVector3 position_index = cartesian_filter_->get_indices(tktr);
+    StaticVector3 position_index = cartesian_filter_->get_position_index(r);
     indices.insert(indices.end(), position_index.begin(), position_index.end());
 
     // add one dimension for axis_index
@@ -375,7 +369,7 @@ std::vector<double> LegendreFET::evaluate(
         case LegendreFET::Axis::X: {
           // get the x-min of the position bin and calculate the scaled-x
           const double xmin_ = cartesian_filter_->x_min(position_index);
-          const double scaled_x = 2. * (tktr.r().x() - xmin_) * inv_dx_ - 1.;
+          const double scaled_x = 2. * (r.x() - xmin_) * inv_dx_ - 1.;
           // get the value of each legendre polynomial for calculated scaled-x
           const std::vector<double> lgendre_value =
               legendre_polynomial_.evaluate_legendres(scaled_x);
@@ -393,7 +387,7 @@ std::vector<double> LegendreFET::evaluate(
         case LegendreFET::Axis::Y: {
           // get the y-min of the position bin and calculate the scaled-y
           const double ymin_ = cartesian_filter_->y_min(position_index);
-          const double scaled_y = 2. * (tktr.r().y() - ymin_) * inv_dy_ - 1.;
+          const double scaled_y = 2. * (r.y() - ymin_) * inv_dy_ - 1.;
           // get the value of each legendre polynomial for calculated scaled-y
           const std::vector<double> lgendre_value =
               legendre_polynomial_.evaluate_legendres(scaled_y);
@@ -411,7 +405,7 @@ std::vector<double> LegendreFET::evaluate(
         case LegendreFET::Axis::Z: {
           // get the z-min of the position bin and calculate the scaled-z
           const double zmin_ = cartesian_filter_->z_min(position_index);
-          const double scaled_z = 2. * (tktr.r().z() - zmin_) * inv_dz_ - 1.;
+          const double scaled_z = 2. * (r.z() - zmin_) * inv_dz_ - 1.;
           // get the value of each legendre polynomial for calculated scaled-z
           const std::vector<double> lgendre_value =
               legendre_polynomial_.evaluate_legendres(scaled_z);

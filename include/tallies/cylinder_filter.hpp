@@ -18,6 +18,8 @@ class CylinderFilter : public PositionFilter {
 
   StaticVector3 get_indices(const Tracker& tktr) const override final;
 
+  StaticVector3 get_position_index(const Position& r) const;
+
   StaticVector3 get_shape() const override final;
 
   double radius() const { return radius_; }

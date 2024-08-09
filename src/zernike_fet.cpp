@@ -212,7 +212,7 @@ void ZernikeFET::score_collision(const Particle& p, const Tracker& tktr,
     if (axial_direction_ == CylinderFilter::Orientation::Y) {
       z = tktr.r().y();
     } else if (axial_direction_ == CylinderFilter::Orientation::X) {
-      z = tktr.r().z();
+      z = tktr.r().x();
     }
     const double scaled_z = 2. * (z - zmin) * inv_dz - 1.0;
     const std::vector<double> legendre_values =
@@ -293,7 +293,7 @@ void ZernikeFET::score_source(const BankedParticle& p) {
     if (axial_direction_ == CylinderFilter::Orientation::Y) {
       z = trkr.r().y();
     } else if (axial_direction_ == CylinderFilter::Orientation::X) {
-      z = trkr.r().z();
+      z = trkr.r().x();
     }
     const double scaled_z = 2. * (z - zmin) / inv_dz - 1.0;
     const std::vector<double> legendre_values =
@@ -321,11 +321,9 @@ double ZernikeFET::evaluate(const Position& r, const double& E) const {
     }
     indices.push_back(E_indx.value());
   }
-  // create a temperaroy tracker for getting a position index
-  Direction dir;
-  Tracker trkr(r, dir);
+
   // get the positional indexes from cylinder_filter
-  StaticVector3 cylinder_index = cylinder_filter_->get_indices(trkr);
+  StaticVector3 cylinder_index = cylinder_filter_->get_position_index(r);
   indices.insert(indices.end(), cylinder_index.begin(), cylinder_index.end());
 
   // add one dimension for the different polynomial
@@ -340,7 +338,7 @@ double ZernikeFET::evaluate(const Position& r, const double& E) const {
   // first evaluate the zernike
   // get the scaled-r and theta
   std::pair<double, double> scaled_r_and_theta =
-      cylinder_filter_->get_scaled_radius_and_angle(cylinder_index, trkr.r());
+      cylinder_filter_->get_scaled_radius_and_angle(cylinder_index, r);
   const double scaled_r = scaled_r_and_theta.first;
   const double theta = scaled_r_and_theta.second;
   // get the zernike-polynomial values upto given order
@@ -365,11 +363,11 @@ double ZernikeFET::evaluate(const Position& r, const double& E) const {
     indices[poly_index] = 1;
     // get the zmin and correct z for scaled_z
     const double zmin = cylinder_filter_->z_min(cylinder_index);
-    double z = trkr.r().z();
+    double z = r.z();
     if (axial_direction_ == CylinderFilter::Orientation::Y) {
-      z = trkr.r().y();
+      z = r.y();
     } else if (axial_direction_ == CylinderFilter::Orientation::X) {
-      z = trkr.r().z();
+      z = r.x();
     }
     const double scaled_z = 2. * (z - zmin) * inv_dz_ - 1.0;
     // get the values for all order of legendre polynomial
@@ -414,11 +412,9 @@ std::vector<double> ZernikeFET::evaluate(
       }
       indices.push_back(E_indx.value());
     }
-    // create a temperaroy tracker for getting a position index
-    Direction dir;
-    Tracker trkr(r, dir);
+
     // get the positional indexes from cylinder_filter
-    StaticVector3 cylinder_index = cylinder_filter_->get_indices(trkr);
+    StaticVector3 cylinder_index = cylinder_filter_->get_position_index(r);
     indices.insert(indices.end(), cylinder_index.begin(), cylinder_index.end());
 
     // add one dimension for the different polynomial
@@ -433,7 +429,7 @@ std::vector<double> ZernikeFET::evaluate(
     // first evaluate the zernike
     // get the scaled-r and theta
     std::pair<double, double> scaled_r_and_theta =
-        cylinder_filter_->get_scaled_radius_and_angle(cylinder_index, trkr.r());
+        cylinder_filter_->get_scaled_radius_and_angle(cylinder_index, r);
     const double scaled_r = scaled_r_and_theta.first;
     const double theta = scaled_r_and_theta.second;
     // get the zernike-polynomial values upto given order
@@ -459,11 +455,11 @@ std::vector<double> ZernikeFET::evaluate(
       indices[poly_index] = 1;
       // get the zmin and correct z for scaled_z
       const double zmin = cylinder_filter_->z_min(cylinder_index);
-      double z = trkr.r().z();
+      double z = r.z();
       if (axial_direction_ == CylinderFilter::Orientation::Y) {
-        z = trkr.r().y();
+        z = r.y();
       } else if (axial_direction_ == CylinderFilter::Orientation::X) {
-        z = trkr.r().z();
+        z = r.x();
       }
       const double scaled_z = 2. * (z - zmin) * inv_dz_ - 1.0;
       // get the values for all order of legendre polynomial
