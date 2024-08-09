@@ -43,10 +43,9 @@ class ZernikePolynomials {
   // there will be a unique pair in theory
   std::pair<std::size_t, int> get_n_and_l(const std::size_t& order) const {
     int n = 0;
-    while ( n <= static_cast<int>(order) ) {
-      int l = 2 * static_cast<int>(order) - n * (n+2);
-      if ( std::abs(l) <= n )
-        return {static_cast<std::size_t>(n), l};
+    while (n <= static_cast<int>(order)) {
+      int l = 2 * static_cast<int>(order) - n * (n + 2);
+      if (std::abs(l) <= n) return {static_cast<std::size_t>(n), l};
       n++;
     }
     return {0, 0};

@@ -69,7 +69,6 @@ ZernikePolynomials::ZernikePolynomials(std::size_t order)
   Zr_coefficients_.shrink_to_fit();
 }
 
-
 std::vector<double> ZernikePolynomials::evaluate_zernikes(
     const double r, const double theta) const {
   // evaluate the all the powers up maximum order, i.e, max_n_

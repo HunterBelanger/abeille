@@ -12,8 +12,7 @@ LegendrePolynomials::LegendrePolynomials(std::size_t order)
   if (order_ != 0) {
     if (order_ % 2 == 0) {
       const std::size_t length = order_ / 2;
-      coeff_length =
-          length * (length + 1) + (order / 2 + 1);
+      coeff_length = length * (length + 1) + (order / 2 + 1);
     } else {
       const std::size_t length = (order + 1) / 2;
       coeff_length = length * (length + 1);
@@ -30,7 +29,8 @@ LegendrePolynomials::LegendrePolynomials(std::size_t order)
     } else if (low_pow == 0) {
       low_pow = 1;
     }
-    std::size_t high_pow = static_cast<std::size_t>(static_cast<double>(i) * 0.5);
+    std::size_t high_pow =
+        static_cast<std::size_t>(static_cast<double>(i) * 0.5);
     double sign_change = 1.;
     if (high_pow % 2 == 1) sign_change = -1.;
 

@@ -8,7 +8,6 @@
 //
 class LegendrePolynomials {
  public:
- 
   LegendrePolynomials(std::size_t order);
 
   std::vector<double> evaluate_legendres(const double x) const;

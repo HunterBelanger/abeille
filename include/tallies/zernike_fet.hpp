@@ -10,7 +10,6 @@
 
 #include <yaml-cpp/yaml.h>
 
-
 class ZernikeFET : public ITally {
  public:
   // following constructor will be called when zernike and legendre both needs
