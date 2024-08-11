@@ -215,10 +215,8 @@ StaticVector3 CylinderFilter::get_shape() const {
   if (Real_nx_ == 1 && Real_ny_ == 1 && Real_nz_ == 1) {
     return {1};
   }
-  StaticVector3 filter_shape{Nx_, Ny_, Nz_};
 
-  map_indexes(filter_shape);
-  return reduce_dimension(filter_shape[0], filter_shape[1], filter_shape[2]);
+  return reduce_dimension(Real_nx_, Real_ny_, Real_nz_);
 }
 
 std::vector<TracklengthDistance> CylinderFilter::get_indices_tracklength(

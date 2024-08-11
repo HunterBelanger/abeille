@@ -93,12 +93,12 @@ class CylinderFilter : public PositionFilter {
                                  const size_t& loc_z) const {
     StaticVector3 reduce_;
     if (Real_nx_ == 1 && Real_ny_ == 1 && Real_nz_ == 1) {
-      return {loc_x};
+      return {1};
     }
 
     if (infinite_length_ == true) {
       if (Nx_ == 1 && Ny_ == 1) {
-        return {loc_x};
+        return {1};
       }
     }
 
