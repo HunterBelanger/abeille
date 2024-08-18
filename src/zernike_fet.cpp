@@ -14,7 +14,6 @@ ZernikeFET::ZernikeFET(std::shared_ptr<CylinderFilter> cylinder_filter,
       cylinder_filter_(cylinder_filter),
       energy_filter_(energy_filter),
       zr_polynomial_(zernike_order),
-      legendre_polynomial_(legendre_order),
       zr_order_(zernike_order),
       legen_order_(legendre_order),
       axial_direction_() {
@@ -57,7 +56,7 @@ ZernikeFET::ZernikeFET(std::shared_ptr<CylinderFilter> cylinder_filter,
   axial_direction_ = cylinder_filter_->get_axial_direction();
 
   // another dimnesion of length two, which is related to the zernike
-  // responsible for radial and legendre reposible for the axis. first will be
+  // responsible for radial and legendre responsible for the axis. first will be
   // zernike and second will be legendre.
   tally_shape.push_back(2);
 
@@ -90,7 +89,6 @@ ZernikeFET::ZernikeFET(std::shared_ptr<CylinderFilter> cylinder_filter,
       cylinder_filter_(cylinder_filter),
       energy_filter_(energy_filter),
       zr_polynomial_(zernike_order),
-      legendre_polynomial_(0),
       zr_order_(zernike_order),
       legen_order_(),
       axial_direction_() {
@@ -122,7 +120,7 @@ ZernikeFET::ZernikeFET(std::shared_ptr<CylinderFilter> cylinder_filter,
                      cylinder_shape.end());
   axial_direction_ = cylinder_filter_->get_axial_direction();
   // another dimnesion of length two, which is related to the zernike
-  // responsible for radial and legendre reposible for the axis. first will be
+  // responsible for radial and legendre responsible for the axis. first will be
   // zernike and second will be legendre.
   tally_shape.push_back(1);
 
@@ -164,7 +162,7 @@ void ZernikeFET::score_collision(const Particle& p, const Tracker& tktr,
   // get the positional indexes from cylinder_filter
   StaticVector3 cylinder_index = cylinder_filter_->get_indices(tktr);
   if (cylinder_index.empty()) {
-    // Not inside any energy bin. Don't score.
+    // Not inside any cylinder bin. Don't score.
     return;
   }
   indices.insert(indices.end(), cylinder_index.begin(), cylinder_index.end());
@@ -215,11 +213,20 @@ void ZernikeFET::score_collision(const Particle& p, const Tracker& tktr,
       z = tktr.r().x();
     }
     const double scaled_z = 2. * (z - zmin) * inv_dz - 1.0;
-    const std::vector<double> legendre_values =
-        legendre_polynomial_.evaluate_legendres(scaled_z);
+    double p0 = 1.;
+    double p1 = 1.;
+    double p2 = 1.;
     for (std::size_t i = 0; i <= legen_order_; i++) {
       // score for i-th order's basis function
-      beta_n = collision_score * legendre_values[i];
+      if (i > 0) {
+        // recursive relation to evaluate the legendre
+        p2 = (scaled_z * static_cast<double>(2 * i - 1) * p1 -
+              static_cast<double>(i - 1) * p0) /
+             static_cast<double>(i);
+        p0 = p1;
+        p1 = p2;
+      }
+      beta_n = collision_score * p2;
       indices[FET_index] = i;
 #ifdef ABEILLE_USE_OMP
 #pragma omp atomic
@@ -247,7 +254,7 @@ void ZernikeFET::score_source(const BankedParticle& p) {
   // get the positional indexes from cylinder_filter
   StaticVector3 cylinder_index = cylinder_filter_->get_indices(trkr);
   if (cylinder_index.empty()) {
-    // Not inside any energy bin. Don't score.
+    // Not inside any cylinder bin. Don't score.
     return;
   }
   indices.insert(indices.end(), cylinder_index.begin(), cylinder_index.end());
@@ -296,11 +303,20 @@ void ZernikeFET::score_source(const BankedParticle& p) {
       z = trkr.r().x();
     }
     const double scaled_z = 2. * (z - zmin) / inv_dz - 1.0;
-    const std::vector<double> legendre_values =
-        legendre_polynomial_.evaluate_legendres(scaled_z);
+    double p0 = 1.;
+    double p1 = 1.;
+    double p2 = 1.;
     for (std::size_t i = 0; i <= legen_order_; i++) {
       // score for i-th order's basis function
-      beta_n = source_score * legendre_values[i];
+      if (i > 0) {
+        // recursive relation to evaluate the legendre
+        p2 = (scaled_z * static_cast<double>(2 * i - 1) * p1 -
+              static_cast<double>(i - 1) * p0) /
+             static_cast<double>(i);
+        p0 = p1;
+        p1 = p2;
+      }
+      beta_n = source_score * p2;
       indices[FET_index] = i;
 #ifdef ABEILLE_USE_OMP
 #pragma omp atomic
@@ -324,6 +340,10 @@ double ZernikeFET::evaluate(const Position& r, const double& E) const {
 
   // get the positional indexes from cylinder_filter
   StaticVector3 cylinder_index = cylinder_filter_->get_position_index(r);
+  if (cylinder_index.empty()) {
+    // Not inside any cylinder bin. return 0.
+    return 0.;
+  }
   indices.insert(indices.end(), cylinder_index.begin(), cylinder_index.end());
 
   // add one dimension for the different polynomial
@@ -350,15 +370,15 @@ double ZernikeFET::evaluate(const Position& r, const double& E) const {
     indices[FET_index] = order;
     const double kn = zr_polynomial_.orthonormalization_constant(
         order);  // pi is not multiplied here
-    tally_zr += (1. / kn) * tally_avg_.element(indices.begin(), indices.end()) *
+    tally_zr += kn * tally_avg_.element(indices.begin(), indices.end()) *
                 zr_value[order];
   }
   tally_value *= tally_zr;
 
-  // get the inverse of cylinder length for scaled-z and volume calculation
-  const double inv_dz_ = cylinder_filter_->inv_dz();
   // second- evaluate the legendre if exist
   if (check_for_legendre == true) {
+    // get the inverse of cylinder length for scaled-z and volume calculation
+    const double inv_dz_ = cylinder_filter_->inv_dz();
     // get the correct index of legendre
     indices[poly_index] = 1;
     // get the zmin and correct z for scaled_z
@@ -370,9 +390,6 @@ double ZernikeFET::evaluate(const Position& r, const double& E) const {
       z = r.x();
     }
     const double scaled_z = 2. * (z - zmin) * inv_dz_ - 1.0;
-    // get the values for all order of legendre polynomial
-    const std::vector<double> legendre_values =
-        legendre_polynomial_.evaluate_legendres(scaled_z);
 
     // get the zero moment to normalise it
     indices[FET_index] = 0;
@@ -380,11 +397,21 @@ double ZernikeFET::evaluate(const Position& r, const double& E) const {
 
     // loop over each legendre order for fet evaluation
     double tally_legndre = 0.;
+    double p0 = 1.;
+    double p1 = 1.;
+    double p2 = 1.;
     for (std::size_t order = 0; order <= legen_order_; order++) {
       indices[FET_index] = order;
+      // recursive relation to evaluate the legendre
+      if (order > 0) {
+        p2 = (scaled_z * static_cast<double>(2 * order - 1) * p1 -
+              static_cast<double>(order - 1) * p0) /
+             static_cast<double>(order);
+        p0 = p1;
+        p1 = p2;
+      }
       tally_legndre += static_cast<double>(2 * order + 1) *
-                       tally_avg_.element(indices.begin(), indices.end()) *
-                       legendre_values[order];
+                       tally_avg_.element(indices.begin(), indices.end()) * p2;
     }
     tally_value *= tally_legndre;
   }
@@ -415,6 +442,11 @@ std::vector<double> ZernikeFET::evaluate(
 
     // get the positional indexes from cylinder_filter
     StaticVector3 cylinder_index = cylinder_filter_->get_position_index(r);
+    if (cylinder_index.empty()) {
+      // Not inside any cylinder bin. push_back 0.
+      tallied_values.push_back(0.);
+      continue;
+    }
     indices.insert(indices.end(), cylinder_index.begin(), cylinder_index.end());
 
     // add one dimension for the different polynomial
@@ -441,8 +473,7 @@ std::vector<double> ZernikeFET::evaluate(
       indices[FET_index] = order;
       const double kn = zr_polynomial_.orthonormalization_constant(
           order);  // pi is not multiplied here
-      tally_zr += (1. / kn) *
-                  tally_avg_.element(indices.begin(), indices.end()) *
+      tally_zr += kn * tally_avg_.element(indices.begin(), indices.end()) *
                   zr_value[order];
     }
     tally_value *= tally_zr;
@@ -462,9 +493,6 @@ std::vector<double> ZernikeFET::evaluate(
         z = r.x();
       }
       const double scaled_z = 2. * (z - zmin) * inv_dz_ - 1.0;
-      // get the values for all order of legendre polynomial
-      const std::vector<double> legendre_values =
-          legendre_polynomial_.evaluate_legendres(scaled_z);
 
       // get the zero moment to normalise it
       indices[FET_index] = 0;
@@ -472,11 +500,22 @@ std::vector<double> ZernikeFET::evaluate(
 
       // loop over each legendre order for fet evaluation
       double tally_legndre = 0.;
+      double p0 = 1.;
+      double p1 = 1.;
+      double p2 = 1.;
       for (std::size_t order = 0; order <= legen_order_; order++) {
         indices[FET_index] = order;
+        // recursive relation to evaluate the legendre
+        if (order > 0) {
+          p2 = (scaled_z * static_cast<double>(2 * order - 1) * p1 -
+                static_cast<double>(order - 1) * p0) /
+               static_cast<double>(order);
+          p0 = p1;
+          p1 = p2;
+        }
         tally_legndre += static_cast<double>(2 * order + 1) *
                          tally_avg_.element(indices.begin(), indices.end()) *
-                         legendre_values[order];
+                         p2;
       }
       tally_value *= tally_legndre;
     }

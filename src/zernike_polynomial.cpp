@@ -116,8 +116,8 @@ double ZernikePolynomials::orthonormalization_constant(
   std::pair<std::size_t, int> n_and_l = get_n_and_l(order);
   const double n = static_cast<double>(n_and_l.first);
   if (n_and_l.second == 0) {
-    return 1. / (n + 1.);
+    return (n + 1.);
   }
-  
-  return 0.5 / (n + 1.);
+
+  return 2. * (n + 1.);
 }

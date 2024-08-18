@@ -17,7 +17,7 @@ class RegularCartesianMeshFilter : public CartesianFilter {
 
   std::vector<TracklengthDistance> get_indices_tracklength(
       const Tracker& trkr, double d_flight) const override final;
-  
+
   double x_min(const StaticVector3& index) const override final;
   double x_max(const StaticVector3& index) const override final;
   double dx(const StaticVector3& /*index*/) const override final { return dx_; }

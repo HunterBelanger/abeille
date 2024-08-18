@@ -263,7 +263,6 @@ std::vector<double> GeneralTally::evaluate(
           // Not inside any energy bin. push_back 0 and continue
           tallied_values.push_back(0.);
           continue;
-          ;
         }
         indices.push_back(E_indx.value());
       }

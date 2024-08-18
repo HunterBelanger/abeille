@@ -22,16 +22,17 @@ class LegendrePolynomials {
                                     const std::size_t& k) const {
     double value = 1.;
     std::size_t Nk = n - k;
+    double temp = 1.;
     for (std::size_t i = 1; i <= Nk; i++) {
+      value *= static_cast<double>(n - k + i);
       if (i < k + 1) {
-        value /= static_cast<double>(i);
+        temp *= static_cast<double>(i);
       }
       if (i < (n - 2 * k) + 1) {
-        value /= static_cast<double>(i);
+        temp *= static_cast<double>(i);
       }
-      value *= static_cast<double>(n - k + i);
     }
-    return value;
+    return value / temp;
   }
 };
 

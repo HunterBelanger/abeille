@@ -54,7 +54,7 @@ class CylinderFilter : public PositionFilter {
   double radius_, pitch_x_, pitch_y_, dz_, inv_radius_, inv_pitch_x_,
       inv_pitch_y_, inv_dz_;
   std::size_t x_index, y_index,
-      z_index;  // to incorporate the reduce-dimension of indices
+      z_index;  // to access the correct location of the indices
   // these index-locations are based on the real-position of x, y, z. Not based
   // on the class orientation
   bool infinite_length_ = false;  // to incorporate the infinte cylinder
@@ -114,34 +114,6 @@ class CylinderFilter : public PositionFilter {
       reduce_.push_back(loc_z);
     }
     return reduce_;
-  }
-
-  // the function is required as certain parameter need the indices [x, y, z]
-  // then, the reduced for of indices must be reversed,
-  StaticVector3 unreduce_dimension(const StaticVector3& indices) const {
-    StaticVector3 index;
-    std::size_t loc = 0;
-    if (Real_nx_ > 1) {
-      index.push_back(indices[loc]);
-      loc++;
-    } else {
-      index.push_back(0);
-    }
-
-    if (Real_ny_ > 1) {
-      index.push_back(indices[loc]);
-      loc++;
-    } else {
-      index.push_back(0);
-    }
-
-    if (Real_nz_ > 1) {
-      index.push_back(indices[loc]);
-    } else {
-      index.push_back(0);
-    }
-
-    return index;
   }
 };
 

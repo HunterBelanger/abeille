@@ -4,7 +4,6 @@
 #include <tallies/cartesian_filter.hpp>
 #include <tallies/energy_filter.hpp>
 #include <tallies/itally.hpp>
-#include <tallies/legendre_polynomial.hpp>
 #include <utils/error.hpp>
 
 #include <yaml-cpp/yaml.h>
@@ -51,7 +50,6 @@ class LegendreFET : public ITally {
 
   boost::container::static_vector<Axis, 3> axes_;
 
-  LegendrePolynomials legendre_polynomial_;
   size_t fet_order_;  // Note that the number of coefficient will be one more
                       // than the order.
 };
