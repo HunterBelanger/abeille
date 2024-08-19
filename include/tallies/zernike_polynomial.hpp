@@ -32,7 +32,7 @@ class ZernikePolynomials {
   // function for the factorial
   double factorial(std::size_t N) const {
     if (N == 1 || N == 0)
-      return 1;
+      return 1.;
     else
       return static_cast<double>(N) * factorial(N - 1);
   }
