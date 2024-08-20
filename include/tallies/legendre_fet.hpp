@@ -50,8 +50,8 @@ class LegendreFET : public ITally {
 
   boost::container::static_vector<Axis, 3> axes_;
 
-  std::vector<std::size_t> fet_order_;  // Note that the number of coefficient will be one more
-                      // than the order.
+  // Note that the number of coefficient will be one more than the order.
+  std::vector<std::size_t> fet_order_; 
 };
 
 std::shared_ptr<LegendreFET> make_legendre_fet(const YAML::Node& node);
