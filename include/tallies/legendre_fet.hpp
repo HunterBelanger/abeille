@@ -4,9 +4,7 @@
 #include <tallies/cartesian_filter.hpp>
 #include <tallies/energy_filter.hpp>
 #include <tallies/itally.hpp>
-#include <tallies/legendre_polynomial.hpp>
 #include <utils/error.hpp>
-
 #include <yaml-cpp/yaml.h>
 #include <boost/container/static_vector.hpp>
 using StaticVector6 = boost::container::static_vector<size_t, 6>;

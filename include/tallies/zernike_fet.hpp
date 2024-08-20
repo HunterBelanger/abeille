@@ -4,7 +4,6 @@
 #include <tallies/cylinder_filter.hpp>
 #include <tallies/energy_filter.hpp>
 #include <tallies/itally.hpp>
-#include <tallies/legendre_polynomial.hpp>
 #include <tallies/zernike_polynomial.hpp>
 #include <utils/error.hpp>
 
@@ -55,7 +54,7 @@ class ZernikeFET : public ITally {
   // Zernike and Legendre Polynomials can hold the polynomials upto that order
   // can return the std::vector<double> calculated for each order
   ZernikePolynomials zr_polynomial_;
-  LegendrePolynomials legendre_polynomial_;
+  
   std::size_t zr_order_, legen_order_;
 
   CylinderFilter::Orientation axial_direction_;

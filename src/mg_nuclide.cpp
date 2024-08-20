@@ -402,7 +402,7 @@ double MGNuclide::elastic_xs(double /*E_in*/, std::size_t i) const {
   return Es_[i];
 }
 
-double MGNuclide::heating(double /*E_in*/, std::size_t i) const {
+double MGNuclide::heating(double /*E_in*/, std::size_t /*i*/) const {
   return 0.;   
 }
 
