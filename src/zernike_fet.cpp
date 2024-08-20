@@ -632,7 +632,7 @@ std::shared_ptr<ZernikeFET> make_zernike_fet(const YAML::Node& node) {
 
   // Get the Zernike order
   if (!node["zernike-order"] || node["zernike-order"].IsScalar() == false) {
-    fatal_error("a valid zernike-order is not given for " + name + "tally.");
+    fatal_error("a valid zernike-order is not given for " + name + " tally.");
   }
   std::size_t zernike_fet_order = node["zernike-order"].as<std::size_t>();
 
