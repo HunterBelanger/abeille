@@ -20,7 +20,7 @@ class LegendreFET : public ITally {
 
   LegendreFET(std::shared_ptr<CartesianFilter> position_filter,
               std::shared_ptr<EnergyFilter> energy_in,
-              std::vector<LegendreFET::Axis> axes, size_t fet_order,
+              std::vector<LegendreFET::Axis> axes, std::vector<std::size_t> fet_order,
               Quantity quantity, Estimator estimator, std::string name);
 
   ~LegendreFET() = default;
@@ -36,17 +36,22 @@ class LegendreFET : public ITally {
 
   void score_source(const BankedParticle& p) override final;
 
+  double evaluate(const Position& r, const double& E) const override final;
+  std::vector<double> evaluate(
+      const std::vector<std::pair<Position, double>> r_E) const override final;
+
   void write_tally() override final;
 
-  size_t get_fet_order() { return fet_order_; }
+  std::vector<std::size_t> get_fet_order() { return fet_order_; }
 
  private:
   std::shared_ptr<CartesianFilter> cartesian_filter_;
   std::shared_ptr<EnergyFilter> energy_in_;
 
   boost::container::static_vector<Axis, 3> axes_;
-  size_t fet_order_;  // Note that the number of coefficient will be one more
-                      // than the order.
+
+  // Note that the number of coefficient will be one more than the order.
+  std::vector<std::size_t> fet_order_; 
 };
 
 std::shared_ptr<LegendreFET> make_legendre_fet(const YAML::Node& node);

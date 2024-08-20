@@ -77,7 +77,7 @@ void GeneralTally::score_collision(const Particle& p, const Tracker& trkr,
       position_indices = position_filter_->get_indices(trkr);
 
       if (position_indices.empty()) {
-        // Not inside any energy bin. Don't score.
+        // Not inside any position bin. Don't score.
         return;
       }
     }
@@ -190,7 +190,7 @@ void GeneralTally::score_source(const BankedParticle& p) {
       position_indices = position_filter_->get_indices(trkr);
 
       if (position_indices.empty()) {
-        // Not inside any energy bin. Don't score.
+        // Not inside any position bin. Don't score.
         return;
       }
     }
@@ -204,6 +204,92 @@ void GeneralTally::score_source(const BankedParticle& p) {
 #pragma omp atomic
 #endif
   tally_gen_score_.element(indices.begin(), indices.end()) += source_score;
+}
+
+// method to evaluate the tally
+double GeneralTally::evaluate(const Position& r, const double& E) const {
+  StaticVector4 indices;
+  // if both energy and position filter don't exist, then index is 0
+  if (position_filter_ == nullptr && energy_in_ == nullptr) {
+    indices.push_back(0);
+  } else {
+    // get the index for the energy if exist
+    if (energy_in_) {
+      std::optional<std::size_t> E_indx = energy_in_->get_index(E);
+      if (E_indx.has_value() == false) {
+        // Not inside any energy bin. Therefore, return 0.
+        return 0.;
+      }
+      indices.push_back(E_indx.value());
+    }
+    // create a temporary tracker
+    Direction u;
+    Tracker trkr(r, u);
+    // get the indices for the positions, if exist
+    StaticVector3 position_indices;
+    if (position_filter_) {
+      // It will provde the reduce dimensions
+      position_indices = position_filter_->get_indices(trkr);
+
+      if (position_indices.empty()) {
+        // Not inside any position bin. Therefore, return 0.
+        return 0.;
+      }
+      indices.insert(indices.end(), position_indices.begin(),
+                     position_indices.end());
+    }
+  }
+
+  return tally_avg_.element(indices.begin(), indices.end());
+}
+
+std::vector<double> GeneralTally::evaluate(
+    const std::vector<std::pair<Position, double>> r_E) const {
+  std::vector<double> tallied_values;
+  tallied_values.reserve(r_E.size());
+
+  for (std::size_t i = 0; i <= r_E.size(); i++) {
+    StaticVector4 indices;
+    const Position r = r_E[i].first;
+    const double E = r_E[i].second;
+    // if both energy and position filter don't exist, then index is 0
+    if (position_filter_ == nullptr && energy_in_ == nullptr) {
+      indices.push_back(0);
+    } else {
+      // get the index for the energy if exist
+      if (energy_in_) {
+        std::optional<std::size_t> E_indx = energy_in_->get_index(E);
+        if (E_indx.has_value() == false) {
+          // Not inside any energy bin. push_back 0 and continue
+          tallied_values.push_back(0.);
+          continue;
+        }
+        indices.push_back(E_indx.value());
+      }
+      // create a temporary tracker
+      Direction u;
+      Tracker trkr(r, u);
+      // get the indices for the positions, if exist
+      StaticVector3 position_indices;
+      if (position_filter_) {
+        // It will provde the reduce dimensions
+        position_indices = position_filter_->get_indices(trkr);
+
+        if (position_indices.empty()) {
+          // Not inside any position bin. Therefore, return 0.
+          tallied_values.push_back(0.);
+          continue;
+        }
+        indices.insert(indices.end(), position_indices.begin(),
+                       position_indices.end());
+      }
+    }
+    const double tally_value =
+        tally_avg_.element(indices.begin(), indices.end());
+    tallied_values.push_back(tally_value);
+  }
+
+  return tallied_values;
 }
 
 void GeneralTally::write_tally() {

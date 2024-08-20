@@ -1,0 +1,306 @@
+materials:
+  # This section of the input is where all of the materials, and their cross sections are defined. Each
+  # material must have a unique id, which is an integer greater than 0. Units of cross section values
+  # are [cm^-1]. The nu values have no units.
+  - total:      [1.77949E-01, 3.29805E-01, 4.80388E-01, 5.54367E-01, 3.11801E-01, 3.95168E-01, 5.64406E-01]
+    absorption: [8.02480E-03, 3.71740E-03, 2.67690E-02, 9.62360E-02, 3.00200E-02, 1.11260E-01, 2.82780E-01]
+    fission:    [7.21206E-03, 8.19301E-04, 6.45320E-03, 1.85648E-02, 1.78084E-02, 8.30348E-02, 2.16004E-01]
+    nu:         [2.78145,     2.47443,     2.43383,     2.43380,     2.43380,     2.43380,     2.43380]
+    chi:       [[5.87910E-01, 4.11760E-01, 3.39060E-04, 1.17610E-07, 0.,          0.,          0.]]
+    scatter:   [[1.27537E-01, 4.23780E-02, 9.43740E-06, 5.51630E-09, 0.00000E+00, 0.00000E+00, 0.00000E+00],
+                [0.00000E+00, 3.24456E-01, 1.63140E-03, 3.14270E-09, 0.00000E+00, 0.00000E+00, 0.00000E+00],
+                [0.00000E+00, 0.00000E+00, 4.50940E-01, 2.67920E-03, 0.00000E+00, 0.00000E+00, 0.00000E+00],
+                [0.00000E+00, 0.00000E+00, 0.00000E+00, 4.52565E-01, 5.56640E-03, 0.00000E+00, 0.00000E+00],
+                [0.00000E+00, 0.00000E+00, 0.00000E+00, 1.25250E-04, 2.71401E-01, 1.02550E-02, 1.00210E-08],
+                [0.00000E+00, 0.00000E+00, 0.00000E+00, 0.00000E+00, 1.29680E-03, 2.65802E-01, 1.68090E-02],
+                [0.00000E+00, 0.00000E+00, 0.00000E+00, 0.00000E+00, 0.00000E+00, 8.54580E-03, 2.73080E-01]]
+    id: 1
+    color: [255,127,14]
+    name: UO2
+
+  - total:      [1.78731E-01, 3.30849E-01, 4.83772E-01, 5.66922E-01, 4.26227E-01, 6.78997E-01, 6.82852E-01]
+    absorption: [8.43390E-03, 3.75770E-03, 2.79700E-02, 1.04210E-01, 1.39940E-01, 4.09180E-01, 4.09350E-01]
+    fission:    [7.62704E-03, 8.76898E-04, 5.69835E-03, 2.28872E-02, 1.07635E-02, 2.32757E-01, 2.48968E-01]
+    nu:         [2.85209,     2.89099,     2.85486,     2.86073,     2.85447,     2.86415,     2.86780]
+    chi:       [[5.87910E-01, 4.11760E-01, 3.39060E-04, 1.17610E-07, 0.,          0.,          0.]]
+    scatter:   [[1.28876E-01, 4.14130E-02, 8.22900E-06, 5.04050E-09, 0.00000E+00, 0.00000E+00, 0.00000E+00],
+                [0.00000E+00, 3.25452E-01, 1.63950E-03, 1.59820E-09, 0.00000E+00, 0.00000E+00, 0.00000E+00],
+                [0.00000E+00, 0.00000E+00, 4.53188E-01, 2.61420E-03, 0.00000E+00, 0.00000E+00, 0.00000E+00],
+                [0.00000E+00, 0.00000E+00, 0.00000E+00, 4.57173E-01, 5.53940E-03, 0.00000E+00, 0.00000E+00],
+                [0.00000E+00, 0.00000E+00, 0.00000E+00, 1.60460E-04, 2.76814E-01, 9.31270E-03, 9.16560E-09],
+                [0.00000E+00, 0.00000E+00, 0.00000E+00, 0.00000E+00, 2.00510E-03, 2.52962E-01, 1.48500E-02],
+                [0.00000E+00, 0.00000E+00, 0.00000E+00, 0.00000E+00, 0.00000E+00, 8.49480E-03, 2.65007E-01]]
+    id: 2
+    color: [0, 0, 0]
+    name: 4.3 MOX
+
+  - total:      [1.81323E-01, 3.34368E-01, 4.93785E-01, 5.91216E-01, 4.74198E-01, 8.33601E-01, 8.53603E-01]
+    absorption: [9.06570E-03, 4.29670E-03, 3.28810E-02, 1.22030E-01, 1.82980E-01, 5.68460E-01, 5.85210E-01]
+    fission:    [8.25446E-03, 1.32565E-03, 8.42156E-03, 3.28730E-02, 1.59636E-02, 3.23794E-01, 3.62803E-01]
+    nu:         [2.88498,     2.91079,     2.86574,     2.87063,     2.86714,     2.86658,     2.87539]
+    chi:       [[5.87910E-01, 4.11760E-01, 3.39060E-04, 1.17610E-07, 0.,          0.,          0.]]
+    scatter:   [[1.30457E-01, 4.17920E-02, 8.51050E-06, 5.13290E-09, 0.00000E+00, 0.00000E+00, 0.00000E+00],
+                [0.00000E+00, 3.28428E-01, 1.64360E-03, 2.20170E-09, 0.00000E+00, 0.00000E+00, 0.00000E+00],
+                [0.00000E+00, 0.00000E+00, 4.58371E-01, 2.53310E-03, 0.00000E+00, 0.00000E+00, 0.00000E+00],
+                [0.00000E+00, 0.00000E+00, 0.00000E+00, 4.63709E-01, 5.47660E-03, 0.00000E+00, 0.00000E+00],
+                [0.00000E+00, 0.00000E+00, 0.00000E+00, 1.76190E-04, 2.82313E-01, 8.72890E-03, 9.00160E-09],
+                [0.00000E+00, 0.00000E+00, 0.00000E+00, 0.00000E+00, 2.27600E-03, 2.49751E-01, 1.31140E-02],
+                [0.00000E+00, 0.00000E+00, 0.00000E+00, 0.00000E+00, 0.00000E+00, 8.86450E-03, 2.59529E-01]]
+    id: 3
+    color: [214,39,40]
+    name: 7.0 MOX
+
+  - total:      [1.83045E-01, 3.36705E-01, 5.00507E-01, 6.06174E-01, 5.02754E-01, 9.21028E-01, 9.55231E-01]
+    absorption: [9.48620E-03, 4.65560E-03, 3.62400E-02, 1.32720E-01, 2.08400E-01, 6.58700E-01, 6.90170E-01]
+    fission:    [8.67209E-03, 1.62426E-03, 1.02716E-02, 3.90447E-02, 1.92576E-02, 3.74888E-01, 4.30599E-01]
+    nu:         [2.90426,     2.91795,     2.86986,     2.87491,     2.87175,     2.86752,     2.87808]
+    chi:       [[5.87910E-01, 4.11760E-01, 3.39060E-04, 1.17610E-07, 0.,          0.,          0.]]
+    scatter:   [[1.31504E-01, 4.20460E-02, 8.69720E-06, 5.19380E-09, 0.00000E+00, 0.00000E+00, 0.00000E+00],
+                [0.00000E+00, 3.30403E-01, 1.64630E-03, 2.60060E-09, 0.00000E+00, 0.00000E+00, 0.00000E+00],
+                [0.00000E+00, 0.00000E+00, 4.61792E-01, 2.47490E-03, 0.00000E+00, 0.00000E+00, 0.00000E+00],
+                [0.00000E+00, 0.00000E+00, 0.00000E+00, 4.68021E-01, 5.43300E-03, 0.00000E+00, 0.00000E+00],
+                [0.00000E+00, 0.00000E+00, 0.00000E+00, 1.85970E-04, 2.85771E-01, 8.39730E-03, 8.92800E-09],
+                [0.00000E+00, 0.00000E+00, 0.00000E+00, 0.00000E+00, 2.39160E-03, 2.47614E-01, 1.23220E-02],
+                [0.00000E+00, 0.00000E+00, 0.00000E+00, 0.00000E+00, 0.00000E+00, 8.96810E-03, 2.56093E-01]]
+    id: 4
+    color: [150,150,150]
+    name: 8.7 MOX
+
+  - total:      [1.26032E-01, 2.93160E-01, 2.84250E-01, 2.81020E-01, 3.34460E-01, 5.65640E-01, 1.17214E+00]
+    absorption: [5.11320E-04, 7.58130E-05, 3.16430E-04, 1.16750E-03, 3.39770E-03, 9.18860E-03, 2.32440E-02]
+    fission:    [4.79002E-09, 5.82564E-09, 4.63719E-07, 5.24406E-06, 1.45390E-07, 7.14972E-07, 2.08041E-06]
+    nu:         [2.76283,     2.46239,     2.43380,     2.43380,     2.43380,     2.43380,     2.43380]
+    chi:       [[5.87910E-01, 4.11760E-01, 3.39060E-04, 1.17610E-07, 0.,          0.,          0.]]
+    scatter:   [[6.61659E-02, 5.90700E-02, 2.83340E-04, 1.46220E-06, 2.06420E-08, 0.00000E+00, 0.00000E+00],
+                [0.00000E+00, 2.40377E-01, 5.24350E-02, 2.49900E-04, 1.92390E-05, 2.98750E-06, 4.21400E-07],
+                [0.00000E+00, 0.00000E+00, 1.83425E-01, 9.22880E-02, 6.93650E-03, 1.07900E-03, 2.05430E-04],
+                [0.00000E+00, 0.00000E+00, 0.00000E+00, 7.90769E-02, 1.69990E-01, 2.58600E-02, 4.92560E-03],
+                [0.00000E+00, 0.00000E+00, 0.00000E+00, 3.73400E-05, 9.97570E-02, 2.06790E-01, 2.44780E-02],
+                [0.00000E+00, 0.00000E+00, 0.00000E+00, 0.00000E+00, 9.17420E-04, 3.16774E-01, 2.38760E-01],
+                [0.00000E+00, 0.00000E+00, 0.00000E+00, 0.00000E+00, 0.00000E+00, 4.97930E-02, 1.09910E+00]]
+    id: 5
+    color: [44,160,44]
+    name: fission chamber
+
+  - total:      [1.26032E-01, 2.93160E-01, 2.84240E-01, 2.80960E-01, 3.34440E-01, 5.65640E-01, 1.17215E+00]
+    absorption: [5.11320E-04, 7.58010E-05, 3.15720E-04, 1.15820E-03, 3.39750E-03, 9.18780E-03, 2.32420E-02]
+    fission:    [0.,          0.,          0.,          0.,          0.,          0.,          0.]
+    nu:         [0.,          0.,          0.,          0.,          0.,          0.,          0.]
+    chi:       [[0.,          0.,          0.,          0.,          0.,          0.,          0.]]
+    scatter:   [[6.61659E-02, 5.90700E-02, 2.83340E-04, 1.46220E-06, 2.06420E-08, 0.00000E+00, 0.00000E+00],
+                [0.00000E+00, 2.40377E-01, 5.24350E-02, 2.49900E-04, 1.92390E-05, 2.98750E-06, 4.21400E-07],
+                [0.00000E+00, 0.00000E+00, 1.83297E-01, 9.23970E-02, 6.94460E-03, 1.08030E-03, 2.05670E-04],
+                [0.00000E+00, 0.00000E+00, 0.00000E+00, 7.88511E-02, 1.70140E-01, 2.58810E-02, 4.92970E-03],
+                [0.00000E+00, 0.00000E+00, 0.00000E+00, 3.73330E-05, 9.97372E-02, 2.06790E-01, 2.44780E-02],
+                [0.00000E+00, 0.00000E+00, 0.00000E+00, 0.00000E+00, 9.17260E-04, 3.16765E-01, 2.38770E-01],
+                [0.00000E+00, 0.00000E+00, 0.00000E+00, 0.00000E+00, 0.00000E+00, 4.97920E-02, 1.09912E+00]]
+    id: 6
+    color: [255, 255, 255]
+    name: guide tube
+
+  - total:      [1.59206E-01, 4.12970E-01, 5.90310E-01, 5.84350E-01, 7.18000E-01, 1.25445E+00, 2.65038E+00]
+    absorption: [6.01050E-04, 1.57930E-05, 3.37160E-04, 1.94060E-03, 5.74160E-03, 1.50010E-02, 3.72390E-02]
+    fission:    [0.,          0.,          0.,          0.,          0.,          0.,          0.]
+    nu:         [0.,          0.,          0.,          0.,          0.,          0.,          0.]
+    chi:       [[0.,          0.,          0.,          0.,          0.,          0.,          0.]]
+    scatter:   [[4.44777E-02, 1.13400E-01, 7.23470E-04, 3.74990E-06, 5.31840E-08, 0.00000E+00, 0.00000E+00],
+                [0.00000E+00, 2.82334E-01, 1.29940E-01, 6.23400E-04, 4.80020E-05, 7.44860E-06, 1.04550E-06],
+                [0.00000E+00, 0.00000E+00, 3.45256E-01, 2.24570E-01, 1.69990E-02, 2.64430E-03, 5.03440E-04],
+                [0.00000E+00, 0.00000E+00, 0.00000E+00, 9.10284E-02, 4.15510E-01, 6.37320E-02, 1.21390E-02],
+                [0.00000E+00, 0.00000E+00, 0.00000E+00, 7.14370E-05, 1.39138E-01, 5.11820E-01, 6.12290E-02],
+                [0.00000E+00, 0.00000E+00, 0.00000E+00, 0.00000E+00, 2.21570E-03, 6.99913E-01, 5.37320E-01],
+                [0.00000E+00, 0.00000E+00, 0.00000E+00, 0.00000E+00, 0.00000E+00, 1.32440E-01, 2.48070E+00]]
+    id: 7
+    color: [31,119,180]
+    name: water
+
+# This entry is only used when carter-tracking is used as the transport method. When that is the case, it
+# sets the ratio of the sampling cross section, to the majorant cross section, for each energy group
+# i.e. E_smp / E_maj
+sampling-xs-ratio: [0.90, 1., 1., 1., 1., 1., 1.]
+
+surfaces:
+  # Surfaces for pin cells
+  - type: zcylinder
+    x0: 0.0
+    y0: 0.0
+    r: 0.54
+    name: pin cylinder
+    id: 1
+  
+  - {type: xplane, x0: -1.26, boundary: reflective, id: 2}
+  - {type: xplane, x0:  1.26, boundary: reflective, id: 3}
+  - {type: yplane, y0: -1.26, boundary: reflective, id: 4}
+  - {type: yplane, y0:  1.26, boundary: reflective, id: 5}
+
+  - type: zplane
+    z0: -10.
+    boundary: vacuum
+    id: 15
+
+  - type: zplane
+    z0: 10.
+    boundary: vacuum
+    id: 16
+
+cells:
+  # Cells define a volume in space, by using boolean operators to combine
+  # surfaces. In the region entry of each cell, volume is defined by using
+  # + or - to indicate the halfspace of the surface, & as the intersection
+  # oeprator, ~ as the difference operator, and | as the union operator.
+  # Parantheses may be used to group portions of the boolean logic. Each cell
+  # must have a unique integer id greater than or equal to 1, and a material,
+  # which is identified by it's material id.
+  - region: "-1"
+    name: "pin-1"
+    material: 1
+    id: 1
+
+  - region: "-1"
+    name: "pin-2"
+    material: 2
+    id: 2
+
+  - region: "-1"
+    name: "pin-3"
+    material: 3
+    id: 3
+
+  - region: "+1"
+    name: "cell mod"
+    material: 7
+    id: 7
+
+  - region: "+2 & -3 & +4 & -5 & +15 & -16"
+    name: "outer moderator"
+    material: 7
+    id: 8
+
+  - region: ""
+    material: 7
+    id: 9
+
+universes:
+  # There are two types of universes: The first is a collection of cells, all located within
+  # the same reference frame. The second is a universe which contains only a single lattice.
+  # This is done so that a lattice universe may be include in another lattice, allowing for
+  # nested lattices.
+  - cells: [1, 7]
+    name: pin-1
+    id: 1
+
+  - cells: [2, 7]
+    name: pin-2
+    id: 2
+
+  - cells: [3, 7]
+    name: pin-3
+    id: 3
+
+  - cells: [9]
+    id: 4
+
+  - cells: [8]
+    name: moderator
+    id: 7
+
+  # The type of lattice used in this simulation is a rectlinear lattice.
+  # The shape describes the number of lattice tiles or blocks along the x, y,
+  # and z directions respectively. The pitch is the distance between lattice
+  # tile blocks along each axis. The origin is used to translate the lattice
+  # within its encapulating frame of reference. The universes which are the
+  # lattice tiles are given in row-major order. Here, we can envision the 
+  # x-axis runing down the file, and the y-axis running to the right.
+  # All lattices must have a unique id greater than or equal to 1.
+
+
+  - id: 100
+    type: rectlinear
+    name: core lattice
+    shape: [2,2,1]
+    pitch: [1.26, 1.26, 20]
+    origin: [0., 0., 0.]
+    outer: 7
+    universes: [ 1,  2,
+                 3,  4 ]
+
+# This is the universe id which is designated a the root of the geometry.
+root-universe: 100
+
+tally-filters:
+  position-filters:
+    - id: 1
+      type: regular-cartesian-mesh
+      shape: [40, 40, 20]
+      low: [-1.26, -1.26, -10.]
+      high: [1.26, 1.26, 10.]
+
+    - id: 2
+      type: cylinder-filter
+      shape: [2, 2, 1]
+      radius: 0.54
+      origin: [-0.63, -0.63, -10.]
+      pitch: [1.26, 1.26, 20]
+      axis: z
+
+  energy-filters:
+    - id: 1
+      energy-bounds: [0, 1, 2, 3, 4, 5, 6, 7] 
+
+# Here, the cartesian mesh for the flux tally is defined. The entries
+# have the same definitions as above. If this element is not defined,
+# no flux tally we be performed.
+tallies:
+  - type: zernike-fet
+    name: zernike-array
+    quantity: flux
+    estimator: collision
+    position-filter: 2
+    energy-filter: 1
+    zernike-order: 30
+    legendre-order: 10
+
+  - name: general-mesh
+    quantity: flux
+    estimator: collision
+    position-filter: 1
+    energy-filter: 1
+
+# The main simulation settings are controlled here. nparticles is the
+# initial number of particles in the system. insource defines the name
+# of the source file to be loaded, should one want to use a previously
+# saved source file.
+settings: 
+  energy-mode: multi-group
+  ngroups: 7
+  energy-bounds: [0, 1, 2, 3, 4, 5, 6, 7]
+
+simulation:
+  mode: k-eigenvalue
+  nparticles: 100000
+  ngenerations: 2700
+  nignored: 200
+
+  transport-operator:
+    type: delta-tracking
+    #type: carter-tracking
+    sampling-xs:
+      energy: [1, 2, 3, 4, 5]
+      xs:     [0.4, 32., 43., 2.]
+
+
+  collision-operator:
+    type: branching
+  
+  # Any number of particle sources may be defined to begin the simulation.
+  # low and hi follow the same convention as from above. Chi is the energys
+  # spectrum for the source, and weight is a float describing the relative
+  # probability of being born using the rules for that source description.
+  sources:
+    - spatial: {type: box, low: [-1.26, -1.26, -10.], hi: [1.26, 1.26, 10.], fissile-only: true}
+      direction: {type: isotropic}
+      energy: {type: mono-energetic, energy: 6.5}
+      weight: 1.
+
+
+

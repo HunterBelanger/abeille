@@ -10,14 +10,22 @@ class CartesianFilter : public PositionFilter {
 
   virtual ~CartesianFilter() = default;
 
+  virtual StaticVector3 get_position_index(const Position& r) const = 0;
+
   virtual double x_min(const StaticVector3& index) const = 0;
   virtual double x_max(const StaticVector3& index) const = 0;
+  virtual double dx(const StaticVector3& index) const = 0;
+  virtual double inv_dx(const StaticVector3& index) const = 0;
 
   virtual double y_min(const StaticVector3& index) const = 0;
   virtual double y_max(const StaticVector3& index) const = 0;
+  virtual double dy(const StaticVector3& index) const = 0;
+  virtual double inv_dy(const StaticVector3& index) const = 0;
 
   virtual double z_min(const StaticVector3& index) const = 0;
   virtual double z_max(const StaticVector3& index) const = 0;
+  virtual double dz(const StaticVector3& index) const = 0;
+  virtual double inv_dz(const StaticVector3& index) const = 0;
 
   std::string type_str() const override { return "Cartesian_Filter"; };
 

@@ -1,4 +1,5 @@
 #include <tallies/cylinder_filter.hpp>
+#include <utils/constants.hpp>
 #include <utils/error.hpp>
 
 #include <cmath>
@@ -15,9 +16,9 @@ CylinderFilter::CylinderFilter(Position origin, double radius, double dx,
       Nx_(nx),
       Ny_(ny),
       Nz_(nz),
-      Real_nx(nx),
-      Real_ny(ny),
-      Real_nz(nz),
+      Real_nx_(nx),
+      Real_ny_(ny),
+      Real_nz_(nz),
       length_axis_(z_),
       radius_(radius),
       pitch_x_(dx),
@@ -26,7 +27,10 @@ CylinderFilter::CylinderFilter(Position origin, double radius, double dx,
       inv_radius_(1. / radius_),
       inv_pitch_x_(),
       inv_pitch_y_(),
-      inv_dz_() {
+      inv_dz_(),
+      x_index(),
+      y_index(),
+      z_index() {
   // Map the parameters according to the orientation
   // since this class can do the caluclation assumind z-axis as axial
   // therefore, all the parameter will be mapped to z-axis,
@@ -74,7 +78,7 @@ CylinderFilter::CylinderFilter(Position origin, double radius, double dx,
 
   // Make sure shapes are all > 0
   if (nx == 0 && length_axis_ == Orientation::X) {
-    infinite_length = true;
+    infinite_length_ = true;
   } else if (nx == 0) {
     std::stringstream mssg;
     mssg << "Cylinder filter with id " << id << " provided with nx = 0.";
@@ -82,7 +86,7 @@ CylinderFilter::CylinderFilter(Position origin, double radius, double dx,
   }
 
   if (ny == 0 && length_axis_ == Orientation::Y) {
-    infinite_length = true;
+    infinite_length_ = true;
   } else if (ny == 0) {
     std::stringstream mssg;
     mssg << "Cylinder filter with id " << id << " provided with ny = 0.";
@@ -90,7 +94,7 @@ CylinderFilter::CylinderFilter(Position origin, double radius, double dx,
   }
 
   if (nz == 0 && length_axis_ == Orientation::Z) {
-    infinite_length = true;
+    infinite_length_ = true;
   } else if (nz == 0) {
     std::stringstream mssg;
     mssg << "Cylinder filter with id " << id << " provided with nz = 0.";
@@ -115,6 +119,26 @@ CylinderFilter::CylinderFilter(Position origin, double radius, double dx,
   double low_x = origin_.x() - pitch_x_ * 0.5;
   double low_y = origin_.y() - pitch_y_ * 0.5;
   r_low_ = Position(low_x, low_y, origin_.z());
+
+  // Assign the x_index, y_index, and z_index
+  // these location will be based on the real_nx, real_ny, and real_nz
+  x_index = 0;
+  y_index = 1;
+  z_index = 2;
+  if (Real_nx_ == 1) {
+    x_index = 0;
+    y_index--;
+    z_index--;
+  }
+
+  if (Real_ny_ == 1) {
+    y_index = 0;
+    z_index--;
+  }
+
+  if (Real_nz_ == 1) {
+    z_index = 0;
+  }
 }
 
 StaticVector3 CylinderFilter::get_indices(const Tracker& tktr) const {
@@ -125,7 +149,7 @@ StaticVector3 CylinderFilter::get_indices(const Tracker& tktr) const {
   const int ny =
       static_cast<int>(std::floor((r.y() - r_low_.y()) * inv_pitch_y_));
   const int nz =
-      infinite_length
+      infinite_length_
           ? 0
           : static_cast<int>(std::floor((r.z() - r_low_.z()) * inv_dz_));
 
@@ -137,7 +161,7 @@ StaticVector3 CylinderFilter::get_indices(const Tracker& tktr) const {
   // and less the number of bins in that direction
   if (nx >= 0 && nx < static_cast<int>(Nx_) && ny >= 0 &&
       ny < static_cast<int>(Ny_) &&
-      ((nz >= 0 && nz < static_cast<int>(Nz_)) || infinite_length)) {
+      ((nz >= 0 && nz < static_cast<int>(Nz_)) || infinite_length_)) {
     // check if the position is inside the circular radius or not
     if (sqrt((new_origin_x - r.x()) * (new_origin_x - r.x()) +
              (new_origin_y - r.y()) * (new_origin_y - r.y())) <=
@@ -152,14 +176,47 @@ StaticVector3 CylinderFilter::get_indices(const Tracker& tktr) const {
   return indices;
 }
 
+StaticVector3 CylinderFilter::get_position_index(const Position& r) const {
+  const Position maped_r = map_coordinate(r);
+
+  const int nx =
+      static_cast<int>(std::floor((maped_r.x() - r_low_.x()) * inv_pitch_x_));
+  const int ny =
+      static_cast<int>(std::floor((maped_r.y() - r_low_.y()) * inv_pitch_y_));
+  const int nz =
+      infinite_length_
+          ? 0
+          : static_cast<int>(std::floor((maped_r.z() - r_low_.z()) * inv_dz_));
+
+  double new_origin_x = origin_.x() + pitch_x_ * static_cast<double>(nx);
+  double new_origin_y = origin_.y() + pitch_y_ * static_cast<double>(ny);
+
+  StaticVector3 indices;
+  // check if nx, ny, and nz are positive
+  // and less the number of bins in that direction
+  if (nx >= 0 && nx < static_cast<int>(Nx_) && ny >= 0 &&
+      ny < static_cast<int>(Ny_) &&
+      ((nz >= 0 && nz < static_cast<int>(Nz_)) || infinite_length_)) {
+    // check if the position is inside the circular radius or not
+    if (sqrt((new_origin_x - maped_r.x()) * (new_origin_x - maped_r.x()) +
+             (new_origin_y - maped_r.y()) * (new_origin_y - maped_r.y())) <=
+        (radius_ + 1E-15)) {
+      indices.push_back(static_cast<std::size_t>(nx));
+      indices.push_back(static_cast<std::size_t>(ny));
+      indices.push_back(static_cast<std::size_t>(nz));
+      map_indexes(indices);
+      return reduce_dimension(indices[0], indices[1], indices[2]);
+    }
+  }
+  return indices;
+}
+
 StaticVector3 CylinderFilter::get_shape() const {
-  if (Real_nx == 1 && Real_ny == 1 && Real_nz == 1) {
+  if (Real_nx_ == 1 && Real_ny_ == 1 && Real_nz_ == 1) {
     return {1};
   }
-  StaticVector3 filter_shape{Nx_, Ny_, Nz_};
 
-  map_indexes(filter_shape);
-  return reduce_dimension(filter_shape[0], filter_shape[1], filter_shape[2]);
+  return reduce_dimension(Real_nx_, Real_ny_, Real_nz_);
 }
 
 std::vector<TracklengthDistance> CylinderFilter::get_indices_tracklength(
@@ -169,50 +226,67 @@ std::vector<TracklengthDistance> CylinderFilter::get_indices_tracklength(
   return {};
 }
 
-double CylinderFilter::z_min(const StaticVector3& indices) const {
-  // the indicies is not according to the class, so map it.
-  StaticVector3 index = indices;
-  map_indexes(index);
-  return (r_low_.z() + static_cast<double>(index[2]) * dz_);
+double CylinderFilter::z_min(const StaticVector3& index) const {
+  // note that "index" is not orientated according to class in general
+  if (Real_nz_ == 1) {
+    return r_low_.z();
+  }
+  return (r_low_.z() + static_cast<double>(index[z_index]) * dz_);
 }
 
-double CylinderFilter::z_max(const StaticVector3& indices) const {
-  // the indicies is not according to the class, so map it.
-  StaticVector3 index = indices;
-  map_indexes(index);
-  return (r_low_.z() + static_cast<double>(index[2]) * dz_ + dz_);
+double CylinderFilter::z_max(const StaticVector3& index) const {
+  // note that "index" is not orientated according to class in general
+  if (Real_nz_ == 1) {
+    return r_low_.z() + dz_;
+  }
+  return (r_low_.z() + static_cast<double>(index[z_index]) * dz_ + dz_);
 }
 
-Position CylinderFilter::get_center(const StaticVector3& indices) const {
-  // the indicies is not according to the class, so map it.
-  StaticVector3 index = indices;
-  map_indexes(index);
-  double new_origin_x = origin_.x() + pitch_x_ * static_cast<double>(index[0]);
-  double new_origin_y = origin_.y() + pitch_y_ * static_cast<double>(index[1]);
-  double new_origin_z = origin_.z() + dz_ * static_cast<double>(index[2]);
+Position CylinderFilter::get_center(const StaticVector3& index,
+                                    const bool is_map = true) const {
+  // note that "index" is not orientated according to class in general
+  double new_origin_x = origin_.x();
+  double new_origin_y = origin_.y();
+  double new_origin_z = origin_.z();
+  if (Real_nx_ > 1) {
+    new_origin_x += pitch_x_ * static_cast<double>(index[x_index]);
+  }
+
+  if (Real_ny_ > 1) {
+    new_origin_y += pitch_y_ * static_cast<double>(index[y_index]);
+  }
+
+  if (Real_nz_ > 1) {
+    new_origin_z += dz_ * static_cast<double>(index[z_index]);
+  }
+
+  // if is_map is false, the send the Position based on the class-orientation
+  if (is_map == false) {
+    return Position(new_origin_x, new_origin_y, new_origin_z);
+  }
   return map_coordinate(Position(new_origin_x, new_origin_y, new_origin_z));
 }
 
 // first will be the scaled radius and second will be the angle
 std::pair<double, double> CylinderFilter::get_scaled_radius_and_angle(
     const StaticVector3& indices, const Position& r) const {
-  // the indicies and Position is not according to the class, so map it.
-  StaticVector3 index = indices;
-  map_indexes(index);
+  // the Position is not according to the class, so map it.
   Position mapped_r = map_coordinate(r);
-  const double rx = r.x();
-  const double ry = r.y();
-  // get new centre points
-  const double new_origin_x =
-      origin_.x() + pitch_x_ * static_cast<double>(index[0]);
-  const double new_origin_y =
-      origin_.y() + pitch_y_ * static_cast<double>(index[1]);
+  // get the new-origin cooredinates based on the indices
+  // the new-origin should be according to the class orientation
+  Position new_origin = get_center(indices, false);
+
+  const double base = mapped_r.x() - new_origin.x();
+  const double height = mapped_r.y() - new_origin.y();
   // scaled-radius
-  const double scaled_r = (std::sqrt(rx * rx + ry * ry)) * inv_radius_;
-  // for tan(theta) = x/ y; get x and y
-  const double base = rx - new_origin_x;
-  const double height = ry - new_origin_y;
-  const double theta = std::atan(height / base);
+  const double scaled_r =
+      (std::sqrt(base * base + height * height)) * inv_radius_;
+  // theta
+  double theta = std::atan2(height, base);
+  // atan2 provides the anlges between [-PI, PI], instead of [0, 2*PI]
+  if (theta < 0.) {
+    return {scaled_r, theta + 2 * PI};
+  }
   return {scaled_r, theta};
 }
 
@@ -261,7 +335,7 @@ void CylinderFilter::write_to_hdf5(H5::Group& grp) const {
   }
 
   // Save shape
-  std::array<std::size_t, 3> shape{Real_nx, Real_ny, Real_nz};
+  std::array<std::size_t, 3> shape{Real_nx_, Real_ny_, Real_nz_};
   if (grp.hasAttribute("shape")) {
     grp.deleteAttribute("shape");
   }
