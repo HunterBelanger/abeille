@@ -13,15 +13,29 @@ class RegularCartesianMeshFilter : public CartesianFilter {
 
   StaticVector3 get_indices(const Tracker& tktr) const override final;
 
+  StaticVector3 get_position_index(const Position& r) const override final;
+
   std::vector<TracklengthDistance> get_indices_tracklength(
       const Tracker& trkr, double d_flight) const override final;
 
-  double x_min(const StaticVector3& index) const override;
-  double x_max(const StaticVector3& index) const override;
-  double y_min(const StaticVector3& index) const override;
-  double y_max(const StaticVector3& index) const override;
-  double z_min(const StaticVector3& index) const override;
-  double z_max(const StaticVector3& index) const override;
+  double x_min(const StaticVector3& index) const override final;
+  double x_max(const StaticVector3& index) const override final;
+  double dx(const StaticVector3& /*index*/) const override final { return dx_; }
+  double inv_dx(const StaticVector3& /*index*/) const override final {
+    return dx_inv_;
+  }
+  double y_min(const StaticVector3& index) const override final;
+  double y_max(const StaticVector3& index) const override final;
+  double dy(const StaticVector3& /*index*/) const override final { return dy_; }
+  double inv_dy(const StaticVector3& /*index*/) const override final {
+    return dy_inv_;
+  }
+  double z_min(const StaticVector3& index) const override final;
+  double z_max(const StaticVector3& index) const override final;
+  double dz(const StaticVector3& /*index*/) const override final { return dz_; }
+  double inv_dz(const StaticVector3& /*index*/) const override final {
+    return dz_inv_;
+  }
 
   StaticVector3 get_shape() const override final {
     if (Nx_ == 1 && Ny_ == 1 && Nz_ == 1) {

@@ -18,6 +18,8 @@ class CylinderFilter : public PositionFilter {
 
   StaticVector3 get_indices(const Tracker& tktr) const override final;
 
+  StaticVector3 get_position_index(const Position& r) const;
+
   StaticVector3 get_shape() const override final;
 
   double radius() const { return radius_; }
@@ -26,8 +28,11 @@ class CylinderFilter : public PositionFilter {
 
   double z_min(const StaticVector3& indices) const;
   double z_max(const StaticVector3& indices) const;
+  double dz() const { return dz_; }
+  double inv_dz() const { return inv_dz_; }
+  bool is_infinite_cylinder() const { return infinite_length_; }
 
-  Position get_center(const StaticVector3& indices) const;
+  Position get_center(const StaticVector3& indices, const bool is_map) const;
 
   std::pair<double, double> get_scaled_radius_and_angle(
       const StaticVector3& indices, const Position& r) const;
@@ -35,7 +40,7 @@ class CylinderFilter : public PositionFilter {
   std::string type_str() const override { return "cylinder-filter"; }
 
   std::vector<TracklengthDistance> get_indices_tracklength(
-      const Tracker& trkr, double d_flight) const;
+      const Tracker& trkr, double d_flight) const override final;
 
   Orientation get_axial_direction() { return length_axis_; }
 
@@ -44,11 +49,15 @@ class CylinderFilter : public PositionFilter {
  private:
   Position origin_, r_low_;
   std::size_t Nx_, Ny_, Nz_;
-  std::size_t Real_nx, Real_ny, Real_nz;
+  std::size_t Real_nx_, Real_ny_, Real_nz_;
   Orientation length_axis_;
   double radius_, pitch_x_, pitch_y_, dz_, inv_radius_, inv_pitch_x_,
       inv_pitch_y_, inv_dz_;
-  bool infinite_length = false;  // to incorporate the infinte cylinder
+  std::size_t x_index, y_index,
+      z_index;  // to access the correct location of the indices
+  // these index-locations are based on the real-position of x, y, z. Not based
+  // on the class orientation
+  bool infinite_length_ = false;  // to incorporate the infinte cylinder
   // To map the indexes to either converting into class co-ordinate or into
   // original
   void map_indexes(StaticVector3& indexes) const {
@@ -83,25 +92,25 @@ class CylinderFilter : public PositionFilter {
   StaticVector3 reduce_dimension(const size_t& loc_x, const size_t& loc_y,
                                  const size_t& loc_z) const {
     StaticVector3 reduce_;
-    if (Real_nx == 1 && Real_ny == 1 && Real_nz == 1) {
-      return {loc_x};
+    if (Real_nx_ == 1 && Real_ny_ == 1 && Real_nz_ == 1) {
+      return {1};
     }
 
-    if (infinite_length == true) {
+    if (infinite_length_ == true) {
       if (Nx_ == 1 && Ny_ == 1) {
-        return {loc_x};
+        return {1};
       }
     }
 
-    if (Real_nx > 1) {
+    if (Real_nx_ > 1) {
       reduce_.push_back(loc_x);
     }
 
-    if (Real_ny > 1) {
+    if (Real_ny_ > 1) {
       reduce_.push_back(loc_y);
     }
 
-    if (Real_nz > 1) {
+    if (Real_nz_ > 1) {
       reduce_.push_back(loc_z);
     }
     return reduce_;

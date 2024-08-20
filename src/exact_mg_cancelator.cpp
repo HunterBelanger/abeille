@@ -38,13 +38,13 @@
 #include <unordered_set>
 
 Position ExactMGCancelator::Key::r_low, ExactMGCancelator::Key::r_hi;
-std::array<std::size_t, 4> ExactMGCancelator::Key::shape;
+std::array<uint64_t, 4> ExactMGCancelator::Key::shape;
 std::array<double, 3> ExactMGCancelator::Key::pitch;
 std::vector<std::vector<std::size_t>> ExactMGCancelator::Key::group_bins;
 
 ExactMGCancelator::ExactMGCancelator(
     const Position& r_low, const Position& r_hi,
-    const std::array<std::size_t, 4>& shape,
+    const std::array<uint64_t, 4>& shape,
     const std::vector<std::vector<std::size_t>>& group_bins, bool chi_matrix,
     bool use_virtual_collisions, uint32_t n_samples)
     : bins(),

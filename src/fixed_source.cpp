@@ -116,7 +116,7 @@ void FixedSource::run() {
 
   // Start timer
   simulation_timer.reset();
-  mpi::synchronize(); // Make sure everyone is here before starting the timer
+  mpi::synchronize();  // Make sure everyone is here before starting the timer
   simulation_timer.start();
 
   // Make sure we have enough space for times

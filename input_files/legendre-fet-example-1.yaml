@@ -31,16 +31,32 @@ tally-filters:
       low: [-0.77032, -100., -100.]
       high:  [ 0.77032,  100.,  100.]
       shape: [50, 1, 1]
+    
+    - id: 2
+      type: regular-cartesian-mesh
+      low: [-0.77032, -100., -100.]
+      high:  [ 0.77032,  100.,  100.]
+      shape: [1, 1, 1]
 
   energy-filters:
     - id: 1
       energy-bounds: [0., 1.]
 
 tallies:
-  - position-filter: 1
+  - type: general
+    position-filter: 2
     energy-filter: 1
     quantity: flux
-    name: flux_PUa
+    name: flux-general
+    estimator: collision
+  
+  - type: legendre-fet
+    order: [3]
+    axes: [X]
+    position-filter: 2
+    energy-filter: 1
+    quantity: flux
+    name: flux-fet-legendre
     estimator: collision
 
 
@@ -52,7 +68,7 @@ settings:
 simulation:
   mode: k-eigenvalue
   nparticles: 100000
-  ngenerations: 550
+  ngenerations: 1050
   nignored: 50
   transport-operator:
     type: delta-tracking

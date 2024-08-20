@@ -64,6 +64,11 @@ class ITally {
   // Record the avg and variance for the generation
   void record_generation(double mulitplier = 1.0);
 
+  // evaluate tally
+  virtual double evaluate(const Position& r, const double& E) const = 0;
+  virtual std::vector<double> evaluate(
+      const std::vector<std::pair<Position, double>> r_E) const = 0;
+
   // Clear the tally_gen_score
   void clear_generation() { tally_gen_score_.fill(0.0); }
 
