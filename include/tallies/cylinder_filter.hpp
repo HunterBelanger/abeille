@@ -115,6 +115,7 @@ class CylinderFilter : public PositionFilter {
     }
     return reduce_;
   }
+
 };
 
 std::shared_ptr<CylinderFilter> make_cylinder_filter(const YAML::Node& node);

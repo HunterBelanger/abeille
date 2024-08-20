@@ -96,6 +96,10 @@ double CENuclide::elastic_xs(double E_in, std::size_t i) const {
   return cedata_->elastic_xs()(E_in, i);
 }
 
+double CENuclide::heating(double E_in, std::size_t i) const {
+    return cedata_->heating_number()(E_in, i);
+  }
+
 std::size_t CENuclide::energy_grid_index(double E) const {
   return cedata_->energy_grid().get_lower_index(E);
 }
@@ -123,6 +127,7 @@ MicroXSs CENuclide::get_micro_xs(double E,
     xs.absorption = urr_xs.absorption;
     xs.elastic = urr_xs.elastic;
     xs.inelastic = urr_xs.inelastic;
+    xs.heating = urr_xs.heating;
     xs.urr = true;
   } else {
     // No URR info being used
@@ -132,6 +137,7 @@ MicroXSs CENuclide::get_micro_xs(double E,
     xs.elastic = this->elastic_xs(E, xs.energy_index);
     xs.inelastic = xs.total - xs.absorption - xs.elastic;
     if (xs.inelastic < 0.) xs.inelastic = 0.;
+    xs.heating = this->heating(E, xs.energy_index);
   }
 
   return xs;

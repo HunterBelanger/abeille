@@ -288,7 +288,7 @@ std::vector<double> GeneralTally::evaluate(
         tally_avg_.element(indices.begin(), indices.end());
     tallied_values.push_back(tally_value);
   }
-
+  
   return tallied_values;
 }
 

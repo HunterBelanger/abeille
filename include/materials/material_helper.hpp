@@ -199,6 +199,18 @@ class MaterialHelper {
     return Emt_;
   }
 
+  double heating(double E) {
+    this->set_energy(E);
+
+    double Eh_ = 0.;
+    // Go through all components in the material
+    for (const auto& comp : mat->components()) {
+      const auto& micro_xs = this->get_micro_xs(comp.nuclide.get());
+      Eh_ += comp.atoms_bcm * micro_xs.heating;
+    }
+    return Eh_;
+  }
+
   /*
    * This method is used to sample a nuclide based on the traditional branching
    * collision method, where the probability of sampling nuclide i is taken to

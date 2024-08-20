@@ -70,6 +70,11 @@ double ITally::particle_base_score(double E, double wgt, double wgt2,
       collision_score *= wgt * Emt;
     } break;
 
+    case Quantity::Type::Heating: {
+      const double heating = mat->heating(E);
+      collision_score *= wgt * heating;
+    } break;
+
     case Quantity::Type::Source:
       collision_score *= wgt;
       break;
@@ -170,6 +175,9 @@ std::string ITally::quantity_str() {
     case Quantity::Type::MT:
       return "mt";
       break;
+    case Quantity::Type::Heating:
+      return "heating";
+      break;
     case Quantity::Type::Source:
       return "source";
       break;
@@ -239,6 +247,8 @@ Quantity read_quantity(const YAML::Node& node, const std::string& name) {
     quant.mt = tmp_mt;
 
     return quant;
+  } else if (quant_str == "heating") {
+    return {Quantity::Type::Heating, 0};
   } else if (quant_str == "source") {
     return {Quantity::Type::Source, 0};
   } else if (quant_str == "real-source") {

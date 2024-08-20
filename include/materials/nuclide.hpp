@@ -50,6 +50,7 @@ struct MicroXSs {
   double concentration = 0.;
   double noise_copy = 0.;
   std::size_t energy_index = 0;
+  double heating = 0.;
   bool urr = false;
 };
 
@@ -88,6 +89,7 @@ class Nuclide {
   virtual double nu_delayed(double E_in, std::size_t i) const = 0;
   virtual double reaction_xs(uint32_t mt, double E_in, size_t i) const = 0;
   virtual double elastic_xs(double E_in, std::size_t i) const = 0;
+  virtual double heating(double E_in, std::size_t i) const = 0;
   virtual std::size_t energy_grid_index(double E) const = 0;
   virtual MicroXSs get_micro_xs(
       double E, std::optional<double> urr_rand = std::nullopt) const = 0;

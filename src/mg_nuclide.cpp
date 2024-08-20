@@ -402,6 +402,10 @@ double MGNuclide::elastic_xs(double /*E_in*/, std::size_t i) const {
   return Es_[i];
 }
 
+double MGNuclide::heating(double /*E_in*/, std::size_t /*i*/) const {
+  return 0.;   
+}
+
 std::size_t MGNuclide::energy_grid_index(double E) const {
   std::size_t i = 0;
 
@@ -429,7 +433,7 @@ MicroXSs MGNuclide::get_micro_xs(double E,
   xs.nu_delayed = this->nu_delayed(E, xs.energy_index);
   xs.concentration = 0.;  // We set this as zero for now
   xs.noise_copy = 0.;     // We also leave this as zero
-
+  xs.heating = this->heating(E, xs.energy_index);
   return xs;
 }
 
