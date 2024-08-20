@@ -25,6 +25,7 @@
 #include <geometry/geometry.hpp>
 #include <simulation/branchless_power_iterator.hpp>
 #include <utils/error.hpp>
+#include <utils/kahan.hpp>
 #include <utils/mpi.hpp>
 #include <utils/output.hpp>
 #include <utils/rng.hpp>
@@ -333,7 +334,7 @@ void BranchlessPowerIterator::run() {
     std::vector<BankedParticle> next_gen = transporter->transport(bank);
     transported_histories += bank.size();
 
-    if (next_gen.size() == 0) {
+    if (next_gen.empty()) {
       fatal_error("No fission neutrons were produced.");
     }
 
@@ -343,43 +344,31 @@ void BranchlessPowerIterator::run() {
     // Get new keff
     tallies->calc_gen_values();
 
-    // std::sort(next_gen.begin(), next_gen.end()); // This shouldn't be
-    // necessary, as fission progeny should naturally be sorted
     mpi::synchronize();
 
-    // Send all particles to master for cancellation and normalization/combing
-    particles_to_master(next_gen);
-
     // Do weight cancelation
-    if (settings::regional_cancellation && cancelator && mpi::rank == 0) {
+    if (settings::regional_cancellation && cancelator) {
       perform_regional_cancellation(next_gen);
     }
 
     // Calculate net positive and negative weight
-    if (mpi::rank == 0) normalize_weights(next_gen);
+    normalize_weights(next_gen);
 
     // Comb particles
-    if (settings::branchless_combing && mpi::rank == 0)
-      comb_particles(next_gen);
+    if (settings::branchless_combing) comb_particles(next_gen);
+
+    // Synchronize particles across nodes. Must be done after combing to
+    // maintain reproducibility.
+    sync_banks(mpi::node_nparticles, next_gen);
 
     // Compute pair distance squared
-    if (settings::pair_distance_sqrd && mpi::rank == 0) {
-      r_sqrd = compute_pair_dist_sqrd(next_gen);
-      r_sqrd_vec.push_back(r_sqrd);
-    }
-    mpi::Bcast(r_sqrd, 0);
+    if (settings::pair_distance_sqrd) compute_pair_dist_sqrd(next_gen);
 
-    // Send particles back to nodes
-    mpi::synchronize();
-    distribute_particles(mpi::node_nparticles, next_gen);
-
-    // Score the source
+    // Score the source and gen if passed ignored
     if (settings::converged) {
       tallies->score_source(next_gen, settings::converged);
+      tallies->record_generation();
     }
-
-    // Store gen if passed ignored
-    if (settings::converged) tallies->record_generation();
 
     // Zero tallies for next generation
     tallies->clear_generation();
@@ -540,22 +529,19 @@ void BranchlessPowerIterator::write_entropy_families_etc_to_results() const {
 
 void BranchlessPowerIterator::normalize_weights(
     std::vector<BankedParticle>& next_gen) {
-  double W = 0.;
-  double W_neg = 0.;
+  double W = 0;
   double W_pos = 0.;
-  Nnet = 0;
-  Ntot = 0;
-  Npos = 0;
-  Nneg = 0;
-  for (size_t i = 0; i < next_gen.size(); i++) {
-    if (next_gen[i].wgt > 0.) {
-      W_pos += next_gen[i].wgt;
-      Npos++;
-    } else {
-      W_neg -= next_gen[i].wgt;
-      Nneg++;
-    }
-  }
+  double W_neg = 0.;
+
+  std::tie(W_pos, W_neg, Npos, Nneg) =
+      kahan_bank(next_gen.begin(), next_gen.end());
+  W_neg = std::abs(W_neg);
+
+  // Get totals across all nodes
+  mpi::Allreduce_sum(W_pos);
+  mpi::Allreduce_sum(W_neg);
+  mpi::Allreduce_sum(Npos);
+  mpi::Allreduce_sum(Nneg);
 
   W = W_pos - W_neg;
   Ntot = Npos + Nneg;
@@ -588,65 +574,94 @@ void BranchlessPowerIterator::normalize_weights(
   Wpos_vec.push_back(Wpos);
   Wneg_vec.push_back(Wneg);
 }
-
 void BranchlessPowerIterator::comb_particles(
     std::vector<BankedParticle>& next_gen) {
-  std::vector<BankedParticle> positive_particles;
-  std::vector<BankedParticle> negative_particles;
-  positive_particles.reserve(next_gen.size());
-  negative_particles.reserve(next_gen.size() / 3);
-  double Wpos = 0.;
-  double Wneg = 0.;
+  double Wpos_node = 0.;
+  double Wneg_node = 0.;
+  // Get sum of total positive and negative weights using Kahan Summation
+  std::tie(Wpos_node, Wneg_node, std::ignore, std::ignore) =
+      kahan_bank(next_gen.begin(), next_gen.end());
 
-  // Sort positive and negative particles into different buffers
+  // Get total weights for all nodes
+  std::vector<double> Wpos_each_node(mpi::size, 0.);
+  Wpos_each_node[mpi::rank] = Wpos_node;
+  mpi::Allreduce_sum(Wpos_each_node);
+  const double Wpos = kahan(Wpos_each_node.begin(), Wpos_each_node.end(), 0.);
+
+  std::vector<double> Wneg_each_node(mpi::size, 0.);
+  Wneg_each_node[mpi::rank] = Wneg_node;
+  mpi::Allreduce_sum(Wneg_each_node);
+  const double Wneg = kahan(Wneg_each_node.begin(), Wneg_each_node.end(), 0.);
+
+  // Determine how many positive and negative particles we want to have after
+  // combing on this node and globaly as well
+  const std::size_t Npos_node = static_cast<std::size_t>(std::round(Wpos_node));
+  const std::size_t Nneg_node =
+      static_cast<std::size_t>(std::round(std::abs(Wneg_node)));
+
+  const std::size_t Npos = static_cast<std::size_t>(std::round(Wpos));
+  const std::size_t Nneg = static_cast<std::size_t>(std::round(std::abs(Wneg)));
+
+  // The + 2 is to account for rounding in the ceil operations between global
+  // array vs just the node
+  std::vector<BankedParticle> new_next_gen;
+  new_next_gen.reserve(Npos_node + Nneg_node + 2);
+
+  // Variables for combing particles
+  const double avg_pos_wgt = Wpos / static_cast<double>(Npos);
+  const double avg_neg_wgt = std::abs(Wneg) / static_cast<double>(Nneg);
+  double comb_position_pos = 0.;
+  double comb_position_neg = 0.;
+  if (mpi::rank == 0) {
+    // The initial random offset of the comb is sampled on the master node.
+    comb_position_pos = RNG::rand(settings::rng) * avg_pos_wgt;
+    comb_position_neg = RNG::rand(settings::rng) * avg_neg_wgt;
+  }
+  mpi::Bcast(comb_position_pos, 0);
+  mpi::Bcast(comb_position_neg, 0);
+
+  // Find Comb Position for this Node
+  const double U_pos =
+      kahan(Wpos_each_node.begin(), Wpos_each_node.begin() + mpi::rank, 0.);
+  const double beta_pos = std::floor((U_pos - comb_position_pos) / avg_pos_wgt);
+
+  const double U_neg = std::abs(
+      kahan(Wneg_each_node.begin(), Wneg_each_node.begin() + mpi::rank, 0.));
+  const double beta_neg = std::floor((U_neg - comb_position_neg) / avg_neg_wgt);
+
+  if (mpi::rank != 0) {
+    comb_position_pos =
+        ((beta_pos + 1.) * avg_pos_wgt) + comb_position_pos - U_pos;
+    if (comb_position_pos > avg_pos_wgt) comb_position_pos -= avg_pos_wgt;
+
+    comb_position_neg =
+        ((beta_neg + 1.) * avg_neg_wgt) + comb_position_neg - U_neg;
+    if (comb_position_neg > avg_neg_wgt) comb_position_neg -= avg_neg_wgt;
+  }
+
+  double current_particle_pos = 0.;
+  double current_particle_neg = 0.;
+  // Comb positive and negative particles at the same time, to ensure that
+  // particle orders aren't changed for different parallelization schemes.
   for (std::size_t i = 0; i < next_gen.size(); i++) {
     if (next_gen[i].wgt > 0.) {
-      Wpos += next_gen[i].wgt;
-      positive_particles.push_back(next_gen[i]);
+      current_particle_pos += next_gen[i].wgt;
+      while (comb_position_pos < current_particle_pos) {
+        new_next_gen.push_back(next_gen[i]);
+        new_next_gen.back().wgt = avg_pos_wgt;
+        comb_position_pos += avg_pos_wgt;
+      }
     } else {
-      Wneg += next_gen[i].wgt;
-      negative_particles.push_back(next_gen[i]);
-    }
-  }
-  next_gen.clear();
-
-  // Determine how many positive and negative
-  std::size_t Npos = static_cast<std::size_t>(std::ceil(Wpos));
-  std::size_t Nneg = static_cast<std::size_t>(std::ceil(std::abs(Wneg)));
-  next_gen.reserve(Npos + Nneg);
-
-  // Comb Positive particles
-  std::shuffle(positive_particles.begin(), positive_particles.end(),
-               settings::rng);
-  double avg_pos_wgt = Wpos / static_cast<double>(Npos);
-  double comb_pos = RNG::rand(settings::rng) * avg_pos_wgt;
-  double current_particle = 0.;
-  for (std::size_t i = 0; i < positive_particles.size(); i++) {
-    current_particle += positive_particles[i].wgt;
-    while (comb_pos < current_particle) {
-      next_gen.push_back(positive_particles[i]);
-      next_gen.back().wgt = avg_pos_wgt;
-      comb_pos += avg_pos_wgt;
+      current_particle_neg -= next_gen[i].wgt;
+      while (comb_position_neg < current_particle_neg) {
+        new_next_gen.push_back(next_gen[i]);
+        new_next_gen.back().wgt = -avg_neg_wgt;
+        comb_position_neg += avg_neg_wgt;
+      }
     }
   }
 
-  // Comb Negative Particles
-  std::shuffle(negative_particles.begin(), negative_particles.end(),
-               settings::rng);
-  double avg_neg_wgt = std::abs(Wneg) / static_cast<double>(Npos);
-  comb_pos = RNG::rand(settings::rng) * avg_neg_wgt;
-  current_particle = 0.;
-  for (std::size_t i = 0; i < negative_particles.size(); i++) {
-    current_particle -= negative_particles[i].wgt;
-    while (comb_pos < current_particle) {
-      next_gen.push_back(positive_particles[i]);
-      next_gen.back().wgt = -avg_neg_wgt;
-      comb_pos += avg_neg_wgt;
-    }
-  }
-
-  // Reshuffle full buffer
-  std::shuffle(next_gen.begin(), next_gen.end(), settings::rng);
+  next_gen.swap(new_next_gen);
 }
 
 void BranchlessPowerIterator::compute_pre_cancellation_entropy(
@@ -699,7 +714,7 @@ void BranchlessPowerIterator::compute_post_cancellation_entropy(
   }
 }
 
-double BranchlessPowerIterator::compute_pair_dist_sqrd(
+void BranchlessPowerIterator::compute_pair_dist_sqrd(
     const std::vector<BankedParticle>& next_gen) {
   double Ntot = 0.;
   double r_sqr = 0.;
@@ -721,9 +736,21 @@ double BranchlessPowerIterator::compute_pair_dist_sqrd(
     }
   }
 
+  // This is the pair distance squared for the rank.
   r_sqr /= 2. * Ntot * Ntot;
 
-  return r_sqr;
+  // We now get the average pair distance squared across all ranks.
+  // This of course leads to a different result with differen parallelization
+  // topologies, but is the best that can be done here. This is not a common
+  // quantity anyway.
+  r_sqr /= static_cast<double>(mpi::size);
+  mpi::Allreduce_sum(r_sqr);
+
+  // Save the average pair distance squared for the generation to the variable
+  // for this gen in the class, and in the list of all pair distances over the
+  // generations.
+  r_sqrd = r_sqr;
+  r_sqrd_vec.push_back(r_sqrd);
 }
 
 void BranchlessPowerIterator::zero_entropy() {
@@ -827,14 +854,14 @@ void BranchlessPowerIterator::perform_regional_cancellation(
               << " particles with no cancellation bin.\n";
 
   // Perform Cancellation for each Bin
-  cancelator->perform_cancellation(settings::rng);
+  cancelator->perform_cancellation();
 
   // All particles which were placed into a cancellation bin from next_gen
   // now have modified weights.
   // Now we can get the uniform particles
   auto tmp = cancelator->get_new_particles(settings::rng);
-  next_gen.insert(next_gen.end(), tmp.begin(), tmp.end());
-  mpi::node_nparticles[0] += tmp.size();
+
+  if (tmp.size() > 0) next_gen.insert(next_gen.begin(), tmp.begin(), tmp.end());
 
   // All done ! Clear cancelator for next run
   cancelator->clear();

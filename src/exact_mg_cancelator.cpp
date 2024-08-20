@@ -28,10 +28,12 @@
 #include <utils/output.hpp>
 #include <utils/settings.hpp>
 
+#include <ndarray.hpp>
 #include <sobol/sobol.hpp>
 
 #include <cmath>
 #include <set>
+#include <unordered_set>
 
 Position ExactMGCancelator::Key::r_low, ExactMGCancelator::Key::r_hi;
 std::array<std::size_t, 4> ExactMGCancelator::Key::shape;
@@ -193,21 +195,22 @@ bool ExactMGCancelator::add_particle(BankedParticle& p) {
 
   // If the bin doesn't exist yet, initalize it
   if (bins.find(key) == bins.end()) {
-    bins[key] = std::unordered_map<Material*, CancelBin>();
+    bins[key] = std::unordered_map<uint32_t, CancelBin>();
   }
 
   // Get the pointer to the material where the particle is
   Material* mat = get_material(p.r);
+  uint32_t mat_id = mat->id();
 
   // Check if a bin exists for that material
-  if (bins[key].find(mat) == bins[key].end()) {
-    bins[key][mat] = CancelBin();
+  if (bins[key].find(mat_id) == bins[key].end()) {
+    bins[key][mat_id] = CancelBin();
   }
 
   // Add particle and data
-  bins[key][mat].particles.push_back(&p);
-  bins[key][mat].W += p.wgt;
-  bins[key][mat].W2 += p.wgt2;
+  bins[key][mat_id].particles.push_back(&p);
+  bins[key][mat_id].W += p.wgt;
+  bins[key][mat_id].W2 += p.wgt2;
 
   return true;
 }
@@ -363,8 +366,7 @@ void ExactMGCancelator::compute_averages(const Key& key, Material* mat,
   bin.sum_c_wgt2 = sum_c_wgt2;
 }
 
-void ExactMGCancelator::cancel_bin(CancelBin& bin, MGNuclide* nuclide,
-                                   bool first_wgt) {
+void ExactMGCancelator::cancel_bin(CancelBin& bin, MGNuclide* nuclide) {
   // Go through all particles in bin
   for (std::size_t i = 0; i < bin.particles.size(); i++) {
     const Position& r1 = bin.particles[i]->parents_previous_position;
@@ -377,52 +379,101 @@ void ExactMGCancelator::cancel_bin(CancelBin& bin, MGNuclide* nuclide,
     const Position& r4 = bin.particles[i]->r;
     const double Esmp = bin.particles[i]->Esmp_parent;
 
-    const double B = get_beta(bin, i, first_wgt);
+    const double B1 = get_beta(bin, i, true);
+    const double B2 = get_beta(bin, i, false);
     const double f = get_f(r1, u1, g1, g3, r4, g4, Esmp, nuclide);
 
-    const double P_p = (f - B) / f;
-    const double P_u = B / f;
+    const double P_u1 = B1 / f;
+    const double P_p1 = 1. - P_u1;
+
+    const double P_u2 = B2 / f;
+    const double P_p2 = 1. - P_u2;
 
     // If either P_p or P_u is Inf or NaN, we can't do cancellation.
     // This usually happens when the weight in question is zero, which
     // occurs durring noise transport.
-    if (std::isinf(P_u) || std::isinf(P_p) || std::isnan(P_u) ||
-        std::isnan(P_p))
-      return;
+    if ((std::isinf(P_u1) == false) && (std::isinf(P_p1) == false) &&
+        (std::isnan(P_u1) == false) && (std::isnan(P_p1) == false)) {
+      bin.uniform_wgt += bin.particles[i]->wgt * P_u1;
+      bin.particles[i]->wgt *= P_p1;
+    }
 
-    if (first_wgt) {
-      bin.uniform_wgt += bin.particles[i]->wgt * P_u;
-      bin.particles[i]->wgt *= P_p;
-    } else {
-      bin.uniform_wgt2 += bin.particles[i]->wgt2 * P_u;
-      bin.particles[i]->wgt2 *= P_p;
+    if ((std::isinf(P_u2) == false) && (std::isinf(P_p2) == false) &&
+        (std::isnan(P_u2) == false) && (std::isnan(P_p2) == false)) {
+      bin.uniform_wgt2 += bin.particles[i]->wgt2 * P_u2;
+      bin.particles[i]->wgt2 *= P_p2;
     }
   }
 }
 
-void ExactMGCancelator::perform_cancellation(pcg32&) {
-  // If we have no bins (meaning no particles), then
-  // we can't do any cancellation.
-  if (bins.size() == 0) return;
-
+std::vector<std::pair<ExactMGCancelator::Key, uint32_t>>
+ExactMGCancelator::sync_keys() {
   // Get vector of keys to do cancellation in parallel
-  std::vector<std::pair<Key, Material*>> key_mat_pairs;
-  key_mat_pairs.reserve(bins.size());
+  std::vector<std::pair<Key, uint32_t>> key_matid_pairs;
+  key_matid_pairs.reserve(bins.size());
   for (const auto& key_matbin_pair : bins) {
     const auto& key = key_matbin_pair.first;
-    const auto& matbin = key_matbin_pair.second;
-    for (const auto& mat_bin_pair : matbin)
-      key_mat_pairs.emplace_back(key, mat_bin_pair.first);
+    const auto& matbins = key_matbin_pair.second;
+    for (const auto& mat_bin_pair : matbins) {
+      key_matid_pairs.emplace_back(key, mat_bin_pair.first);
+    }
   }
 
-  // Go through all bins
+  // Initialize the empty set
+  std::set<std::pair<Key, uint32_t>> key_set;
+
+  // Put master keys into the keyset
+  if (mpi::rank == 0) {
+    key_set.insert(key_matid_pairs.begin(), key_matid_pairs.end());
+  }
+
+  // For every Node starting at 1, send its keys to master and add to key_set
+  for (int i = 1; i < mpi::size; i++) {
+    if (mpi::rank == i) {
+      mpi::Send(key_matid_pairs, 0);
+      key_matid_pairs.clear();
+    } else if (mpi::rank == 0) {
+      key_matid_pairs.clear();
+      mpi::Recv(key_matid_pairs, i);
+      key_set.insert(key_matid_pairs.begin(), key_matid_pairs.end());
+    }
+  }
+
+  // Move keys from key_set back to keys in master
+  if (mpi::rank == 0) {
+    key_matid_pairs.clear();
+    key_matid_pairs.assign(key_set.begin(), key_set.end());
+  }
+
+  // Send keys to all nodes from Master
+  mpi::Bcast(key_matid_pairs, 0);
+
+  return key_matid_pairs;
+}
+
+void ExactMGCancelator::perform_cancellation() {
+  // Get vector of keys to do cancellation in parallel
+  std::vector<std::pair<Key, uint32_t>> key_matid_pairs = sync_keys();
+
+  // Initialize array for transfer of needed bits for cancellation
+  NDArray<double> sum_c_and_c_wgts({3, key_matid_pairs.size()});
+
+  // Go through all bins and get the averages. This is done in parallel when
+  // possible, as this part of cancellation is very expensive.
 #ifdef ABEILLE_USE_OMP
 #pragma omp parallel for
 #endif
-  for (std::size_t i = 0; i < key_mat_pairs.size(); i++) {
-    Key key = key_mat_pairs[i].first;
-    Material* mat = key_mat_pairs[i].second;
-    CancelBin& bin = bins[key][mat];
+  for (std::size_t i = 0; i < key_matid_pairs.size(); i++) {
+    Key key = key_matid_pairs[i].first;
+    uint32_t mat_id = key_matid_pairs[i].second;
+    Material* mat = materials[mat_id].get();
+
+    if (bins.find(key) == bins.end() ||
+        bins.at(key).find(mat_id) == bins.at(key).end()) {
+      continue;
+    }
+
+    CancelBin& bin = bins.at(key).at(mat_id);
 
     // For cancellation to be eact in the most general MG case,
     // need access to all scattering PDFs, and to the Chi matrix,
@@ -433,44 +484,120 @@ void ExactMGCancelator::perform_cancellation(pcg32&) {
     MGNuclide* nuclide =
         static_cast<MGNuclide*>(mat->components()[0].nuclide.get());
 
-    // Only atempt cancelation if we have two or more particles
-    if (bin.particles.size() > 1) {
-      // Go through all particles and see if we have mixed signes
-      bool has_pos_w1 = false;
-      bool has_neg_w1 = false;
-      bool has_pos_w2 = false;
-      bool has_neg_w2 = false;
-      for (const auto& p : bin.particles) {
-        if (p->wgt > 0.)
-          has_pos_w1 = true;
-        else if (p->wgt < 0.)
-          has_neg_w1 = true;
+    // Get the average value of the fission density and 1 / fission density
+    // for each particle in the bin.
+    compute_averages(key, mat, nuclide, bin);
 
-        if (p->wgt2 > 0.)
-          has_pos_w2 = true;
-        else if (p->wgt2 < 0.)
-          has_neg_w2 = true;
+    sum_c_and_c_wgts(0, i) = bin.sum_c;
+    sum_c_and_c_wgts(1, i) = bin.sum_c_wgt;
+    sum_c_and_c_wgts(2, i) = bin.sum_c_wgt2;
+  }
 
-        if (has_pos_w1 && has_neg_w1 && has_pos_w2 && has_neg_w2) break;
+  // Get sum of cancellation parameters across all nodes for optimization
+  mpi::Allreduce_sum(sum_c_and_c_wgts.data_vector());
+
+  // Assign all the optimization parameters after doing reduction across nodes.
+  // There is no need to do this if we only have 1 node.
+  if (mpi::size > 1) {
+#ifdef ABEILLE_USE_OMP
+#pragma omp parallel for
+#endif
+    for (std::size_t i = 0; i < key_matid_pairs.size(); i++) {
+      Key key = key_matid_pairs[i].first;
+      uint32_t mat_id = key_matid_pairs[i].second;
+
+      if (bins.find(key) == bins.end() ||
+          bins.at(key).find(mat_id) == bins.at(key).end()) {
+        continue;
       }
 
-      // If we are doing cancellation and the beta_mode requires it, get the
-      // average value of the fission density and 1 / fission density for each
-      // particle in the bin.
-      if ((has_pos_w1 && has_neg_w1) || (has_pos_w2 && has_neg_w2)) {
-        compute_averages(key, mat, nuclide, bin);
+      CancelBin& bin = bins.at(key).at(mat_id);
+
+      bin.sum_c = sum_c_and_c_wgts(0, i);
+      bin.sum_c_wgt = sum_c_and_c_wgts(1, i);
+      bin.sum_c_wgt2 = sum_c_and_c_wgts(2, i);
+    }
+  }
+
+  // Shrink this array, as it isn't needed any more, and we want to
+  // conserve space with the uniform weight array
+  sum_c_and_c_wgts.reallocate({0});
+
+  // Initialize array for transfer of uniform weights which will happen later
+  NDArray<double> uniform_wgts({2, key_matid_pairs.size()});
+
+  // Go through all bins and get uniform/point-wise parts
+#ifdef ABEILLE_USE_OMP
+#pragma omp parallel for
+#endif
+  for (std::size_t i = 0; i < key_matid_pairs.size(); i++) {
+    Key key = key_matid_pairs[i].first;
+    uint32_t mat_id = key_matid_pairs[i].second;
+    Material* mat = materials[mat_id].get();
+
+    if (bins.find(key) == bins.end() ||
+        bins.at(key).find(mat_id) == bins.at(key).end()) {
+      continue;
+    }
+
+    CancelBin& bin = bins.at(key).at(mat_id);
+
+    // For cancellation to be eact in the most general MG case,
+    // need access to all scattering PDFs, and to the Chi matrix,
+    // if present. Since ExactMGCancelator should only be used in
+    // MG mode, this static cast should be safe, as no CENuclide
+    // instances should have been created. This check is done in
+    // make_cancelator in cancellator.cpp.
+    MGNuclide* nuclide =
+        static_cast<MGNuclide*>(mat->components()[0].nuclide.get());
+
+    // Carry out the cancellations
+    cancel_bin(bin, nuclide);
+
+    // Cancellation has now occured. We should clear the bin of particles
+    bin.particles.clear();
+    bin.averages.clear();
+    bin.sum_c = 0.;
+    bin.sum_c_wgt = 0.;
+    bin.sum_c_wgt2 = 0.;
+
+    uniform_wgts(0, i) = bin.uniform_wgt;
+    uniform_wgts(1, i) = bin.uniform_wgt2;
+  }
+
+  // Get total uniform weights on ONLY master node. Only the master will
+  // sample uniform particles
+  mpi::Reduce_sum(uniform_wgts.data_vector(), 0);
+
+  // Reasign the CancelBin values for the uniform weights from the vectors
+  if (mpi::rank == 0) {
+    for (std::size_t i = 0; i < key_matid_pairs.size(); i++) {
+      Key key = key_matid_pairs[i].first;
+      uint32_t mat_id = key_matid_pairs[i].second;
+
+      // Add any missing bins from other nodes to master
+      if (bins.find(key) == bins.end()) {
+        // Make an empty bin. We need this on master for sampling uniform
+        // portions. If the bin doesn't exist yet, initalize it
+        bins.emplace(
+            std::make_pair(key, std::unordered_map<uint32_t, CancelBin>()));
       }
 
-      // If determined necessary, carry out the cancellations for each weight
-      if (has_pos_w1 && has_neg_w1) cancel_bin(bin, nuclide, true);
-      if (has_pos_w2 && has_neg_w2) cancel_bin(bin, nuclide, false);
+      // Check if a bin exists for that material
+      if (bins.at(key).find(mat_id) == bins.at(key).end()) {
+        bins.at(key).emplace(std::make_pair(mat_id, CancelBin()));
+      }
 
-      // Cancellation has now occured. We should clear the bin of particles
-      bin.particles.clear();
-      bin.averages.clear();
-      bin.sum_c = 0.;
-      bin.sum_c_wgt = 0.;
-      bin.sum_c_wgt2 = 0.;
+      CancelBin& bin = bins.at(key).at(mat_id);
+      bin.uniform_wgt = uniform_wgts(0, i);
+      bin.uniform_wgt2 = uniform_wgts(1, i);
+    }
+  } else {
+    for (auto& key_matbin_pair : bins) {
+      for (auto& matid_bin_pair : key_matbin_pair.second) {
+        matid_bin_pair.second.uniform_wgt = 0.;
+        matid_bin_pair.second.uniform_wgt2 = 0.;
+      }
     }
   }
 }
@@ -509,81 +636,96 @@ std::optional<Position> ExactMGCancelator::sample_position(const Key& key,
 }
 
 std::vector<BankedParticle> ExactMGCancelator::get_new_particles(pcg32& rng) {
+  // Only master should have non-zero uniform weights
+  if (mpi::rank != 0) {
+    return {};
+  }
+
   std::vector<BankedParticle> uniform_particles;
 
+  // Key-MatID pairs are put into a set so that the  uniform particles are
+  // always generated in the same order.
+  std::set<std::pair<Key, uint32_t>> key_set;
   for (auto& key_bin_pair : bins) {
     const auto& key = key_bin_pair.first;
     auto& material_bins = key_bin_pair.second;
 
     for (auto& mat_bin_pair : material_bins) {
-      Material* mat = mat_bin_pair.first;
-      CancelBin& bin = mat_bin_pair.second;
-
-      // Determine number of new particles to add
-      uint32_t N = static_cast<uint32_t>(std::ceil(
-          std::max(std::abs(bin.uniform_wgt), std::abs(bin.uniform_wgt2))));
-
-      if (N > 0) {
-        double w = bin.uniform_wgt / N;
-        double w2 = bin.uniform_wgt2 / N;
-
-        // Get the single nuclide from the material, and convert to MGNuclide.
-        // This SHOULD be safe, as in theory, we wont construct an
-        // ExactMGCancelator instance in CE mode.
-        MGNuclide* nuclide =
-            static_cast<MGNuclide*>(mat->components()[0].nuclide.get());
-
-        // Make all N uniform particles for this bin
-        for (size_t i = 0; i < N; i++) {
-          // Sample position
-          std::optional<Position> r_smp = sample_position(key, mat, rng);
-
-          if (!r_smp) {
-            // For some reason we couldn't sample a position, probably because
-            // there is so little of the material in the region. If this
-            // is the case, we shouldn't have gotten this far, but hey, here
-            // were are ! We are just gonna call this a fatal error for now,
-            // and see if it ever pops up.
-            fatal_error("Couldn't sample position for uniform particle.");
-          }
-
-          // Now we sample an energy group
-          std::size_t e_index = 0;
-          if (CHI_MATRIX) {
-            // We need to select a random energy group from our bin.
-            const double xi_E = RNG::rand(rng);
-            std::size_t g_index = static_cast<std::size_t>(std::floor(
-                xi_E * static_cast<double>(Key::group_bins[key.e].size())));
-            e_index = Key::group_bins[key.e][g_index];
-          } else {
-            // Fission spectrum is independent of incident energy.
-            // We can just sample an energy from the first row
-            // of the chi matrix.
-            e_index =
-                static_cast<std::size_t>(RNG::discrete(rng, nuclide->chi()[0]));
-          }
-          double E_smp = 0.5 * (settings::energy_bounds[e_index] +
-                                settings::energy_bounds[e_index + 1]);
-
-          // Sample Direction
-          Direction u_smp(2. * RNG::rand(rng) - 1., 2. * PI * RNG::rand(rng));
-
-          // Construct uniform_particle
-          BankedParticle uniform_particle;
-          uniform_particle.r = r_smp.value();
-          uniform_particle.u = u_smp;
-          uniform_particle.E = E_smp;
-          uniform_particle.wgt = w;
-          uniform_particle.wgt2 = w2;
-
-          // Save sampled particle
-          uniform_particles.push_back(uniform_particle);
-        }
-      }
-
-      bin.uniform_wgt = 0.;
-      bin.uniform_wgt2 = 0.;
+      uint32_t mat_id = mat_bin_pair.first;
+      key_set.emplace(key, mat_id);
     }
+  }
+
+  for (const auto& pr : key_set) {
+    Key key = pr.first;
+    uint32_t mat_id = pr.second;
+    Material* mat = materials[mat_id].get();
+    CancelBin& bin = bins.at(key).at(mat_id);
+
+    // Determine number of new particles to add
+    uint32_t N = static_cast<uint32_t>(std::ceil(
+        std::max(std::abs(bin.uniform_wgt), std::abs(bin.uniform_wgt2))));
+
+    if (N > 0) {
+      double w = bin.uniform_wgt / N;
+      double w2 = bin.uniform_wgt2 / N;
+
+      // Get the single nuclide from the material, and convert to MGNuclide.
+      // This SHOULD be safe, as in theory, we wont construct an
+      // ExactMGCancelator instance in CE mode.
+      MGNuclide* nuclide =
+          static_cast<MGNuclide*>(mat->components()[0].nuclide.get());
+
+      // Make all N uniform particles for this bin
+      for (size_t i = 0; i < N; i++) {
+        // Sample position
+        std::optional<Position> r_smp = sample_position(key, mat, rng);
+
+        if (!r_smp) {
+          // For some reason we couldn't sample a position, probably because
+          // there is so little of the material in the region. If this
+          // is the case, we shouldn't have gotten this far, but hey, here
+          // were are ! We are just gonna call this a fatal error for now,
+          // and see if it ever pops up.
+          fatal_error("Couldn't sample position for uniform particle.");
+        }
+
+        // Now we sample an energy group
+        std::size_t e_index = 0;
+        if (CHI_MATRIX) {
+          // We need to select a random energy group from our bin.
+          const double xi_E = RNG::rand(rng);
+          std::size_t g_index = static_cast<std::size_t>(std::floor(
+              xi_E * static_cast<double>(Key::group_bins[key.e].size())));
+          e_index = Key::group_bins[key.e][g_index];
+        } else {
+          // Fission spectrum is independent of incident energy.
+          // We can just sample an energy from the first row
+          // of the chi matrix.
+          e_index =
+              static_cast<std::size_t>(RNG::discrete(rng, nuclide->chi()[0]));
+        }
+        double E_smp = 0.5 * (settings::energy_bounds[e_index] +
+                              settings::energy_bounds[e_index + 1]);
+
+        // Sample Direction
+        Direction u_smp(2. * RNG::rand(rng) - 1., 2. * PI * RNG::rand(rng));
+
+        // Construct uniform_particle
+        BankedParticle uniform_particle;
+        uniform_particle.r = r_smp.value();
+        uniform_particle.u = u_smp;
+        uniform_particle.E = E_smp;
+        uniform_particle.wgt = w;
+        uniform_particle.wgt2 = w2;
+
+        // Save sampled particle
+        uniform_particles.push_back(uniform_particle);
+      }
+    }
+
+    bin.uniform_wgt = 0.;
+    bin.uniform_wgt2 = 0.;
   }
 
   return uniform_particles;
@@ -625,10 +767,10 @@ std::shared_ptr<ExactMGCancelator> make_exact_mg_cancelator(
     fatal_error("No valid shape entry for basic exact MG cancelator.");
   }
 
-  uint32_t Nx = node["shape"][0].as<uint32_t>();
-  uint32_t Ny = node["shape"][1].as<uint32_t>();
-  uint32_t Nz = node["shape"][2].as<uint32_t>();
-  uint32_t Ne = 0;
+  uint64_t Nx = node["shape"][0].as<uint64_t>();
+  uint64_t Ny = node["shape"][1].as<uint64_t>();
+  uint64_t Nz = node["shape"][2].as<uint64_t>();
+  uint64_t Ne = 0;
 
   std::vector<std::vector<std::size_t>> group_bins;
   if (node["group-bins"] && node["group-bins"].IsSequence()) {
@@ -638,9 +780,9 @@ std::shared_ptr<ExactMGCancelator> make_exact_mg_cancelator(
         "No group-bins are provided to ExactMGCancelator, but fission spectra "
         "are provided with a matrix.\nCancellation cannot be exact.");
   }
-  Ne = static_cast<uint32_t>(group_bins.size());
+  Ne = static_cast<uint64_t>(group_bins.size());
 
-  std::array<std::size_t, 4> shape{Nx, Ny, Nz, Ne};
+  std::array<uint64_t, 4> shape{Nx, Ny, Nz, Ne};
 
   std::set<std::size_t> bined_groups;
   for (const auto& bin : group_bins) {
@@ -661,19 +803,19 @@ std::shared_ptr<ExactMGCancelator> make_exact_mg_cancelator(
     }
   }
 
-  uint32_t n_samples = 10;
-  if (node["n-samples"] && node["n-samples"].IsScalar()) {
-    n_samples = node["n-samples"].as<uint32_t>();
-  } else if (node["n-samples"]) {
-    fatal_error("Invalid n-samples entry for cancelator.");
+  uint32_t nsamples = 10;
+  if (node["nsamples"] && node["nsamples"].IsScalar()) {
+    nsamples = node["nsamples"].as<uint32_t>();
+  } else if (node["nsamples"]) {
+    fatal_error("Invalid nsamples entry for cancelator.");
   }
 
-  if (n_samples == 0) {
-    fatal_error("n-samples must be greater than zero.");
+  if (nsamples == 0) {
+    fatal_error("nsamples must be greater than zero.");
   }
 
   std::stringstream otpt;
-  otpt << " Using ExactMGCancelator and " << n_samples << " points.\n";
+  otpt << " Using ExactMGCancelator and " << nsamples << " points.\n";
   if (settings::use_virtual_collisions)
     otpt << "   Will use particles born after virtual collisions.\n";
   else
@@ -682,5 +824,5 @@ std::shared_ptr<ExactMGCancelator> make_exact_mg_cancelator(
 
   return std::make_shared<ExactMGCancelator>(
       r_low, r_hi, shape, group_bins, settings::chi_matrix,
-      settings::use_virtual_collisions, n_samples);
+      settings::use_virtual_collisions, nsamples);
 }

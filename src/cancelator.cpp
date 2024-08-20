@@ -23,7 +23,6 @@
  *
  * */
 #include <simulation/approximate_mesh_cancelator.hpp>
-#include <simulation/basic_exact_mg_cancelator.hpp>
 #include <simulation/cancelator.hpp>
 #include <simulation/exact_mg_cancelator.hpp>
 #include <utils/error.hpp>
@@ -39,22 +38,6 @@ std::shared_ptr<Cancelator> make_cancelator(const YAML::Node& node) {
 
   if (type == "approximate") {
     cancelator = make_approximate_mesh_cancelator(node);
-  } else if (type == "basic-exact") {
-    // Check that we are not using surface-tracking !
-    if (settings::tracking == settings::TrackingMode::SURFACE_TRACKING) {
-      fatal_error(
-          "basic-exect cancelators may not be used with surface-tracking.");
-    }
-
-    // Check that we are not in CE mode !
-    if (settings::energy_mode == settings::EnergyMode::CE) {
-      fatal_error(
-          "basic-exact cancelators are not currently supported for continuous "
-          "energy.");
-    }
-
-    // looks like we meet all requirments, make the cancelator
-    cancelator = make_basic_exact_mg_cancelator(node);
   } else if (type == "exact") {
     // Check that we are not using surface-tracking !
     if (settings::tracking == settings::TrackingMode::SURFACE_TRACKING) {

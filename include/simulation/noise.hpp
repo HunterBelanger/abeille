@@ -87,8 +87,7 @@ class Noise : public Simulation {
   void check_time(int gen);
 
   void normalize_weights(std::vector<BankedParticle>& next_gen);
-  void perform_regional_cancellation(std::vector<uint64_t>& nums,
-                                     std::vector<BankedParticle>& bank);
+  void perform_regional_cancellation(std::vector<BankedParticle>& bank);
 
   void power_iteration(bool sample_noise);
   void pi_generation_output();
