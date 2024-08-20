@@ -46,15 +46,30 @@ tally-filters:
       high: [ 10.494149,  100.,  100.]
       shape: [200, 1, 1]
 
+    - id: 2
+      type: regular-cartesian-mesh
+      shape: [2, 1, 1]
+      low:  [ -10.494149,  -100.,  -100.]
+      high: [ 10.494149,  100.,  100.]
+
   energy-filters:
     - id: 1
       energy-bounds: [0., 1., 2.]
 
 tallies:
-  - name: flux
+  - name: general-tally
     quantity: flux
     estimator: track-length
     position-filter: 1
+    energy-filter: 1
+  
+  - name: fet-legendre
+    type: legendre-fet
+    quantity: flux
+    estimator: collision
+    order: [50]
+    axes: [x]
+    position-filter: 2
     energy-filter: 1
 
 settings:
@@ -64,7 +79,7 @@ settings:
 
 simulation:
   mode: k-eigenvalue
-  nparticles: 10000
+  nparticles: 100000
   ngenerations: 1050
   nignored: 20
   sources:

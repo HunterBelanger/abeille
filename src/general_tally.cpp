@@ -239,8 +239,8 @@ double GeneralTally::evaluate(const Position& r, const double& E) const {
                      position_indices.end());
     }
   }
-  const double tally_value = tally_avg_.element(indices.begin(), indices.end());
-  return tally_value;
+
+  return tally_avg_.element(indices.begin(), indices.end());
 }
 
 std::vector<double> GeneralTally::evaluate(
@@ -263,7 +263,6 @@ std::vector<double> GeneralTally::evaluate(
           // Not inside any energy bin. push_back 0 and continue
           tallied_values.push_back(0.);
           continue;
-          ;
         }
         indices.push_back(E_indx.value());
       }

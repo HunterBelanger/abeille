@@ -1,8 +1,3 @@
-define: &l1 -3.
-define: &l2 3.
-#define: &l1 -5.514296811
-#define: &l2 5.514296811
-
 materials:
   - name: U-235-a
     id: 1
@@ -47,11 +42,12 @@ tally-filters:
       energy-bounds: [0., 1.]
 
 tallies:
-  - type: general
+  - type: zernike-fet
     position-filter: 1
     energy-filter: 1
+    zernike-order: 12
     quantity: flux
-    name: cylinder
+    name: fet-zernike
     estimator: collision
 
   - type: general
@@ -60,6 +56,7 @@ tallies:
     quantity: flux
     name: mesh-tally
     estimator: collision
+
 
 settings: 
   energy-mode: multi-group

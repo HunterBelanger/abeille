@@ -176,14 +176,47 @@ StaticVector3 CylinderFilter::get_indices(const Tracker& tktr) const {
   return indices;
 }
 
+StaticVector3 CylinderFilter::get_position_index(const Position& r) const {
+  const Position maped_r = map_coordinate(r);
+
+  const int nx =
+      static_cast<int>(std::floor((maped_r.x() - r_low_.x()) * inv_pitch_x_));
+  const int ny =
+      static_cast<int>(std::floor((maped_r.y() - r_low_.y()) * inv_pitch_y_));
+  const int nz =
+      infinite_length_
+          ? 0
+          : static_cast<int>(std::floor((maped_r.z() - r_low_.z()) * inv_dz_));
+
+  double new_origin_x = origin_.x() + pitch_x_ * static_cast<double>(nx);
+  double new_origin_y = origin_.y() + pitch_y_ * static_cast<double>(ny);
+
+  StaticVector3 indices;
+  // check if nx, ny, and nz are positive
+  // and less the number of bins in that direction
+  if (nx >= 0 && nx < static_cast<int>(Nx_) && ny >= 0 &&
+      ny < static_cast<int>(Ny_) &&
+      ((nz >= 0 && nz < static_cast<int>(Nz_)) || infinite_length_)) {
+    // check if the position is inside the circular radius or not
+    if (sqrt((new_origin_x - maped_r.x()) * (new_origin_x - maped_r.x()) +
+             (new_origin_y - maped_r.y()) * (new_origin_y - maped_r.y())) <=
+        (radius_ + 1E-15)) {
+      indices.push_back(static_cast<std::size_t>(nx));
+      indices.push_back(static_cast<std::size_t>(ny));
+      indices.push_back(static_cast<std::size_t>(nz));
+      map_indexes(indices);
+      return reduce_dimension(indices[0], indices[1], indices[2]);
+    }
+  }
+  return indices;
+}
+
 StaticVector3 CylinderFilter::get_shape() const {
   if (Real_nx_ == 1 && Real_ny_ == 1 && Real_nz_ == 1) {
     return {1};
   }
-  StaticVector3 filter_shape{Nx_, Ny_, Nz_};
 
-  map_indexes(filter_shape);
-  return reduce_dimension(filter_shape[0], filter_shape[1], filter_shape[2]);
+  return reduce_dimension(Real_nx_, Real_ny_, Real_nz_);
 }
 
 std::vector<TracklengthDistance> CylinderFilter::get_indices_tracklength(

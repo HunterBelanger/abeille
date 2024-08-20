@@ -18,6 +18,8 @@ class CylinderFilter : public PositionFilter {
 
   StaticVector3 get_indices(const Tracker& tktr) const override final;
 
+  StaticVector3 get_position_index(const Position& r) const;
+
   StaticVector3 get_shape() const override final;
 
   double radius() const { return radius_; }
@@ -38,7 +40,7 @@ class CylinderFilter : public PositionFilter {
   std::string type_str() const override { return "cylinder-filter"; }
 
   std::vector<TracklengthDistance> get_indices_tracklength(
-      const Tracker& trkr, double d_flight) const;
+      const Tracker& trkr, double d_flight) const override final;
 
   Orientation get_axial_direction() { return length_axis_; }
 
@@ -52,7 +54,7 @@ class CylinderFilter : public PositionFilter {
   double radius_, pitch_x_, pitch_y_, dz_, inv_radius_, inv_pitch_x_,
       inv_pitch_y_, inv_dz_;
   std::size_t x_index, y_index,
-      z_index;  // to incorporate the reduce-dimension of indices
+      z_index;  // to access the correct location of the indices
   // these index-locations are based on the real-position of x, y, z. Not based
   // on the class orientation
   bool infinite_length_ = false;  // to incorporate the infinte cylinder
@@ -91,12 +93,12 @@ class CylinderFilter : public PositionFilter {
                                  const size_t& loc_z) const {
     StaticVector3 reduce_;
     if (Real_nx_ == 1 && Real_ny_ == 1 && Real_nz_ == 1) {
-      return {loc_x};
+      return {1};
     }
 
     if (infinite_length_ == true) {
       if (Nx_ == 1 && Ny_ == 1) {
-        return {loc_x};
+        return {1};
       }
     }
 
