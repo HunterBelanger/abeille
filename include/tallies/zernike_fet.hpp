@@ -9,8 +9,6 @@
 
 #include <yaml-cpp/yaml.h>
 
-#include <span>
-
 class ZernikeFET : public ITally {
  public:
   // following constructor will be called when zernike and legendre both needs
@@ -54,7 +52,6 @@ class ZernikeFET : public ITally {
   // Zernike and Legendre Polynomials can hold the polynomials upto that order
   // can return the std::vector<double> calculated for each order
   ZernikePolynomials zr_polynomial_;
-  
   std::size_t zr_order_, legen_order_;
 
   CylinderFilter::Orientation axial_direction_;

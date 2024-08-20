@@ -321,6 +321,7 @@ double LegendreFET::evaluate(const Position& r, const double& E) const {
       tally_value /= tally_avg_.element(indices.begin(), indices.end());
     }
   }
+
   return tally_value;
 }
 
@@ -423,6 +424,7 @@ std::vector<double> LegendreFET::evaluate(
     }
     tallied_values.push_back(tally_value);
   }
+
   return tallied_values;
 }
 

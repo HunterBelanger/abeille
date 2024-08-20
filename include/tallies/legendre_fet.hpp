@@ -5,13 +5,13 @@
 #include <tallies/energy_filter.hpp>
 #include <tallies/itally.hpp>
 #include <utils/error.hpp>
+
 #include <yaml-cpp/yaml.h>
 #include <boost/container/static_vector.hpp>
 using StaticVector6 = boost::container::static_vector<size_t, 6>;
 
 #include <iostream>
 #include <memory>
-#include <span>
 #include <vector>
 
 class LegendreFET : public ITally {
@@ -50,8 +50,8 @@ class LegendreFET : public ITally {
 
   boost::container::static_vector<Axis, 3> axes_;
 
-  // Note that the number of coefficient will be one more than the order.
-  std::vector<std::size_t> fet_order_; 
+  std::vector<std::size_t> fet_order_;  // Note that the number of coefficient will be one more
+                      // than the order.
 };
 
 std::shared_ptr<LegendreFET> make_legendre_fet(const YAML::Node& node);
