@@ -1,8 +1,3 @@
-define: &l1 -3.
-define: &l2 3.
-#define: &l1 -5.514296811
-#define: &l2 5.514296811
-
 materials:
   - name: U-235-a
     id: 1

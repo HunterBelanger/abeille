@@ -116,33 +116,6 @@ class CylinderFilter : public PositionFilter {
     return reduce_;
   }
 
-  // the function is required as certain parameter need the indices [x, y, z]
-  // then, the reduced for of indices must be reversed,
-  StaticVector3 unreduce_dimension(const StaticVector3& indices) const {
-    StaticVector3 index;
-    std::size_t loc = 0;
-    if (Real_nx_ > 1) {
-      index.push_back(indices[loc]);
-      loc++;
-    } else {
-      index.push_back(0);
-    }
-
-    if (Real_ny_ > 1) {
-      index.push_back(indices[loc]);
-      loc++;
-    } else {
-      index.push_back(0);
-    }
-
-    if (Real_nz_ > 1) {
-      index.push_back(indices[loc]);
-    } else {
-      index.push_back(0);
-    }
-
-    return index;
-  }
 };
 
 std::shared_ptr<CylinderFilter> make_cylinder_filter(const YAML::Node& node);
