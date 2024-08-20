@@ -888,7 +888,7 @@ std::shared_ptr<ExactMGCancelator> make_exact_mg_cancelator(
   }
   Ne = static_cast<uint64_t>(group_bins.size());
 
-  std::array<uint64_t, 4> shape{Nx, Ny, Nz, Ne};
+  std::array<std::size_t, 4> shape{Nx, Ny, Nz, Ne};
 
   std::set<std::size_t> bined_groups;
   for (const auto& bin : group_bins) {

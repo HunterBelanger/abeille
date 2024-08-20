@@ -78,7 +78,7 @@ class ExactMGCancelator : public Cancelator {
     // shape[1] Number of regions in y
     // shape[2] Number of regions in z
     // shape[3] Number of regions in energy
-    static std::array<uint64_t, 4> shape;
+    static std::array<std::size_t, 4> shape;
 
     // The width of each region in x, y, and z
     static std::array<double, 3> pitch;
