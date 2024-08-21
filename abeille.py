@@ -389,6 +389,9 @@ class Cell:
     def add_surfaces(self, surfs: Dict[int, Surface]) -> None:
         self.region.add_surfaces(surfs)
 
+        if isinstance(self.fill, Universe):
+            self.fill.add_surfaces(surfs)
+
     def add_cells(self, cells: Dict[int, Cell]) -> None:
         if isinstance(self.fill, Universe):
             self.fill.add_cells(cells)
