@@ -51,6 +51,8 @@ using DType = MPI_Datatype;
 using OpType = MPI_Op;
 
 extern const Com com;
+extern const DType Char;
+extern const DType WChar;
 extern const DType Bool;
 extern const DType Int;
 extern const DType Double;
@@ -69,6 +71,16 @@ extern const OpType Or;
 // MPI Data Types
 template <typename T>
 DType dtype();
+
+template <>
+inline DType dtype<char>() {
+  return Char;
+}
+
+template <>
+inline DType dtype<wchar_t>() {
+  return WChar;
+}
 
 template <>
 inline DType dtype<bool>() {
