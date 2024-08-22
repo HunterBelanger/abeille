@@ -54,6 +54,7 @@ class PowerIterator : public Simulation {
   void set_families(bool fams) { calc_families = fams; }
   void set_pair_distance(bool prdist) { pair_distance_sqrd = prdist; }
   void set_empty_entropy_bins(bool eeb) { empty_entropy_bins = eeb; }
+  void set_save_source(bool save_src) { save_source = save_src; }
   void set_in_source_file(const std::string& sf) { in_source_file_name = sf; }
   void add_source(std::shared_ptr<Source> src);
   void set_nparticles(std::size_t np) { nparticles = np; }
@@ -93,6 +94,7 @@ class PowerIterator : public Simulation {
   bool calc_families = false;
   bool pair_distance_sqrd = false;
   bool empty_entropy_bins = false;
+  bool save_source = false;
 
   void check_time(std::size_t gen);
 

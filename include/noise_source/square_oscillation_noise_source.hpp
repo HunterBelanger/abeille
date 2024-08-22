@@ -27,13 +27,16 @@
 
 #include <noise_source/oscillation_noise_source.hpp>
 #include <utils/position.hpp>
+#include <utils/tabulated_1d.hpp>
 
 #include <yaml-cpp/yaml.h>
 
 class SquareOscillationNoiseSource : public OscillationNoiseSource {
  public:
-  SquareOscillationNoiseSource(Position low, Position hi, double eps_tot,
-                               double eps_fis, double eps_sct,
+  SquareOscillationNoiseSource(Position low, Position hi,
+                               const pndl::Tabulated1D& eps_tot,
+                               const pndl::Tabulated1D& eps_fis,
+                               const pndl::Tabulated1D& eps_sct,
                                double angular_frequency, double phase);
 
   bool is_inside(const Position& r) const override final;
@@ -52,9 +55,9 @@ class SquareOscillationNoiseSource : public OscillationNoiseSource {
  private:
   Position low_, hi_;
   double w0_, phase_;
-  double eps_t_;
-  double eps_f_;
-  double eps_s_;
+  pndl::Tabulated1D eps_t_;
+  pndl::Tabulated1D eps_f_;
+  pndl::Tabulated1D eps_s_;
 };
 
 std::shared_ptr<OscillationNoiseSource> make_square_oscillation_noise_source(

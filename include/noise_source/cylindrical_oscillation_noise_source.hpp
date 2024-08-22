@@ -27,15 +27,17 @@
 
 #include <noise_source/oscillation_noise_source.hpp>
 #include <utils/position.hpp>
+#include <utils/tabulated_1d.hpp>
 
 #include <yaml-cpp/yaml.h>
 
 class CylindricalOscillationNoiseSource : public OscillationNoiseSource {
  public:
   CylindricalOscillationNoiseSource(Position origin, double len, double rad,
-                                    char ax, double eps_tot, double eps_fis,
-                                    double eps_sct, double angular_frequency,
-                                    double phase);
+                                    char ax, const pndl::Tabulated1D& eps_tot,
+                                    const pndl::Tabulated1D& eps_fis,
+                                    const pndl::Tabulated1D& eps_sct,
+                                    double angular_frequency, double phase);
 
   bool is_inside(const Position& r) const override final;
   std::complex<double> dEt(const Position& r, double E,
@@ -55,9 +57,9 @@ class CylindricalOscillationNoiseSource : public OscillationNoiseSource {
   double length_, radius_;
   char axis_;
   double w0_, phase_;
-  double eps_t_;
-  double eps_f_;
-  double eps_s_;
+  pndl::Tabulated1D eps_t_;
+  pndl::Tabulated1D eps_f_;
+  pndl::Tabulated1D eps_s_;
 };
 
 std::shared_ptr<OscillationNoiseSource>

@@ -573,7 +573,7 @@ void PowerIterator::run() {
   write_entropy_families_etc_to_results();
 
   // write source
-  write_source(bank);
+  if (save_source) write_source(bank);
 }
 
 void PowerIterator::comb_particles(std::vector<BankedParticle>& next_gen) {
@@ -1046,6 +1046,14 @@ std::shared_ptr<PowerIterator> make_power_iterator(const YAML::Node& sim) {
     fatal_error("Invalid families entry in k-eigenvalue simulation.");
   }
 
+  // Save source
+  bool save_source = false;
+  if (sim["save-source"] && sim["save-source"].IsScalar()) {
+    families = sim["save-source"].as<bool>();
+  } else if (sim["save-source"]) {
+    fatal_error("Invalid save-source entry in k-eigenvalue simulation.");
+  }
+
   // Pair Distance Sqrd
   bool pair_dist = false;
   if (sim["pair-distance-sqrd"] && sim["pair-distance-sqrd"].IsScalar()) {
@@ -1097,6 +1105,7 @@ std::shared_ptr<PowerIterator> make_power_iterator(const YAML::Node& sim) {
   }
   simptr->set_combing(combing);
   simptr->set_families(families);
+  simptr->set_save_source(save_source);
   simptr->set_pair_distance(pair_dist);
   simptr->set_empty_entropy_bins(empty_entropy_frac);
   if (cancelator) simptr->set_cancelator(cancelator);

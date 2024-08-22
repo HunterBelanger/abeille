@@ -5,6 +5,7 @@
 #include <utils/constants.hpp>
 #include <utils/direction.hpp>
 #include <utils/error.hpp>
+#include <utils/settings.hpp>
 
 #include <cmath>
 #include <sstream>
@@ -12,8 +13,9 @@
 PropagatingChannelOscillationNoiseSource::
     PropagatingChannelOscillationNoiseSource(Position low, Position hi,
                                              double radius, char axis,
-                                             double eps_tot, double eps_fis,
-                                             double eps_sct,
+                                             const pndl::Tabulated1D& eps_tot,
+                                             const pndl::Tabulated1D& eps_fis,
+                                             const pndl::Tabulated1D& eps_sct,
                                              double angular_frequency,
                                              double velocity, double phase)
     : low_(low),
@@ -56,16 +58,22 @@ PropagatingChannelOscillationNoiseSource::
   }
 
   // Make sure epsilons are positive
-  if (eps_t_ <= 0.) {
-    fatal_error("Negative or zero epsilon total.");
+  for (const auto et : eps_t_.y()) {
+    if (et < 0.) {
+      fatal_error("Negative epsilon total.");
+    }
   }
 
-  if (eps_f_ <= 0.) {
-    fatal_error("Negative or zero epsilon fission.");
+  for (const auto ef : eps_f_.y()) {
+    if (ef < 0.) {
+      fatal_error("Negative epsilon fission.");
+    }
   }
 
-  if (eps_s_ <= 0.) {
-    fatal_error("Negative or zero epsilon scatter.");
+  for (const auto es : eps_s_.y()) {
+    if (es < 0.) {
+      fatal_error("Negative epsilon scatter.");
+    }
   }
 }
 
@@ -109,10 +117,10 @@ std::complex<double> PropagatingChannelOscillationNoiseSource::dEt(
   const double tot_phase = calc_total_phase(r);
 
   if (n == 1 && std::abs(err) < 0.01) {
-    return std::complex<double>(0., -eps_t_ * xs * PI) *
+    return std::complex<double>(0., -eps_t_(E) * xs * PI) *
            std::exp(std::complex<double>(0., tot_phase));
   } else if (n == -1 && std::abs(err) < 0.01) {
-    return std::complex<double>(0., -eps_t_ * xs * PI) *
+    return std::complex<double>(0., -eps_t_(E) * xs * PI) *
            std::exp(std::complex<double>(0., -tot_phase));
   } else {
     return {0., 0.};
@@ -120,7 +128,7 @@ std::complex<double> PropagatingChannelOscillationNoiseSource::dEt(
 }
 
 std::complex<double> PropagatingChannelOscillationNoiseSource::dEt_Et(
-    const Position& r, double /*E*/, double w) const {
+    const Position& r, double E, double w) const {
   // Get the frequency multiple n
   int32_t n = static_cast<int32_t>(std::round(w / w0_));
 
@@ -129,10 +137,10 @@ std::complex<double> PropagatingChannelOscillationNoiseSource::dEt_Et(
   const double tot_phase = calc_total_phase(r);
 
   if (n == 1 && std::abs(err) < 0.01) {
-    return std::complex<double>(0., -eps_t_ * PI) *
+    return std::complex<double>(0., -eps_t_(E) * PI) *
            std::exp(std::complex<double>(0., tot_phase));
   } else if (n == -1 && std::abs(err) < 0.01) {
-    return std::complex<double>(0., -eps_t_ * PI) *
+    return std::complex<double>(0., -eps_t_(E) * PI) *
            std::exp(std::complex<double>(0., -tot_phase));
   } else {
     return {0., 0.};
@@ -140,7 +148,7 @@ std::complex<double> PropagatingChannelOscillationNoiseSource::dEt_Et(
 }
 
 std::complex<double> PropagatingChannelOscillationNoiseSource::dEf_Ef(
-    const Position& r, double /*E*/, double w) const {
+    const Position& r, double E, double w) const {
   // Get the frequency multiple n
   int32_t n = static_cast<int32_t>(std::round(w / w0_));
 
@@ -149,10 +157,10 @@ std::complex<double> PropagatingChannelOscillationNoiseSource::dEf_Ef(
   const double tot_phase = calc_total_phase(r);
 
   if (n == 1 && std::abs(err) < 0.01) {
-    return std::complex<double>(0., -eps_f_ * PI) *
+    return std::complex<double>(0., -eps_f_(E) * PI) *
            std::exp(std::complex<double>(0., tot_phase));
   } else if (n == -1 && std::abs(err) < 0.01) {
-    return std::complex<double>(0., -eps_f_ * PI) *
+    return std::complex<double>(0., -eps_f_(E) * PI) *
            std::exp(std::complex<double>(0., -tot_phase));
   } else {
     return {0., 0.};
@@ -161,7 +169,7 @@ std::complex<double> PropagatingChannelOscillationNoiseSource::dEf_Ef(
 
 std::complex<double>
 PropagatingChannelOscillationNoiseSource::dEelastic_Eelastic(const Position& r,
-                                                             double /*E*/,
+                                                             double E,
                                                              double w) const {
   // Get the frequency multiple n
   int32_t n = static_cast<int32_t>(std::round(w / w0_));
@@ -171,10 +179,10 @@ PropagatingChannelOscillationNoiseSource::dEelastic_Eelastic(const Position& r,
   const double tot_phase = calc_total_phase(r);
 
   if (n == 1 && std::abs(err) < 0.01) {
-    return std::complex<double>(0., -eps_s_ * PI) *
+    return std::complex<double>(0., -eps_s_(E) * PI) *
            std::exp(std::complex<double>(0., tot_phase));
   } else if (n == -1 && std::abs(err) < 0.01) {
-    return std::complex<double>(0., -eps_s_ * PI) *
+    return std::complex<double>(0., -eps_s_(E) * PI) *
            std::exp(std::complex<double>(0., -tot_phase));
   } else {
     return {0., 0.};
@@ -182,7 +190,7 @@ PropagatingChannelOscillationNoiseSource::dEelastic_Eelastic(const Position& r,
 }
 
 std::complex<double> PropagatingChannelOscillationNoiseSource::dEmt_Emt(
-    uint32_t /*mt*/, const Position& r, double /*E*/, double w) const {
+    uint32_t /*mt*/, const Position& r, double E, double w) const {
   // Get the frequency multiple n
   int32_t n = static_cast<int32_t>(std::round(w / w0_));
 
@@ -191,10 +199,10 @@ std::complex<double> PropagatingChannelOscillationNoiseSource::dEmt_Emt(
   const double tot_phase = calc_total_phase(r);
 
   if (n == 1 && std::abs(err) < 0.01) {
-    return std::complex<double>(0., -eps_s_ * PI) *
+    return std::complex<double>(0., -eps_s_(E) * PI) *
            std::exp(std::complex<double>(0., tot_phase));
   } else if (n == -1 && std::abs(err) < 0.01) {
-    return std::complex<double>(0., -eps_s_ * PI) *
+    return std::complex<double>(0., -eps_s_(E) * PI) *
            std::exp(std::complex<double>(0., -tot_phase));
   } else {
     return {0., 0.};
@@ -331,46 +339,58 @@ make_propagating_channel_oscillation_noise_source(const YAML::Node& snode) {
   }
 
   // Get epsilons
-  if (!snode["epsilon-total"] || !snode["epsilon-total"].IsScalar()) {
+  if (!snode["epsilon-total"] || !snode["epsilon-total"].IsMap()) {
+    fatal_error("No valid epsilon-total entry for oscillation noise source.");
+  }
+  pndl::Tabulated1D eps_t =
+      make_tabulated_1d(snode["epsilon-total"], "energy", "value");
+  for (const auto et : eps_t.y()) {
+    if (et < 0.) {
+      fatal_error(
+          "Epsilon total can not be negative for oscillation noise source.");
+    }
+  }
+  if (eps_t.min_x() > settings::min_energy ||
+      eps_t.max_x() < settings::max_energy) {
     fatal_error(
-        "No valid epsilon-total entry for propagating channel oscillation "
-        "noise source.");
+        "Epsilon total energies are smaller than min and max particle "
+        "energies.");
   }
 
-  double eps_t = snode["epsilon-total"].as<double>();
-
-  if (eps_t <= 0.) {
+  if (!snode["epsilon-fission"] || !snode["epsilon-fission"].IsMap()) {
+    fatal_error("No valid epsilon-fission entry for oscillation noise source.");
+  }
+  pndl::Tabulated1D eps_f =
+      make_tabulated_1d(snode["epsilon-fission"], "energy", "value");
+  for (const auto ef : eps_f.y()) {
+    if (ef < 0.) {
+      fatal_error(
+          "Epsilon fission can not be negative for oscillation noise source.");
+    }
+  }
+  if (eps_f.min_x() > settings::min_energy ||
+      eps_f.max_x() < settings::max_energy) {
     fatal_error(
-        "Epsilon total can not be negative or zero for propagating channel "
-        "oscillation noise source.");
+        "Epsilon fission energies are smaller than min and max particle "
+        "energies.");
   }
 
-  if (!snode["epsilon-fission"] || !snode["epsilon-fission"].IsScalar()) {
-    fatal_error(
-        "No valid epsilon-fission entry for propagating channel oscillation "
-        "noise source.");
+  if (!snode["epsilon-scatter"] || !snode["epsilon-scatter"].IsMap()) {
+    fatal_error("No valid epsilon-scatter entry for oscillation noise source.");
   }
-
-  double eps_f = snode["epsilon-fission"].as<double>();
-
-  if (eps_f <= 0.) {
-    fatal_error(
-        "Epsilon fission can not be negative or zero for propagating channel "
-        "oscillation noise source.");
+  pndl::Tabulated1D eps_s =
+      make_tabulated_1d(snode["epsilon-scatter"], "energy", "value");
+  for (const auto es : eps_s.y()) {
+    if (es < 0.) {
+      fatal_error(
+          "Epsilon scatter can not be negative for oscillation noise source.");
+    }
   }
-
-  if (!snode["epsilon-scatter"] || !snode["epsilon-scatter"].IsScalar()) {
+  if (eps_s.min_x() > settings::min_energy ||
+      eps_s.max_x() < settings::max_energy) {
     fatal_error(
-        "No valid epsilon-scatter entry for propagating channel oscillation "
-        "noise source.");
-  }
-
-  double eps_s = snode["epsilon-scatter"].as<double>();
-
-  if (eps_s <= 0.) {
-    fatal_error(
-        "Epsilon scatter can not be negative or zero for propagating channel "
-        "oscillation noise source.");
+        "Epsilon scatter energies are smaller than min and max particle "
+        "energies.");
   }
 
   return std::make_shared<PropagatingChannelOscillationNoiseSource>(

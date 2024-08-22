@@ -162,9 +162,15 @@ simulation:
       low: [2.1543, -2.8857, -2.00]
       hi: [2.8857, -2.1543, 2.00]
       angular-frequency: 6.28318531 # 2 pi
-      epsilon-total: 0.041
-      epsilon-fission: 0.021
-      epsilon-scatter: 0.034
+      epsilon-total:
+        energy: [0., 2.]
+        value: [0.041, 0.041]
+      epsilon-fission:
+        energy: [0., 2.]
+        value: [0.021, 0.021]
+      epsilon-scatter:
+        energy: [0., 2.]
+        value: [0.034, 0.034]
 
   entropy:
     low: [-10.71, -10.71, -2.00]
