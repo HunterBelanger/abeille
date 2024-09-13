@@ -58,7 +58,7 @@ ZernikeFET::ZernikeFET(std::shared_ptr<CylinderFilter> cylinder_filter,
   // last-dimension is sum of zernike and legendre orders to store the
   // coefficients of each polynomals. First will be zernike coefficients and
   // after will be the legendre coefficients.
-  tally_shape.push_back( (zr_order_ + 1) + (legen_order_ + 1));
+  tally_shape.push_back((zr_order_ + 1) + (legen_order_ + 1));
 
   // reallocate and fill with zeros for the taly avg, gen-score and varaince
   tally_avg_.resize(tally_shape);
@@ -109,9 +109,9 @@ ZernikeFET::ZernikeFET(std::shared_ptr<CylinderFilter> cylinder_filter,
   tally_shape.insert(tally_shape.end(), cylinder_shape.begin(),
                      cylinder_shape.end());
   axial_direction_ = cylinder_filter_->get_axial_direction();
-  
+
   // last-dimension is for the orders, since in this constructor, there is no
-  // legendre evaluation. the length of the dimesion will be zr-order + 1 
+  // legendre evaluation. the length of the dimesion will be zr-order + 1
   tally_shape.push_back(zr_order_ + 1);
 
   // in-this particular constructor, there will be no legendre-order
@@ -241,7 +241,7 @@ void ZernikeFET::score_source(const BankedParticle& p) {
 
   // Add one dimension for the different polynomial orders.
   // First loop over 0 to zernike-order for zernike polynomials.
-  // After, loop over 0 + (zernike-order + 1) to 
+  // After, loop over 0 + (zernike-order + 1) to
   // legendre-order + (zernike-order + 1) for the legendre polynomials.
   const std::size_t FET_index = indices.size();
   indices.push_back(0);
@@ -326,7 +326,8 @@ double ZernikeFET::evaluate(const Position& r, const double& E) const {
 
   // add one dimension for the different orders in polynomial
   // first loop over 0 to zernike-order for zernike
-  // second loop over 0 + (zernike-order + 1) to legendre-order + (zernike-order + 1)  
+  // second loop over 0 + (zernike-order + 1) to legendre-order + (zernike-order
+  // + 1)
   const std::size_t FET_index = indices.size();
   indices.push_back(0);
 
@@ -425,7 +426,8 @@ std::vector<double> ZernikeFET::evaluate(
 
     // add one dimension for the different orders in polynomial
     // first loop over 0 to zernike-order for zernike
-    // second loop over 0 + (zernike-order + 1) to legendre-order + (zernike-order + 1)  
+    // second loop over 0 + (zernike-order + 1) to legendre-order +
+    // (zernike-order + 1)
     const std::size_t FET_index = indices.size();
     indices.push_back(0);
 

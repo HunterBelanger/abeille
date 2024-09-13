@@ -217,7 +217,7 @@ void SlicePlot::generate_plot() {
         j++;
       }
     }  // while j < plot_width_
-  }    // For i which is parallel
+  }  // For i which is parallel
 }
 
 void SlicePlot::write() const {

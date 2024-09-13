@@ -97,8 +97,8 @@ double CENuclide::elastic_xs(double E_in, std::size_t i) const {
 }
 
 double CENuclide::heating(double E_in, std::size_t i) const {
-    return cedata_->heating_number()(E_in, i);
-  }
+  return cedata_->heating_number()(E_in, i);
+}
 
 std::size_t CENuclide::energy_grid_index(double E) const {
   return cedata_->energy_grid().get_lower_index(E);

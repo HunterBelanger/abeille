@@ -403,7 +403,7 @@ double MGNuclide::elastic_xs(double /*E_in*/, std::size_t i) const {
 }
 
 double MGNuclide::heating(double /*E_in*/, std::size_t /*i*/) const {
-  return 0.;   
+  return 0.;
 }
 
 std::size_t MGNuclide::energy_grid_index(double E) const {

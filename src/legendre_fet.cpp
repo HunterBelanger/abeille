@@ -8,9 +8,9 @@ using StaticVector6 = boost::container::static_vector<size_t, 6>;
 
 LegendreFET::LegendreFET(std::shared_ptr<CartesianFilter> position_filter,
                          std::shared_ptr<EnergyFilter> energy_in,
-                         std::vector<LegendreFET::Axis> axes, std::vector<std::size_t> fet_order,
-                         Quantity quantity, Estimator estimator,
-                         std::string name)
+                         std::vector<LegendreFET::Axis> axes,
+                         std::vector<std::size_t> fet_order, Quantity quantity,
+                         Estimator estimator, std::string name)
     : ITally(quantity, estimator, name),
       cartesian_filter_(position_filter),
       energy_in_(energy_in),
@@ -50,7 +50,7 @@ LegendreFET::LegendreFET(std::shared_ptr<CartesianFilter> position_filter,
   // Add the dimension for the order of FET only
   // the dimension size will be sum of all order+1 for any given axis
   std::size_t fet_order_dimension = 0;
-  for ( std::size_t it_axis = 0; it_axis < fet_order_.size(); it_axis++){
+  for (std::size_t it_axis = 0; it_axis < fet_order_.size(); it_axis++) {
     fet_order_dimension += fet_order_[it_axis] + 1;
   }
   tally_shape.push_back(fet_order_dimension);
@@ -105,7 +105,6 @@ void LegendreFET::score_collision(const Particle& p, const Tracker& tktr,
   double beta_n, scaled_loc;
   // Loop over the different axis and indexing is done
   for (std::size_t it_axis = 0; it_axis < axes_.size(); it_axis++) {
-
     // get the scaled x, y, or z for legendre polynomial
     switch (axes_[it_axis]) {
       case LegendreFET::Axis::X: {
@@ -189,7 +188,6 @@ void LegendreFET::score_source(const BankedParticle& p) {
   double beta_n, scaled_loc;
   // Loop over the different axis and indexing is done
   for (std::size_t it_axis = 0; it_axis < axes_.size(); it_axis++) {
-
     // get the scaled x, y, or z for legendre polynomial
     switch (axes_[it_axis]) {
       case LegendreFET::Axis::X: {
@@ -265,7 +263,6 @@ double LegendreFET::evaluate(const Position& r, const double& E) const {
   double tally_value = 1.;  // for evaluation of tally at a given Position
   double scaled_loc;
   for (std::size_t it_axis = 0; it_axis < axes_.size(); it_axis++) {
-    
     // check every existing axis and calculate for each and every order
     switch (axes_[it_axis]) {
       case LegendreFET::Axis::X: {
@@ -366,7 +363,6 @@ std::vector<double> LegendreFET::evaluate(
     double tally_value = 1.;  // for evaluation of tally at a given Position
     double scaled_loc;
     for (std::size_t it_axis = 0; it_axis < axes_.size(); it_axis++) {
-      
       // check every existing axis and calculate for each and every order
       switch (axes_[it_axis]) {
         case LegendreFET::Axis::X: {

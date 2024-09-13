@@ -455,14 +455,16 @@ void PowerIterator::run() {
 
     // Do weight cancelation
     if (cancelator) {
-      perform_regional_cancellation(next_gen);
+      perform_regional_cancellation(cancelator, next_gen);
     }
 
     // Calculate net positive and negative weight
-    normalize_weights(next_gen);
+    normalize_weights(nparticles, next_gen, Npos, Nneg, Nnet, Ntot, Wpos, Wneg,
+                      Wnet, Wtot);
+    save_weights();
 
     // Comb particles
-    if (combing) comb_particles(next_gen);
+    if (combing) comb_particles(next_gen, Npos, Nneg, Nnet, Ntot);
 
     // Synchronize particles across nodes
     sync_banks(mpi::node_nparticles, next_gen);
@@ -576,101 +578,6 @@ void PowerIterator::run() {
   if (save_source) write_source(bank);
 }
 
-void PowerIterator::comb_particles(std::vector<BankedParticle>& next_gen) {
-  double Wpos_node = 0.;
-  double Wneg_node = 0.;
-  // Get sum of total positive and negative weights using Kahan Summation
-  std::tie(Wpos_node, Wneg_node, std::ignore, std::ignore) =
-      kahan_bank(next_gen.begin(), next_gen.end());
-
-  // Get total weights for all nodes
-  std::vector<double> Wpos_each_node(static_cast<std::size_t>(mpi::size), 0.);
-  Wpos_each_node[static_cast<std::size_t>(mpi::rank)] = Wpos_node;
-  mpi::Allreduce_sum(Wpos_each_node);
-  const double Wpos = kahan(Wpos_each_node.begin(), Wpos_each_node.end(), 0.);
-
-  std::vector<double> Wneg_each_node(static_cast<std::size_t>(mpi::size), 0.);
-  Wneg_each_node[static_cast<std::size_t>(mpi::rank)] = Wneg_node;
-  mpi::Allreduce_sum(Wneg_each_node);
-  const double Wneg = kahan(Wneg_each_node.begin(), Wneg_each_node.end(), 0.);
-
-  // Determine how many positive and negative particles we want to have after
-  // combing on this node and globaly as well
-  const std::size_t Npos_node = static_cast<std::size_t>(std::round(Wpos_node));
-  const std::size_t Nneg_node =
-      static_cast<std::size_t>(std::round(std::abs(Wneg_node)));
-
-  const std::size_t Npos = static_cast<std::size_t>(std::round(Wpos));
-  const std::size_t Nneg = static_cast<std::size_t>(std::round(std::abs(Wneg)));
-
-  // Update particle numbers due to combing
-  this->Npos = static_cast<int>(Npos);
-  this->Nneg = static_cast<int>(Nneg);
-  Ntot = this->Npos + this->Nneg;
-  Nnet = this->Npos - this->Nneg;
-
-  // The + 2 is to account for rounding in the ceil operations between global
-  // array vs just the node
-  std::vector<BankedParticle> new_next_gen;
-  new_next_gen.reserve(Npos_node + Nneg_node + 2);
-
-  // Variables for combing particles
-  const double avg_pos_wgt = Wpos / static_cast<double>(Npos);
-  const double avg_neg_wgt = std::abs(Wneg) / static_cast<double>(Nneg);
-  double comb_position_pos = 0.;
-  double comb_position_neg = 0.;
-  if (mpi::rank == 0) {
-    // The initial random offset of the comb is sampled on the master node.
-    comb_position_pos = settings::rng() * avg_pos_wgt;
-    comb_position_neg = settings::rng() * avg_neg_wgt;
-  }
-  mpi::Bcast(comb_position_pos, 0);
-  mpi::Bcast(comb_position_neg, 0);
-
-  // Find Comb Position for this Node
-  const double U_pos =
-      kahan(Wpos_each_node.begin(), Wpos_each_node.begin() + mpi::rank, 0.);
-  const double beta_pos = std::floor((U_pos - comb_position_pos) / avg_pos_wgt);
-
-  const double U_neg = std::abs(
-      kahan(Wneg_each_node.begin(), Wneg_each_node.begin() + mpi::rank, 0.));
-  const double beta_neg = std::floor((U_neg - comb_position_neg) / avg_neg_wgt);
-
-  if (mpi::rank != 0) {
-    comb_position_pos =
-        ((beta_pos + 1.) * avg_pos_wgt) + comb_position_pos - U_pos;
-    if (comb_position_pos > avg_pos_wgt) comb_position_pos -= avg_pos_wgt;
-
-    comb_position_neg =
-        ((beta_neg + 1.) * avg_neg_wgt) + comb_position_neg - U_neg;
-    if (comb_position_neg > avg_neg_wgt) comb_position_neg -= avg_neg_wgt;
-  }
-
-  double current_particle_pos = 0.;
-  double current_particle_neg = 0.;
-  // Comb positive and negative particles at the same time, to ensure that
-  // particle orders aren't changed for different parallelization schemes.
-  for (std::size_t i = 0; i < next_gen.size(); i++) {
-    if (next_gen[i].wgt > 0.) {
-      current_particle_pos += next_gen[i].wgt;
-      while (comb_position_pos < current_particle_pos) {
-        new_next_gen.push_back(next_gen[i]);
-        new_next_gen.back().wgt = avg_pos_wgt;
-        comb_position_pos += avg_pos_wgt;
-      }
-    } else {
-      current_particle_neg -= next_gen[i].wgt;
-      while (comb_position_neg < current_particle_neg) {
-        new_next_gen.push_back(next_gen[i]);
-        new_next_gen.back().wgt = -avg_neg_wgt;
-        comb_position_neg += avg_neg_wgt;
-      }
-    }
-  }
-
-  next_gen.swap(new_next_gen);
-}
-
 void PowerIterator::write_entropy_families_etc_to_results() const {
   if (mpi::rank != 0) return;
 
@@ -738,41 +645,7 @@ void PowerIterator::write_entropy_families_etc_to_results() const {
   h5.createAttribute("generation-times", generation_times);
 }
 
-void PowerIterator::normalize_weights(std::vector<BankedParticle>& next_gen) {
-  double W = 0.;
-  double W_neg = 0.;
-  double W_pos = 0.;
-
-  std::tie(W_pos, W_neg, Npos, Nneg) =
-      kahan_bank(next_gen.begin(), next_gen.end());
-  W_neg = std::abs(W_neg);
-
-  // Get totals across all nodes
-  mpi::Allreduce_sum(W_pos);
-  mpi::Allreduce_sum(W_neg);
-  mpi::Allreduce_sum(Npos);
-  mpi::Allreduce_sum(Nneg);
-
-  W = W_pos - W_neg;
-  Ntot = Npos + Nneg;
-  Nnet = Npos - Nneg;
-
-  // Re-Normalize particle weights
-  double w_per_part = static_cast<double>(nparticles) / W;
-  W *= w_per_part;
-  W_neg *= w_per_part;
-  W_pos *= w_per_part;
-
-  for (std::size_t i = 0; i < next_gen.size(); i++) {
-    next_gen[i].wgt *= w_per_part;
-  }
-
-  double Wtt = W_pos + W_neg;
-  Wnet = static_cast<int>(std::round(W));
-  Wtot = static_cast<int>(std::round(Wtt));
-  Wpos = static_cast<int>(std::round(W_pos));
-  Wneg = static_cast<int>(std::round(W_neg));
-
+void PowerIterator::save_weights() {
   // Save values to vectors
   Nnet_vec.push_back(Nnet);
   Ntot_vec.push_back(Ntot);
@@ -958,34 +831,6 @@ void PowerIterator::check_time(std::size_t gen) {
     // transport loop as if we finished the simulation normally.
     ngenerations = gen;
   }
-}
-
-void PowerIterator::perform_regional_cancellation(
-    std::vector<BankedParticle>& next_gen) {
-  // Only perform cancellation if we are master !!
-  std::size_t n_lost_boys = 0;
-
-  // Distribute Particles to Cancellation Bins
-  for (auto& p : next_gen) {
-    if (!cancelator->add_particle(p)) n_lost_boys++;
-  }
-
-  if (n_lost_boys > 0)
-    std::cout << " There are " << n_lost_boys
-              << " particles with no cancellation bin.\n";
-
-  // Perform Cancellation for each Bin
-  cancelator->perform_cancellation();
-
-  // All particles which were placed into a cancellation bin from next_gen
-  // now have modified weights.
-  // Now we can get the uniform particles
-  auto tmp = cancelator->get_new_particles(settings::rng);
-
-  if (tmp.size() > 0) next_gen.insert(next_gen.begin(), tmp.begin(), tmp.end());
-
-  // All done ! Clear cancelator for next run
-  cancelator->clear();
 }
 
 std::shared_ptr<PowerIterator> make_power_iterator(const YAML::Node& sim) {

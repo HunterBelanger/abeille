@@ -20,8 +20,9 @@ class LegendreFET : public ITally {
 
   LegendreFET(std::shared_ptr<CartesianFilter> position_filter,
               std::shared_ptr<EnergyFilter> energy_in,
-              std::vector<LegendreFET::Axis> axes, std::vector<std::size_t> fet_order,
-              Quantity quantity, Estimator estimator, std::string name);
+              std::vector<LegendreFET::Axis> axes,
+              std::vector<std::size_t> fet_order, Quantity quantity,
+              Estimator estimator, std::string name);
 
   ~LegendreFET() = default;
 
@@ -51,7 +52,7 @@ class LegendreFET : public ITally {
   boost::container::static_vector<Axis, 3> axes_;
 
   // Note that the number of coefficient will be one more than the order.
-  std::vector<std::size_t> fet_order_; 
+  std::vector<std::size_t> fet_order_;
 };
 
 std::shared_ptr<LegendreFET> make_legendre_fet(const YAML::Node& node);

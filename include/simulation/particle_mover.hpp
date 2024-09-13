@@ -152,7 +152,7 @@ class ParticleMover : public IParticleMover {
             resurection_ritual(p, trkr, mat);
           }
         }  // While alive
-      }    // For all particles
+      }  // For all particles
 
       // Send all thread local scores to tallies instance
       Tallies::instance().score_k_col(thread_scores.k_col_score);

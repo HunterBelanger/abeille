@@ -40,7 +40,7 @@
 
 class PowerIterator : public Simulation {
  public:
-  PowerIterator(std::shared_ptr<IParticleMover> i_pm) : Simulation(i_pm){};
+  PowerIterator(std::shared_ptr<IParticleMover> i_pm) : Simulation(i_pm) {};
   ~PowerIterator() = default;
 
   void initialize() override final;
@@ -104,11 +104,7 @@ class PowerIterator : public Simulation {
 
   void write_entropy_families_etc_to_results() const;
 
-  void normalize_weights(std::vector<BankedParticle>& next_gen);
-
-  void comb_particles(std::vector<BankedParticle>& next_gen);
-
-  void perform_regional_cancellation(std::vector<BankedParticle>& next_gen);
+  void save_weights();
 
   // Entropy calculation
   void compute_pre_cancellation_entropy(std::vector<BankedParticle>& next_gen);

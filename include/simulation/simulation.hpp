@@ -25,6 +25,7 @@
 #ifndef SIMULATION_H
 #define SIMULATION_H
 
+#include <cancelator/cancelator.hpp>
 #include <simulation/particle.hpp>
 #include <simulation/particle_mover.hpp>
 #include <source/source.hpp>
@@ -64,6 +65,17 @@ class Simulation {
   void sync_signaled();
   void sync_banks(std::vector<uint64_t>& nums,
                   std::vector<BankedParticle>& bank);
+
+  void normalize_weights(std::size_t nparticles,
+                         std::vector<BankedParticle>& next_gen, int& Npos,
+                         int& Nneg, int& Nnet, int& Ntot, int& Wpos, int& Wneg,
+                         int& Wnet, int& Wtot);
+
+  void comb_particles(std::vector<BankedParticle>& next_gen, int& Npos,
+                      int& Nneg, int& Nnet, int& Ntot);
+
+  void perform_regional_cancellation(std::shared_ptr<Cancelator>& cancelator,
+                                     std::vector<BankedParticle>& next_gen);
 
   void write_source(std::vector<Particle>& bank) const;
 
