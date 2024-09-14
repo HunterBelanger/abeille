@@ -16,7 +16,7 @@ materials:
 
 surfaces:
   - {id: 1, type: xplane, x0: 0., boundary: vacuum}
-  - {id: 2, type: xplane, x0: 3.5, boundary: vacuum}
+  - {id: 2, type: xplane, x0: 4.5, boundary: vacuum}
 
 cells:
   - {id: 1, region: "+1 & -2", material: 1, name: rod}
@@ -36,7 +36,7 @@ simulation:
   nparticles: 100000
   ngenerations: 1000
   nignored: 100
-  alpha: -0.04
+  alpha: 0.06
   eta: 1
   combing: true
   sources:
