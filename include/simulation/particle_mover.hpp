@@ -83,7 +83,7 @@ class ParticleMover : public IParticleMover {
       std::optional<NoiseParameters> noise = std::nullopt,
       std::vector<BankedParticle>* noise_bank = nullptr,
       const NoiseMaker* noise_maker = nullptr,
-      std::optional<AlphaParameters> alpha = std::nullopt) override final {
+      std::optional<AlphaParameters> alpha = std::nullopt) override {
 #ifdef ABEILLE_USE_OMP
 #pragma omp parallel
 #endif
@@ -250,9 +250,10 @@ class NoiseParticleMover
       std::vector<Particle>& bank,
       std::optional<NoiseParameters> noise = std::nullopt,
       std::vector<BankedParticle>* noise_bank = nullptr,
-      const NoiseMaker* noise_maker = nullptr) override final {
+      const NoiseMaker* noise_maker = nullptr,
+      std::optional<AlphaParameters> alpha = std::nullopt) override final {
     return ParticleMover<TransportOp, NoiseBranchingCollision>::transport(
-        bank, noise, noise_bank, noise_maker);
+        bank, noise, noise_bank, noise_maker, alpha);
   }
 
   bool exact_cancellation_compatible() const override final {

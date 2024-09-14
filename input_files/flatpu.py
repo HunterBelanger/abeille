@@ -31,7 +31,7 @@ root_uni = CellUniverse([fuel_cell, ref_cell])
 
 # Simulation
 sources = [Source(Point(0., 0., 0.), Isotropic(), MonoEnergetic(0.7), 1.)]
-simulation = PowerIterator(10000, 2100, 100, sources)
+simulation = KeffPowerIterator(10000, 2100, 100, sources)
 
 # Write input file
 inpt = Input(root_uni, simulation)

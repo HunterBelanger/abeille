@@ -1058,7 +1058,7 @@ class FixedSource(Simulation):
         return out
 
 
-class PowerIterator(Simulation):
+class KeffPowerIterator(Simulation):
     def __init__(self, nparticles : int, ngenerations : int, nignored : int, sources : List[Source], transport_op : TransportOperator = SurfaceTracker(), collision_op : CollisionOperator = BranchingCollisions()):
         self.nparticles = nparticles
         self.ngenerations = ngenerations

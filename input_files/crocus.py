@@ -276,7 +276,7 @@ sources = [Source(spatial=Box(Point(-29.17, -29.17, 0.05), Point(29.17, 29.17, 9
 
 entropy = Entropy(Point(-29.17, -29.17, -2.7), Point(29.17, 29.17, 100.), (5,5,5))
 
-simulation = PowerIterator(nparticles=10000, ngenerations=3100, nignored=100, sources=sources)
+simulation = KeffPowerIterator(nparticles=10000, ngenerations=3100, nignored=100, sources=sources)
 simulation.entropy = entropy
 
 input = Input(Inner_Lattice, simulation, tallies)

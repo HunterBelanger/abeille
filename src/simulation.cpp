@@ -24,7 +24,7 @@
  * */
 #include <simulation/alpha_power_iterator.hpp>
 #include <simulation/fixed_source.hpp>
-#include <simulation/k_power_iterator.hpp>
+#include <simulation/keff_power_iterator.hpp>
 #include <simulation/noise.hpp>
 #include <simulation/simulation.hpp>
 #include <utils/error.hpp>
@@ -397,7 +397,7 @@ std::shared_ptr<Simulation> make_simulation(const YAML::Node& input) {
 
   std::shared_ptr<Simulation> simulation = nullptr;
   if (mode == "k-eigenvalue") {
-    simulation = make_k_power_iterator(sim);
+    simulation = make_keff_power_iterator(sim);
   } else if (mode == "fixed-source") {
     simulation = make_fixed_source(sim);
   } else if (mode == "modified-fixed-source") {

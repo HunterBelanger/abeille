@@ -277,7 +277,7 @@ sources = [Source(spatial=Box(Point(xl.x0, yl.y0, -0.5*geom_height), Point(xl.x0
 
 entropy = Entropy(Point(xl.x0, yl.y0, -0.5*geom_height), Point(xl.x0 + 2.*asmbly_pitch, yl.y0 + 2.*asmbly_pitch, 0.5*geom_height), (8,8,1))
 
-simulation = PowerIterator(nparticles=100000, ngenerations=3100, nignored=100, sources=sources)
+simulation = KeffPowerIterator(nparticles=100000, ngenerations=3100, nignored=100, sources=sources)
 simulation.entropy = entropy
 
 settings = Settings()

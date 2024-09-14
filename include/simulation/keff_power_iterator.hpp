@@ -22,8 +22,8 @@
  * along with Abeille. If not, see <https://www.gnu.org/licenses/>.
  *
  * */
-#ifndef K_POWER_ITERATOR_H
-#define K_POWER_ITERATOR_H
+#ifndef KEFF_POWER_ITERATOR_H
+#define KEFF_POWER_ITERATOR_H
 
 #include <cancelator/cancelator.hpp>
 #include <simulation/entropy.hpp>
@@ -38,10 +38,10 @@
 #include <unordered_set>
 #include <vector>
 
-class KPowerIterator : public Simulation {
+class KeffPowerIterator : public Simulation {
  public:
-  KPowerIterator(std::shared_ptr<IParticleMover> i_pm) : Simulation(i_pm){};
-  ~KPowerIterator() = default;
+  KeffPowerIterator(std::shared_ptr<IParticleMover> i_pm) : Simulation(i_pm) {};
+  ~KeffPowerIterator() = default;
 
   void initialize() override final;
   void run() override final;
@@ -54,6 +54,7 @@ class KPowerIterator : public Simulation {
   void set_families(bool fams) { calc_families = fams; }
   void set_pair_distance(bool prdist) { pair_distance_sqrd = prdist; }
   void set_empty_entropy_bins(bool eeb) { empty_entropy_bins = eeb; }
+  void set_save_source(bool save_src) { save_source = save_src; }
   void set_in_source_file(const std::string& sf) { in_source_file_name = sf; }
   void add_source(std::shared_ptr<Source> src);
   void set_nparticles(std::size_t np) { nparticles = np; }
@@ -88,10 +89,12 @@ class KPowerIterator : public Simulation {
   int Nnet = 0, Npos = 0, Nneg = 0, Ntot = 0;
   int Wnet = 0, Wpos = 0, Wneg = 0, Wtot = 0;
   double r_sqrd = 0.;
+  bool converged = false;
   bool combing = false;
   bool calc_families = false;
   bool pair_distance_sqrd = false;
   bool empty_entropy_bins = false;
+  bool save_source = false;
 
   void check_time(std::size_t gen);
 
@@ -101,11 +104,7 @@ class KPowerIterator : public Simulation {
 
   void write_entropy_families_etc_to_results() const;
 
-  void normalize_weights(std::vector<BankedParticle>& next_gen);
-
-  void comb_particles(std::vector<BankedParticle>& next_gen);
-
-  void perform_regional_cancellation(std::vector<BankedParticle>& next_gen);
+  void save_weights();
 
   // Entropy calculation
   void compute_pre_cancellation_entropy(std::vector<BankedParticle>& next_gen);
@@ -120,8 +119,8 @@ class KPowerIterator : public Simulation {
   void sample_source_from_sources();
   void load_source_from_file();
 
-};  // PowerIterator
+};  // KeffPowerIterator
 
-std::shared_ptr<KPowerIterator> make_k_power_iterator(const YAML::Node& sim);
+std::shared_ptr<KeffPowerIterator> make_keff_power_iterator(const YAML::Node& sim);
 
 #endif  // MG_POWER_ITERATOR_H
