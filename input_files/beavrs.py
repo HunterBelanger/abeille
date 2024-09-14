@@ -1412,10 +1412,19 @@ surfaces.append({"id": 17011, "type": "plane", "A": -float(np.tan(61.*np.pi/180.
 surfaces.append({"id": 17012, "type": "zcylinder", "x0": 0., "y0": 0., "r": 187.96}) # Inner radius of Core barrel
 surfaces.append({"id": 17013, "type": "zcylinder", "x0": 0., "y0": 0., "r": 193.675}) # Outer radius of Core barrel
 
+# Core baffle
+assembly_pitch = 21.50364
+baffle_gap = 0.1627
+baffle_thick = 2.22250
+surfaces.append({"id": 17015, "type": "cross", "distances": [(3.5*assembly_pitch)+baffle_gap,              (5.5*assembly_pitch)+baffle_gap,              (6.5*assembly_pitch)+baffle_gap,              (7.5*assembly_pitch)+baffle_gap]})
+surfaces.append({"id": 17016, "type": "cross", "distances": [(3.5*assembly_pitch)+baffle_gap+baffle_thick, (5.5*assembly_pitch)+baffle_gap+baffle_thick, (6.5*assembly_pitch)+baffle_gap+baffle_thick, (7.5*assembly_pitch)+baffle_gap+baffle_thick]})
+cells.append({"id": 17021, "region": "+17004 & -17005 & +17015 & -17016", "material": SS304}) # Baffle
+
 cells.append({"id": 17001, "region": "-17002 & +17001 & +17004 & -17005", "material": SS304}) # PV Liner
 cells.append({"id": 17002, "region": "-17003 & +17002 & +17004 & -17005", "material": CS}) # PV
 
-cells.append({"id": 17003, "region": "-17012 & +17004 & -17005", "material": BH2O}) # Water inside core barel
+cells.append({"id": 17003, "region": "-17012 & +17004 & -17005 & ~(+17004 & -17005 & +17015 & -17016)", "material": BH2O}) # Water inside core barel
+
 cells.append({"id": 17004, "region": "-17013 & +17012 & +17004 & -17005", "material": SS304}) # Core barel
 
 cells.append({"id": 17005, "region": "-17001 & +17013 & +17004 & -17005 & -17008 & +17010", "material": BH2O}) # N Water reflector
@@ -1440,7 +1449,7 @@ cells.append({"id": 17019, "region": "+17006 & -17007 & +17004 & -17005 & -17010
 cells.append({"id": 17020, "region": "+17007 & -17001 & +17004 & -17005 & -17010 & +17011", "material": BH2O}) # NE outer water
 
 universes.append({"id": 17001, "cells": [17001, 17002, 17003, 17004, 17005, 17006, 17007, 17008, 17009, 17010,
-  17011, 17012, 17013, 17014, 17015, 17016, 17017, 17018, 17019, 17020]})
+  17011, 17012, 17013, 17014, 17015, 17016, 17017, 17018, 17019, 17020, 17021]})
 
 #=============================================================================
 # Lattices
@@ -1509,41 +1518,72 @@ universes.append({"id": 20000, "type": "rectlinear", "shape": [15,15,1],
   "universes": core_unis})
 CORE = 20000
 
-
 #=============================================================================
 # Tallies
+position_filters = []
+
+position_filters.append({})
+position_filters[-1]["id"] = 1
+position_filters[-1]["type"] = "regular-cartesian-mesh"
+position_filters[-1]["low"] = [-204.28458, -204.28458,   0.]
+position_filters[-1]["high"] =  [ 204.28458,  204.28458, 460.]
+position_filters[-1]["shape"] = [323,323,50]
+
+position_filters.append({})
+position_filters[-1]["id"] = 2
+position_filters[-1]["type"] = "regular-cartesian-mesh"
+position_filters[-1]["low"] = [-161.2773, -161.2773, 36.748]
+position_filters[-1]["high"] = [ 161.2773,  161.2773, 402.508]
+position_filters[-1]["shape"] = [255, 255, 1]
+
+position_filters.append({})
+position_filters[-1]["id"] = 3
+position_filters[-1]["type"] = "regular-cartesian-mesh"
+position_filters[-1]["low"] = [-190., -190., 0.]
+position_filters[-1]["high"] = [190., 190., 460.]
+position_filters[-1]["shape"] = [1, 1, 1]
+
+energy_filters = []
+
+energy_filters.append({})
+energy_filters[-1]["id"] = 1
+energy_filters[-1]["energy-bounds"] = [1.E-11,0.625E-6, 20.]
+
+energy_filters.append({})
+energy_filters[-1]["id"] = 2
+energy_filters[-1]["energy-bounds"] = []
+Ebns = list(np.logspace(np.log10(1.E-11), np.log10(20.), 2000))
+for E in Ebns:
+  energy_filters[-1]["energy-bounds"].append(float(E))
+
+energy_filters.append({})
+energy_filters[-1]["id"] = 3
+energy_filters[-1]["energy-bounds"] = [1.E-11, 20.]
+
+tally_filters = {"position-filters": position_filters, "energy-filters": energy_filters}
+
 tallies = []
 
 tallies.append({})
 tallies[-1]["quantity"] = "flux"
 tallies[-1]["estimator"] = "track-length"
 tallies[-1]["name"] = "flux_beavrs"
-tallies[-1]["low"] = [-204.28458, -204.28458,   0.]
-tallies[-1]["hi"] =  [ 204.28458,  204.28458, 460.]
-tallies[-1]["shape"] = [323,323,50]
-tallies[-1]['energy-bounds'] = [1.E-11,0.625E-6, 20.]
+tallies[-1]["position-filter"] = 1
+tallies[-1]['energy-filter'] = 1
 
 tallies.append({})
 tallies[-1]["quantity"] = "flux"
 tallies[-1]["estimator"] = "track-length"
 tallies[-1]["name"] = "flux_spectrum_beavrs"
-tallies[-1]["low"] = [-190., -190., 0.]
-tallies[-1]["hi"] = [190., 190., 460.]
-tallies[-1]["shape"] = [1,1,1]
-Ebounds = []
-Ebounds_array = list(np.logspace(np.log10(1.E-11), np.log10(20.), 2000))
-for Ebound in Ebounds_array:
-  Ebounds.append(float(Ebound))
-tallies[-1]['energy-bounds'] = Ebounds
+tallies[-1]["position-filter"] = 3
+tallies[-1]['energy-filter'] = 2
 
 tallies.append({})
 tallies[-1]["quantity"] = "fission"
 tallies[-1]["estimator"] = "track-length"
 tallies[-1]["name"] = "fission_beavrs"
-tallies[-1]["low"] = [-161.2773, -161.2773, 36.748]
-tallies[-1]["hi"] =  [ 161.2773,  161.2773, 402.508]
-tallies[-1]["shape"] = [255,255,1]
-tallies[-1]['energy-bounds'] = [1.E-11, 20.]
+tallies[-1]["position-filter"] = 2
+tallies[-1]["energy-filter"] = 3
 
 #=============================================================================
 # Settings
@@ -1603,6 +1643,7 @@ beavrs['surfaces'] = surfaces
 beavrs['cells'] = cells
 beavrs['universes'] = universes
 beavrs['root-universe'] = CORE
+beavrs['tally-filters'] = tally_filters
 beavrs['tallies'] = tallies
 beavrs['settings'] = settings
 beavrs['simulation'] = simulation

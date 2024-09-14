@@ -1,492 +1,283 @@
-import yaml
+from abeille import *
 import numpy as np
 
-if __name__ == "__main__":
-  # Fuel and Cladding Radii
-  fuel_UO2_rad = 0.526
-  clad_UO2_rad = 0.630
-  fuel_met_rad = 0.850
-  clad_met_rad = 0.965
-
-  # Fuel Axial Divisions
-  H = 96.51
-  fuel_bottom = 0.
-  fuel_top = fuel_bottom + 100.0
-  pin_Al_bottom = fuel_bottom - 2.7
-  UO2_He_top = fuel_top + 0.5
-  UO2_top_Al_top = UO2_He_top + 16.8
-  Met_He_top = fuel_top + 1.47
-  Met_top_Al_top = Met_He_top + 1.583
-  
-  tank_top = 102.3
-  air_top = 120.
-
-  # Other Axial Divisions
-  top_Cd_top =  101.05 # Top of Cd layer in top grid
-  top_Cd_bot =  101.0  # Bottom of the Cd Layer in top grid
-  top_Al_top =  102.55 # Top of top grid plate
-  top_Al_bot =  100.5  # Bottom of top grid plate
-
-  bot_Cd_top = fuel_bottom # Top of Cd layer in bottom plate (same level as fuel bottom !)
-  bot_Cd_bot = fuel_bottom - 0.05 #  Bottom of the Cd Layer
-  bot_Al_top = bot_Cd_top + 0.5 # Top of bottom grid plate
-  bot_Al_bot = fuel_bottom - 0.55 # Bottom of bottom grid plate
-
-  base_plate_top = fuel_bottom - 2.7
-  base_plate_bottom = fuel_bottom - 5.7
-  reactor_vessel_bottom = base_plate_bottom - 4.0 # TODO Check this value !!!
-  
-
-  #==============================================================================
-  # Surfaces
-  surfaces = []
-
-  # Pin Surfaces in Cell Universe
-  surfaces.append({"id": 1, "type": "zcylinder", "x0": 0., "y0": 0., "r": fuel_UO2_rad, "name": "fuel_UO2_rad"})
-  surfaces.append({"id": 2, "type": "zcylinder", "x0": 0., "y0": 0., "r": clad_UO2_rad, "name": "clad_UO2_rad"})
-  surfaces.append({"id": 3, "type": "zcylinder", "x0": 0., "y0": 0., "r": fuel_met_rad, "name": "fuel_met_rad"})
-  surfaces.append({"id": 4, "type": "zcylinder", "x0": 0., "y0": 0., "r": clad_met_rad, "name": "clad_met_rad"})
-  
-  surfaces.append({"id": 5, "type": "zplane", "z0": -57.85, "name": "bottom_grid_bottom"})
-  surfaces.append({"id": 6, "type": "zplane", "z0": -57.35, "name": "bottom_Cd_bottom"})
-  surfaces.append({"id": 7, "type": "zplane", "z0": -57.3, "name": "fuel_bottom and Cd top"})
-  surfaces.append({"id": 8, "type": "zplane", "z0": -56.8, "name": "bottom_grid_top"})
-  surfaces.append({"id": 9, "type": "zplane", "z0": -57.3 + H, "name": "water_top"})
-  surfaces.append({"id":10, "type": "zplane", "z0": 42.7, "name": "fuel_top"})
-  surfaces.append({"id":11, "type": "zplane", "z0": 43.2, "name": "UO2_He_top"})
-  surfaces.append({"id":12, "type": "zplane", "z0": 44.17, "name": "UMet_He_top"})
-  surfaces.append({"id":13, "type": "zplane", "z0": 43.2, "name": "top_grid_bottom"})
-  surfaces.append({"id":14, "type": "zplane", "z0": 43.7, "name": "top_Cd_bottom"})
-  surfaces.append({"id":15, "type": "zplane", "z0": 43.75, "name": "top_Cd_top"})
-  surfaces.append({"id":16, "type": "zplane", "z0": 45.25, "name": "top_grid_top"})
-
-  # Bottom Plate
-  surfaces.append({"id": 20, "type": "yplane", "y0": 36., "name": "N-bot-plate"})
-  surfaces.append({"id": 21, "type": "plane", "A": 1., "B": 1., "C": 0., "D": 54., "name": "NE-bot-plate"})
-  surfaces.append({"id": 22, "type": "xplane", "x0": 36., "name": "E-bot-plate"})
-  surfaces.append({"id": 23, "type": "plane", "A": -1., "B": 1., "C": 0., "D": -54., "name": "SE-bot-plate"})
-  surfaces.append({"id": 24, "type": "yplane", "y0": -36., "name": "S-bot-plate"})
-  surfaces.append({"id": 25, "type": "plane", "A": 1., "B": 1., "C": 0., "D": -54., "name": "SW-bot-plate"})
-  surfaces.append({"id": 26, "type": "xplane", "x0": -36., "name": "W-bot-plate"})
-  surfaces.append({"id": 27, "type": "plane", "A": -1., "B": 1., "C": 0., "D": 54., "name": "NW-bot-plate"})
-  surfaces.append({"id": 28, "type": "zplane", "z0": base_plate_bottom, "name": "base_plate_bottom"})
-  surfaces.append({"id": 29, "type": "zplane", "z0": base_plate_top, "name": "base_plate_top"})
-
-  # Bottom Grid
-  surfaces.append({"id": 30, "type": "yplane", "y0": 38., "name": "N-bot-grid"})
-  surfaces.append({"id": 31, "type": "plane", "A": 1., "B": 1., "C": 0., "D": 57., "name": "NE-bot-grid"})
-  surfaces.append({"id": 32, "type": "xplane", "x0": 38., "name": "E-bot-grid"})
-  surfaces.append({"id": 33, "type": "plane", "A": -1., "B": 1., "C": 0., "D": -57., "name": "SE-bot-grid"})
-  surfaces.append({"id": 34, "type": "yplane", "y0": -38., "name": "S-bot-grid"})
-  surfaces.append({"id": 35, "type": "plane", "A": 1., "B": 1., "C": 0., "D": -57., "name": "SW-bot-grid"})
-  surfaces.append({"id": 36, "type": "xplane", "x0": -38., "name": "W-bot-grid"})
-  surfaces.append({"id": 37, "type": "plane", "A": -1., "B": 1., "C": 0., "D": 57., "name": "NW-bot-grid"})
-  surfaces.append({"id": 38, "type": "zplane", "z0": bot_Al_bot, "name": "bot_Al_bot"})
-  surfaces.append({"id": 39, "type": "zplane", "z0": bot_Al_top, "name": "bot_Al_top"})
-  surfaces.append({"id": 41, "type": "zplane", "z0": bot_Cd_bot, "name": "bot_Cd_bot"})
-  surfaces.append({"id": 42, "type": "zplane", "z0": bot_Cd_top, "name": "bot_Cd_top"})
-
-  # Top Grid
-  surfaces.append({"id": 50, "type": "yplane", "y0": 42., "name": "N-top-grid"})
-  surfaces.append({"id": 51, "type": "plane", "A": 1., "B": 1., "C": 0., "D": 63., "name": "NE-top-grid"})
-  surfaces.append({"id": 52, "type": "xplane", "x0": 42., "name": "E-bot-grid"})
-  surfaces.append({"id": 53, "type": "plane", "A": -1., "B": 1., "C": 0., "D": -63., "name": "SE-top-grid"})
-  surfaces.append({"id": 54, "type": "yplane", "y0": -42., "name": "S-bot-grid"})
-  surfaces.append({"id": 55, "type": "plane", "A": 1., "B": 1., "C": 0., "D": -63., "name": "SW-top-grid"})
-  surfaces.append({"id": 56, "type": "xplane", "x0": -42., "name": "W-bot-grid"})
-  surfaces.append({"id": 57, "type": "plane", "A": -1., "B": 1., "C": 0., "D": 63., "name": "NW-top-grid"})
-  surfaces.append({"id": 58, "type": "zplane", "z0": top_Al_bot, "name": "top_Al_bot"})
-  surfaces.append({"id": 59, "type": "zplane", "z0": top_Al_top, "name": "top_Al_top"})
-  surfaces.append({"id": 61, "type": "zplane", "z0": top_Cd_bot, "name": "top_Cd_bot"})
-  surfaces.append({"id": 62, "type": "zplane", "z0": top_Cd_top, "name": "top_Cd_top"})
-
-  surfaces.append({"id": 100, "type": "zcylinder", "x0": 0., "y0": 0., "r": 65.0, "name": "inner-tank-edge"})
-  surfaces.append({"id": 101, "type": "zcylinder", "x0": 0., "y0": 0., "r": 66.2, "boundary": "vacuum", "name": "outer-tank-edge"})
-  surfaces.append({"id": 102, "type": "zplane", "z0": H, "name": "water_top"})
-  surfaces.append({"id": 103, "type": "zplane", "z0": tank_top, "name": "tank-top"})
-  surfaces.append({"id": 104, "type": "zplane", "z0": air_top, "boundary": "vacuum", "name": "air_top"})
-  surfaces.append({"id": 105, "type": "zplane", "z0": reactor_vessel_bottom, "boundary": "vacuum", "name": "vessel_bottom"})
-
-  #==============================================================================
-  # Materials
-  materials = []
-  
-  Fuel_UO2 = 1
-  materials.append({"id": Fuel_UO2, "name": "Fuel UO2", "temperature": 293.6,
-                    "density-units": "sum", "fractions": "atoms",
-                    "composition": [{"nuclide": "O16"   , "fraction": 4.70902E-02},
-                                    {"nuclide": "U235"  , "fraction": 4.30565E-04},
-                                    {"nuclide": "U238"  , "fraction": 2.31145E-02}]})
-
-  Fuel_Metal = 2
-  materials.append({"id": Fuel_Metal, "name": "Fuel Metal", "temperature": 293.6,
-                    "density-units": "sum", "fractions": "atoms",
-                    "composition": [{"nuclide": "U235"  , "fraction": 4.53160E-04},
-                                    {"nuclide": "U238"  , "fraction": 4.68003E-02}]})
-  
-  Clad_UO2 = 3
-  materials.append({"id": Clad_UO2, "name": "Clad UO2", "temperature": 293.6,
-                    "density-units": "sum", "fractions": "atoms",
-                    "composition": [{"nuclide": "Al27", "fraction": 5.00614E-02}]})
-
-  Clad_Metal = 4
-  materials.append({"id": Clad_Metal, "name": "Clad Metal", "temperature": 293.6,
-                    "density-units": "sum", "fractions": "atoms",
-                    "composition": [{"nuclide": "Al27", "fraction": 5.17799E-02}]})
-  
-  Moderator = 5
-  materials.append({"id": Moderator, "name": "Moderator", "temperature": 293.6,
-                    "density-units": "sum", "fractions": "atoms",
-                    "composition": [{"nuclide": "H1_H2O", "fraction": 6.67578E-02},
-                                    {"nuclide": "O16"   , "fraction": 3.33789E-02}]})
-  Base_Plate = 6
-  materials.append({"id": Base_Plate, "name": "Base Plate", "temperature": 293.6,
-                    "density-units": "sum", "fractions": "atoms",
-                    "composition": [{"nuclide": "Al27", "fraction": 6.02611E-02}]})
-
-  Cadmium = 7
-  materials.append({"id": Cadmium, "name": "Cadmium", "temperature": 293.6,
-                    "density-units": "sum", "fractions": "atoms",
-                    "composition": [{"nuclide": "Cd106", "fraction": 0.01245*4.63334E-02},
-                                    {"nuclide": "Cd108", "fraction": 0.00888*4.63334E-02},
-                                    {"nuclide": "Cd110", "fraction": 0.1247*4.63334E-02},
-                                    {"nuclide": "Cd111", "fraction": 0.12795*4.63334E-02},
-                                    {"nuclide": "Cd112", "fraction": 0.24109*4.63334E-02},
-                                    {"nuclide": "Cd113", "fraction": 0.12227*4.63334E-02},
-                                    {"nuclide": "Cd114", "fraction": 0.28754*4.63334E-02},
-                                    {"nuclide": "Cd116", "fraction": 0.07512*4.63334E-02}]})
-
-  Filler_Gas = 8
-  materials.append({"id": Filler_Gas, "name": "Filler Gas", "temperature": 293.6,
-                    "density-units": "sum", "fractions": "atoms",
-                    "composition": [{"nuclide": "He4", "fraction": 1.6400E-04}]})
-
-  Air = 9
-  materials.append({"id": Air, "name": "Air", "temperature": 293.6,
-                    "density-units": "sum", "fractions": "atoms",
-                    "composition": [{"nuclide": "N14", "fraction": 4.1400E-05},
-                                    {"nuclide": "O16", "fraction": 9.0700E-06}]})
-
-  Void = 10
-  materials.append({"id": Void, "name": "Void", "temperature": 293.6,
-                    "density-units": "sum", "fractions": "atoms",
-                    "composition": [{"nuclide": "He4", "fraction": 1.E-16}]})
-
-  #=============================================================================
-  # Cells
-  cells = []
-  
-  # Lower Aluminum plate
-  cells.append({"id": 10, "region": "-20 & -21 & -22 & +23 & +24 & +25 & +26 & -27 & +28 & -29",
-                "material": Base_Plate})
-  
-  # Lower portion of Bottom Al grid plate
-  cells.append({"id": 11, "region": "-30 & -31 & -32 & +33 & +34 & +35 & +36 & -37 & +38 & -41",
-                "material": Base_Plate})
-  
-  # Lower Cd layer
-  cells.append({"id": 12, "region": "-30 & -31 & -32 & +33 & +34 & +35 & +36 & -37 & +41 & -42",
-                "material": Cadmium})
-  
-  # Upper portion of Bottom Al grid plate
-  cells.append({"id": 13, "region": "-30 & -31 & -32 & +33 & +34 & +35 & +36 & -37 & +42 & -39",
-                "material": Base_Plate})
-
-  # Lower portion of Top Al Grid plate
-  cells.append({"id": 14, "region": "-50 & -51 & -52 & +53 & +54 & +55 & +56 & -57 & +58 & -61",
-               "material": Base_Plate})
-
-  # Cadmium of Top Al Grid plate
-  cells.append({"id": 15, "region": "-50 & -51 & -52 & +53 & +54 & +55 & +56 & -57 & +61 & -62",
-               "material": Cadmium})
-
-  # Upper portion of Top Al Grid plate
-  cells.append({"id": 16, "region": "-50 & -51 & -52 & +53 & +54 & +55 & +56 & -57 & +62 & -59",
-               "material": Base_Plate})
-
-  # Tank water
-  cells.append({"id": 17, "region" : "-100 & +28 & -102 & ~ "
-                                     "(-20 & -21 & -22 & +23 & +24 & +25 & +26 & -27 & +28 & -29) & ~ "
-                                     "(-30 & -31 & -32 & +33 & +34 & +35 & +36 & -37 & +38 & -39)",
-                "material": Moderator})
-
-  # Tank Wall
-  cells.append({"id": 18, "region": "+100 & -101 & +28 & -103", "material": Base_Plate})
-
-  # Air in tank and above
-  cells.append({"id": 19, "region": "-100 & +102 & -104 & ~ "
-                                    "(-50 & -51 & -52 & +53 & +54 & +55 & +56 & -57 & +58 & -59)",
-                "material": Air})
-  
-  # Air above tank wall
-  cells.append({"id": 20, "region": "+100 & -101 & +103 & -104", "material": Air})
-
-  # Tank bottom
-  cells.append({"id": 21, "region": "-101 & +105 & -28", "material": Base_Plate})
-
-  #-----------------------------------------------------------------------------
-  # UO2 Pin Cell
-  
-  # Al bottom
-  cells.append({"id": 30, "region": "-2 & -7", "material": Clad_UO2})
-  # Fuel
-  cells.append({"id": 31, "region": "-1 & +7 & -10", "material": Fuel_UO2})
-  # Clad
-  cells.append({"id": 32, "region": "+1  & -2 & +7 & -11", "material": Clad_UO2})
-  # He
-  cells.append({"id": 33, "region": "-1 & +10 & -11", "material": Filler_Gas})
-  # Al top
-  cells.append({"id": 34, "region": "-2 & +11", "material": Clad_UO2})
-
-  # Lower Water
-  cells.append({"id": 35, "region": "+2 & -5", "material": Moderator})
-  # Bottom Al of bottom grid
-  cells.append({"id": 36, "region": "+2 & +5 & -6", "material": Base_Plate})
-  # Bottom Cd 
-  cells.append({"id": 37, "region": "+2 & +6 & -7", "material": Cadmium})
-  # Top Al of bottom grid
-  cells.append({"id": 38, "region": "+2 & +7 & -8", "material": Base_Plate})
-  # Main Water
-  cells.append({"id": 39, "region": "+2 & +8 & -9", "material": Moderator})
-  # Air
-  cells.append({"id": 40, "region": "+2 & +9 & -13", "material": Air})
-  # Bottom Al of top grid
-  cells.append({"id": 41, "region": "+2 & +13 & -14", "material": Base_Plate})
-  # Cd top grid
-  cells.append({"id": 42, "region": "+2 & +14 & -15", "material": Cadmium})
-  # Top Al of top grid
-  cells.append({"id": 43, "region": "+2 & +15 & -16", "material": Base_Plate})
-  # Top Air 
-  cells.append({"id": 44, "region": "+2 & +16", "material": Air})
-
-  #-----------------------------------------------------------------------------
-  # U Metal Pin Cell
-  
-  # Al bottom
-  cells.append({"id": 50, "region": "-4 & -7", "material": Clad_Metal})
-  # Fuel
-  cells.append({"id": 51, "region": "-3 & +7 & -10", "material": Fuel_Metal})
-  # Clad
-  cells.append({"id": 52, "region": "+3  & -4 & +7 & -12", "material": Clad_Metal})
-  # He
-  cells.append({"id": 53, "region": "-3 & +10 & -12", "material": Filler_Gas})
-  # Al top
-  cells.append({"id": 54, "region": "-4 & +12", "material": Clad_Metal})
-
-  # Lower Water
-  cells.append({"id": 55, "region": "+4 & -5", "material": Moderator})
-  # Bottom Al of bottom grid
-  cells.append({"id": 56, "region": "+4 & +5 & -6", "material": Base_Plate})
-  # Bottom Cd 
-  cells.append({"id": 57, "region": "+4 & +6 & -7", "material": Cadmium})
-  # Top Al of bottom grid
-  cells.append({"id": 58, "region": "+4 & +7 & -8", "material": Base_Plate})
-  # Main Water
-  cells.append({"id": 59, "region": "+4 & +8 & -9", "material": Moderator})
-  # Air
-  cells.append({"id": 60, "region": "+4 & +9 & -13", "material": Air})
-  # Bottom Al of top grid
-  cells.append({"id": 61, "region": "+4 & +13 & -14", "material": Base_Plate})
-  # Cd top grid
-  cells.append({"id": 62, "region": "+4 & +14 & -15", "material": Cadmium})
-  # Top Al of top grid
-  cells.append({"id": 63, "region": "+4 & +15 & -16", "material": Base_Plate})
-  # Top Air 
-  cells.append({"id": 64, "region": "+4 & +16", "material": Air})
-
-  #==============================================================================
-  # Universes
-  LC = +57.3
-  universes = []
-  
-  # UO2 Pin Cell Universe
-  universes.append({"id": 1, "cells": [30,31,32,33,34,35,36,37,38,39,40,41,42,43,44]})
-
-  # U Metal Pin Cell Universe
-  universes.append({"id": 2, "cells": [50,51,52,53,54,55,56,57,58,59,60,61,62,63,64]})
-
-  # UO2 Lattice
-  universes.append({"id": 3, "type": "rectlinear", "shape": [22, 22, 1],
-    "pitch": [1.837, 1.837, 120.], "outer": 4,
-    "origin": [0., 0., LC], "name": "UO2 Lattice",
-    "universes": [-1, -1, -1, -1, -1, -1, -1, -1,  1,  1,  1,  1,  1,  1, -1, -1, -1, -1, -1, -1, -1, -1,
-
-                  -1, -1, -1, -1, -1, -1, -1, -1,  1,  1,  1,  1,  1,  1, -1, -1, -1, -1, -1, -1, -1, -1,
-
-                  -1, -1, -1, -1, -1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1, -1, -1, -1, -1, -1,
-
-                  -1, -1, -1, -1, -1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1, -1, -1, -1, -1, -1,
-
-                  -1, -1, -1, -1, -1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1, -1, -1, -1, -1, -1,
-
-                  -1, -1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1, -1, -1,
-                  
-                  -1, -1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1, -1, -1,
-
-                  -1, -1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1, -1, -1,
-
-                   1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,
-                  
-                   1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,
-
-                   1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,
-
-                   1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,
-                  
-                   1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,
-
-                   1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,
-
-                  -1, -1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1, -1, -1,
-                  
-                  -1, -1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1, -1, -1,
-
-                  -1, -1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1, -1, -1,
-                  
-                  -1, -1, -1, -1, -1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1, -1, -1, -1, -1, -1,
-
-                  -1, -1, -1, -1, -1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1, -1, -1, -1, -1, -1,
-
-                  -1, -1, -1, -1, -1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1, -1, -1, -1, -1, -1,
-                  
-                  -1, -1, -1, -1, -1, -1, -1, -1,  1,  1,  1,  1,  1,  1, -1, -1, -1, -1, -1, -1, -1, -1,
-
-                  -1, -1, -1, -1, -1, -1, -1, -1,  1,  1,  1,  1,  1,  1, -1, -1, -1, -1, -1, -1, -1, -1 ]})
-
-  # U Metal Lattice
-  universes.append({"id": 4, "type": "rectlinear", "shape": [20, 20, 1],
-    "pitch": [2.917, 2.917, 120.], "outer": 5,
-    "origin": [0., 0., LC], "name": "U Metal Lattice",
-    "universes": [-1, -1, -1, -1, -1, -1, -1,  2,  2,  2,  2,  2,  2, -1, -1, -1, -1, -1, -1, -1,
-
-                  -1, -1, -1, -1, -1,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2, -1, -1, -1, -1, -1, 
-                  
-                  -1, -1, -1,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2, -1, -1, -1, 
-
-                  -1, -1,  2,  2,  2,  2,  2,  2, -1, -1, -1, -1,  2,  2,  2,  2,  2,  2, -1, -1, 
-                  
-                  -1, -1,  2,  2,  2,  2, -1, -1, -1, -1, -1, -1, -1, -1,  2,  2,  2,  2, -1, -1, 
-
-                  -1,  2,  2,  2,  2,  2, -1, -1, -1, -1, -1, -1, -1, -1,  2,  2,  2,  2,  2, -1,
-
-                  -1,  2,  2,  2, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  2,  2,  2, -1,
-
-                   2,  2,  2,  2, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  2,  2,  2,  2,
-
-                   2,  2,  2, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  2,  2,  2,
-                  
-                   2,  2,  2, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  2,  2,  2,
-
-                   2,  2,  2, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  2,  2,  2,
-                  
-                   2,  2,  2, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  2,  2,  2,
-                   
-                   2,  2,  2,  2, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  2,  2,  2,  2,
-
-                  -1,  2,  2,  2, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  2,  2,  2, -1,
-                  
-                  -1,  2,  2,  2,  2,  2, -1, -1, -1, -1, -1, -1, -1, -1,  2,  2,  2,  2,  2, -1,
-
-                  -1, -1,  2,  2,  2,  2, -1, -1, -1, -1, -1, -1, -1, -1,  2,  2,  2,  2, -1, -1,
-                  
-                  -1, -1,  2,  2,  2,  2,  2,  2, -1, -1, -1, -1,  2,  2,  2,  2,  2,  2, -1, -1, 
-                  
-                  -1, -1, -1,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2, -1, -1, -1,
-
-                  -1, -1, -1, -1, -1,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2, -1, -1, -1, -1, -1,
-
-                  -1, -1, -1, -1, -1, -1, -1,  2,  2,  2,  2,  2,  2, -1, -1, -1, -1, -1, -1, -1 ]})
-
-  # Base plate, lower grid, and water, and tank
-  universes.append({"id": 5, "cells": [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21]})
-
-  root_universe = 3
- 
-  #=============================================================================
-  # Tallies
-  tallies = []
-
-  tallies.append({})
-  tallies[0]['shape'] = [500, 500, 100]
-  tallies[0]['low'] = [-65., -65., 0.]
-  tallies[0]['hi'] = [65., 65., H]
-  tallies[0]['name'] = "flux"
-  tallies[0]['quantity'] = "flux"
-  tallies[0]['estimator'] = "track-length"
-  tallies[0]['energy-bounds'] = [1.E-11, 0.625E-6, 20.]
-
-  tallies.append({})
-  tallies[1]['shape'] = [1, 1, 1]
-  tallies[1]['low'] = [-65., -65., 0.]
-  tallies[1]['hi'] = [65., 65., H]
-  tallies[1]['name'] = "flux_spectrum"
-  tallies[1]['quantity'] = "flux"
-  tallies[1]['estimator'] = "track-length"
-  Ebounds = []
-  Ebounds_array = list(np.logspace(np.log10(1.E-11), np.log10(20.), 2000))
-  for Ebound in Ebounds_array:
-    Ebounds.append(float(Ebound))
-  tallies[1]['energy-bounds'] = Ebounds 
-
-  #=============================================================================
-  # Settings
-  settings = {}
-
-  #=============================================================================
-  # Simulation
-  simulation = {}
-  simulation['mode'] = 'k-eigenvalue'
-  simulation['nparticles'] = 10000
-  simulation['ngenerations'] = 3200
-  simulation['nignored'] = 200
-
-  #=============================================================================
-  # Entropy
-  entropy = {}
-  entropy['shape'] = [20,20,50]
-  entropy['low'] = [-29.17, -29.17, -2.7]
-  entropy['hi'] = [29.17, 29.17, 100.]
-  simulation['entropy'] = entropy
-  
-  #=============================================================================
-  # Sources
-  sources = []
-  
-  sources.append({})
-  sources[0]["spatial"] = {"type": "box", "low": [-29.17, -29.17, 0.05],
-                                           "hi": [29.17, 29.17, H-0.05]}
-  sources[0]["direction"] = {"type": "isotropic"}
-  sources[0]["energy"] = {"type": "watt", "a": 0.977, "b": 2.546} # U235 Watt spectrum from MCNP manual
-  sources[0]["fissile-only"] = True
-  sources[0]["weight"] = 1.
-  simulation['sources'] = sources
-
-  #=============================================================================
-  # Plots
-  plots = []
-  
-  plots.append({"type": "slice", "basis": "xz", "resolution": [5000, 5000],
-    "origin": [0., 0.5*1.837, base_plate_bottom - 0.5*(base_plate_bottom - air_top)], "dimensions": [1.1*2*66.2, 1.1*(base_plate_bottom - air_top)],
-    "color": "material", "name": "crocus_core_long"})
-
-  plots.append({"type": "slice", "basis": "xy", "resolution": [5000, 5000],
-    "origin": [0., 0., 15.], "dimensions": [133., 133.],
-    "color": "material", "name": "crocus_core"})
-
-
-  #=============================================================================
-  # Write input file
-  crocus = {}
-
-  crocus['materials'] = materials
-  crocus['surfaces'] = surfaces
-  crocus['cells'] = cells
-  crocus['universes'] = universes
-  crocus['root-universe'] = root_universe
-  crocus['tallies'] = tallies
-  crocus['settings'] = settings
-  crocus['simulation'] = simulation
-  crocus['plots'] = plots
-
-  with open('crocus.yaml', 'w') as input_file:
-    yaml.dump(crocus, input_file)
+#===============================================================================
+# Materials
+UO2 = CEMaterial("UO2")
+UO2.add_nuclide("O16", 4.70902E-02)
+UO2.add_nuclide("U235", 4.30565E-04)
+UO2.add_nuclide("U238", 2.31145E-02)
+
+Umetal = CEMaterial("UMetal")
+Umetal.add_nuclide("U235", 4.53160E-04)
+Umetal.add_nuclide("U238", 4.68003E-02)
+
+UO2_Clad = CEMaterial("UO2 Cladding")
+UO2_Clad.add_nuclide("Al27", 5.00614E-02)
+
+Umetal_Clad = CEMaterial("UMetal Cladding")
+Umetal_Clad.add_nuclide("Al27", 5.17799E-02)
+
+Moderator = CEMaterial("Moderator")
+Moderator.add_nuclide("H1_H2O", 6.67578E-02)
+Moderator.add_nuclide("O16", 3.33789E-02)
+
+Base_Plate = CEMaterial("Base Plate")
+Base_Plate.add_nuclide("Al27", 6.02611E-02)
+
+Cadmium = CEMaterial("Cadmium")
+Cadmium.add_nuclide("Cd106", 0.01245*4.63334E-02)
+Cadmium.add_nuclide("Cd108", 0.00888*4.63334E-02)
+Cadmium.add_nuclide("Cd110", 0.12470*4.63334E-02)
+Cadmium.add_nuclide("Cd111", 0.12795*4.63334E-02)
+Cadmium.add_nuclide("Cd112", 0.24109*4.63334E-02)
+Cadmium.add_nuclide("Cd113", 0.12227*4.63334E-02)
+Cadmium.add_nuclide("Cd114", 0.28754*4.63334E-02)
+Cadmium.add_nuclide("Cd116", 0.07512*4.63334E-02)
+
+Filler_Gas = CEMaterial("Filler Gas")
+Filler_Gas.add_nuclide("He4", 1.6400E-04)
+
+Air = CEMaterial("Air")
+Air.add_nuclide("N14", 4.1400E-05)
+Air.add_nuclide("O16", 9.0700E-06)
+
+Void = CEMaterial("Void")
+Void.add_nuclide("He4", 1.E-16)
+
+#===============================================================================
+# Geometry
+
+# Shared Pin Cell Surfaces
+Pin_BG_Bot = ZPlane(-.55 - 57.3)
+Pin_BG_Cad_Bot = ZPlane(-0.05 - 57.3)
+Pin_BG_Cad_Top = ZPlane(0.0 - 57.3)
+Pin_BG_Top = ZPlane(0.5 - 57.3)
+Pin_TG_Bot = ZPlane(100.5 - 57.3)
+Pin_TG_Cad_Bot = ZPlane(101.0 - 57.3)
+Pin_TG_Cad_Top = ZPlane(101.05 - 57.3)
+Pin_TG_Top = ZPlane(102.55 - 57.3)
+Pin_Water_Top = ZPlane(96.51 - 57.3) # Measures from bottom of active fuel
+
+# UO2 Pin Surfaces
+UO2_Fuel_Rad = ZCylinder(0.526)
+UO2_Clad_Rad = ZCylinder(0.630)
+UO2_Fuel_Bot = ZPlane(  0.0 - 57.3)
+UO2_Fuel_Top = ZPlane(100.0 - 57.3)
+UO2_Cap_Bot  = ZPlane(100.5 - 57.3)
+UO2_Cap_Top  = ZPlane(117.3 - 57.3)
+
+# U-Metal Pin Surfaces
+Umetal_Fuel_Rad = ZCylinder(0.8500)
+Umetal_Clad_Rad = ZCylinder(0.965)
+Umetal_Fuel_Bot = ZPlane(  0.00 - 57.3)
+Umetal_Fuel_Top = ZPlane(100.00 - 57.3)
+Umetal_Cap_Bot  = ZPlane(101.47 - 57.3)
+Umetal_Cap_Top  = ZPlane(117.30 - 57.3)
+
+# Bottom Plate
+BP_N  = YPlane(36.)
+BP_NE = Plane(1., 1., 0., 54.)
+BP_E  = XPlane(36.)
+BP_SE = Plane(-1., 1., 0., -54.)
+BP_S  = YPlane(-36.)
+BP_SW = Plane(1., 1., 0., -54.)
+BP_W  = XPlane(-36.)
+BP_NW = Plane(-1., 1., 0., 54.)
+BP_Top = ZPlane(-2.7)
+BP_Bot = ZPlane(-5.7) # Also the reactor tank bottom
+BP_Hexagon = -BP_N & +BP_S & +BP_W & -BP_E & -BP_NE & +BP_SW & -BP_NW & +BP_SE
+Bottom_Plate = Cell(BP_Hexagon & +BP_Bot & -BP_Top, Base_Plate)
+
+# Bottom Grid
+BG_N  = YPlane(38.)
+BG_NE = Plane(1., 1., 0., 57.)
+BG_E  = XPlane(38.)
+BG_SE = Plane(-1., 1., 0., -57.)
+BG_S  = YPlane(-38.)
+BG_SW = Plane(1., 1., 0., -57.)
+BG_W  = XPlane(-38.)
+BG_NW = Plane(-1., 1., 0., 57.)
+BG_Bot = ZPlane(-.55)
+BG_Cad_Bot = ZPlane(-0.05)
+BG_Cad_Top = ZPlane(0.0)
+BG_Top = ZPlane(0.5)
+BG_Hexagon = -BG_N & +BG_S & +BG_W & -BG_E & -BG_NE & +BG_SW & -BG_NW & +BG_SE
+BG_Lower = Cell(BG_Hexagon & +BG_Bot & -BG_Cad_Bot, Base_Plate)
+BG_Cadmium = Cell(BG_Hexagon & +BG_Cad_Bot & -BG_Cad_Top, Cadmium)
+BG_Upper = Cell(BG_Hexagon & +BG_Cad_Top & -BG_Top, Base_Plate)
+
+# Top Grid
+TG_N  = YPlane(42.)
+TG_NE = Plane(1., 1., 0., 63.)
+TG_E  = XPlane(42.)
+TG_SE = Plane(-1., 1., 0., -63.)
+TG_S  = YPlane(-42.)
+TG_SW = Plane(1., 1., 0., -63.)
+TG_W  = XPlane(-42.)
+TG_NW = Plane(-1., 1., 0., 63.)
+TG_Bot = ZPlane(100.5)
+TG_Cad_Bot = ZPlane(101.0)
+TG_Cad_Top = ZPlane(101.05)
+TG_Top = ZPlane(102.55)
+TG_Hexagon = -TG_N & +TG_S & +TG_W & -TG_E & -TG_NE & +TG_SW & -TG_NW & +TG_SE
+TG_Lower = Cell(TG_Hexagon & +TG_Bot & -TG_Cad_Bot, Base_Plate)
+TG_Cadmium = Cell(TG_Hexagon & +TG_Cad_Bot & -TG_Cad_Top, Cadmium)
+TG_Upper = Cell(TG_Hexagon & +TG_Cad_Top & -TG_Top, Base_Plate)
+
+# Other Needed surfaces
+Tank_iRad = ZCylinder(65.)
+Tank_oRad = ZCylinder(66.2, boundary_type='vacuum')
+Water_Top = ZPlane(96.51) # Measures from bottom of active fuel
+Tank_Top = ZPlane(102.3)
+Air_Top = ZPlane(120.0, boundary_type='vacuum')
+Reactor_Bottom = ZPlane(-9.7, boundary_type='vacuum')
+
+Tank_Water = Cell(-Tank_iRad & +BP_Bot & -Water_Top & ~Bottom_Plate.region &
+                  ~BG_Lower.region & ~BG_Cadmium.region & ~BG_Upper.region,
+                  Moderator, 'tank water')
+
+Tank_Air = Cell(-Tank_iRad & +Water_Top & -Air_Top &
+                ~TG_Lower.region & ~TG_Cadmium.region & ~TG_Upper.region,
+                Air, 'tank air')
+
+Tank_Wall = Cell(+Tank_iRad & -Tank_oRad & +Reactor_Bottom & -Tank_Top, Base_Plate)
+
+Air_Tank_Wall = Cell(-Tank_oRad & +Tank_iRad & +Tank_Top & -Air_Top, Air)
+
+Tank_Bottom = Cell(-Tank_oRad & -BP_Bot & +Reactor_Bottom, Base_Plate)
+
+Tank_Universe = CellUniverse([Bottom_Plate, BG_Lower, BG_Cadmium, BG_Upper,
+                              TG_Lower, TG_Cadmium, TG_Upper, Tank_Water,
+                              Tank_Air, Air_Tank_Wall, Tank_Bottom, Tank_Wall])
+
+# UO2 Pin Cell
+UO2_Al_Bot = Cell(-UO2_Clad_Rad & - UO2_Fuel_Bot, UO2_Clad)
+UO2_Fuel = Cell(-UO2_Fuel_Rad & +UO2_Fuel_Bot & -UO2_Fuel_Top, UO2)
+UO2_He_Gap  = Cell(-UO2_Fuel_Rad & +UO2_Fuel_Top & -UO2_Cap_Bot, Filler_Gas)
+UO2_Cladding = Cell(+UO2_Fuel_Rad & -UO2_Clad_Rad, UO2_Clad)
+UO2_Al_Top = Cell(-UO2_Clad_Rad & +UO2_Cap_Bot & -UO2_Cap_Top, UO2_Clad)
+UO2_Air_Top_Pin = Cell(-UO2_Clad_Rad & +UO2_Cap_Top, Air)
+UO2_Low_Water = Cell(+UO2_Clad_Rad & -Pin_BG_Bot, Moderator)
+UO2_BG_Bot = Cell(+UO2_Clad_Rad & +Pin_BG_Bot & -Pin_BG_Cad_Bot, Base_Plate)
+UO2_BG_Cad = Cell(+UO2_Clad_Rad & +Pin_BG_Cad_Bot & -Pin_BG_Cad_Top, Cadmium)
+UO2_BG_Top = Cell(+UO2_Clad_Rad & +Pin_BG_Cad_Top & -Pin_BG_Top, Base_Plate)
+UO2_Mod = Cell(+UO2_Clad_Rad & +Pin_BG_Top & -Pin_Water_Top, Moderator)
+UO2_Low_Air = Cell(+UO2_Clad_Rad & +Pin_Water_Top & -Pin_TG_Bot, Air)
+UO2_TG_Bot = Cell(+UO2_Clad_Rad & +Pin_TG_Bot & -Pin_TG_Cad_Bot, Base_Plate)
+UO2_TG_Cad = Cell(+UO2_Clad_Rad & +Pin_TG_Cad_Bot & -Pin_TG_Cad_Top, Cadmium)
+UO2_Tg_Top = Cell(+UO2_Clad_Rad & +Pin_TG_Cad_Top & -Pin_TG_Top, Base_Plate)
+UO2_Air_Top = Cell(+UO2_Clad_Rad & +Pin_TG_Top, Air)
+
+U = CellUniverse([UO2_Al_Bot, UO2_Fuel, UO2_He_Gap,
+                  UO2_Cladding, UO2_Al_Top, UO2_Air_Top_Pin,
+                  UO2_Low_Water, UO2_BG_Bot, UO2_BG_Cad,
+                  UO2_BG_Top, UO2_Mod, UO2_Low_Air, UO2_TG_Bot,
+                  UO2_TG_Cad, UO2_Tg_Top, UO2_Air_Top],
+                 "UO2 Cell")
+
+
+# U-Metal Pin Cell
+Umetal_Al_Bot = Cell(-Umetal_Clad_Rad & - Umetal_Fuel_Bot, Umetal_Clad)
+Umetal_Fuel = Cell(-Umetal_Fuel_Rad & +Umetal_Fuel_Bot & -Umetal_Fuel_Top, Umetal)
+Umetal_He_Gap  = Cell(-Umetal_Fuel_Rad & +Umetal_Fuel_Top & -Umetal_Cap_Bot, Filler_Gas)
+Umetal_Cladding = Cell(+Umetal_Fuel_Rad & -Umetal_Clad_Rad, Umetal_Clad)
+Umetal_Al_Top = Cell(-Umetal_Clad_Rad & +Umetal_Cap_Bot & -Umetal_Cap_Top, Umetal_Clad)
+Umetal_Air_Top_Pin = Cell(-Umetal_Clad_Rad & +Umetal_Cap_Top, Air)
+Umetal_Low_Water = Cell(+Umetal_Clad_Rad & -Pin_BG_Bot, Moderator)
+Umetal_BG_Bot = Cell(+Umetal_Clad_Rad & +Pin_BG_Bot & -Pin_BG_Cad_Bot, Base_Plate)
+Umetal_BG_Cad = Cell(+Umetal_Clad_Rad & +Pin_BG_Cad_Bot & -Pin_BG_Cad_Top, Cadmium)
+Umetal_BG_Top = Cell(+Umetal_Clad_Rad & +Pin_BG_Cad_Top & -Pin_BG_Top, Base_Plate)
+Umetal_Mod = Cell(+Umetal_Clad_Rad & +Pin_BG_Top & -Pin_Water_Top, Moderator)
+Umetal_Low_Air = Cell(+Umetal_Clad_Rad & +Pin_Water_Top & -Pin_TG_Bot, Air)
+Umetal_TG_Bot = Cell(+Umetal_Clad_Rad & +Pin_TG_Bot & -Pin_TG_Cad_Bot, Base_Plate)
+Umetal_TG_Cad = Cell(+Umetal_Clad_Rad & +Pin_TG_Cad_Bot & -Pin_TG_Cad_Top, Cadmium)
+Umetal_Tg_Top = Cell(+Umetal_Clad_Rad & +Pin_TG_Cad_Top & -Pin_TG_Top, Base_Plate)
+Umetal_Air_Top = Cell(+Umetal_Clad_Rad & +Pin_TG_Top, Air)
+
+M = CellUniverse([Umetal_Al_Bot, Umetal_Fuel,
+                  Umetal_He_Gap, Umetal_Cladding, Umetal_Al_Top,
+                  Umetal_Air_Top_Pin, Umetal_Low_Water,
+                  Umetal_BG_Bot, Umetal_BG_Cad, Umetal_BG_Top,
+                  Umetal_Mod, Umetal_Low_Air, Umetal_TG_Bot,
+                  Umetal_TG_Cad, Umetal_Tg_Top, Umetal_Air_Top],
+                 "U-Metal Cell")
+
+n = None
+
+Outter_Lattice = RectLattice(shape=(20,20,1), pitch=(2.917, 2.917, 120.),
+                             origin=(0.,0.,57.3), outer_universe=Tank_Universe)
+Outter_Lattice.universes = [n, n, n, n, n, n, n, M, M, M, M, M, M, n, n, n, n, n, n, n,
+                            n, n, n, n, n, M, M, M, M, M, M, M, M, M, M, n, n, n, n, n, 
+                            n, n, n, M, M, M, M, M, M, M, M, M, M, M, M, M, M, n, n, n, 
+                            n, n, M, M, M, M, M, M, n, n, n, n, M, M, M, M, M, M, n, n, 
+                            n, n, M, M, M, M, n, n, n, n, n, n, n, n, M, M, M, M, n, n, 
+                            n, M, M, M, M, M, n, n, n, n, n, n, n, n, M, M, M, M, M, n,
+                            n, M, M, M, n, n, n, n, n, n, n, n, n, n, n, n, M, M, M, n,
+                            M, M, M, M, n, n, n, n, n, n, n, n, n, n, n, n, M, M, M, M,
+                            M, M, M, n, n, n, n, n, n, n, n, n, n, n, n, n, n, M, M, M,
+                            M, M, M, n, n, n, n, n, n, n, n, n, n, n, n, n, n, M, M, M,
+                            M, M, M, n, n, n, n, n, n, n, n, n, n, n, n, n, n, M, M, M,
+                            M, M, M, n, n, n, n, n, n, n, n, n, n, n, n, n, n, M, M, M,
+                            M, M, M, M, n, n, n, n, n, n, n, n, n, n, n, n, M, M, M, M,
+                            n, M, M, M, n, n, n, n, n, n, n, n, n, n, n, n, M, M, M, n,
+                            n, M, M, M, M, M, n, n, n, n, n, n, n, n, M, M, M, M, M, n,
+                            n, n, M, M, M, M, n, n, n, n, n, n, n, n, M, M, M, M, n, n,
+                            n, n, M, M, M, M, M, M, n, n, n, n, M, M, M, M, M, M, n, n, 
+                            n, n, n, M, M, M, M, M, M, M, M, M, M, M, M, M, M, n, n, n,
+                            n, n, n, n, n, M, M, M, M, M, M, M, M, M, M, n, n, n, n, n,
+                            n, n, n, n, n, n, n, M, M, M, M, M, M, n, n, n, n, n, n, n ]
+
+
+Inner_Lattice = RectLattice(shape=(22, 22, 1), pitch=(1.837, 1.837, 120.),
+                            origin=(0., 0.,57.3), outer_universe= Outter_Lattice)
+Inner_Lattice.universes = [n, n, n, n, n, n, n, n, U, U, U, U, U, U, n, n, n, n, n, n, n, n,
+                           n, n, n, n, n, n, n, n, U, U, U, U, U, U, n, n, n, n, n, n, n, n,
+                           n, n, n, n, n, U, U, U, U, U, U, U, U, U, U, U, U, n, n, n, n, n,
+                           n, n, n, n, n, U, U, U, U, U, U, U, U, U, U, U, U, n, n, n, n, n,
+                           n, n, n, n, n, U, U, U, U, U, U, U, U, U, U, U, U, n, n, n, n, n,
+                           n, n, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, n, n,
+                           n, n, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, n, n,
+                           n, n, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, n, n,
+                           U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U,
+                           U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U,
+                           U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U,
+                           U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U,
+                           U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U,
+                           U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U,
+                           n, n, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, n, n,
+                           n, n, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, n, n,
+                           n, n, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, U, n, n,
+                           n, n, n, n, n, U, U, U, U, U, U, U, U, U, U, U, U, n, n, n, n, n,
+                           n, n, n, n, n, U, U, U, U, U, U, U, U, U, U, U, U, n, n, n, n, n,
+                           n, n, n, n, n, U, U, U, U, U, U, U, U, U, U, U, U, n, n, n, n, n,
+                           n, n, n, n, n, n, n, n, U, U, U, U, U, U, n, n, n, n, n, n, n, n,
+                           n, n, n, n, n, n, n, n, U, U, U, U, U, U, n, n, n, n, n, n, n, n ]
+
+#===============================================================================
+# Tallies
+pos_mesh = RegularCartesianMeshFilter(low=Point(-65., -65., 0.), high=Point(65., 65., 96.5), shape=(500, 500, 100))
+engy_fast_therm = EnergyFilter([1.E-11, 0.625E-6, 20.])
+engy_spec = EnergyFilter(np.logspace(np.log10(1.E-11), np.log10(20.), 2000))
+
+tallies = []
+
+tallies.append(GeneralTally("flux", TallyQuantity.Flux, TallyEstimator.TrackLength, pos_mesh, engy_fast_therm))
+
+tallies.append(GeneralTally('flux-spectrum', TallyQuantity.Flux, TallyEstimator.TrackLength, energy_filter=engy_spec))
+
+#===============================================================================
+# Simulation
+sources = [Source(spatial=Box(Point(-29.17, -29.17, 0.05), Point(29.17, 29.17, 96.), fissile_only=True),
+                  direction=Isotropic(),
+                  energy=Watt(0.977, 2.546),
+                  weight=1.)
+          ]
+
+entropy = Entropy(Point(-29.17, -29.17, -2.7), Point(29.17, 29.17, 100.), (5,5,5))
+
+simulation = PowerIterator(nparticles=10000, ngenerations=3100, nignored=100, sources=sources)
+simulation.entropy = entropy
+
+input = Input(Inner_Lattice, simulation, tallies)
+input.to_file('crocus.yaml')

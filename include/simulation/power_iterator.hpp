@@ -40,7 +40,7 @@
 
 class PowerIterator : public Simulation {
  public:
-  PowerIterator(std::shared_ptr<IParticleMover> i_pm) : Simulation(i_pm){};
+  PowerIterator(std::shared_ptr<IParticleMover> i_pm) : Simulation(i_pm) {};
   ~PowerIterator() = default;
 
   void initialize() override final;
@@ -54,6 +54,7 @@ class PowerIterator : public Simulation {
   void set_families(bool fams) { calc_families = fams; }
   void set_pair_distance(bool prdist) { pair_distance_sqrd = prdist; }
   void set_empty_entropy_bins(bool eeb) { empty_entropy_bins = eeb; }
+  void set_save_source(bool save_src) { save_source = save_src; }
   void set_in_source_file(const std::string& sf) { in_source_file_name = sf; }
   void add_source(std::shared_ptr<Source> src);
   void set_nparticles(std::size_t np) { nparticles = np; }
@@ -93,6 +94,7 @@ class PowerIterator : public Simulation {
   bool calc_families = false;
   bool pair_distance_sqrd = false;
   bool empty_entropy_bins = false;
+  bool save_source = false;
 
   void check_time(std::size_t gen);
 
@@ -102,11 +104,7 @@ class PowerIterator : public Simulation {
 
   void write_entropy_families_etc_to_results() const;
 
-  void normalize_weights(std::vector<BankedParticle>& next_gen);
-
-  void comb_particles(std::vector<BankedParticle>& next_gen);
-
-  void perform_regional_cancellation(std::vector<BankedParticle>& next_gen);
+  void save_weights();
 
   // Entropy calculation
   void compute_pre_cancellation_entropy(std::vector<BankedParticle>& next_gen);

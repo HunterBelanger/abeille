@@ -9,6 +9,9 @@ materials:
     scatter: [[0.733333]]
     P1: [[0.272727397]]
 
+sampling-xs:
+  xs: [0.90]
+
 surfaces:
   - {type: xplane, x0: -0.77032, boundary: vacuum, id: 1}
   - {type: xplane, x0:  0.77032, boundary: vacuum, id: 2}
@@ -21,6 +24,26 @@ universes:
 
 root-universe: 1
 
+tally-filters:
+  position-filters:
+    - id: 1
+      type: regular-cartesian-mesh
+      low: [-0.77032, -100., -100.]
+      high:  [ 0.77032,  100.,  100.]
+      shape: [50, 1, 1]
+
+  energy-filters:
+    - id: 1
+      energy-bounds: [0., 1.]
+
+tallies:
+  - position-filter: 1
+    energy-filter: 1
+    quantity: flux
+    name: flux_PUa
+    estimator: collision
+
+
 settings:
   energy-mode: multi-group
   ngroups: 1
@@ -29,8 +52,10 @@ settings:
 simulation:
   mode: k-eigenvalue
   nparticles: 100000
-  ngenerations: 5100
-  nignored: 100
+  ngenerations: 550
+  nignored: 50
+  transport-operator:
+    type: delta-tracking
   sources:
     - spatial:
         type: box
@@ -42,3 +67,5 @@ simulation:
         type: mono-energetic
         energy: 0.5
       weight: 1.
+
+

@@ -44,6 +44,8 @@ class ApproximateMeshCancelator : public Cancelator {
   void check_particle_mover_compatibility(
       const std::shared_ptr<IParticleMover>& /*pmover*/) const override final {}
 
+  void write_output_info(H5::Group& grp) const override final;
+
  private:
   std::unordered_map<uint32_t, std::vector<BankedParticle*>> bins;
   std::vector<double> energy_edges;

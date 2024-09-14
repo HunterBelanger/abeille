@@ -31,7 +31,6 @@
 #include <materials/nuclide.hpp>
 #include <simulation/entropy.hpp>
 #include <simulation/simulation.hpp>
-#include <tallies/mesh_tally.hpp>
 #include <tallies/tallies.hpp>
 #include <utils/error.hpp>
 #include <utils/mpi.hpp>
@@ -586,8 +585,11 @@ void make_tallies(const YAML::Node& input) {
     fatal_error("Tallies entry must be provided as a sequence.");
   }
 
+  // First, read all of the tally filters
+  make_tally_filters(tallies, input);
+
   // Add all spatial mesh tallies to the tallies instance
   for (size_t t = 0; t < input["tallies"].size(); t++) {
-    add_mesh_tally(tallies, input["tallies"][t]);
+    add_tally(tallies, input["tallies"][t]);
   }
 }

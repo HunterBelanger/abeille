@@ -25,6 +25,7 @@
 #ifndef ALL_SURFACES_H
 #define ALL_SURFACES_H
 
+#include <geometry/surfaces/cross.hpp>
 #include <geometry/surfaces/cylinder.hpp>
 #include <geometry/surfaces/plane.hpp>
 #include <geometry/surfaces/sphere.hpp>

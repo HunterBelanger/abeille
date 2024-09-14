@@ -7,15 +7,14 @@ materials:
                 [0., 0.39276]]
     absorption: [0.025755, 0.15788]
     fission:    [0.0057671, 0.10622]
-    #nu:  [2.59068, 2.59068]
     nu_prompt:  [2.576819862, 2.576819862]
     nu_delayed: [0.013860138, 0.013860138]
     chi:        [[1., 0.]]
     delayed_groups:
       probabilities: [1.]
       constants: [0.0851]
+      chi: [[1., 0.]]
     group-speeds: [1.82304E7, 4.13067E5] # [cm / s]
-
     
   - id: 2
     name: Water
@@ -87,111 +86,102 @@ universes:
 
 root-universe: 4
 
-sources:
-  - spatial:
-      type: box
-      low: [-10.71, -10.71, -2.00]
-      hi: [10.71, 10.71, 2.00]
-    direction:
-      type: isotropic
-    energy:
-      type: mono-energetic
-      energy: 0.5
-    weight: 1.
+tally-filters:
+  position-filters:
+    - id: 1
+      type: regular-cartesian-mesh
+      low: [1.5, -3.5, -2.]
+      high: [3.5, -1.5, 2.]
+      shape: [50, 50, 1]
 
-cancelator:
-  type: approximate
-  shape: [170, 170, 1]
-  low: [-10.71, -10.71, -2.00]
-  hi: [10.71, 10.71, 2.00]
-  beta: average-g
+    - id: 2
+      type: regular-cartesian-mesh
+      low: [-10.79, -10.79, -2.00]
+      high: [10.79, 10.79, 2.00]
+      shape: [138, 138, 1]
 
-noise-sources:
-  - type: flat-vibration
-    low: [2.1543, -2.3543, -2.00]
-    hi: [2.8857, -1.9543, 2.00]
-    angular-frequency: 6.28318531 # 2 pi
-    direction: Y
-    positive-material: 2 # Water
-    negative-material: 1 # Fuel
-
-  - type: flat-vibration
-    low: [2.1543, -3.0857, -2.00]
-    hi: [2.8857, -2.6857, 2.00]
-    angular-frequency: 6.28318531 # 2 pi
-    direction: Y
-    positive-material: 1 # Fuel
-    negative-material: 2 # Water
-
-entropy:
-  low: [-10.71, -10.71, -2.00]
-  hi: [10.71, 10.71, 2.00]
-  shape: [17, 17, 1]
+  energy-filters:
+    - id: 1
+      energy-bounds: [0., 1., 2.]
 
 tallies:
- #- low: [-10.79, -10.79, -2.00]
- #  hi: [10.79, 10.79, 2.00]
- #  shape: [138, 138, 1]
- #  energy-bounds: [0., 1., 2.]
- #  quantity: flux
- #  estimator: track-length
- #  name: flux
- 
-  - low: [1.5, -3.5, -2.]
-    hi: [3.5, -1.5, 2.]
-    shape: [50, 50, 1]
-    energy-bounds: [0., 1., 2.]
-    estimator: source
+  - name: real-noise-source
     quantity: real-source
-    name: real-noise-source
+    position-filter: 1
+    energy-filter: 1
 
-  - low: [1.5, -3.5, -2.]
-    hi: [3.5, -1.5, 2.]
-    shape: [50, 50, 1]
-    energy-bounds: [0., 1., 2.]
-    estimator: source
+  - name: imag-noise-source
     quantity: imag-source
-    name: imag-noise-source
-  
-  - low: [-10.79, -10.79, -2.00]
-    hi: [10.79, 10.79, 2.00]
-    shape: [138, 138, 1]
-    energy-bounds: [0., 1., 2.]
+    position-filter: 1
+    energy-filter: 1
+
+  - name: real-flux
     quantity: real-flux
     estimator: track-length
-    name: real-flux
+    position-filter: 2
+    energy-filter: 1
 
-  - low: [-10.79, -10.79, -2.00]
-    hi: [10.79, 10.79, 2.00]
-    shape: [138, 138, 1]
-    energy-bounds: [0., 1., 2.]
+  - name: imag-flux
     quantity: imag-flux
     estimator: track-length
-    name: imag-flux
+    position-filter: 2
+    energy-filter: 1
 
 settings:
+  ngroups: 2
+  energy-mode: multi-group
+  energy-bounds: [0., 1., 2.]
+  #max-run-time: 5. # Minutes
+
+simulation:
+  mode: noise
   nparticles: 100000
-  ngenerations: 2100
+  nbatches: 2000
   nignored: 10
   nskip: 3
-  ngroups: 2
-  seed: 238623543
-  transport: surface-tracking
-  #simulation: k-eigenvalue
-  simulation: noise 
-  noise-cancellation: true
+  noise-cancellation: false
   inner-generations: true
   normalize-noise-source: true
   noise-angular-frequency: 6.28318531
   keff: 0.99916
-  energy-mode: multi-group
-  energy-bounds: [0., 1., 2.]
-  
-plots:
-  - type: slice
-    basis: xy
-    resolution: [1000, 1000]
-    origin: [0., 0., 0.]
-    dimensions: [21.58, 21.58] 
-    color: material
-    name: noise_assembly_plot
+
+  sources:
+    - spatial:
+        type: box
+        low: [-10.71, -10.71, -2.00]
+        hi: [10.71, 10.71, 2.00]
+      direction:
+        type: isotropic
+      energy:
+        type: mono-energetic
+        energy: 0.5
+      weight: 1.
+
+  cancelator:
+    type: approximate
+    shape: [170, 170, 1]
+    low: [-10.71, -10.71, -2.00]
+    hi: [10.71, 10.71, 2.00]
+    beta: average-g
+
+  noise-sources:
+    - type: flat-vibration
+      low: [2.1543, -2.3543, -2.00]
+      hi: [2.8857, -1.9543, 2.00]
+      angular-frequency: 6.28318531 # 2 pi
+      direction: Y
+      positive-material: 2 # Water
+      negative-material: 1 # Fuel
+
+    - type: flat-vibration
+      low: [2.1543, -3.0857, -2.00]
+      hi: [2.8857, -2.6857, 2.00]
+      angular-frequency: 6.28318531 # 2 pi
+      direction: Y
+      positive-material: 1 # Fuel
+      negative-material: 2 # Water
+
+  entropy:
+    low: [-10.71, -10.71, -2.00]
+    hi: [10.71, 10.71, 2.00]
+    shape: [17, 17, 1]

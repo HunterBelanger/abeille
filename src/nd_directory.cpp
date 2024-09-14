@@ -21,6 +21,7 @@
  *
  * */
 #include <utils/error.hpp>
+#include <utils/mpi.hpp>
 #include <utils/nd_directory.hpp>
 #include <utils/output.hpp>
 
@@ -57,18 +58,47 @@ const std::shared_ptr<pndl::STNeutron>& NDDirectory::NeutronACEList::get_temp(
          << neutron_ace_files[closest_tmp_indx].temperature() << " K.\n";
     Output::instance().write(mssg.str());
 
-    const std::string ace_fname =
-        neutron_ace_files[closest_tmp_indx].ace_entry.fname.string();
-    const pndl::ACE::Type ace_type =
-        neutron_ace_files[closest_tmp_indx].ace_entry.type;
-    pndl::ACE ace(ace_fname, ace_type);
+    std::unique_ptr<pndl::ACE> ace{nullptr};
+
+    // Only the master reads the file from disk.
+    if (mpi::rank == 0) {
+      const std::string ace_fname =
+          neutron_ace_files[closest_tmp_indx].ace_entry.fname.string();
+      const pndl::ACE::Type ace_type =
+          neutron_ace_files[closest_tmp_indx].ace_entry.type;
+      ace = std::make_unique<pndl::ACE>(ace_fname, ace_type);
+    }
+
+    if (mpi::size > 1) {
+      std::vector<std::stringstream::char_type> ace_data;
+      // Master loads a vector with the binary ACE data
+      if (mpi::rank == 0) {
+        std::stringstream ace_strm;
+        ace->save_binary(ace_strm);
+        auto ace_strm_view = ace_strm.view();
+        ace_data = std::vector<std::stringstream::char_type>(
+            ace_strm_view.begin(), ace_strm_view.end());
+      }
+
+      // Binary ACE data sent to all other ranks
+      mpi::Bcast(ace_data, 0);
+
+      // If we are a rank just recieving the ACE data, we can now construct our
+      // ACE pointer instance.
+      if (mpi::rank != 0) {
+        std::stringstream ace_strm;
+        ace_strm.write(ace_data.data(), ace_data.size());
+        ace_strm.seekg(0);
+        ace = std::make_unique<pndl::ACE>(ace_strm, pndl::ACE::Type::BINARY);
+      }
+    }
 
     if (first_loaded) {
       neutron_ace_files[closest_tmp_indx].neutron_data =
-          std::make_unique<pndl::STNeutron>(ace, *first_loaded);
+          std::make_unique<pndl::STNeutron>(*ace, *first_loaded);
     } else {
       neutron_ace_files[closest_tmp_indx].neutron_data =
-          std::make_unique<pndl::STNeutron>(ace);
+          std::make_unique<pndl::STNeutron>(*ace);
       first_loaded = neutron_ace_files[closest_tmp_indx].neutron_data;
     }
 
@@ -109,14 +139,43 @@ NDDirectory::TSLACEList::get_temp(const std::string& key, double T) {
          << tsl_ace_files[closest_tmp_indx].temperature() << " K.\n";
     Output::instance().write(mssg.str());
 
-    const std::string ace_fname =
-        tsl_ace_files[closest_tmp_indx].ace_entry.fname.string();
-    const pndl::ACE::Type ace_type =
-        tsl_ace_files[closest_tmp_indx].ace_entry.type;
-    pndl::ACE ace(ace_fname, ace_type);
+    std::unique_ptr<pndl::ACE> ace{nullptr};
+
+    // Only the master reads the file from disk.
+    if (mpi::rank == 0) {
+      const std::string ace_fname =
+          tsl_ace_files[closest_tmp_indx].ace_entry.fname.string();
+      const pndl::ACE::Type ace_type =
+          tsl_ace_files[closest_tmp_indx].ace_entry.type;
+      ace = std::make_unique<pndl::ACE>(ace_fname, ace_type);
+    }
+
+    if (mpi::size > 1) {
+      std::vector<std::stringstream::char_type> ace_data;
+      // Master loads a vector with the binary ACE data
+      if (mpi::rank == 0) {
+        std::stringstream ace_strm;
+        ace->save_binary(ace_strm);
+        auto ace_strm_view = ace_strm.view();
+        ace_data = std::vector<std::stringstream::char_type>(
+            ace_strm_view.begin(), ace_strm_view.end());
+      }
+
+      // Binary ACE data sent to all other ranks
+      mpi::Bcast(ace_data, 0);
+
+      // If we are a rank just recieving the ACE data, we can now construct our
+      // ACE pointer instance.
+      if (mpi::rank != 0) {
+        std::stringstream ace_strm;
+        ace_strm.write(ace_data.data(), ace_data.size());
+        ace_strm.seekg(0);
+        ace = std::make_unique<pndl::ACE>(ace_strm, pndl::ACE::Type::BINARY);
+      }
+    }
 
     tsl_ace_files[closest_tmp_indx].tsl_data =
-        std::make_unique<pndl::STThermalScatteringLaw>(ace);
+        std::make_unique<pndl::STThermalScatteringLaw>(*ace);
   }
 
   return tsl_ace_files[closest_tmp_indx].tsl_data;

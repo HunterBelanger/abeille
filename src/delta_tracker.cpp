@@ -36,7 +36,7 @@
 #include <PapillonNDL/cross_section.hpp>
 #include <PapillonNDL/energy_grid.hpp>
 
-#include <ndarray.hpp>
+#include <xtensor/xtensor.hpp>
 
 #include <cmath>
 #include <memory>
@@ -59,14 +59,17 @@ void DeltaTracker::write_output_info(const std::string& base) const {
 
   // We now create a temporary array, which will hold the majorant xs info,
   // so we can save it to the output file.
-  NDArray<double> maj_xs({2, EGrid->size()});
+  xt::xtensor<double, 2> maj_xs;
+  maj_xs.resize({2, EGrid->size()});
+  maj_xs.fill(0.);
   for (std::size_t i = 0; i < EGrid->size(); i++) {
     maj_xs(0, i) = (*EGrid)[i];
     maj_xs(1, i) = (*Emaj)[i];
   }
-  auto maj_xs_ds = h5.createDataSet<double>(base + "majorant-xs",
-                                            H5::DataSpace(maj_xs.shape()));
-  maj_xs_ds.write_raw(&maj_xs[0]);
+  std::vector<std::size_t> shape(maj_xs.shape().begin(), maj_xs.shape().end());
+  auto maj_xs_ds =
+      h5.createDataSet<double>(base + "majorant-xs", H5::DataSpace(shape));
+  maj_xs_ds.write_raw(maj_xs.data());
 }
 
 void DeltaTracker::transport(Particle& p, Tracker& trkr, MaterialHelper& mat,
@@ -79,6 +82,13 @@ void DeltaTracker::transport(Particle& p, Tracker& trkr, MaterialHelper& mat,
     p.set_Esmp(Emajorant);  // Sampling XS saved for cancellation
     double d_coll = p.rng.exponential(Emajorant);
     Boundary bound(INF, -1, BoundaryType::Normal);
+
+    // Score track length tally for boundary distance.
+    // This is here because flux-like tallies are allowed with DT.
+    // No other quantity should be scored with a TLE, as an error
+    // should have been thrown when building all tallies.
+    Tallies::instance().score_flight(p, trkr, std::min(d_coll, bound.distance),
+                                     mat);
 
     // Try moving the distance to collision, and see if we land in a valid
     // material.
@@ -93,12 +103,6 @@ void DeltaTracker::transport(Particle& p, Tracker& trkr, MaterialHelper& mat,
       bound = trkr.get_boundary_condition();
       crossed_boundary = true;
     }
-
-    // Score track length tally for boundary distance.
-    // This is here because flux-like tallies are allowed with DT.
-    // No other quantity should be scored with a TLE, as an error
-    // should have been thrown when building all tallies.
-    Tallies::instance().score_flight(p, std::min(d_coll, bound.distance), mat);
 
     if (crossed_boundary) {
       if (bound.boundary_type == BoundaryType::Vacuum) {

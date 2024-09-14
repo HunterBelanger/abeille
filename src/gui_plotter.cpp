@@ -75,7 +75,7 @@ GuiPlotter::GuiPlotter()
 
 void GuiPlotter::render() {
   // We put a Dockspace over the entire viewport.
-  ImGui::DockSpaceOverViewport(ImGui::GetMainViewport());
+  ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport());
 
   this->render_viewport();
   this->render_controls();
@@ -454,7 +454,7 @@ void GuiPlotter::render_image() {
           j++;
         }
       }  // while j < plot_width_
-    }    // For i which is parallel
+    }  // For i which is parallel
   }
 
   if (outline_boundaries) {
@@ -507,7 +507,7 @@ void GuiPlotter::render_image() {
           i++;
         }
       }  // while i < image.height
-    }    // For j which is parallel
+    }  // For j which is parallel
   }
 }
 

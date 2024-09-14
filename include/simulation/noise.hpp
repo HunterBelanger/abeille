@@ -37,13 +37,13 @@
 
 class Noise : public Simulation {
  public:
-  Noise(std::shared_ptr<IParticleMover> i_pm,
+  Noise(std::shared_ptr<INoiseParticleMover> i_pm,
         std::shared_ptr<IParticleMover> i_pipm, NoiseParameters noise_parms,
         NoiseMaker noise_mkr)
-      : Simulation(i_pm),
+      : Simulation(i_pipm),
         noise_params(noise_parms),
         noise_maker(noise_mkr),
-        pi_particle_mover(i_pipm) {}
+        noise_particle_mover(i_pm) {}
 
   void initialize() override final;
   void run() override final;
@@ -60,6 +60,7 @@ class Noise : public Simulation {
   void set_normalize_noise_source(bool nns) { normalize_noise_source_ = nns; }
   void set_entropy(const Entropy& entropy);
   void set_cancelator(std::shared_ptr<Cancelator> cncl);
+  void set_combing(bool comb) { combing = comb; }
   void set_regional_cancellation(bool rc);
   void set_regional_cancellation_noise(bool rcn);
 
@@ -75,7 +76,7 @@ class Noise : public Simulation {
   Timer power_iteration_timer{};
   Timer convergence_timer{};
   Timer noise_batch_timer{};
-  std::shared_ptr<IParticleMover> pi_particle_mover = nullptr;
+  std::shared_ptr<INoiseParticleMover> noise_particle_mover = nullptr;
   std::shared_ptr<Cancelator> cancelator = nullptr;
   std::shared_ptr<Entropy> t_pre_entropy = nullptr;
   std::shared_ptr<Entropy> p_pre_entropy = nullptr;
@@ -93,6 +94,7 @@ class Noise : public Simulation {
   int Nnet = 0, Npos = 0, Nneg = 0, Ntot = 0;
   int Wnet = 0, Wpos = 0, Wneg = 0, Wtot = 0;
   bool converged = false;
+  bool combing = false;
   bool regional_cancellation_ = false;
   bool regional_cancellation_noise_ = false;
   bool normalize_noise_source_ = true;
@@ -105,9 +107,6 @@ class Noise : public Simulation {
   bool out_of_time(std::size_t batch);
   void check_time(std::size_t batch);
 
-  void normalize_weights(std::vector<BankedParticle>& next_gen);
-  void perform_regional_cancellation(std::vector<BankedParticle>& bank);
-
   void power_iteration(bool sample_noise);
   void pi_generation_output();
 
@@ -119,5 +118,7 @@ class Noise : public Simulation {
   void sample_source_from_sources();
   void load_source_from_file();
 };
+
+std::shared_ptr<Noise> make_noise_simulator(const YAML::Node& sim);
 
 #endif

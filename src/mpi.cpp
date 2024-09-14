@@ -40,6 +40,8 @@ Timer timer;
 
 #ifdef ABEILLE_USE_MPI
 const Com com = MPI_COMM_WORLD;
+const DType Char = MPI_CHAR;
+const DType WChar = MPI_WCHAR;
 const DType Bool = MPI_C_BOOL;
 const DType Int = MPI_INT;
 const DType Double = MPI_DOUBLE;

@@ -51,6 +51,8 @@ using DType = MPI_Datatype;
 using OpType = MPI_Op;
 
 extern const Com com;
+extern const DType Char;
+extern const DType WChar;
 extern const DType Bool;
 extern const DType Int;
 extern const DType Double;
@@ -69,6 +71,16 @@ extern const OpType Or;
 // MPI Data Types
 template <typename T>
 DType dtype();
+
+template <>
+inline DType dtype<char>() {
+  return Char;
+}
+
+template <>
+inline DType dtype<wchar_t>() {
+  return WChar;
+}
 
 template <>
 inline DType dtype<bool>() {
@@ -287,6 +299,24 @@ void Allreduce_sum(std::vector<T>& vals,
 }
 
 template <typename T>
+void Allreduce_sum(std::span<T> vals,
+                   std::source_location loc = std::source_location::current()) {
+#ifdef ABEILLE_USE_MPI
+  if (size > 1) {
+    timer.start();
+    int err =
+        MPI_Allreduce(MPI_IN_PLACE, &vals[0], static_cast<int>(vals.size()),
+                      dtype<T>(), Sum, com);
+    check_error(err, loc);
+    timer.stop();
+  }
+#else
+  (void)vals;
+  (void)loc;
+#endif
+}
+
+template <typename T>
 void Allreduce_or(T& val,
                   std::source_location loc = std::source_location::current()) {
 #ifdef ABEILLE_USE_MPI
@@ -327,6 +357,32 @@ void Reduce_sum(T& val, int root,
 
 template <typename T>
 void Reduce_sum(std::vector<T>& vals, int root,
+                std::source_location loc = std::source_location::current()) {
+#ifdef ABEILLE_USE_MPI
+  if (size > 1) {
+    timer.start();
+
+    int err;
+    if (mpi::rank == root) {
+      err = MPI_Reduce(MPI_IN_PLACE, &vals[0], static_cast<int>(vals.size()),
+                       dtype<T>(), Sum, root, com);
+    } else {
+      err = MPI_Reduce(&vals[0], nullptr, static_cast<int>(vals.size()),
+                       dtype<T>(), Sum, root, com);
+    }
+    check_error(err, loc);
+
+    timer.stop();
+  }
+#else
+  (void)vals;
+  (void)root;
+  (void)loc;
+#endif
+}
+
+template <typename T>
+void Reduce_sum(std::span<T> vals, int root,
                 std::source_location loc = std::source_location::current()) {
 #ifdef ABEILLE_USE_MPI
   if (size > 1) {

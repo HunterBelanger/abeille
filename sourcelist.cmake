@@ -23,6 +23,8 @@ set(ABEILLE_SOURCE_FILES ${ABEILLE_SOURCE_FILES}
   src/modified_fixed_source.cpp
   src/noise_maker.cpp
   src/square_oscillation_noise_source.cpp
+  src/cylindrical_oscillation_noise_source.cpp
+  src/propagating_channel_oscillation_noise_source.cpp
   src/flat_vibration_noise_source.cpp
   src/source.cpp
   src/particle.cpp
@@ -39,10 +41,6 @@ set(ABEILLE_SOURCE_FILES ${ABEILLE_SOURCE_FILES}
   src/watt.cpp
   src/tabulated_energy.cpp
   src/tallies.cpp
-  src/mesh_tally.cpp
-  src/source_mesh_tally.cpp
-  src/collision_mesh_tally.cpp
-  src/track_length_mesh_tally.cpp
   src/parser.cpp
   src/simulation.cpp
   src/slice_plot.cpp
@@ -57,6 +55,7 @@ set(ABEILLE_SOURCE_FILES ${ABEILLE_SOURCE_FILES}
   src/geometry.cpp
   src/cell.cpp
   src/sphere.cpp
+  src/cross.cpp
   src/cylinder.cpp
   src/zcylinder.cpp
   src/ycylinder.cpp
@@ -68,8 +67,19 @@ set(ABEILLE_SOURCE_FILES ${ABEILLE_SOURCE_FILES}
   src/surface.cpp
   src/majorant.cpp
   src/pctable.cpp
+  src/tabulated_1d.cpp
   src/error.cpp
   src/mpi.cpp
   src/settings.cpp
   src/header.cpp
+  src/itally.cpp
+  src/general_tally.cpp
+  src/regular_cartesian_mesh_filter.cpp
+  src/cartesian_filter.cpp
+  src/legendre_fet.cpp
+  src/position_filter.cpp
+  src/energy_filter.cpp
+  src/cylinder_filter.cpp
+  src/zernike_polynomial.cpp
+  src/zernike_fet.cpp
 )

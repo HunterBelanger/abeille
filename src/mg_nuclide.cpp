@@ -29,9 +29,7 @@
 #include <utils/rng.hpp>
 #include <utils/settings.hpp>
 
-#include <complex>
 #include <cstdint>
-#include <functional>
 #include <sstream>
 
 MGNuclide::MGNuclide(const std::vector<double>& speeds,
@@ -45,7 +43,8 @@ MGNuclide::MGNuclide(const std::vector<double>& speeds,
                      const std::vector<std::vector<double>>& yield,
                      const std::vector<std::vector<MGAngleDistribution>>& angle,
                      const std::vector<double>& P_dlyd_grp,
-                     const std::vector<double>& decay_cnsts)
+                     const std::vector<double>& decay_cnsts,
+                     const std::vector<std::vector<double>>& delayed_chi)
     : group_speeds_(speeds),
       Et_(Et),
       Ea_(Ea),
@@ -54,6 +53,7 @@ MGNuclide::MGNuclide(const std::vector<double>& speeds,
       nu_prmpt_(nu_prmpt),
       nu_delyd_(nu_dlyd),
       chi_(chi),
+      delayed_chi_(delayed_chi),
       Ps_(Es),
       mult_(yield),
       angle_dists_(angle),
@@ -88,6 +88,29 @@ void MGNuclide::normalize_chi() {
     double chi_i = 0.;
     for (std::size_t o = 0; o < settings::ngroups; o++) chi_i += chi_[i][o];
     for (std::size_t o = 0; o < settings::ngroups; o++) chi_[i][o] /= chi_i;
+  }
+
+  // Make sure delayed_chi_ is properly sized
+  if (delayed_chi_.size() != this->num_delayed_groups()) {
+    fatal_error(
+        "delayed_chi_.size() is not equal to number of delayed groups.");
+  }
+
+  for (std::size_t i = 0; i < this->num_delayed_groups(); i++) {
+    if (delayed_chi_[i].size() != settings::ngroups) {
+      std::stringstream mssg;
+      mssg << "delayed_chi_[" << i
+           << "].size() is not equal to settings::ngroups.";
+      fatal_error(mssg.str());
+    }
+  }
+
+  for (std::size_t i = 0; i < this->num_delayed_groups(); i++) {
+    double chi_i = 0.;
+    for (std::size_t o = 0; o < settings::ngroups; o++)
+      chi_i += delayed_chi_[i][o];
+    for (std::size_t o = 0; o < settings::ngroups; o++)
+      delayed_chi_[i][o] /= chi_i;
   }
 }
 
@@ -379,6 +402,10 @@ double MGNuclide::elastic_xs(double /*E_in*/, std::size_t i) const {
   return Es_[i];
 }
 
+double MGNuclide::heating(double /*E_in*/, std::size_t /*i*/) const {
+  return 0.;
+}
+
 std::size_t MGNuclide::energy_grid_index(double E) const {
   std::size_t i = 0;
 
@@ -406,7 +433,7 @@ MicroXSs MGNuclide::get_micro_xs(double E,
   xs.nu_delayed = this->nu_delayed(E, xs.energy_index);
   xs.concentration = 0.;  // We set this as zero for now
   xs.noise_copy = 0.;     // We also leave this as zero
-
+  xs.heating = this->heating(E, xs.energy_index);
   return xs;
 }
 
@@ -448,7 +475,10 @@ ScatterInfo MGNuclide::sample_scatter(double /*Ein*/, const Direction& u,
       0.5 * (settings::energy_bounds[ei] + settings::energy_bounds[ei + 1]);
 
   // Change direction
-  double mu = angle_dists_[micro_xs.energy_index][ei].sample_mu(rng);
+  std::pair<double, double> mu_and_weight_modifier =
+      angle_dists_[micro_xs.energy_index][ei].sample_mu(rng);
+  double mu = mu_and_weight_modifier.first;
+
   double phi = 2. * PI * rng();
   Direction u_out = rotate_direction(u, mu, phi);
 
@@ -456,6 +486,7 @@ ScatterInfo MGNuclide::sample_scatter(double /*Ein*/, const Direction& u,
   info.energy = E_out;
   info.direction = u_out;
   info.mt = 2;
+  info.weight_modifier = mu_and_weight_modifier.second;
   return info;
 }
 
@@ -490,11 +521,27 @@ FissionInfo MGNuclide::sample_prompt_fission(double /*Ein*/, const Direction& u,
   return info;
 }
 
-FissionInfo MGNuclide::sample_delayed_fission(double Ein, const Direction& u,
-                                              std::size_t g, RNG& rng) const {
-  FissionInfo info = sample_prompt_fission(Ein, u, g, rng);
+FissionInfo MGNuclide::sample_delayed_fission(double /*Ein*/,
+                                              const Direction& u, std::size_t g,
+                                              RNG& rng) const {
+  FissionInfo info;
+
+  // Sample fission energy
+  std::size_t ei = rng.discrete(delayed_chi_[g]);
+  // Put fission energy in middle of sampled bin
+  info.energy =
+      0.5 * (settings::energy_bounds[ei] + settings::energy_bounds[ei + 1]);
+
+  // Sample direction
+  double mu = 2. * rng() - 1.;
+  double phi = 2. * PI * rng();
+  info.direction = rotate_direction(u, mu, phi);
+
+  // Set delayed group info
+  info.delayed = true;
   info.delayed_family = static_cast<uint32_t>(g);
   info.precursor_decay_constant = this->delayed_group_decay_constants[g];
+
   return info;
 }
 
@@ -503,23 +550,18 @@ FissionInfo MGNuclide::sample_fission(double /*Ein*/, const Direction& u,
                                       RNG& rng) const {
   FissionInfo info;
 
-  // First we sample the the energy index
-  std::size_t ei = rng.discrete(chi_[energy_index]);
-
-  // Put fission energy in middle of sampled bin
-  double E_out =
-      0.5 * (settings::energy_bounds[ei] + settings::energy_bounds[ei + 1]);
-
   // Sample direction from mu, and random phi about z-axis
   double mu = 2. * rng() - 1.;
   double phi = 2. * PI * rng();
   Direction uout = rotate_direction(u, mu, phi);
 
-  info.energy = E_out;
   info.direction = uout;
   info.delayed = false;
   info.delayed_family = 0;
   info.precursor_decay_constant = 0.;
+
+  // Variable to hold outgoing energy index
+  std::size_t ei;
 
   // Next, we need to see if this is a delayed neutron or not.
   if (rng() < Pdelayed) {
@@ -528,10 +570,18 @@ FissionInfo MGNuclide::sample_fission(double /*Ein*/, const Direction& u,
     std::size_t dgrp = rng.discrete(P_delayed_group);
     double lambda = delayed_group_decay_constants[dgrp];
 
+    ei = rng.discrete(delayed_chi_[dgrp]);
+
     info.delayed = true;
     info.delayed_family = static_cast<uint32_t>(dgrp);
     info.precursor_decay_constant = lambda;
+  } else {
+    ei = rng.discrete(chi_[energy_index]);
   }
+
+  // Put fission energy in middle of sampled bin
+  info.energy =
+      0.5 * (settings::energy_bounds[ei] + settings::energy_bounds[ei + 1]);
 
   return info;
 }
@@ -851,6 +901,7 @@ std::shared_ptr<MGNuclide> make_mg_nuclide(const YAML::Node& mat, uint32_t id) {
   // Get the delayed group info
   std::vector<double> P_delayed_grp;
   std::vector<double> delayed_constants;
+  std::vector<std::vector<double>> delayed_chi;
   if (mat["delayed_groups"] && mat["delayed_groups"].IsMap()) {
     // Get the probability of each group
     if (!mat["delayed_groups"]["probabilities"] ||
@@ -880,6 +931,54 @@ std::shared_ptr<MGNuclide> make_mg_nuclide(const YAML::Node& mat, uint32_t id) {
       mssg << "probabilities and constants entries have different sizes.";
       fatal_error(mssg.str());
     }
+
+    // Get chi for delayed groups
+    if (!mat["delayed_groups"]["chi"] ||
+        mat["delayed_groups"]["chi"].IsSequence() == false) {
+      std::stringstream mssg;
+      mssg << "No chi entry in delayed groups for material " << id << ".";
+      fatal_error(mssg.str());
+    }
+    delayed_chi =
+        mat["delayed_groups"]["chi"].as<std::vector<std::vector<double>>>();
+
+    // Make sure delayed chi has the right size
+    if (delayed_chi.size() != P_delayed_grp.size()) {
+      std::stringstream mssg;
+      mssg << "In delayed_groups entry for material " << id << ", ";
+      mssg << "probabilities and chi entries have different sizes.";
+      fatal_error(mssg.str());
+    }
+
+    // Make sure each delayed group spectrum has the correct number of entries
+    for (std::size_t d = 0; d < delayed_chi.size(); d++) {
+      if (delayed_chi[d].size() != settings::ngroups) {
+        std::stringstream mssg;
+        mssg << "In delayed_groups entry for material " << id << ", ";
+        mssg << "the length of the chi entry for delayed family " << d;
+        mssg << " does not agree with the number of energy groups.";
+        fatal_error(mssg.str());
+      }
+
+      // Make sure chi is positive and not all zeros
+      double chi_d_sum = 0.;
+      for (std::size_t g = 0; g < settings::ngroups; g++) {
+        chi_d_sum += delayed_chi[d][g];
+
+        if (delayed_chi[d][g] < 0.) {
+          std::stringstream mssg;
+          mssg << "In delayed_groups entry for material " << id << ", ";
+          mssg << "chi[" << d << "][" << g << "] is less than zero.";
+          fatal_error(mssg.str());
+        }
+      }
+      if (chi_d_sum == 0.) {
+        std::stringstream mssg;
+        mssg << "In delayed_groups entry for material " << id << ", ";
+        mssg << "chi for delayed family " << d << " is all zeros.";
+        fatal_error(mssg.str());
+      }
+    }
   } else if (mat["delayed_groups"]) {
     std::stringstream mssg;
     mssg << "Invalid delayed_groups entry in material " << id << ".";
@@ -907,7 +1006,7 @@ std::shared_ptr<MGNuclide> make_mg_nuclide(const YAML::Node& mat, uint32_t id) {
   // We should have all info ! Now we can return the nuclide
   auto nuclide_to_return = std::make_shared<MGNuclide>(
       grp_speeds, Et, Ea, Ef, nu_prmpt, nu_dlyd, chi, Es, yields, angles,
-      P_delayed_grp, delayed_constants);
+      P_delayed_grp, delayed_constants, delayed_chi);
 
   // Record nuclide in nuclides map
   nuclides[nuclide_to_return->id()] = nuclide_to_return;

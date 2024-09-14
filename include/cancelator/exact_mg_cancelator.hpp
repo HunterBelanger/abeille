@@ -38,7 +38,7 @@
 class ExactMGCancelator : public Cancelator {
  public:
   ExactMGCancelator(const Position& r_low, const Position& r_hi,
-                    const std::array<std::size_t, 4>& shape,
+                    const std::array<uint64_t, 4>& shape,
                     const std::vector<std::vector<std::size_t>>& group_bins,
                     bool chi_matrix, bool use_virtual_collisions,
                     uint32_t n_samples);
@@ -49,6 +49,8 @@ class ExactMGCancelator : public Cancelator {
   void clear() override final;
   void check_particle_mover_compatibility(
       const std::shared_ptr<IParticleMover>& pmover) const override final;
+
+  void write_output_info(H5::Group& grp) const override final;
 
   // Key which represents a unique cancellation bin for a
   // given position and energy group.
@@ -76,7 +78,7 @@ class ExactMGCancelator : public Cancelator {
     // shape[1] Number of regions in y
     // shape[2] Number of regions in z
     // shape[3] Number of regions in energy
-    static std::array<uint64_t, 4> shape;
+    static std::array<std::size_t, 4> shape;
 
     // The width of each region in x, y, and z
     static std::array<double, 3> pitch;

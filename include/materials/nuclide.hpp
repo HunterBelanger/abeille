@@ -51,6 +51,7 @@ struct MicroXSs {
   double noise_copy = 0.;
   double alpha = 0.;
   std::size_t energy_index = 0;
+  double heating = 0.;
   bool urr = false;
 };
 
@@ -60,6 +61,7 @@ struct ScatterInfo {
   Direction direction = Direction(1., 0., 0.);
   uint32_t mt = 0;
   bool thermal = false;
+  double weight_modifier = 1.0;
 };
 
 struct FissionInfo {
@@ -88,6 +90,7 @@ class Nuclide {
   virtual double nu_delayed(double E_in, std::size_t i) const = 0;
   virtual double reaction_xs(uint32_t mt, double E_in, size_t i) const = 0;
   virtual double elastic_xs(double E_in, std::size_t i) const = 0;
+  virtual double heating(double E_in, std::size_t i) const = 0;
   virtual std::size_t energy_grid_index(double E) const = 0;
   virtual MicroXSs get_micro_xs(
       double E, std::optional<double> urr_rand = std::nullopt) const = 0;

@@ -88,25 +88,37 @@ std::shared_ptr<ZCylinder> make_zcylinder(const YAML::Node& surface_node) {
   uint32_t id = 1;
   std::string name = "";
 
-  // Get x0
-  if (surface_node["x0"])
-    x0 = surface_node["x0"].as<double>();
+  // Get id
+  if (surface_node["id"])
+    id = surface_node["id"].as<uint32_t>();
   else {
-    fatal_error("ZCylinder surface must have x0 defined.");
+    fatal_error(
+        "Surface must have an id attribute with a unique positive integer.");
+  }
+
+  // Get x0
+  if (surface_node["x0"] && surface_node["x0"].IsScalar() == false) {
+    std::stringstream mssg;
+    mssg << "ycylinder with id " << id << " has invalid x0 entry.";
+    fatal_error(mssg.str());
+  } else if (surface_node["x0"]) {
+    x0 = surface_node["x0"].as<double>();
   }
 
   // Get y0
-  if (surface_node["y0"])
+  if (surface_node["y0"] && surface_node["y0"].IsScalar() == false) {
+    std::stringstream mssg;
+    mssg << "zcylinder with id " << id << " has invalid y0 entry.";
+    fatal_error(mssg.str());
+  } else if (surface_node["y0"]) {
     y0 = surface_node["y0"].as<double>();
-  else {
-    fatal_error("ZCylinder surface must have y0 defined.");
   }
 
   // Get r
   if (surface_node["r"])
     r = surface_node["r"].as<double>();
   else {
-    fatal_error("ZCylinder surface must have r defined.");
+    fatal_error("xcylinder surface must have r defined.");
   }
 
   // Get boundary type
@@ -123,14 +135,6 @@ std::shared_ptr<ZCylinder> make_zcylinder(const YAML::Node& surface_node) {
     }
   } else {
     boundary = BoundaryType::Normal;
-  }
-
-  // Get id
-  if (surface_node["id"])
-    id = surface_node["id"].as<uint32_t>();
-  else {
-    fatal_error(
-        "Surface must have an id attribute with a unique positive integer.");
   }
 
   // Get name

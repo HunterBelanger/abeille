@@ -20,6 +20,42 @@ universes:
 
 root-universe: 1
 
+tally-filters:
+  position-filters:    
+    - id: 1
+      type: cylinder-filter
+      origin: [0., 0., -100.]
+      radius: 5.514296811
+      axis: z
+      shape: [1, 1, 1]
+      pitch: [12., 12., 200.]
+
+    - id: 2
+      type: regular-cartesian-mesh
+      low: [-5.514296811, -5.514296811, -100.]
+      high:  [ 5.514296811,  5.514296811,  100.]
+      shape: [500, 500, 1]
+    
+  
+  energy-filters:
+    - id: 1
+      energy-bounds: [0., 1.]
+
+tallies:
+  - type: general
+    position-filter: 1
+    energy-filter: 1
+    quantity: flux
+    name: cylinder
+    estimator: collision
+
+  - type: general
+    position-filter: 2
+    energy-filter: 1
+    quantity: flux
+    name: mesh-tally
+    estimator: collision
+
 settings: 
   energy-mode: multi-group
   ngroups: 1
@@ -39,4 +75,4 @@ simulation:
       energy:
         type: mono-energetic
         energy: 0.5
-      weight: 1.
+      weight: 1.0

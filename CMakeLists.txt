@@ -8,7 +8,15 @@ set(CMAKE_POLICY_DEFAULT_CMP0069 NEW)
 option(ABEILLE_USE_OMP "Compile Abeille with OpenMP for shared memory parallelism" ON)
 option(ABEILLE_USE_LTO "Compile with Link-Time Optimization for all components" ON)
 option(ABEILLE_USE_MPI "Compile Abeille with MPI for distributed memory parallelism" OFF)
-option(ABEILLE_GUI_PLOT "Compile Abeille with support for the GUI plotter" ON)
+
+# If building Abeille on Windows, the default setting is to build with the GUI
+# plotter, as no other dependencies are necessary. On Linux, additional libraries
+# are required to build the GUI, so we default this to OFF.
+if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+  option(ABEILLE_GUI_PLOT "Compile Abeille with support for the GUI plotter" ON)
+else()
+  option(ABEILLE_GUI_PLOT "Compile Abeille with support for the GUI plotter" OFF)
+endif()
 
 # Check for using LTO
 if(ABEILLE_USE_LTO)
@@ -66,14 +74,32 @@ if(NOT docopt.cpp_POPULATED)
 endif()
 
 #===============================================================================
-# Get NDArray
-message(STATUS "Downloading NDArray")
-FetchContent_Declare(NDArray
-  GIT_REPOSITORY https://github.com/HunterBelanger/ndarray.git
-  GIT_TAG        master
+# Get XTL
+message(STATUS "Downloading xtl v0.7.7")
+FetchContent_Declare(xtl
+  GIT_REPOSITORY https://github.com/xtensor-stack/xtl.git
+  GIT_TAG        0.7.7
 )
-set(NDARRAY_INSTALL OFF CACHE BOOL "Install NDArray")
-FetchContent_MakeAvailable(NDArray)
+FetchContent_MakeAvailable(xtl)
+
+#===============================================================================
+# Get XSIMD
+message(STATUS "Downloading xsimd v12.1.1")
+FetchContent_Declare(xsimd
+  GIT_REPOSITORY https://github.com/xtensor-stack/xsimd.git
+  GIT_TAG        12.1.1
+)
+FetchContent_MakeAvailable(xsimd)
+
+#===============================================================================
+# Get XTENSOR
+message(STATUS "Downloading xtensor v0.25.0")
+FetchContent_Declare(xtensor
+  GIT_REPOSITORY https://github.com/xtensor-stack/xtensor.git
+  GIT_TAG        0.25.0
+)
+set(XTENSOR_USE_XSIMD ON CACHE BOOL "Enable SIMD acceleration.")
+FetchContent_MakeAvailable(xtensor)
 
 #===============================================================================
 # Get ImApp
@@ -99,7 +125,7 @@ FetchContent_MakeAvailable(PCG_CXX)
 #===============================================================================
 # Get Boost
 message(STATUS "Downloading Boost 1.81.0")
-set(BOOST_INCLUDE_LIBRARIES unordered)
+set(BOOST_INCLUDE_LIBRARIES unordered container)
 set(BOOST_ENABLE_CMAKE ON)
 FetchContent_Declare(Boost
   GIT_REPOSITORY https://github.com/boostorg/boost.git
@@ -138,7 +164,7 @@ execute_process(COMMAND git describe --dirty --always
 add_executable(abeille src/main.cpp ${ABEILLE_SOURCE_FILES})
 target_include_directories(abeille PRIVATE include)
 target_compile_features(abeille PRIVATE cxx_std_17)
-target_link_libraries(abeille PUBLIC docopt_s yaml-cpp PapillonNDL::PapillonNDL NDArray::NDArray PCG::PCG_CXX sobol Boost::unordered HighFive)
+target_link_libraries(abeille PUBLIC docopt_s yaml-cpp xtl xtensor PapillonNDL::PapillonNDL PCG::PCG_CXX sobol Boost::unordered Boost::container HighFive)
 target_compile_definitions(abeille PUBLIC ABEILLE_GIT_HASH=\"${ABEILLE_GIT_HASH_RAW}\")
 target_compile_definitions(abeille PUBLIC ABEILLE_COMPILER_NAME=\"${CMAKE_CXX_COMPILER_ID}\")
 target_compile_definitions(abeille PUBLIC ABEILLE_COMPILER_VERSION=\"${CMAKE_CXX_COMPILER_VERSION}\")
@@ -157,9 +183,10 @@ endif()
 if(ABEILLE_USE_OMP)
   find_package(OpenMP REQUIRED)
   if(OpenMP_CXX_FOUND)
-    target_link_libraries(abeille PUBLIC OpenMP::OpenMP_CXX)
     if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC") # Compile options for Windows
       target_compile_options(abeille PRIVATE /openmp:llvm) 
+    else()
+      target_link_libraries(abeille PUBLIC OpenMP::OpenMP_CXX)
     endif()
     target_compile_definitions(abeille PUBLIC ABEILLE_USE_OMP)
   endif()

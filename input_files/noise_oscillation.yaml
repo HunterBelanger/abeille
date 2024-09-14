@@ -13,6 +13,7 @@ materials:
     delayed_groups:
       probabilities: [1.]
       constants: [0.0851]
+      chi: [[1., 0.]]
     group-speeds: [1.82304E7, 4.13067E5] # [cm / s]
     
   - id: 2
@@ -26,7 +27,6 @@ materials:
     scatter:   [[0.22519143, 0.028124],
                 [0., 1.188884]]
     group-speeds: [1.82304E7, 4.13067E5] # [cm / s]
-
 
 surfaces:
   # Surfaces for fuel pin
@@ -86,94 +86,93 @@ universes:
 
 root-universe: 4
 
-sources:
-  - spatial:
-      type: box
-      low: [-10.71, -10.71, -2.00]
-      hi: [10.71, 10.71, 2.00]
-    direction:
-      type: isotropic
-    energy:
-      type: mono-energetic
-      energy: 0.5
-    weight: 1.
+tally-filters:
+  position-filters:
+    - id: 1
+      type: regular-cartesian-mesh
+      low: [1.5, -3.5, -2.]
+      high: [3.5, -1.5, 2.]
+      shape: [50, 50, 1]
 
-cancelator:
-  type: approximate
-  shape: [170, 170, 170]
-  low: [-10.71, -10.71, -2.00]
-  hi: [10.71, 10.71, 2.00]
+    - id: 2
+      type: regular-cartesian-mesh
+      low: [-10.79, -10.79, -2.00]
+      high: [10.79, 10.79, 2.00]
+      shape: [138, 138, 1]
 
-noise-sources:
-  - type: square-oscillation
-    low: [2.1543, -2.8857, -2.00]
-    hi: [2.8857, -2.1543, 2.00]
-    angular-frequency: 6.28318531 # 2 pi
-    epsilon-total: 0.041
-    epsilon-fission: 0.021
-    epsilon-scatter: 0.034
-
-entropy:
-  low: [-10.71, -10.71, -2.00]
-  hi: [10.71, 10.71, 2.00]
-  shape: [17, 17, 1]
+  energy-filters:
+    - id: 1
+      energy-bounds: [0., 1., 2.]
 
 tallies:
-  - low: [1.5, -3.5, -2.]
-    hi: [3.5, -1.5, 2.]
-    shape: [75, 75, 1]
-    energy-bounds: [0., 1., 2.]
-    estimator: source
+  - name: real-noise-source
     quantity: real-source
-    name: real-noise-source
+    position-filter: 1
+    energy-filter: 1
 
-  - low: [1.5, -3.5, -2.]
-    hi: [3.5, -1.5, 2.]
-    shape: [75, 75, 1]
-    energy-bounds: [0., 1., 2.]
-    estimator: source
+  - name: imag-noise-source
     quantity: imag-source
-    name: imag-noise-source
+    position-filter: 1
+    energy-filter: 1
 
-  - low: [-10.79, -10.79, -2.00]
-    hi: [10.79, 10.79, 2.00]
-    shape: [138, 138, 1]
-    energy-bounds: [0., 1., 2.]
+  - name: real-flux
     quantity: real-flux
     estimator: track-length
-    name: real-flux
+    position-filter: 2
+    energy-filter: 1
 
-  - low: [-10.79, -10.79, -2.00]
-    hi: [10.79, 10.79, 2.00]
-    shape: [138, 138, 1]
-    energy-bounds: [0., 1., 2.]
+  - name: imag-flux
     quantity: imag-flux
     estimator: track-length
-    name: imag-flux
+    position-filter: 2
+    energy-filter: 1
 
 settings:
+  ngroups: 2
+  energy-mode: multi-group
+  energy-bounds: [0., 1., 2.]
+  #max-run-time: 5. # Minutes
+
+simulation:
+  mode: noise
   nparticles: 100000
-  ngenerations: 2000
+  nbatches: 2000
   nignored: 10
   nskip: 3
-  ngroups: 2
-  transport: surface-tracking
-  #simulation: k-eigenvalue
-  simulation: noise 
   noise-cancellation: true
   inner-generations: true
   normalize-noise-source: true
-  #max-run-time: 5. # Minutes
   noise-angular-frequency: 6.28318531
   keff: 0.99916
-  energy-mode: multi-group
-  energy-bounds: [0., 1., 2.]
-  
-plots:
-  - type: slice
-    basis: xy
-    resolution: [1000, 1000]
-    origin: [0., 0., 0.]
-    dimensions: [21.58, 21.58] 
-    color: material
-    name: noise_assembly_plot
+
+  cancelator:
+    type: approximate
+    shape: [170, 170, 170]
+    low: [-10.71, -10.71, -2.00]
+    hi: [10.71, 10.71, 2.00]
+
+  sources:
+    - spatial: {type: box, low: [-10.71, -10.71, -2.00], hi: [10.71, 10.71, 2.00]}
+      direction: {type: isotropic}
+      energy: {type: mono-energetic, energy: 0.5}
+      weight: 1.
+
+  noise-sources:
+    - type: square-oscillation
+      low: [2.1543, -2.8857, -2.00]
+      hi: [2.8857, -2.1543, 2.00]
+      angular-frequency: 6.28318531 # 2 pi
+      epsilon-total:
+        energy: [0., 2.]
+        value: [0.041, 0.041]
+      epsilon-fission:
+        energy: [0., 2.]
+        value: [0.021, 0.021]
+      epsilon-scatter:
+        energy: [0., 2.]
+        value: [0.034, 0.034]
+
+  entropy:
+    low: [-10.71, -10.71, -2.00]
+    hi: [10.71, 10.71, 2.00]
+    shape: [17, 17, 1]

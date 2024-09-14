@@ -67,6 +67,8 @@ std::shared_ptr<Surface> make_surface(const YAML::Node& surface_node) {
     surf_pntr = make_cylinder(surface_node);
   } else if (surf_type == "sphere") {
     surf_pntr = make_sphere(surface_node);
+  } else if (surf_type == "cross") {
+    surf_pntr = make_cross(surface_node);
   } else {
     // Error, unknown surface type
     fatal_error("Surface type \"" + surf_type + "\" is unknown.");

@@ -24,12 +24,19 @@
  * */
 #include <simulation/noise.hpp>
 #include <utils/error.hpp>
+#include <utils/kahan.hpp>
 #include <utils/mpi.hpp>
 #include <utils/output.hpp>
 #include <utils/settings.hpp>
 #include <utils/timer.hpp>
 
+#include <highfive/H5File.hpp>
+namespace H5 = HighFive;
+
+#include <xtensor/xtensor.hpp>
+
 #include <iomanip>
+#include <limits>
 #include <numeric>
 #include <sstream>
 
@@ -53,7 +60,7 @@ void Noise::initialize() {
 
   Tallies::instance().allocate_batch_arrays(nbatches * nskip + nignored);
   Tallies::instance().verify_track_length_tallies(
-      particle_mover->track_length_compatible());
+      noise_particle_mover->track_length_compatible());
 }
 
 void Noise::write_output_info() const {
@@ -66,6 +73,7 @@ void Noise::write_output_info() const {
   h5.createAttribute("nbatches", nbatches);
   h5.createAttribute("nignored", nignored);
   h5.createAttribute("nskip", nskip);
+  h5.createAttribute("combing", combing);
   h5.createAttribute("ncancel-noise-gens", ncancel_noise_gens);
   h5.createAttribute("normalize-noise-source", normalize_noise_source_);
   h5.createAttribute("regional-cancellation", regional_cancellation_);
@@ -74,8 +82,13 @@ void Noise::write_output_info() const {
   if (in_source_file_name.empty() == false)
     h5.createAttribute("source-file", in_source_file_name);
 
-  particle_mover->write_output_info("noise-");
-  pi_particle_mover->write_output_info("power-iterator-");
+  if (regional_cancellation_ || regional_cancellation_noise_) {
+    auto cancelator_grp = h5.createGroup("cancelator");
+    cancelator->write_output_info(cancelator_grp);
+  }
+
+  noise_particle_mover->write_output_info("noise-");
+  particle_mover->write_output_info("power-iterator-");
 }
 
 void Noise::set_entropy(const Entropy& entropy) {
@@ -163,8 +176,9 @@ void Noise::load_source_from_file() {
   }
 
   // Read in array
-  NDArray<double> source = NDArray<double>(dimensions);
-  source_ds.read<double>(&source[0]);
+  xt::xtensor<double, 2> source;
+  source.resize(dimensions);
+  source_ds.read<double>(source.data());
 
   // Get number of particles
   std::size_t Nprt = source.shape()[0];
@@ -328,6 +342,7 @@ void Noise::run() {
 
   // Start timer
   simulation_timer.reset();
+  mpi::synchronize();  // Make sure everyone is here before starting the timer
   simulation_timer.start();
 
   //============================================================================
@@ -362,15 +377,15 @@ void Noise::run() {
     // power iteration parts.
     power_iteration_timer.start();
     for (int skip = 0; skip < static_cast<int>(nskip) - 1; skip++) {
-      pi_gen++;
       power_iteration(false);
+      pi_gen++;
     }
 
     // We now run the last remaining power iteration, but here we sample the
     // noise source
-    pi_gen++;
     power_iteration(true);
     power_iteration_timer.stop();
+    pi_gen++;
 
     // The noise_bank is now populated with noise particles. We may now simulate
     // these noise particles.
@@ -422,11 +437,10 @@ void Noise::power_iteration(bool sample_noise) {
 
   std::vector<BankedParticle> next_gen;
   if (sample_noise == false) {
-    next_gen =
-        pi_particle_mover->transport(bank, std::nullopt, nullptr, nullptr);
+    next_gen = particle_mover->transport(bank, std::nullopt, nullptr, nullptr);
   } else {
-    next_gen = pi_particle_mover->transport(bank, std::nullopt, &noise_bank,
-                                            &noise_maker);
+    next_gen = particle_mover->transport(bank, std::nullopt, &noise_bank,
+                                         &noise_maker);
   }
 
   if (next_gen.size() == 0) {
@@ -444,15 +458,19 @@ void Noise::power_iteration(bool sample_noise) {
 
   // Do weight cancelation
   if (regional_cancellation_) {
-    perform_regional_cancellation(next_gen);
+    perform_regional_cancellation(cancelator, next_gen);
   }
+
+  // Calculate net positive and negative weight
+  normalize_weights(nparticles, next_gen, Npos, Nneg, Nnet, Ntot, Wpos, Wneg,
+                    Wnet, Wtot);
+
+  // Comb particles
+  if (combing) comb_particles(next_gen, Npos, Nneg, Nnet, Ntot);
 
   // Synchronize the fission banks across all nodes, so that each node will
   // now have the particles that it will be responsible for.
   sync_banks(mpi::node_nparticles, next_gen);
-
-  // Calculate net positive and negative weight
-  normalize_weights(next_gen);
 
   // Do all Post-Cancelation entropy calculations
   compute_post_cancellation_entropy(next_gen);
@@ -487,34 +505,6 @@ void Noise::power_iteration(bool sample_noise) {
   // Reset converged to original value
   converged = orig_converged;
   Tallies::instance().set_scoring(converged);
-}
-
-inline void Noise::perform_regional_cancellation(
-    std::vector<BankedParticle>& bank) {
-  // Only perform cancellation if we are master !!
-  std::size_t n_lost_boys = 0;
-
-  // Distribute Particles to Cancellation Bins
-  for (auto& p : bank) {
-    if (!cancelator->add_particle(p)) n_lost_boys++;
-  }
-
-  if (n_lost_boys > 0)
-    std::cout << " There are " << n_lost_boys
-              << " particles with no cancellation bin.\n";
-
-  // Perform Cancellation for each Bin
-  cancelator->perform_cancellation();
-
-  // All particles which were placed into a cancellation bin from next_gen
-  // now have modified weights.
-  // Now we can get the uniform particles
-  auto tmp = cancelator->get_new_particles(settings::rng);
-
-  if (tmp.size() > 0) bank.insert(bank.end(), tmp.begin(), tmp.end());
-
-  // All done ! Clear cancelator for next run
-  cancelator->clear();
 }
 
 void Noise::noise_simulation() {
@@ -586,7 +576,7 @@ void Noise::noise_simulation() {
            << " particles \n";
 
     auto fission_bank =
-        particle_mover->transport(nbank, noise_params, nullptr, nullptr);
+        noise_particle_mover->transport(nbank, noise_params, nullptr, nullptr);
     if (noise_gen == 1) transported_histories += bank.size();
 
     // Cancellation may be performed on fission_bank here if we have provided
@@ -595,7 +585,7 @@ void Noise::noise_simulation() {
       noise_timer.stop();
       cancelator->set_cancel_dual_weights(true);
       cancellation_timer.start();
-      perform_regional_cancellation(fission_bank);
+      perform_regional_cancellation(cancelator, fission_bank);
       cancellation_timer.stop();
       cancelator->set_cancel_dual_weights(false);
       noise_timer.start();
@@ -723,51 +713,6 @@ void Noise::noise_output() {
   Output::instance().write(output.str());
 }
 
-void Noise::normalize_weights(std::vector<BankedParticle>& next_gen) {
-  double W = 0.;
-  double W_neg = 0.;
-  double W_pos = 0.;
-  Nnet = 0;
-  Ntot = 0;
-  Npos = 0;
-  Nneg = 0;
-  for (size_t i = 0; i < next_gen.size(); i++) {
-    if (next_gen[i].wgt > 0.) {
-      W_pos += next_gen[i].wgt;
-      Npos++;
-    } else {
-      W_neg -= next_gen[i].wgt;
-      Nneg++;
-    }
-  }
-
-  mpi::Allreduce_sum(W);
-  mpi::Allreduce_sum(W_neg);
-  mpi::Allreduce_sum(W_pos);
-  mpi::Allreduce_sum(Npos);
-  mpi::Allreduce_sum(Nneg);
-
-  W = W_pos - W_neg;
-  Ntot = Npos + Nneg;
-  Nnet = Npos - Nneg;
-
-  // Re-Normalize particle weights
-  double w_per_part = static_cast<double>(nparticles) / W;
-  W *= w_per_part;
-  W_neg *= w_per_part;
-  W_pos *= w_per_part;
-
-  for (std::size_t i = 0; i < next_gen.size(); i++) {
-    next_gen[i].wgt *= w_per_part;
-  }
-
-  double Wtt = W_pos + W_neg;
-  Wnet = static_cast<int>(std::round(W));
-  Wtot = static_cast<int>(std::round(Wtt));
-  Wpos = static_cast<int>(std::round(W_pos));
-  Wneg = static_cast<int>(std::round(W_neg));
-}
-
 void Noise::premature_kill() {
   // See if the user really wants to kill the program
   bool user_said_kill = false;
@@ -853,4 +798,196 @@ void Noise::zero_entropy() {
   if (t_post_entropy) {
     t_post_entropy->zero();
   }
+}
+
+std::shared_ptr<Noise> make_noise_simulator(const YAML::Node& sim) {
+  // Get the number of particles
+  if (!sim["nparticles"] || sim["nparticles"].IsScalar() == false) {
+    fatal_error("No nparticles entry in noise simulation.");
+  }
+  std::size_t nparticles = sim["nparticles"].as<std::size_t>();
+
+  // Get the number of noise batches
+  if (!sim["nbatches"] || sim["nbatches"].IsScalar() == false) {
+    fatal_error("No nbatches entry in noise simulation.");
+  }
+  std::size_t ngenerations = sim["nbatches"].as<std::size_t>();
+
+  // Get the number of ignored generations
+  if (!sim["nignored"] || sim["nignored"].IsScalar() == false) {
+    fatal_error("No nignored entry in noise simulation.");
+  }
+  std::size_t nignored = sim["nignored"].as<std::size_t>();
+
+  // Get the number of skipped generations between noise sampling
+  if (!sim["nskip"] || sim["nskip"].IsScalar() == false) {
+    fatal_error("No nskip entry in noise simulation.");
+  }
+  std::size_t nskip = sim["nskip"].as<std::size_t>();
+
+  std::string in_source_file;
+  if (sim["source-file"] && sim["source-file"].IsScalar()) {
+    in_source_file = sim["source-file"].as<std::string>();
+  } else if (sim["source-file"]) {
+    fatal_error("Invalid source-file entry in k-eigenvalue simulation.");
+  }
+
+  // Read all sources if we don't have a source file
+  std::vector<std::shared_ptr<Source>> sources;
+  if (in_source_file.empty()) {
+    if (!sim["sources"] || sim["sources"].IsSequence() == false) {
+      fatal_error("No sources entry in noise simulation.");
+    }
+    for (std::size_t s = 0; s < sim["sources"].size(); s++) {
+      sources.push_back(make_source(sim["sources"][s]));
+    }
+  }
+
+  // Combing
+  bool combing = false;
+  if (sim["combing"] && sim["combing"].IsScalar()) {
+    combing = sim["combing"].as<bool>();
+  } else if (sim["combing"]) {
+    fatal_error("Invalid combing entry in noise simulation.");
+  }
+
+  // For noise, we need a NoiseMaker. We will now read in all of the provided
+  // noise sources in the simulation entry
+  NoiseMaker noise_maker;
+  if (!sim["noise-sources"] || sim["noise-sources"].IsSequence() == false) {
+    fatal_error("No noise-sources entry in noise simulation.");
+  }
+  for (std::size_t s = 0; s < sim["noise-sources"].size(); s++) {
+    noise_maker.add_noise_source(sim["noise-sources"][s]);
+  }
+
+  bool normalize_noise_source = true;
+  if (sim["normalize-noise-source"] &&
+      sim["normalize-noise-source"].IsScalar()) {
+    normalize_noise_source = sim["normalize-noise-source"].as<bool>();
+  } else if (sim["normalize-noise-source"]) {
+    fatal_error(
+        "Invalid normalize-noise-source entry provided in noise simulation.");
+  }
+
+  // Get entropy bins
+  std::optional<Entropy> entropy = std::nullopt;
+  if (sim["entropy"] && sim["entropy"].IsMap()) {
+    entropy = make_entropy(sim["entropy"]);
+  } else if (sim["entropy"]) {
+    fatal_error("Invalid entropy entry in noise simulation.");
+  }
+
+  // For noise simulations, we need two different particle movers. One for the
+  // noise particles and one for the normal particles in power iteration. We
+  // start by making the particle mover for noise. It will use the prescribed
+  // transport operator, but will always use NoiseBranchingCollision.
+  std::shared_ptr<INoiseParticleMover> noise_mover =
+      make_noise_particle_mover(sim);
+
+  // Now we can get the particle mover for power iteration. This will sue the
+  // same transport operator, but will use the prescribed collision operator
+  // in the input file.
+  std::shared_ptr<IParticleMover> pi_mover =
+      make_particle_mover(sim, settings::SimMode::KEFF);
+
+  std::size_t ncancel_noise_gens = std::numeric_limits<std::size_t>::max();
+  if (sim["ncancel-noise-gens"] && sim["ncancel-noise-gens"].IsScalar()) {
+    ncancel_noise_gens = sim["ncancel-noise-gens"].as<std::size_t>();
+  } else if (sim["ncancel-noise-gens"]) {
+    fatal_error(
+        "Invalid ncancel-noise-gens entry provided in noise simulation.");
+  }
+
+  // Get cancelator
+  std::shared_ptr<Cancelator> cancelator = nullptr;
+  if (sim["cancelator"] && sim["cancelator"].IsMap()) {
+    cancelator = make_cancelator(sim["cancelator"]);
+  } else if (sim["cancelator"]) {
+    fatal_error("Invalid cancelator entry in noise simulation.");
+  }
+
+  // Check for regional cancellation options. By default, we assume noise
+  // cancellation if a cancelator is present.
+  bool noise_cancellation = cancelator ? true : false;
+  if (sim["noise-cancellation"] && sim["noise-cancellation"].IsScalar()) {
+    noise_cancellation = sim["noise-cancellation"].as<bool>();
+  } else if (sim["noise-cancellation"]) {
+    fatal_error("Invalid noise-cancellation entry in noise simulation.");
+  }
+
+  bool cancellation = false;
+  if (sim["cancellation"] && sim["cancellation"].IsScalar()) {
+    noise_cancellation = sim["cancellation"].as<bool>();
+  } else if (sim["cancellation"]) {
+    fatal_error("Invalid cancellation entry in noise simulation.");
+  }
+
+  if ((noise_cancellation || cancellation) && cancelator == nullptr) {
+    fatal_error(
+        "Cancellation is desired, but no cancelator was provided in noise "
+        "simulation.");
+  }
+
+  // Make sure our transport operators are compatible with cancellation !
+  if (noise_cancellation) {
+    cancelator->check_particle_mover_compatibility(noise_mover);
+  }
+  if (cancellation) {
+    cancelator->check_particle_mover_compatibility(pi_mover);
+  }
+
+  // Read in noise parameters
+  double omega;
+  if (!sim["noise-angular-frequency"] ||
+      sim["noise-angular-frequency"].IsScalar() == false) {
+    fatal_error(
+        "No valid noise-angular-frequency entry provided in noise simulation.");
+  }
+  omega = sim["noise-angular-frequency"].as<double>();
+
+  double keff;
+  if (!sim["keff"] || sim["keff"].IsScalar() == false) {
+    fatal_error("No valid keff entry provided in noise simulation.");
+  }
+  keff = sim["keff"].as<double>();
+
+  double eta = 1.;
+  if (sim["eta"] && sim["eta"].IsScalar()) {
+    eta = sim["eta"].as<double>();
+  } else if (sim["eta"]) {
+    fatal_error("Invalid eta entry provided in noise simulation.");
+  }
+
+  NoiseParameters noise_params;
+  noise_params.omega = omega;
+  noise_params.keff = keff;
+  noise_params.eta = eta;
+
+  noise_maker.noise_parameters() = noise_params;
+
+  // Create simulation
+  std::shared_ptr<Noise> simptr =
+      std::make_shared<Noise>(noise_mover, pi_mover, noise_params, noise_maker);
+
+  // Set quantities
+  simptr->set_nparticles(nparticles);
+  simptr->set_nbatches(ngenerations);
+  simptr->set_nignored(nignored);
+  simptr->set_nskip(nskip);
+  simptr->set_combing(combing);
+  simptr->set_normalize_noise_source(normalize_noise_source);
+  simptr->set_ncancel_noise_gens(ncancel_noise_gens);
+  if (cancelator) simptr->set_cancelator(cancelator);
+  simptr->set_regional_cancellation(cancellation);
+  simptr->set_regional_cancellation_noise(noise_cancellation);
+  for (const auto& src : sources) {
+    simptr->add_source(src);
+  }
+  if (in_source_file.empty() == false) {
+    simptr->set_in_source_file(in_source_file);
+  }
+  if (entropy) simptr->set_entropy(*entropy);
+
+  return simptr;
 }
