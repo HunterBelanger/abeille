@@ -35,7 +35,7 @@
 #include <complex>
 #include <memory>
 
-class NoiseFissionOperator {  // Copy for alphafissionoperator
+class NoiseFissionOperator {
  public:
   NoiseFissionOperator() = default;
 
