@@ -107,10 +107,6 @@ class AlphaPowerIterator : public Simulation {
 
   void normalize_weights_and_calc_kstep(std::vector<BankedParticle>& next_gen);
 
-  void comb_particles(std::vector<BankedParticle>& next_gen);
-
-  void perform_regional_cancellation(std::vector<BankedParticle>& next_gen);
-
   // Entropy calculation
   void compute_pre_cancellation_entropy(std::vector<BankedParticle>& next_gen);
   void compute_post_cancellation_entropy(std::vector<BankedParticle>& next_gen);
