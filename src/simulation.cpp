@@ -1,5 +1,6 @@
 /*
- * Abeille Monte Carlo Code Copyright 2019-2023, Hunter Belanger
+ * Abeille Monte Carlo Code
+ * Copyright 2019-2023, Hunter Belanger
  * Copyright 2021-2022, Commissariat à l'Energie Atomique et aux Energies
  * Alternatives
  *

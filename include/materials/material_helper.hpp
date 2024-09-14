@@ -136,11 +136,11 @@ class MaterialHelper {
         energy_index = mat->components()[0].nuclide->energy_grid_index(E);
       }
 
-      double p_speed = speed(E, energy_index);
-      if (alpha_params_->alpha > 0) {
-        Ealpha_ += alpha_params_->alpha / p_speed;
+      const double p_speed = speed(E, energy_index);
+      if (alpha_params_->alpha >= 0.) {
+        Ealpha_ = alpha_params_->alpha / p_speed;
       } else {
-        Ealpha_ -= alpha_params_->eta * alpha_params_->alpha / p_speed;
+        Ealpha_ = -alpha_params_->eta * alpha_params_->alpha / p_speed;
       }
     }
 

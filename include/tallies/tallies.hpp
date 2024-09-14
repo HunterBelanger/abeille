@@ -162,14 +162,14 @@ class Tallies {
   }
 
   double alpha() const { return alpha_; }
-  void set_alpha(double a) { alpha_ = a; }  // Only used for noise !
+  void set_alpha(double a) { alpha_ = a; }
   double alpha_avg() const { return alpha_avg_; }
   double alpha_err() const {
     return std::sqrt(alpha_var_ / static_cast<double>(gen));
   }
 
   double k_alpha() const { return k_alpha_; }
-  void set_k_alpha(double a) { k_alpha_ = a; }  // Only used for noise !
+  void set_k_alpha(double a) { k_alpha_ = a; }
   double k_alpha_avg() const { return k_alpha_avg_; }
   double k_alpha_err() const {
     return std::sqrt(k_alpha_var_ / static_cast<double>(gen));

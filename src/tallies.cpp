@@ -79,6 +79,8 @@ void Tallies::allocate_batch_arrays(std::size_t nbatches) {
   k_col_vec.reserve(nbatches);
   k_abs_vec.reserve(nbatches);
   k_trk_vec.reserve(nbatches);
+  alpha_vec.reserve(nbatches);
+  k_alpha_vec.reserve(nbatches);
   leak_vec.reserve(nbatches);
   mig_vec.reserve(nbatches);
 }
@@ -201,6 +203,7 @@ void Tallies::calc_gen_values() {
   k_abs_vec.push_back(k_abs);
   k_trk_vec.push_back(k_trk);
   alpha_vec.push_back(alpha_);
+  k_alpha_vec.push_back(k_alpha_);
   leak_vec.push_back(leak);
   mig_vec.push_back(mig);
 }
@@ -275,8 +278,8 @@ void Tallies::write_tallies(bool track_length_compatible) {
       results.createAttribute("alpha-avg", alpha_avg());
       results.createAttribute("alpha-std", alpha_err());
     }
-    results.createDataSet("alpha", alpha_vec);
 
+    results.createDataSet("alpha", alpha_vec);
     results.createDataSet("k_alpha", k_alpha_vec);
   }
 
