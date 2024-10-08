@@ -92,6 +92,8 @@ class Tracker {
   uint32_t cell_instance() const { return current_cell.instance; }
 
   Boundary get_boundary_condition() const {
+    return geometry::root_universe->get_boundary_condition(r_, u_, surface_token_);
+
     if (!this->is_lost()) {
       double dist = INF;
       BoundaryType btype = BoundaryType::Vacuum;
@@ -284,6 +286,9 @@ class Tracker {
       // Now start at the last element, and get the new position.
       // We can get the info for the last universe, and then call get_cell from
       // that Universe to descend the geometry tree.
+      while (tree.back().type != GeoLilyPad::PadType::Universe) {
+        tree.pop_back();
+      }
       auto uni_indx = universe_id_to_indx[tree.back().id];
       const auto& uni = geometry::universes[uni_indx];
       Position r_local = tree.back().r_local;
