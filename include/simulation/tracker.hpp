@@ -92,8 +92,6 @@ class Tracker {
   uint32_t cell_instance() const { return current_cell.instance; }
 
   Boundary get_boundary_condition() const {
-    return geometry::root_universe->get_boundary_condition(r_, u_, surface_token_);
-
     if (!this->is_lost()) {
       double dist = INF;
       BoundaryType btype = BoundaryType::Vacuum;
