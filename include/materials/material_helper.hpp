@@ -27,6 +27,7 @@
 
 #include <materials/material.hpp>
 #include <materials/nuclide.hpp>
+#include <utils/alpha_parameters.hpp>
 #include <utils/constants.hpp>
 #include <utils/noise_parameters.hpp>
 #include <utils/rng.hpp>
@@ -42,11 +43,17 @@ class MaterialHelper {
   enum class BranchlessReaction { SCATTER, FISSION };
 
   MaterialHelper(Material* material, double E,
-                 std::optional<NoiseParameters> noise_params = std::nullopt);
+                 std::optional<NoiseParameters> noise_params = std::nullopt,
+                 std::optional<AlphaParameters> alpha_params = std::nullopt);
 
   std::optional<NoiseParameters> noise_params() const { return noise_params_; }
   void set_noise_params(std::optional<NoiseParameters> np) {
     noise_params_ = np;
+  }
+
+  std::optional<AlphaParameters> alpha_params() const { return alpha_params_; }
+  void set_alpha_params(std::optional<AlphaParameters> ap) {
+    alpha_params_ = ap;
   }
 
   void set_material(Material* material, double E) {
@@ -88,6 +95,9 @@ class MaterialHelper {
 
     // Get noise copy component (0 if noise_params_ is empty)
     Et_ += this->Ew(E);
+    // Get alpha component (0 if alpha_params_ is empty)
+    // -eta a/v for a <= 0, a/v for a > 0
+    Et_ += this->Ealpha(E);
 
     return Et_;
   }
@@ -111,6 +121,30 @@ class MaterialHelper {
     }
 
     return Ew_;
+  }
+
+  double Ealpha(double E) {
+    // Works alot like Ew, mostly copied down
+    this->set_energy(E);
+
+    double Ealpha_ = 0.;
+
+    if (alpha_params_ && mat->components().size() > 0) {
+      std::size_t energy_index = 0;
+
+      if (settings::energy_mode == settings::EnergyMode::MG) {
+        energy_index = mat->components()[0].nuclide->energy_grid_index(E);
+      }
+
+      const double p_speed = speed(E, energy_index);
+      if (alpha_params_->alpha >= 0.) {
+        Ealpha_ = alpha_params_->alpha / p_speed;
+      } else {
+        Ealpha_ = -alpha_params_->eta * alpha_params_->alpha / p_speed;
+      }
+    }
+
+    return Ealpha_;
   }
 
   double Ea(double E) {
@@ -224,6 +258,7 @@ class MaterialHelper {
     const double Et_ = this->Et(E);
     const double invs_Et = 1. / Et_;
     const double Ew_ = this->Ew(E);
+    const double Ealpha_ = this->Ealpha(E);
     const double N_nuclides = static_cast<double>(mat->components().size());
 
     // Get our random variable
@@ -240,6 +275,13 @@ class MaterialHelper {
       if (noise_params_) {
         micro_xs.noise_copy = Ew_ / (micro_xs.concentration * N_nuclides);
         micro_xs.total += micro_xs.noise_copy;
+      }
+
+      // We handle alpha < 0 for the copy xs in alpha_branching_collision, so
+      // we do not need to handle it here
+      if (alpha_params_) {
+        micro_xs.alpha = Ealpha_ / (micro_xs.concentration * N_nuclides);
+        micro_xs.total += micro_xs.alpha;
       }
 
       // Get the probability for the nuclide, and add to the cumulative
@@ -259,6 +301,11 @@ class MaterialHelper {
     if (noise_params_) {
       micro_xs.noise_copy = Ew_ / (micro_xs.concentration * N_nuclides);
       micro_xs.total += micro_xs.noise_copy;
+    }
+
+    if (alpha_params_) {
+      micro_xs.alpha = Ealpha_ / (micro_xs.concentration * N_nuclides);
+      micro_xs.total += micro_xs.alpha;
     }
 
     return {comp.nuclide.get(), micro_xs};
@@ -319,6 +366,7 @@ class MaterialHelper {
 
  private:
   std::optional<NoiseParameters> noise_params_;
+  std::optional<AlphaParameters> alpha_params_;
   Material* mat;
   double E_;
   boost::unordered_flat_map<const Nuclide*, std::optional<MicroXSs>> xs_;

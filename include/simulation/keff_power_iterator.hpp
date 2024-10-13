@@ -22,8 +22,8 @@
  * along with Abeille. If not, see <https://www.gnu.org/licenses/>.
  *
  * */
-#ifndef POWER_ITERATOR_H
-#define POWER_ITERATOR_H
+#ifndef KEFF_POWER_ITERATOR_H
+#define KEFF_POWER_ITERATOR_H
 
 #include <cancelator/cancelator.hpp>
 #include <simulation/entropy.hpp>
@@ -38,10 +38,10 @@
 #include <unordered_set>
 #include <vector>
 
-class PowerIterator : public Simulation {
+class KeffPowerIterator : public Simulation {
  public:
-  PowerIterator(std::shared_ptr<IParticleMover> i_pm) : Simulation(i_pm) {};
-  ~PowerIterator() = default;
+  KeffPowerIterator(std::shared_ptr<IParticleMover> i_pm) : Simulation(i_pm) {};
+  ~KeffPowerIterator() = default;
 
   void initialize() override final;
   void run() override final;
@@ -119,8 +119,8 @@ class PowerIterator : public Simulation {
   void sample_source_from_sources();
   void load_source_from_file();
 
-};  // PowerIterator
+};  // KeffPowerIterator
 
-std::shared_ptr<PowerIterator> make_power_iterator(const YAML::Node& sim);
+std::shared_ptr<KeffPowerIterator> make_keff_power_iterator(const YAML::Node& sim);
 
 #endif  // MG_POWER_ITERATOR_H

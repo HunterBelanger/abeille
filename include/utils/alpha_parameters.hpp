@@ -22,13 +22,13 @@
  * along with Abeille. If not, see <https://www.gnu.org/licenses/>.
  *
  * */
-#ifndef NOISE_PARAMETERS_H
-#define NOISE_PARAMETERS_H
+#ifndef ALPHA_PARAMETERS_H
+#define ALPHA_PARAMETERS_H
 
-struct NoiseParameters {
-  double omega;  // Angular noise frequency
+struct AlphaParameters {
+  double alpha;
   double eta;
   double keff;
 };
 
-#endif
+#endif  // !ALPHA_PARAMETERS_H

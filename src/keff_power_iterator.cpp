@@ -23,7 +23,7 @@
  *
  * */
 #include <geometry/geometry.hpp>
-#include <simulation/power_iterator.hpp>
+#include <simulation/keff_power_iterator.hpp>
 #include <utils/error.hpp>
 #include <utils/kahan.hpp>
 #include <utils/mpi.hpp>
@@ -47,7 +47,7 @@ namespace H5 = HighFive;
 #include <sstream>
 #include <vector>
 
-void PowerIterator::initialize() {
+void KeffPowerIterator::initialize() {
   this->write_output_info();
 
   if (in_source_file_name.empty() && sources.empty()) {
@@ -71,7 +71,7 @@ void PowerIterator::initialize() {
       particle_mover->track_length_compatible());
 }
 
-void PowerIterator::write_output_info() const {
+void KeffPowerIterator::write_output_info() const {
   if (mpi::rank != 0) return;
 
   auto& h5 = Output::instance().h5();
@@ -105,7 +105,7 @@ void PowerIterator::write_output_info() const {
   particle_mover->write_output_info();
 }
 
-void PowerIterator::set_cancelator(std::shared_ptr<Cancelator> cncl) {
+void KeffPowerIterator::set_cancelator(std::shared_ptr<Cancelator> cncl) {
   cancelator = cncl;
   if (cancelator == nullptr) {
     fatal_error("Was given a nullptr for a Cancelator.");
@@ -130,7 +130,7 @@ void PowerIterator::set_cancelator(std::shared_ptr<Cancelator> cncl) {
   }
 }
 
-void PowerIterator::set_entropy(const Entropy& entropy) {
+void KeffPowerIterator::set_entropy(const Entropy& entropy) {
   t_pre_entropy = std::make_shared<Entropy>(entropy);
   t_pre_entropy->set_sign(Entropy::Sign::Total);
 
@@ -152,14 +152,14 @@ void PowerIterator::set_entropy(const Entropy& entropy) {
   }
 }
 
-void PowerIterator::add_source(std::shared_ptr<Source> src) {
+void KeffPowerIterator::add_source(std::shared_ptr<Source> src) {
   if (src)
     sources.push_back(src);
   else
     fatal_error("Was provided a nullptr Source.");
 }
 
-void PowerIterator::load_source_from_file() {
+void KeffPowerIterator::load_source_from_file() {
   // Load source file
   auto h5s = H5::File(in_source_file_name, H5::File::ReadOnly);
 
@@ -235,7 +235,7 @@ void PowerIterator::load_source_from_file() {
   Tallies::instance().set_total_weight(std::round(tot_wgt));
 }
 
-void PowerIterator::sample_source_from_sources() {
+void KeffPowerIterator::sample_source_from_sources() {
   Output::instance().write(" Generating source particles...\n");
   // Calculate the base number of particles per node to run
   uint64_t base_particles_per_node =
@@ -271,7 +271,7 @@ void PowerIterator::sample_source_from_sources() {
   Tallies::instance().set_total_weight(static_cast<double>(nparticles));
 }
 
-void PowerIterator::print_header() {
+void KeffPowerIterator::print_header() {
   Output& out = Output::instance();
   out.write("\n");
   std::stringstream output;
@@ -327,7 +327,7 @@ void PowerIterator::print_header() {
   out.write(output.str());
 }
 
-void PowerIterator::generation_output() {
+void KeffPowerIterator::generation_output() {
   std::stringstream output;
 
   double kcol = Tallies::instance().kcol();
@@ -406,7 +406,7 @@ void PowerIterator::generation_output() {
   Output::instance().write(output.str());
 }
 
-void PowerIterator::run() {
+void KeffPowerIterator::run() {
   Output& out = Output::instance();
   out.write(" Running k Eigenvalue Problem...\n");
   out.write(" NPARTICLES: " + std::to_string(nparticles) + ", ");
@@ -578,7 +578,7 @@ void PowerIterator::run() {
   if (save_source) write_source(bank);
 }
 
-void PowerIterator::write_entropy_families_etc_to_results() const {
+void KeffPowerIterator::write_entropy_families_etc_to_results() const {
   if (mpi::rank != 0) return;
 
   auto& h5 = Output::instance().h5();
@@ -645,7 +645,7 @@ void PowerIterator::write_entropy_families_etc_to_results() const {
   h5.createAttribute("generation-times", generation_times);
 }
 
-void PowerIterator::save_weights() {
+void KeffPowerIterator::save_weights() {
   // Save values to vectors
   Nnet_vec.push_back(Nnet);
   Ntot_vec.push_back(Ntot);
@@ -658,7 +658,7 @@ void PowerIterator::save_weights() {
   Wneg_vec.push_back(Wneg);
 }
 
-void PowerIterator::compute_pre_cancellation_entropy(
+void KeffPowerIterator::compute_pre_cancellation_entropy(
     std::vector<BankedParticle>& next_gen) {
   if (t_pre_entropy && cancelator) {
     for (size_t i = 0; i < next_gen.size(); i++) {
@@ -688,7 +688,7 @@ void PowerIterator::compute_pre_cancellation_entropy(
   }
 }
 
-void PowerIterator::compute_post_cancellation_entropy(
+void KeffPowerIterator::compute_post_cancellation_entropy(
     std::vector<BankedParticle>& next_gen) {
   if (t_pre_entropy && cancelator) {
     for (size_t i = 0; i < next_gen.size(); i++) {
@@ -707,7 +707,7 @@ void PowerIterator::compute_post_cancellation_entropy(
   }
 }
 
-void PowerIterator::compute_pair_dist_sqrd(
+void KeffPowerIterator::compute_pair_dist_sqrd(
     const std::vector<BankedParticle>& next_gen) {
   double Ntot = 0.;
   double r_sqr = 0.;
@@ -747,7 +747,7 @@ void PowerIterator::compute_pair_dist_sqrd(
   r_sqrd_vec.push_back(r_sqrd);
 }
 
-void PowerIterator::zero_entropy() {
+void KeffPowerIterator::zero_entropy() {
   if (p_pre_entropy) {
     p_pre_entropy->zero();
   }
@@ -773,7 +773,7 @@ void PowerIterator::zero_entropy() {
   }
 }
 
-void PowerIterator::premature_kill() {
+void KeffPowerIterator::premature_kill() {
   // See if the user really wants to kill the program
   bool user_said_kill = false;
 
@@ -801,7 +801,7 @@ void PowerIterator::premature_kill() {
   std::cout << "\n";
 }
 
-bool PowerIterator::out_of_time(std::size_t gen) {
+bool KeffPowerIterator::out_of_time(std::size_t gen) {
   // Get the average time per generation
   double T_avg = simulation_timer.elapsed_time() / static_cast<double>(gen);
 
@@ -820,7 +820,7 @@ bool PowerIterator::out_of_time(std::size_t gen) {
   return false;
 }
 
-void PowerIterator::check_time(std::size_t gen) {
+void KeffPowerIterator::check_time(std::size_t gen) {
   bool should_stop_now = false;
   if (mpi::rank == 0) should_stop_now = out_of_time(gen);
 
@@ -833,7 +833,7 @@ void PowerIterator::check_time(std::size_t gen) {
   }
 }
 
-std::shared_ptr<PowerIterator> make_power_iterator(const YAML::Node& sim) {
+std::shared_ptr<KeffPowerIterator> make_keff_power_iterator(const YAML::Node& sim) {
   // Get the number of particles
   if (!sim["nparticles"] || sim["nparticles"].IsScalar() == false) {
     fatal_error("No nparticles entry in k-eigenvalue simulation.");
@@ -935,8 +935,8 @@ std::shared_ptr<PowerIterator> make_power_iterator(const YAML::Node& sim) {
   if (cancelator) cancelator->check_particle_mover_compatibility(mover);
 
   // Create simulation
-  std::shared_ptr<PowerIterator> simptr =
-      std::make_shared<PowerIterator>(mover);
+  std::shared_ptr<KeffPowerIterator> simptr =
+      std::make_shared<KeffPowerIterator>(mover);
 
   // Set quantities
   simptr->set_nparticles(nparticles);

@@ -52,7 +52,8 @@ class IParticleMover {
       std::vector<Particle>& bank,
       std::optional<NoiseParameters> noise = std::nullopt,
       std::vector<BankedParticle>* noise_bank = nullptr,
-      const NoiseMaker* = nullptr) = 0;
+      const NoiseMaker* = nullptr,
+      std::optional<AlphaParameters> alpha = std::nullopt) = 0;
   virtual bool exact_cancellation_compatible() const = 0;
   virtual bool track_length_compatible() const = 0;
   virtual void write_output_info(const std::string& base = "") const = 0;
@@ -81,7 +82,8 @@ class ParticleMover : public IParticleMover {
       std::vector<Particle>& bank,
       std::optional<NoiseParameters> noise = std::nullopt,
       std::vector<BankedParticle>* noise_bank = nullptr,
-      const NoiseMaker* noise_maker = nullptr) override {
+      const NoiseMaker* noise_maker = nullptr,
+      std::optional<AlphaParameters> alpha = std::nullopt) override {
 #ifdef ABEILLE_USE_OMP
 #pragma omp parallel
 #endif
@@ -109,7 +111,7 @@ class ParticleMover : public IParticleMover {
         // Only make helper if we aren't lost, to make sure that material isn't
         // a nullptr. We also set the URR random variable here, if using
         // ptables.
-        MaterialHelper mat(trkr.material(), p.E(), noise);
+        MaterialHelper mat(trkr.material(), p.E(), noise, alpha);
         if (settings::use_urr_ptables) mat.set_urr_rand_vals(p.rng);
 
         // While the partilce is alive, we continually do flights and collisions
@@ -248,9 +250,10 @@ class NoiseParticleMover
       std::vector<Particle>& bank,
       std::optional<NoiseParameters> noise = std::nullopt,
       std::vector<BankedParticle>* noise_bank = nullptr,
-      const NoiseMaker* noise_maker = nullptr) override final {
+      const NoiseMaker* noise_maker = nullptr,
+      std::optional<AlphaParameters> alpha = std::nullopt) override final {
     return ParticleMover<TransportOp, NoiseBranchingCollision>::transport(
-        bank, noise, noise_bank, noise_maker);
+        bank, noise, noise_bank, noise_maker, alpha);
   }
 
   bool exact_cancellation_compatible() const override final {
