@@ -26,7 +26,6 @@
 #include <utils/constants.hpp>
 
 #include <vector>
-#include <fstream>
 
 LegendreDistribution::LegendreDistribution()
     : a_({0.5}),
@@ -108,12 +107,6 @@ MGAngleDistribution LegendreDistribution::linearize() const {
   std::vector<double> p;
   p.push_back(pdf(-1.));
   p.push_back(pdf(1.));
-
-  std::ofstream file("coeff.txt");
-  for (std::size_t i = 0; i < a_.size(); i++){
-    file << a_[i] << "\n";
-  }
-  file.close();
 
   // Bisect intervals until we are linearly interpolable.
   std::size_t i = 0;

@@ -113,36 +113,6 @@ MGAngleDistribution::MGAngleDistribution(const std::vector<double>& mu,
     // construct the PCTable
     abs_pdf_ = pndl::PCTable(abs_neg_mu, abs_neg_pdf, abs_neg_cdf, pndl::Interpolation::LinLin);
 
-    // // write into a file to read
-    // std::ofstream file1("original_pdf.txt");
-    // for (std::size_t i = 0; i < mu.size(); i++){
-    //   file1 << mu[i] << "," << pdf[i] << "," << cdf[i] << "\n";
-    // }
-    // file1.close();
-
-    // std::ofstream file2("abs_neg_pdf.txt");
-    // //std::cout << ">>> " << abs_pdf_.values().size() << "\t" << abs_pdf_.pdf().size() << "\t" << abs_pdf_.cdf().size() << "\n";
-    // for (std::size_t i = 0; i < abs_pdf_.values().size(); i++){
-    //   file2 << abs_pdf_.values()[i] << "," << abs_pdf_.pdf()[i] << "," << abs_pdf_.cdf()[i] << "\n";
-    //   //std::cout << abs_pdf_.values()[i] << "," << abs_pdf_.pdf()[i] << "," << abs_pdf_.cdf()[i] << "\n";
-    // }
-    // file2.close();
-
-    // // sampling from the distribution
-    // std::ofstream file3("sampled_mu.txt");
-    // RNG rng2;
-    // for (std::size_t i = 0; i < 1000000; i++){
-    //   auto mu_and_wm = this->sample_mu(rng2);
-    //   file3 << mu_and_wm.first << "," << mu_and_wm.second << "\n";
-    // }
-    // file3.close();
-    // std::cout << "weight modifier = " << std::fixed << std::setprecision(10.) << abs_weight_mod_ << std::endl;
-    
-    // int aaa;
-    // std::cin >> aaa;
-
-
-
     // // abs_neg_pdf will store absolute value the negative distribuion
     // std::vector<double> abs_neg_pdf_;
     // abs_neg_pdf_.reserve(pdf_.size());
