@@ -28,6 +28,8 @@
 
 #include <algorithm>
 #include <sstream>
+#include <fstream>
+#include <iomanip>
 
 #include <PapillonNDL/linearize.hpp>
 #include <PapillonNDL/pctable.hpp>
@@ -72,46 +74,115 @@ MGAngleDistribution::MGAngleDistribution(const std::vector<double>& mu,
 
   // Setup the variables for negative pdf distribution
   if (pdf_is_neg == true) {
-    // abs_neg_pdf will store absolute value the negative distribuion
-    std::vector<double> abs_neg_pdf_;
-    abs_neg_pdf_.reserve(pdf_.size());
+    std::vector<double> abs_neg_mu, abs_neg_pdf;
+    abs_neg_mu.reserve(mu.size() + 5);
+    abs_neg_pdf.reserve(mu.size() + 5);
 
-    for (const auto& p : pdf_) {
-      abs_neg_pdf_.push_back(std::abs(p));
+    abs_neg_mu.push_back(mu.front());
+    abs_neg_pdf.push_back(std::abs(pdf.front()));
+
+    // add the point where pdf(mu) = 0.
+    for (std::size_t i = 0; i < mu.size()-1; i++){
+      if (pdf[i] * pdf[i+1] < 0.){
+        const double inv_slope = (mu[i+1] - mu[i]) / (pdf[i+1] - pdf[i]); 
+        const double mu0 = mu[i] - inv_slope * pdf[i];
+        abs_neg_mu.push_back(mu0);
+        abs_neg_pdf.push_back(0.); 
+      }
+
+      abs_neg_mu.push_back(mu[i+1]);
+      abs_neg_pdf.push_back(std::abs(pdf[i+1]));
     }
 
-    pndl::Tabulated1D pdf_original(pndl::Interpolation::LinLin, mu_, pdf_);
+    abs_neg_mu.shrink_to_fit();
+    abs_neg_pdf.shrink_to_fit();
 
-    // Lambda function to get the values from pdf_orginal, containing the
-    // absolute pdf values
-    auto abs_pdf_function = [&pdf_original](double x) {
-      return std::abs(pdf_original(x));
-    };
-
-    pndl::Tabulated1D abs_pdf_tabulated_ =
-        pndl::linearize(mu_, abs_neg_pdf_, abs_pdf_function);
-
-    // area under the abs distribution
-    abs_weight_mod_ = abs_pdf_tabulated_.integrate(mu_.front(), mu_.back());
-    const double inverse_abs_pdf_area = 1. / abs_weight_mod_;
-
-    // pdf reformation based on the abs_pdf
-    abs_neg_pdf_ = abs_pdf_tabulated_.y();
-    abs_neg_pdf_[0] *= inverse_abs_pdf_area;
-
-    // cdf corresponds to abs negative distribution
-    std::vector<double> abs_neg_cdf_(abs_neg_pdf_.size(), 0.);
-
-    for (std::size_t i = 1; i < abs_pdf_tabulated_.x().size(); i++) {
-      abs_neg_pdf_[i] *= inverse_abs_pdf_area;  // pdf normalization
-      abs_neg_cdf_[i] =
-          abs_neg_cdf_[i - 1] +
-          0.5 * (abs_neg_pdf_[i] + abs_neg_pdf_[i - 1]) *
-              (abs_pdf_tabulated_.x()[i] - abs_pdf_tabulated_.x()[i - 1]);
+    // evaluate the cdf of abs-pdf
+    std::vector<double> abs_neg_cdf(abs_neg_mu.size(), 0.);
+    for (std::size_t i = 1; i < abs_neg_mu.size(); i++){
+      abs_neg_cdf[i] = abs_neg_cdf[i-1] + 0.5 * (abs_neg_mu[i] - abs_neg_mu[i-1]) * (abs_neg_pdf[i] + abs_neg_pdf[i-1]);
     }
+    abs_weight_mod_ = abs_neg_cdf.back();
+    
+    // normalize the pdf and cdf
+    for (std::size_t i = 0; i < abs_neg_mu.size(); i++){
+      abs_neg_pdf[i] /= abs_weight_mod_;
+      abs_neg_cdf[i] /= abs_weight_mod_;
+    }
+    
+    // construct the PCTable
+    abs_pdf_ = pndl::PCTable(abs_neg_mu, abs_neg_pdf, abs_neg_cdf, pndl::Interpolation::LinLin);
 
-    abs_pdf_ = pndl::PCTable(abs_pdf_tabulated_.x(), abs_neg_pdf_, abs_neg_cdf_,
-                             pndl::Interpolation::LinLin);
+    // // write into a file to read
+    // std::ofstream file1("original_pdf.txt");
+    // for (std::size_t i = 0; i < mu.size(); i++){
+    //   file1 << mu[i] << "," << pdf[i] << "," << cdf[i] << "\n";
+    // }
+    // file1.close();
+
+    // std::ofstream file2("abs_neg_pdf.txt");
+    // //std::cout << ">>> " << abs_pdf_.values().size() << "\t" << abs_pdf_.pdf().size() << "\t" << abs_pdf_.cdf().size() << "\n";
+    // for (std::size_t i = 0; i < abs_pdf_.values().size(); i++){
+    //   file2 << abs_pdf_.values()[i] << "," << abs_pdf_.pdf()[i] << "," << abs_pdf_.cdf()[i] << "\n";
+    //   //std::cout << abs_pdf_.values()[i] << "," << abs_pdf_.pdf()[i] << "," << abs_pdf_.cdf()[i] << "\n";
+    // }
+    // file2.close();
+
+    // // sampling from the distribution
+    // std::ofstream file3("sampled_mu.txt");
+    // RNG rng2;
+    // for (std::size_t i = 0; i < 1000000; i++){
+    //   auto mu_and_wm = this->sample_mu(rng2);
+    //   file3 << mu_and_wm.first << "," << mu_and_wm.second << "\n";
+    // }
+    // file3.close();
+    // std::cout << "weight modifier = " << std::fixed << std::setprecision(10.) << abs_weight_mod_ << std::endl;
+    
+    // int aaa;
+    // std::cin >> aaa;
+
+
+
+    // // abs_neg_pdf will store absolute value the negative distribuion
+    // std::vector<double> abs_neg_pdf_;
+    // abs_neg_pdf_.reserve(pdf_.size());
+
+    // for (const auto& p : pdf_) {
+    //   abs_neg_pdf_.push_back(std::abs(p));
+    // }
+
+    // pndl::Tabulated1D pdf_original(pndl::Interpolation::LinLin, mu_, pdf_);
+
+    // // Lambda function to get the values from pdf_orginal, containing the
+    // // absolute pdf values
+    // auto abs_pdf_function = [&pdf_original](double x) {
+    //   return std::abs(pdf_original(x));
+    // };
+
+    // pndl::Tabulated1D abs_pdf_tabulated_ =
+    //     pndl::linearize(mu_, abs_neg_pdf_, abs_pdf_function);
+
+    // // area under the abs distribution
+    // abs_weight_mod_ = abs_pdf_tabulated_.integrate(mu_.front(), mu_.back());
+    // const double inverse_abs_pdf_area = 1. / abs_weight_mod_;
+
+    // // pdf reformation based on the abs_pdf
+    // abs_neg_pdf_ = abs_pdf_tabulated_.y();
+    // abs_neg_pdf_[0] *= inverse_abs_pdf_area;
+
+    // // cdf corresponds to abs negative distribution
+    // std::vector<double> abs_neg_cdf_(abs_neg_pdf_.size(), 0.);
+
+    // for (std::size_t i = 1; i < abs_pdf_tabulated_.x().size(); i++) {
+    //   abs_neg_pdf_[i] *= inverse_abs_pdf_area;  // pdf normalization
+    //   abs_neg_cdf_[i] =
+    //       abs_neg_cdf_[i - 1] +
+    //       0.5 * (abs_neg_pdf_[i] + abs_neg_pdf_[i - 1]) *
+    //           (abs_pdf_tabulated_.x()[i] - abs_pdf_tabulated_.x()[i - 1]);
+    // }
+
+    // abs_pdf_ = pndl::PCTable(abs_pdf_tabulated_.x(), abs_neg_pdf_, abs_neg_cdf_,
+    //                          pndl::Interpolation::LinLin);
   } else {
     // Make sure CDF is sorted and > 0
     if (std::is_sorted(cdf_.begin(), cdf_.end()) == false) {
