@@ -348,7 +348,7 @@ void ApproximateMeshCancelator::perform_cancellation_full_vector() {
   }
   wgts.fill(0.);
 
-  xt::xarray<uint16_t> n_totals;
+  xt::xarray<uint32_t> n_totals;
   n_totals.resize({shape[0], shape[1], shape[2], shape[3]});
   n_totals.fill(0);
 
@@ -362,7 +362,7 @@ void ApproximateMeshCancelator::perform_cancellation_full_vector() {
     uint32_t k = (indx - i * Si - j * Sj) / Sk;
     uint32_t l = (indx - i * Si - j * Sj - k * Sk) / Sl;
 
-    std::uint16_t n_total = 0;
+    std::uint32_t n_total = 0;
     double sum_wgt = 0.;
     double sum_wgt2 = 0.;
 
@@ -389,7 +389,7 @@ void ApproximateMeshCancelator::perform_cancellation_full_vector() {
   std::span<double> wgts_vals(wgts.data(), wgts.size());
   mpi::Allreduce_sum(wgts_vals);
 
-  std::span<uint16_t> n_totals_vals(n_totals.data(), n_totals.size());
+  std::span<uint32_t> n_totals_vals(n_totals.data(), n_totals.size());
   mpi::Allreduce_sum(n_totals_vals);
 
   // all the vectors have size keys.size() so we use variable x to index them
