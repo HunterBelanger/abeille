@@ -70,10 +70,7 @@ UniqueCell CellUniverse::get_cell(Position r, Direction u,
 }
 
 UniqueCell CellUniverse::get_cell(std::vector<GeoLilyPad>& stack, Position r,
-                                  Direction u, int32_t on_surf) const {
-  // First push universe info onto the stack
-  stack.push_back({GeoLilyPad::PadType::Universe, id_, r, {0, 0, 0}, false});
-
+                                  Direction u, int32_t on_surf) const { 
   UniqueCell ucell;
 
   // Go through each cell, and return the first one for which the
@@ -84,9 +81,11 @@ UniqueCell CellUniverse::get_cell(std::vector<GeoLilyPad>& stack, Position r,
     if (geometry::cells[indx]->is_inside(r, u, on_surf)) {
       auto cell_id = geometry::cells[indx]->id();
 
+      // First push universe info onto the stack
+      stack.push_back({GeoLilyPad::PadType::Universe, id_, static_cast<uint32_t>(i), r, {0, 0, 0}, false});
+
       // Save stack data for cell
-      stack.push_back(
-          {GeoLilyPad::PadType::Cell, cell_id, r, {0, 0, 0}, false});
+      stack.push_back({GeoLilyPad::PadType::Cell, cell_id, 0, r, {0, 0, 0}, false});
 
       Cell* cell = geometry::cells[indx].get();
 
@@ -165,57 +164,6 @@ bool CellUniverse::contains_universe(uint32_t id) const {
   }
 
   return false;
-}
-
-Boundary CellUniverse::lost_get_boundary(const Position& r, const Direction& u,
-                                         int32_t on_surf) const {
-  double dist = INF;
-  BoundaryType btype = BoundaryType::Vacuum;
-  int surface_index = -1;
-  int32_t token = 0;
-
-  for (auto& indx : cell_indicies) {
-    Cell* cell = geometry::cells[indx].get();
-
-    // First check the boundary of the cell itself
-    auto d_t = cell->distance_to_boundary(r, u, on_surf);
-    if (d_t.first < dist && std::abs(d_t.first - dist) > BOUNDRY_TOL) {
-      double tmp_dist = d_t.first;
-      int32_t tmp_token = std::abs(d_t.second);
-
-      if (tmp_token) {
-        token = tmp_token;
-        dist = tmp_dist;
-        surface_index = token - 1;
-      } else {
-        // Not an actual surface
-        continue;
-      }
-
-      btype = geometry::surfaces[static_cast<std::size_t>(surface_index)]
-                  ->boundary();
-
-      if (geometry::surfaces[static_cast<std::size_t>(surface_index)]->sign(
-              r, u) < 0)
-        token *= -1;
-    }
-
-    // Now check the universe in the cell, if there is one
-    if (cell->fill() == Cell::Fill::Universe) {
-      auto cell_uni_bound = cell->universe()->lost_get_boundary(r, u, on_surf);
-      if (cell_uni_bound.distance < dist &&
-          std::abs(cell_uni_bound.distance - dist) > BOUNDRY_TOL) {
-        dist = cell_uni_bound.distance;
-        surface_index = cell_uni_bound.surface_index;
-        token = cell_uni_bound.token;
-        btype = cell_uni_bound.boundary_type;
-      }
-    }
-  }
-
-  Boundary ret_bound(dist, surface_index, btype);
-  ret_bound.token = token;
-  return ret_bound;
 }
 
 std::set<uint32_t> CellUniverse::get_all_mat_cells() const {

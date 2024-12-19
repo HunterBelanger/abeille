@@ -81,9 +81,6 @@ class Lattice : public Universe {
   Boundary get_boundary_condition(const Position& r, const Direction& u,
                                   int32_t on_surf) const override final;
 
-  Boundary lost_get_boundary(const Position& r, const Direction& u,
-                             int32_t on_surf) const override final;
-
   // get all material cells in universe
   std::set<uint32_t> get_all_mat_cells() const override final;
 
