@@ -313,7 +313,6 @@ class Tracker {
     // If we couldn't get a cell, we need to call in the big guns, and
     // re-start from scratch.
     if (!current_cell) {
-      warning("Get current failed. Trying restart_get_current.");
       restart_get_current();
     }
 
@@ -324,20 +323,20 @@ class Tracker {
       }
 
       current_mat = current_cell.cell->material();
-    } else {
-      fatal_error("Get current failed and restart_get_current failed.");
-    }
 
-    // Now that we have the current cell, we need to get the instance 
-    uint32_t instance = 0;
-    for (const auto& pad : tree) {
-      if (pad.type != GeoLilyPad::PadType::Cell) {
-        auto uni_indx = universe_id_to_indx[pad.id];
-        const auto& uni = geometry::universes[uni_indx];
-        instance += uni->offset_map()[pad.offset_index].at(current_cell.id);
+      // Now that we have the current cell, we need to get the instance 
+      uint32_t instance = 0;
+      for (const auto& pad : tree) {
+        if (pad.type != GeoLilyPad::PadType::Cell) {
+          auto uni_indx = universe_id_to_indx[pad.id];
+          const auto& uni = geometry::universes[uni_indx];
+          instance += uni->offset_map()[pad.offset_index].at(current_cell.id);
+        }
       }
+      current_cell.instance = instance;
+    } else {
+      current_mat = nullptr;
     }
-    current_cell.instance = instance;
   }
 
   bool check_tree() const {
