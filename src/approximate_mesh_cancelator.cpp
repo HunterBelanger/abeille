@@ -281,7 +281,7 @@ void ApproximateMeshCancelator::perform_cancellation_vector() {
   }
   wgts.fill(0.);
 
-  std::vector<uint16_t> n_totals(keys.size(), 0);
+  std::vector<uint32_t> n_totals(keys.size(), 0);
 
   for (std::size_t i = 0; i < keys.size(); i++) {
     const auto key = keys[i];
@@ -298,7 +298,7 @@ void ApproximateMeshCancelator::perform_cancellation_vector() {
     }
 
     // Push the counts to the vectors
-    n_totals[i] = static_cast<uint16_t>(n_total);
+    n_totals[i] = static_cast<uint32_t>(n_total);
     if (this->cancel_dual_weights()) {
       wgts(0, i) = sum_wgt;
       wgts(1, i) = sum_wgt2;
