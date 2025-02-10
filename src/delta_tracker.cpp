@@ -127,9 +127,7 @@ void DeltaTracker::transport(Particle& p, Tracker& trkr, MaterialHelper& mat,
           mssg << " at a distance of " << bound.distance << " cm.\n";
           mssg << "Currently lost at r = " << trkr.r() << ", u = " << trkr.u()
                << ".";
-          // fatal_error(mssg.str());
-          warning(mssg.str());
-          p.kill();
+          fatal_error(mssg.str());
         }
       } else {
         fatal_error("Help me, how did I get here ?");
