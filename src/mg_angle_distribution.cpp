@@ -28,8 +28,6 @@
 
 #include <algorithm>
 #include <sstream>
-#include <fstream>
-#include <iomanip>
 
 #include <PapillonNDL/linearize.hpp>
 #include <PapillonNDL/pctable.hpp>
@@ -74,8 +72,10 @@ MGAngleDistribution::MGAngleDistribution(const std::vector<double>& mu,
 
   // Setup the variables for negative pdf distribution
   if (pdf_is_neg == true) {
+    // abs_neg_pdf will store absolute value the negative distribuion
     std::vector<double> abs_neg_mu, abs_neg_pdf;
-    abs_neg_mu.reserve(mu.size() + 5);
+    // Maximin 5 points can be reserved, as in the current LegendreDistribution class, we can go max upto fifth legendre-order, therefor only 5 roots wil be there.
+    abs_neg_mu.reserve(mu.size() + 5); 
     abs_neg_pdf.reserve(mu.size() + 5);
 
     abs_neg_mu.push_back(mu.front());
@@ -102,6 +102,8 @@ MGAngleDistribution::MGAngleDistribution(const std::vector<double>& mu,
     for (std::size_t i = 1; i < abs_neg_mu.size(); i++){
       abs_neg_cdf[i] = abs_neg_cdf[i-1] + 0.5 * (abs_neg_mu[i] - abs_neg_mu[i-1]) * (abs_neg_pdf[i] + abs_neg_pdf[i-1]);
     }
+
+    // the weight modifier will be the area under absolute-pdf
     abs_weight_mod_ = abs_neg_cdf.back();
     
     // normalize the pdf and cdf
@@ -113,46 +115,6 @@ MGAngleDistribution::MGAngleDistribution(const std::vector<double>& mu,
     // construct the PCTable
     abs_pdf_ = pndl::PCTable(abs_neg_mu, abs_neg_pdf, abs_neg_cdf, pndl::Interpolation::LinLin);
 
-    // // abs_neg_pdf will store absolute value the negative distribuion
-    // std::vector<double> abs_neg_pdf_;
-    // abs_neg_pdf_.reserve(pdf_.size());
-
-    // for (const auto& p : pdf_) {
-    //   abs_neg_pdf_.push_back(std::abs(p));
-    // }
-
-    // pndl::Tabulated1D pdf_original(pndl::Interpolation::LinLin, mu_, pdf_);
-
-    // // Lambda function to get the values from pdf_orginal, containing the
-    // // absolute pdf values
-    // auto abs_pdf_function = [&pdf_original](double x) {
-    //   return std::abs(pdf_original(x));
-    // };
-
-    // pndl::Tabulated1D abs_pdf_tabulated_ =
-    //     pndl::linearize(mu_, abs_neg_pdf_, abs_pdf_function);
-
-    // // area under the abs distribution
-    // abs_weight_mod_ = abs_pdf_tabulated_.integrate(mu_.front(), mu_.back());
-    // const double inverse_abs_pdf_area = 1. / abs_weight_mod_;
-
-    // // pdf reformation based on the abs_pdf
-    // abs_neg_pdf_ = abs_pdf_tabulated_.y();
-    // abs_neg_pdf_[0] *= inverse_abs_pdf_area;
-
-    // // cdf corresponds to abs negative distribution
-    // std::vector<double> abs_neg_cdf_(abs_neg_pdf_.size(), 0.);
-
-    // for (std::size_t i = 1; i < abs_pdf_tabulated_.x().size(); i++) {
-    //   abs_neg_pdf_[i] *= inverse_abs_pdf_area;  // pdf normalization
-    //   abs_neg_cdf_[i] =
-    //       abs_neg_cdf_[i - 1] +
-    //       0.5 * (abs_neg_pdf_[i] + abs_neg_pdf_[i - 1]) *
-    //           (abs_pdf_tabulated_.x()[i] - abs_pdf_tabulated_.x()[i - 1]);
-    // }
-
-    // abs_pdf_ = pndl::PCTable(abs_pdf_tabulated_.x(), abs_neg_pdf_, abs_neg_cdf_,
-    //                          pndl::Interpolation::LinLin);
   } else {
     // Make sure CDF is sorted and > 0
     if (std::is_sorted(cdf_.begin(), cdf_.end()) == false) {
