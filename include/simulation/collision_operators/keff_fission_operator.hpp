@@ -48,9 +48,9 @@ class KeffFissionOperator
     // generation stays approximately constant.
 
     // when the fission source is converged
-    if (Tallies::instance().generations() > 1){
-      return static_cast<int>(
-        std::floor(std::abs(k_abs_scr) / Tallies::instance().kcol_avg() + p.rng()));  
+    if (Tallies::instance().generations() > 1) {
+      return static_cast<int>(std::floor(
+          std::abs(k_abs_scr) / Tallies::instance().kcol_avg() + p.rng()));
     }
 
     return static_cast<int>(

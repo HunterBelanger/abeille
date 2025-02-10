@@ -74,24 +74,26 @@ MGAngleDistribution::MGAngleDistribution(const std::vector<double>& mu,
   if (pdf_is_neg == true) {
     // abs_neg_pdf will store absolute value the negative distribuion
     std::vector<double> abs_neg_mu, abs_neg_pdf;
-    // Maximin 5 points can be reserved, as in the current LegendreDistribution class, we can go max upto fifth legendre-order, therefor only 5 roots wil be there.
-    abs_neg_mu.reserve(mu.size() + 5); 
+    // Maximin 5 points can be reserved, as in the current LegendreDistribution
+    // class, we can go max upto fifth legendre-order, therefor only 5 roots wil
+    // be there.
+    abs_neg_mu.reserve(mu.size() + 5);
     abs_neg_pdf.reserve(mu.size() + 5);
 
     abs_neg_mu.push_back(mu.front());
     abs_neg_pdf.push_back(std::abs(pdf.front()));
 
     // add the point where pdf(mu) = 0.
-    for (std::size_t i = 0; i < mu.size()-1; i++){
-      if (pdf[i] * pdf[i+1] < 0.){
-        const double inv_slope = (mu[i+1] - mu[i]) / (pdf[i+1] - pdf[i]); 
+    for (std::size_t i = 0; i < mu.size() - 1; i++) {
+      if (pdf[i] * pdf[i + 1] < 0.) {
+        const double inv_slope = (mu[i + 1] - mu[i]) / (pdf[i + 1] - pdf[i]);
         const double mu0 = mu[i] - inv_slope * pdf[i];
         abs_neg_mu.push_back(mu0);
-        abs_neg_pdf.push_back(0.); 
+        abs_neg_pdf.push_back(0.);
       }
 
-      abs_neg_mu.push_back(mu[i+1]);
-      abs_neg_pdf.push_back(std::abs(pdf[i+1]));
+      abs_neg_mu.push_back(mu[i + 1]);
+      abs_neg_pdf.push_back(std::abs(pdf[i + 1]));
     }
 
     abs_neg_mu.shrink_to_fit();
@@ -99,21 +101,24 @@ MGAngleDistribution::MGAngleDistribution(const std::vector<double>& mu,
 
     // evaluate the cdf of abs-pdf
     std::vector<double> abs_neg_cdf(abs_neg_mu.size(), 0.);
-    for (std::size_t i = 1; i < abs_neg_mu.size(); i++){
-      abs_neg_cdf[i] = abs_neg_cdf[i-1] + 0.5 * (abs_neg_mu[i] - abs_neg_mu[i-1]) * (abs_neg_pdf[i] + abs_neg_pdf[i-1]);
+    for (std::size_t i = 1; i < abs_neg_mu.size(); i++) {
+      abs_neg_cdf[i] =
+          abs_neg_cdf[i - 1] + 0.5 * (abs_neg_mu[i] - abs_neg_mu[i - 1]) *
+                                   (abs_neg_pdf[i] + abs_neg_pdf[i - 1]);
     }
 
     // the weight modifier will be the area under absolute-pdf
     abs_weight_mod_ = abs_neg_cdf.back();
-    
+
     // normalize the pdf and cdf
-    for (std::size_t i = 0; i < abs_neg_mu.size(); i++){
+    for (std::size_t i = 0; i < abs_neg_mu.size(); i++) {
       abs_neg_pdf[i] /= abs_weight_mod_;
       abs_neg_cdf[i] /= abs_weight_mod_;
     }
-    
+
     // construct the PCTable
-    abs_pdf_ = pndl::PCTable(abs_neg_mu, abs_neg_pdf, abs_neg_cdf, pndl::Interpolation::LinLin);
+    abs_pdf_ = pndl::PCTable(abs_neg_mu, abs_neg_pdf, abs_neg_cdf,
+                             pndl::Interpolation::LinLin);
 
   } else {
     // Make sure CDF is sorted and > 0
