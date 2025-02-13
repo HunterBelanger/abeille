@@ -47,7 +47,9 @@ class KeffFissionOperator
     // keff of the previous generation, so that the number of particles per
     // generation stays approximately constant.
 
-    // when the fission source is converged
+    // When the fission source is converged (i.e., after inactive genertaions),
+    // k-avg can be used. Though, after the first active generation, the k-avg
+    // will be recored, otherwise k from the generation can be used.
     if (Tallies::instance().generations() > 1) {
       return static_cast<int>(std::floor(
           std::abs(k_abs_scr) / Tallies::instance().kcol_avg() + p.rng()));
