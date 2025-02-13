@@ -31,10 +31,10 @@
 
 class ApproximateMeshCancelator : public Cancelator {
  public:
-  ApproximateMeshCancelator(Position low, Position hi, uint32_t Nx, uint32_t Ny,
-                            uint32_t Nz, bool loop = false);
-  ApproximateMeshCancelator(Position low, Position hi, uint32_t Nx, uint32_t Ny,
-                            uint32_t Nz, std::vector<double> energy_bounds,
+  ApproximateMeshCancelator(Position low, Position hi, std::uint32_t Nx, std::uint32_t Ny,
+                            std::uint32_t Nz, bool loop = false);
+  ApproximateMeshCancelator(Position low, Position hi, std::uint32_t Nx, std::uint32_t Ny,
+                            std::uint32_t Nz, std::vector<double> energy_bounds,
                             bool loop = false);
 
   bool add_particle(BankedParticle& p) override final;
@@ -47,15 +47,15 @@ class ApproximateMeshCancelator : public Cancelator {
   void write_output_info(H5::Group& grp) const override final;
 
  private:
-  std::unordered_map<uint32_t, std::vector<BankedParticle*>> bins;
+  std::unordered_map<std::uint32_t, std::vector<BankedParticle*>> bins;
   std::vector<double> energy_edges;
-  std::array<uint32_t, 4> shape;
+  std::array<std::uint32_t, 4> shape;
   Position r_low, r_hi;
-  uint32_t Si, Sj, Sk, Sl;  // Strides for indexing
+  std::uint32_t Si, Sj, Sk, Sl;  // Strides for indexing
   double dx, dy, dz;
   bool loop;
 
-  std::vector<uint32_t> sync_keys();
+  std::vector<std::uint32_t> sync_keys();
   void perform_cancellation_loop();
   void perform_cancellation_vector();
   void perform_cancellation_full_vector();
