@@ -32,8 +32,10 @@
 #include <cmath>
 
 ApproximateMeshCancelator::ApproximateMeshCancelator(Position low, Position hi,
-                                                     std::uint32_t Nx, std::uint32_t Ny,
-                                                     std::uint32_t Nz, bool loop)
+                                                     std::uint32_t Nx,
+                                                     std::uint32_t Ny,
+                                                     std::uint32_t Nz,
+                                                     bool loop)
     : bins(),
       energy_edges(),
       shape{Nx, Ny, Nz, 1},
@@ -66,8 +68,8 @@ ApproximateMeshCancelator::ApproximateMeshCancelator(Position low, Position hi,
 }
 
 ApproximateMeshCancelator::ApproximateMeshCancelator(
-    Position low, Position hi, std::uint32_t Nx, std::uint32_t Ny, std::uint32_t Nz,
-    std::vector<double> energy_bounds, bool loop)
+    Position low, Position hi, std::uint32_t Nx, std::uint32_t Ny,
+    std::uint32_t Nz, std::vector<double> energy_bounds, bool loop)
     : bins(),
       energy_edges(energy_bounds),
       shape{Nx, Ny, Nz, 1},

@@ -460,8 +460,8 @@ ExactMGCancelator::sync_keys() {
     if (mpi::rank == i) {
       auto npairs = key_matid_pairs.size();
       mpi::Send(npairs, 0);
-      mpi::Send(std::span<std::pair<Key, std::uint32_t>>(key_matid_pairs.begin(),
-                                                    key_matid_pairs.end()),
+      mpi::Send(std::span<std::pair<Key, std::uint32_t>>(
+                    key_matid_pairs.begin(), key_matid_pairs.end()),
                 0);
       key_matid_pairs.clear();
     } else if (mpi::rank == 0) {
@@ -470,8 +470,8 @@ ExactMGCancelator::sync_keys() {
       mpi::Recv(npairs, i);
       key_matid_pairs.resize(npairs);
 
-      mpi::Recv(std::span<std::pair<Key, std::uint32_t>>(key_matid_pairs.begin(),
-                                                    key_matid_pairs.end()),
+      mpi::Recv(std::span<std::pair<Key, std::uint32_t>>(
+                    key_matid_pairs.begin(), key_matid_pairs.end()),
                 i);
       key_set.insert(key_matid_pairs.begin(), key_matid_pairs.end());
     }
@@ -681,8 +681,8 @@ void ExactMGCancelator::perform_cancellation() {
       if (bins.find(key) == bins.end()) {
         // Make an empty bin. We need this on master for sampling uniform
         // portions. If the bin doesn't exist yet, initalize it
-        bins.emplace(
-            std::make_pair(key, std::unordered_map<std::uint32_t, CancelBin>()));
+        bins.emplace(std::make_pair(
+            key, std::unordered_map<std::uint32_t, CancelBin>()));
       }
 
       // Check if a bin exists for that material

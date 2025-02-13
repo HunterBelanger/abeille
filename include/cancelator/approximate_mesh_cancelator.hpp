@@ -31,10 +31,12 @@
 
 class ApproximateMeshCancelator : public Cancelator {
  public:
-  ApproximateMeshCancelator(Position low, Position hi, std::uint32_t Nx, std::uint32_t Ny,
-                            std::uint32_t Nz, bool loop = false);
-  ApproximateMeshCancelator(Position low, Position hi, std::uint32_t Nx, std::uint32_t Ny,
-                            std::uint32_t Nz, std::vector<double> energy_bounds,
+  ApproximateMeshCancelator(Position low, Position hi, std::uint32_t Nx,
+                            std::uint32_t Ny, std::uint32_t Nz,
+                            bool loop = false);
+  ApproximateMeshCancelator(Position low, Position hi, std::uint32_t Nx,
+                            std::uint32_t Ny, std::uint32_t Nz,
+                            std::vector<double> energy_bounds,
                             bool loop = false);
 
   bool add_particle(BankedParticle& p) override final;
