@@ -83,7 +83,7 @@ MGAngleDistribution::MGAngleDistribution(const std::vector<double>& mu,
     abs_neg_mu.push_back(mu.front());
     abs_neg_pdf.push_back(std::abs(pdf.front()));
 
-    // add the point where pdf(mu) = 0.
+    // Add the points where pdf(mu) = 0.
     for (std::size_t i = 0; i < mu.size() - 1; i++) {
       if (pdf[i] * pdf[i + 1] < 0.) {
         const double inv_slope = (mu[i + 1] - mu[i]) / (pdf[i + 1] - pdf[i]);
