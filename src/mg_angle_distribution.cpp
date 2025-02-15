@@ -74,9 +74,8 @@ MGAngleDistribution::MGAngleDistribution(const std::vector<double>& mu,
   if (pdf_is_neg == true) {
     // abs_neg_pdf will store absolute value the negative distribuion
     std::vector<double> abs_neg_mu, abs_neg_pdf;
-    // Maximin 5 points can be reserved, as in the current LegendreDistribution
-    // class, we can go max upto fifth legendre-order, therefor only 5 roots wil
-    // be there.
+    // There can be a maximum of 5 roots, as we only allow up to 5th order
+    // Legendre moments. We can reserve room for these extra points here.
     abs_neg_mu.reserve(mu.size() + 5);
     abs_neg_pdf.reserve(mu.size() + 5);
 
