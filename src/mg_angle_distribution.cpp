@@ -66,12 +66,12 @@ MGAngleDistribution::MGAngleDistribution(const std::vector<double>& mu,
   // will be used to sample the distribuiton with importance sampling.
   for (const auto& p : pdf_) {
     if (p < 0.) {
-      pdf_is_neg = true;
+      pdf_is_neg_ = true;
     }
   }
 
   // Setup the variables for negative pdf distribution
-  if (pdf_is_neg == true) {
+  if (pdf_is_neg_ == true) {
     // abs_neg_pdf will store absolute value the negative distribuion
     std::vector<double> abs_neg_mu, abs_neg_pdf;
     // There can be a maximum of 5 roots, as we only allow up to 5th order
