@@ -70,7 +70,7 @@ UniqueCell CellUniverse::get_cell(Position r, Direction u,
 }
 
 UniqueCell CellUniverse::get_cell(std::vector<GeoLilyPad>& stack, Position r,
-                                  Direction u, int32_t on_surf) const { 
+                                  Direction u, int32_t on_surf) const {
   UniqueCell ucell;
 
   // Go through each cell, and return the first one for which the
@@ -82,10 +82,16 @@ UniqueCell CellUniverse::get_cell(std::vector<GeoLilyPad>& stack, Position r,
       auto cell_id = geometry::cells[indx]->id();
 
       // First push universe info onto the stack
-      stack.push_back({GeoLilyPad::PadType::Universe, id_, static_cast<uint32_t>(i), r, {0, 0, 0}, false});
+      stack.push_back({GeoLilyPad::PadType::Universe,
+                       id_,
+                       static_cast<uint32_t>(i),
+                       r,
+                       {0, 0, 0},
+                       false});
 
       // Save stack data for cell
-      stack.push_back({GeoLilyPad::PadType::Cell, cell_id, 0, r, {0, 0, 0}, false});
+      stack.push_back(
+          {GeoLilyPad::PadType::Cell, cell_id, 0, r, {0, 0, 0}, false});
 
       Cell* cell = geometry::cells[indx].get();
 

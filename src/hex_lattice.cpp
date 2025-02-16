@@ -162,7 +162,9 @@ UniqueCell HexLattice::get_cell(std::vector<GeoLilyPad>& stack, Position r,
       return ucell;
     } else {
       // Save info to stack
-      stack.push_back({GeoLilyPad::PadType::Lattice, id_, static_cast<uint32_t>(cell_offset_map.size()-1), r, qrz, true});
+      stack.push_back({GeoLilyPad::PadType::Lattice, id_,
+                       static_cast<uint32_t>(cell_offset_map.size() - 1), r,
+                       qrz, true});
       ucell = geometry::universes[static_cast<uint32_t>(outer_universe_index)]
                   ->get_cell(stack, r, u, on_surf);
       if (ucell) ucell.instance += cell_offset_map.back().at(ucell.id);
@@ -178,7 +180,9 @@ UniqueCell HexLattice::get_cell(std::vector<GeoLilyPad>& stack, Position r,
       return ucell;
     } else {
       // Save info to stack
-      stack.push_back({GeoLilyPad::PadType::Lattice, id_, static_cast<uint32_t>(cell_offset_map.size()-1), r, qrz, true});
+      stack.push_back({GeoLilyPad::PadType::Lattice, id_,
+                       static_cast<uint32_t>(cell_offset_map.size() - 1), r,
+                       qrz, true});
       ucell = geometry::universes[static_cast<uint32_t>(outer_universe_index)]
                   ->get_cell(stack, r, u, on_surf);
       if (ucell) ucell.instance += cell_offset_map.back().at(ucell.id);
@@ -197,7 +201,9 @@ UniqueCell HexLattice::get_cell(std::vector<GeoLilyPad>& stack, Position r,
       return ucell;
     } else {
       // Save info to stack
-      stack.push_back({GeoLilyPad::PadType::Lattice, id_, static_cast<uint32_t>(cell_offset_map.size()-1), r, qrz, true});
+      stack.push_back({GeoLilyPad::PadType::Lattice, id_,
+                       static_cast<uint32_t>(cell_offset_map.size() - 1), r,
+                       qrz, true});
       ucell = geometry::universes[static_cast<uint32_t>(outer_universe_index)]
                   ->get_cell(stack, r, u, on_surf);
       if (ucell) ucell.instance += cell_offset_map.back().at(ucell.id);
@@ -209,7 +215,8 @@ UniqueCell HexLattice::get_cell(std::vector<GeoLilyPad>& stack, Position r,
   Position center = tile_center(qrz[0], qrz[1], qrz[2]);
   Position r_tile = r_o - center;
   // Save info to stack
-  stack.push_back({GeoLilyPad::PadType::Lattice, id_, static_cast<uint32_t>(indx), r, qrz, false});
+  stack.push_back({GeoLilyPad::PadType::Lattice, id_,
+                   static_cast<uint32_t>(indx), r, qrz, false});
   ucell = geometry::universes[static_cast<uint32_t>(lattice_universes[indx])]
               ->get_cell(stack, r_tile, u, on_surf);
   if (ucell) ucell.instance += cell_offset_map[indx].at(ucell.id);

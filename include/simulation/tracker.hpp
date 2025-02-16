@@ -102,7 +102,8 @@ class Tracker {
     if (this->is_lost()) {
       // This else is mainly useful when plotting the geometry, and the window
       // extends beyond the defined geometry.
-      return geometry::root_universe->get_boundary_condition(r_, u_, surface_token_);
+      return geometry::root_universe->get_boundary_condition(r_, u_,
+                                                             surface_token_);
     }
 
     double dist = INF;
@@ -119,7 +120,8 @@ class Tracker {
         // Only consider cells which have a boundary condition.
         if (cell->vacuum_or_reflective() == false) continue;
 
-        auto d_t = cell->distance_to_boundary_condition(pad.r_local, u_, surface_token_);
+        auto d_t = cell->distance_to_boundary_condition(pad.r_local, u_,
+                                                        surface_token_);
         if (d_t.first < dist && std::abs(d_t.first - dist) > BOUNDRY_TOL) {
           double tmp_dist = d_t.first;
           int32_t tmp_token = std::abs(d_t.second);
@@ -136,8 +138,8 @@ class Tracker {
           btype = geometry::surfaces[static_cast<std::size_t>(surface_index)]
                       ->boundary();
 
-          if (geometry::surfaces[static_cast<std::size_t>(surface_index)]
-                  ->sign(pad.r_local, u_) < 0)
+          if (geometry::surfaces[static_cast<std::size_t>(surface_index)]->sign(
+                  pad.r_local, u_) < 0)
             token *= -1;
         }
       } else if (pad.type != GeoLilyPad::PadType::Cell) {
@@ -203,15 +205,14 @@ class Tracker {
           }
 
           if (surface_index >= 0)
-            btype =
-                geometry::surfaces[static_cast<std::size_t>(surface_index)]
-                    ->boundary();
+            btype = geometry::surfaces[static_cast<std::size_t>(surface_index)]
+                        ->boundary();
           else
             btype = BoundaryType::Normal;
 
           if (surface_index >= 0 &&
-              geometry::surfaces[static_cast<std::size_t>(surface_index)]
-                      ->sign(pad.r_local, u_) < 0)
+              geometry::surfaces[static_cast<std::size_t>(surface_index)]->sign(
+                  pad.r_local, u_) < 0)
             token *= -1;
         }
       }
@@ -276,8 +277,7 @@ class Tracker {
 
     // Only need to research if first_bad != tree.end(), otherwise the
     // cell and material have not changed.
-    if (first_bad == tree.end())
-      return;
+    if (first_bad == tree.end()) return;
 
     // Get rid of bad tree elements. Get index of last bad, which is
     // the size of the number of good elements.
@@ -296,7 +296,7 @@ class Tracker {
       const auto& uni = geometry::universes[uni_indx];
       Position r_local = tree.back().r_local;
       tree.pop_back();
-      current_cell = uni->get_cell(tree, r_local, u_, surface_token_); 
+      current_cell = uni->get_cell(tree, r_local, u_, surface_token_);
     } else {
       // tree_last_pad_type == GeoLilyPad::PadType::Cell
       auto cell_indx = cell_id_to_indx[tree.back().id];
@@ -307,7 +307,8 @@ class Tracker {
       }
 
       Position r_local = tree.back().r_local;
-      current_cell = cell->universe()->get_cell(tree, r_local, u_, surface_token_); 
+      current_cell =
+          cell->universe()->get_cell(tree, r_local, u_, surface_token_);
     }
 
     // If we couldn't get a cell, we need to call in the big guns, and
@@ -324,7 +325,7 @@ class Tracker {
 
       current_mat = current_cell.cell->material();
 
-      // Now that we have the current cell, we need to get the instance 
+      // Now that we have the current cell, we need to get the instance
       uint32_t instance = 0;
       for (const auto& pad : tree) {
         if (pad.type != GeoLilyPad::PadType::Cell) {

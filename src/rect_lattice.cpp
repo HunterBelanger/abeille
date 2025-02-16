@@ -145,7 +145,12 @@ UniqueCell RectLattice::get_cell(std::vector<GeoLilyPad>& stack, Position r,
     // Index is outside of lattice, if outside_universe, try outer_universe
     if (outer_universe_index >= 0) {
       // Save lattice info to stack
-      stack.push_back({GeoLilyPad::PadType::Lattice, id_, static_cast<uint32_t>(cell_offset_map.size()-1), r, {nx, ny, nz}, true});
+      stack.push_back({GeoLilyPad::PadType::Lattice,
+                       id_,
+                       static_cast<uint32_t>(cell_offset_map.size() - 1),
+                       r,
+                       {nx, ny, nz},
+                       true});
 
       // Go to outside universe
       ucell =
@@ -155,7 +160,8 @@ UniqueCell RectLattice::get_cell(std::vector<GeoLilyPad>& stack, Position r,
       return ucell;
     } else {
       // Save lattice info to stack
-      stack.push_back({GeoLilyPad::PadType::Lattice, id_, 0, r, {nx, ny, nz}, false});
+      stack.push_back(
+          {GeoLilyPad::PadType::Lattice, id_, 0, r, {nx, ny, nz}, false});
 
       // Location can not be found, return nullptr
       return ucell;
@@ -171,7 +177,12 @@ UniqueCell RectLattice::get_cell(std::vector<GeoLilyPad>& stack, Position r,
       const int32_t univ_indx = lattice_universes[lin_indx];
 
       // Save lattice info to stack
-      stack.push_back({GeoLilyPad::PadType::Lattice, id_, static_cast<uint32_t>(lin_indx), r, {nx, ny, nz}, false});
+      stack.push_back({GeoLilyPad::PadType::Lattice,
+                       id_,
+                       static_cast<uint32_t>(lin_indx),
+                       r,
+                       {nx, ny, nz},
+                       false});
 
       ucell =
           geometry::universes[static_cast<std::size_t>(univ_indx)]->get_cell(
@@ -182,7 +193,12 @@ UniqueCell RectLattice::get_cell(std::vector<GeoLilyPad>& stack, Position r,
       // Element is a dummy, try outer_universe
       if (outer_universe_index >= 0) {
         // Save lattice info to stack
-        stack.push_back({GeoLilyPad::PadType::Lattice, id_, static_cast<uint32_t>(cell_offset_map.size()-1), r, {nx, ny, nz}, true});
+        stack.push_back({GeoLilyPad::PadType::Lattice,
+                         id_,
+                         static_cast<uint32_t>(cell_offset_map.size() - 1),
+                         r,
+                         {nx, ny, nz},
+                         true});
 
         // outer_universe is give, get cell from that
         ucell =
@@ -192,7 +208,8 @@ UniqueCell RectLattice::get_cell(std::vector<GeoLilyPad>& stack, Position r,
         return ucell;
       } else {
         // Save lattice info to stack
-        stack.push_back({GeoLilyPad::PadType::Lattice, id_, 0, r, {nx, ny, nz}, false});
+        stack.push_back(
+            {GeoLilyPad::PadType::Lattice, id_, 0, r, {nx, ny, nz}, false});
 
         // No outer_universe provided, return nullptr
         return ucell;

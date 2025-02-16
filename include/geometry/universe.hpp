@@ -63,7 +63,9 @@ class Universe {
 
   virtual bool contains_universe(uint32_t id) const = 0;
 
-  const std::vector<std::map<const uint32_t, uint32_t>>& offset_map() const { return cell_offset_map; }
+  const std::vector<std::map<const uint32_t, uint32_t>>& offset_map() const {
+    return cell_offset_map;
+  }
 
   bool has_boundary_conditions() const { return has_boundary_conditions_; }
 
