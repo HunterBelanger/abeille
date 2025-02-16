@@ -40,7 +40,7 @@
 
 class PowerIterator : public Simulation {
  public:
-  PowerIterator(std::shared_ptr<IParticleMover> i_pm) : Simulation(i_pm) {};
+  PowerIterator(std::shared_ptr<IParticleMover> i_pm) : Simulation(i_pm){};
   ~PowerIterator() = default;
 
   void initialize() override final;
