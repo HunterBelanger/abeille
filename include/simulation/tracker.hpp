@@ -100,8 +100,8 @@ class Tracker {
 
   Boundary get_boundary_condition() const {
     if (this->is_lost()) {
-      // This else is mainly useful when plotting the geometry, and the window
-      // extends beyond the defined geometry.
+      // This condition is most useful when plotting the geometry, and the
+      // window extends beyond the defined geometry.
       return geometry::root_universe->get_boundary_condition(r_, u_,
                                                              surface_token_);
     }
@@ -140,7 +140,7 @@ class Tracker {
 
           if (geometry::surfaces[static_cast<std::size_t>(surface_index)]->sign(
                   pad.r_local, u_) < 0)
-            token *= -1;
+            token = -token;
         }
       } else if (pad.type != GeoLilyPad::PadType::Cell) {
         auto uni_indx = universe_id_to_indx[pad.id];
@@ -213,7 +213,7 @@ class Tracker {
           if (surface_index >= 0 &&
               geometry::surfaces[static_cast<std::size_t>(surface_index)]->sign(
                   pad.r_local, u_) < 0)
-            token *= -1;
+            token = -token;
         }
       }
     }
