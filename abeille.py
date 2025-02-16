@@ -364,6 +364,27 @@ class ZCylinder(Surface):
         return "  - {"+out+"}"
 
 
+class Cross(Surface):
+    def __init__(self, distances: Iterable[float], x0: float = 0., y0: float = 0., name: Optional[str] = None, boundary_type: str = 'normal'):
+        self.x0 = x0
+        self.y0 = y0
+        self.distances = distances
+        super(Cross, self).__init__(name, boundary_type)
+
+    def to_string(self) -> str:
+        out = "id: {:}, type: cross, origin: [{:}, {:}], distances: [".format(self.id, self.x0, self.y0)
+        for i in range(len(self.distances)):
+            out += "{:}".format(self.distances[i])
+            if i != len(self.distances)-1:
+                out += ", "
+        out += "]"
+        if self.boundary_type != 'normal':
+            out += ", boundary: {:}".format(self.boundary_type)
+        if self.name is not None:
+            out += ", name: {:}".format(self.name)
+        return "  - {"+out+"}"
+
+
 class Cell:
     _id_counter = 1
     def __init__(self, region: Region = Region(), fill = None, name: Optional[str] = None):

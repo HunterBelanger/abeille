@@ -35,11 +35,6 @@
 Lattice::Lattice(uint32_t i_id, std::string i_name)
     : Universe{i_id, i_name}, lattice_universes{}, outer_universe_index{-1} {
   this->has_boundary_conditions_ = false;
-
-  if (this->outer_universe()) {
-    this->has_boundary_conditions_ =
-        this->outer_universe()->has_boundary_conditions();
-  }
 }
 
 void Lattice::set_outisde_universe(int32_t univ) {
@@ -87,23 +82,6 @@ Boundary Lattice::get_boundary_condition(const Position& r, const Direction& u,
   // No outer universe or no boundary conditions, so this goes out to infinity
   Boundary ret_bound(INF, -1, BoundaryType::Vacuum);
   ret_bound.token = 0;
-  return ret_bound;
-}
-
-Boundary Lattice::lost_get_boundary(const Position& r, const Direction& u,
-                                    int32_t on_surf) const {
-  // Get lattice
-
-  const bool is_inside = this->is_inside(r, u);
-  if (this->outer_universe() && is_inside == false) {
-    return this->outer_universe()->lost_get_boundary(r, u, on_surf);
-  }
-
-  std::array<int32_t, 3> tile = this->get_tile(r, u);
-  Boundary ret_bound(this->distance_to_tile_boundary(r, u, tile), -1,
-                     BoundaryType::Normal);
-  ret_bound.token = 0;
-
   return ret_bound;
 }
 
