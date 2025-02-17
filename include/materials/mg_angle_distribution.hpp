@@ -108,7 +108,7 @@ class MGAngleDistribution {
   pndl::PCTable abs_pdf_;        // PCTable for sampling negative distribution
   double abs_weight_mod_ = 1.0;  // area under abs distribution of negative pdf,
                                  // will used for normalization.
-  bool pdf_is_neg_ = false;       // Make it true, if pdf is negative.
+  bool pdf_is_neg_ = false;      // Make it true, if pdf is negative.
 
   double histogram_interp(double xi, std::size_t l) const {
     return mu_[l] + ((xi - cdf_[l]) / pdf_[l]);
