@@ -46,6 +46,15 @@ class KeffFissionOperator
     // In k-eigenvalue simulations, we normalize particle production by the
     // keff of the previous generation, so that the number of particles per
     // generation stays approximately constant.
+
+    // When the fission source is converged (i.e., after inactive generations),
+    // kcol-avg can be used to improve stability. However, kcol-avg is only
+    // non-zero AFTER the first active generation, hence the condition.
+    if (Tallies::instance().generations() > 1) {
+      return static_cast<int>(std::floor(
+          std::abs(k_abs_scr) / Tallies::instance().kcol_avg() + p.rng()));
+    }
+
     return static_cast<int>(
         std::floor(std::abs(k_abs_scr) / Tallies::instance().kcol() + p.rng()));
   }

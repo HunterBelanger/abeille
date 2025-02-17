@@ -162,6 +162,7 @@ set(HDF5_BUILD_TOOLS          OFF)
 set(HDF5_BUILD_UTILS          OFF)
 set(HDF5_BUILD_HL_LIB         OFF)
 set(BUILD_SHARED_LIBS         OFF)
+set(BUILD_TESTING             OFF)
 FetchContent_Declare(hdf5
   GIT_REPOSITORY https://github.com/HDFGroup/hdf5.git
   GIT_TAG        hdf5-1_14_3

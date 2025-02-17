@@ -38,15 +38,15 @@
 #include <unordered_set>
 
 Position ExactMGCancelator::Key::r_low, ExactMGCancelator::Key::r_hi;
-std::array<uint64_t, 4> ExactMGCancelator::Key::shape;
+std::array<std::uint64_t, 4> ExactMGCancelator::Key::shape;
 std::array<double, 3> ExactMGCancelator::Key::pitch;
 std::vector<std::vector<std::size_t>> ExactMGCancelator::Key::group_bins;
 
 ExactMGCancelator::ExactMGCancelator(
     const Position& r_low, const Position& r_hi,
-    const std::array<uint64_t, 4>& shape,
+    const std::array<std::uint64_t, 4>& shape,
     const std::vector<std::vector<std::size_t>>& group_bins, bool chi_matrix,
-    bool use_virtual_collisions, uint32_t n_samples)
+    bool use_virtual_collisions, std::uint32_t n_samples)
     : bins(),
       CHI_MATRIX(chi_matrix),
       N_SAMPLES(n_samples),
@@ -223,12 +223,12 @@ bool ExactMGCancelator::add_particle(BankedParticle& p) {
 
   // If the bin doesn't exist yet, initalize it
   if (bins.find(key) == bins.end()) {
-    bins[key] = std::unordered_map<uint32_t, CancelBin>();
+    bins[key] = std::unordered_map<std::uint32_t, CancelBin>();
   }
 
   // Get the pointer to the material where the particle is
   Material* mat = get_material(p.r);
-  uint32_t mat_id = mat->id();
+  std::uint32_t mat_id = mat->id();
 
   // Check if a bin exists for that material
   if (bins[key].find(mat_id) == bins[key].end()) {
@@ -284,7 +284,7 @@ std::optional<std::pair<Position, std::size_t>> ExactMGCancelator::sample_point(
   double Yl = Key::r_low.y() + static_cast<double>(key.j) * Key::pitch[1];
   double Zl = Key::r_low.z() + static_cast<double>(key.k) * Key::pitch[2];
 
-  uint32_t N_TRIES = 0;
+  std::uint32_t N_TRIES = 0;
   bool position_sampled = false;
   Position r_smp;
   while (N_TRIES < N_MAX_POS && !position_sampled) {
@@ -434,10 +434,10 @@ void ExactMGCancelator::cancel_bin(CancelBin& bin, MGNuclide* nuclide) {
   }
 }
 
-std::vector<std::pair<ExactMGCancelator::Key, uint32_t>>
+std::vector<std::pair<ExactMGCancelator::Key, std::uint32_t>>
 ExactMGCancelator::sync_keys() {
   // Get vector of keys to do cancellation in parallel
-  std::vector<std::pair<Key, uint32_t>> key_matid_pairs;
+  std::vector<std::pair<Key, std::uint32_t>> key_matid_pairs;
   key_matid_pairs.reserve(bins.size());
   for (const auto& key_matbin_pair : bins) {
     const auto& key = key_matbin_pair.first;
@@ -448,7 +448,7 @@ ExactMGCancelator::sync_keys() {
   }
 
   // Initialize the empty set
-  std::set<std::pair<Key, uint32_t>> key_set;
+  std::set<std::pair<Key, std::uint32_t>> key_set;
 
   // Put master keys into the keyset
   if (mpi::rank == 0) {
@@ -460,8 +460,8 @@ ExactMGCancelator::sync_keys() {
     if (mpi::rank == i) {
       auto npairs = key_matid_pairs.size();
       mpi::Send(npairs, 0);
-      mpi::Send(std::span<std::pair<Key, uint32_t>>(key_matid_pairs.begin(),
-                                                    key_matid_pairs.end()),
+      mpi::Send(std::span<std::pair<Key, std::uint32_t>>(
+                    key_matid_pairs.begin(), key_matid_pairs.end()),
                 0);
       key_matid_pairs.clear();
     } else if (mpi::rank == 0) {
@@ -470,8 +470,8 @@ ExactMGCancelator::sync_keys() {
       mpi::Recv(npairs, i);
       key_matid_pairs.resize(npairs);
 
-      mpi::Recv(std::span<std::pair<Key, uint32_t>>(key_matid_pairs.begin(),
-                                                    key_matid_pairs.end()),
+      mpi::Recv(std::span<std::pair<Key, std::uint32_t>>(
+                    key_matid_pairs.begin(), key_matid_pairs.end()),
                 i);
       key_set.insert(key_matid_pairs.begin(), key_matid_pairs.end());
     }
@@ -515,7 +515,7 @@ ExactMGCancelator::sync_keys() {
   mpi::Allreduce_sum(p_per_bin_vals);
 
   // Now, we only keep pairs with both a positive and negative particle
-  std::vector<std::pair<Key, uint32_t>> key_matid_pairs_to_keep;
+  std::vector<std::pair<Key, std::uint32_t>> key_matid_pairs_to_keep;
   key_matid_pairs_to_keep.reserve(key_matid_pairs.size());
   for (std::size_t i = 0; i < key_matid_pairs.size(); i++) {
     const bool pos_and_neg =
@@ -532,7 +532,7 @@ ExactMGCancelator::sync_keys() {
 
 void ExactMGCancelator::perform_cancellation() {
   // Get vector of keys to do cancellation in parallel
-  std::vector<std::pair<Key, uint32_t>> key_matid_pairs = sync_keys();
+  std::vector<std::pair<Key, std::uint32_t>> key_matid_pairs = sync_keys();
 
   // Initialize array for transfer of needed bits for cancellation
   xt::xarray<double> sum_c_and_c_wgts;
@@ -550,7 +550,7 @@ void ExactMGCancelator::perform_cancellation() {
 #endif
   for (std::size_t i = 0; i < key_matid_pairs.size(); i++) {
     Key key = key_matid_pairs[i].first;
-    uint32_t mat_id = key_matid_pairs[i].second;
+    std::uint32_t mat_id = key_matid_pairs[i].second;
     Material* mat = materials[mat_id].get();
 
     if (bins.find(key) == bins.end() ||
@@ -593,7 +593,7 @@ void ExactMGCancelator::perform_cancellation() {
 #endif
     for (std::size_t i = 0; i < key_matid_pairs.size(); i++) {
       Key key = key_matid_pairs[i].first;
-      uint32_t mat_id = key_matid_pairs[i].second;
+      std::uint32_t mat_id = key_matid_pairs[i].second;
 
       if (bins.find(key) == bins.end() ||
           bins.at(key).find(mat_id) == bins.at(key).end()) {
@@ -629,7 +629,7 @@ void ExactMGCancelator::perform_cancellation() {
 #endif
   for (std::size_t i = 0; i < key_matid_pairs.size(); i++) {
     Key key = key_matid_pairs[i].first;
-    uint32_t mat_id = key_matid_pairs[i].second;
+    std::uint32_t mat_id = key_matid_pairs[i].second;
     Material* mat = materials[mat_id].get();
 
     if (bins.find(key) == bins.end() ||
@@ -675,14 +675,14 @@ void ExactMGCancelator::perform_cancellation() {
   if (mpi::rank == 0) {
     for (std::size_t i = 0; i < key_matid_pairs.size(); i++) {
       Key key = key_matid_pairs[i].first;
-      uint32_t mat_id = key_matid_pairs[i].second;
+      std::uint32_t mat_id = key_matid_pairs[i].second;
 
       // Add any missing bins from other nodes to master
       if (bins.find(key) == bins.end()) {
         // Make an empty bin. We need this on master for sampling uniform
         // portions. If the bin doesn't exist yet, initalize it
-        bins.emplace(
-            std::make_pair(key, std::unordered_map<uint32_t, CancelBin>()));
+        bins.emplace(std::make_pair(
+            key, std::unordered_map<std::uint32_t, CancelBin>()));
       }
 
       // Check if a bin exists for that material
@@ -717,7 +717,7 @@ std::optional<Position> ExactMGCancelator::sample_position(const Key& key,
   double Yl = Key::r_low.y() + static_cast<double>(key.j) * Key::pitch[1];
   double Zl = Key::r_low.z() + static_cast<double>(key.k) * Key::pitch[2];
 
-  uint32_t N_TRIES = 0;
+  std::uint32_t N_TRIES = 0;
   bool position_sampled = false;
   Position r_smp;
   while (N_TRIES < N_MAX_POS && !position_sampled) {
@@ -752,25 +752,25 @@ std::vector<BankedParticle> ExactMGCancelator::get_new_particles(RNG& rng) {
 
   // Key-MatID pairs are put into a set so that the  uniform particles are
   // always generated in the same order.
-  std::set<std::pair<Key, uint32_t>> key_set;
+  std::set<std::pair<Key, std::uint32_t>> key_set;
   for (auto& key_bin_pair : bins) {
     const auto& key = key_bin_pair.first;
     auto& material_bins = key_bin_pair.second;
 
     for (auto& mat_bin_pair : material_bins) {
-      uint32_t mat_id = mat_bin_pair.first;
+      std::uint32_t mat_id = mat_bin_pair.first;
       key_set.emplace(key, mat_id);
     }
   }
 
   for (const auto& pr : key_set) {
     Key key = pr.first;
-    uint32_t mat_id = pr.second;
+    std::uint32_t mat_id = pr.second;
     Material* mat = materials[mat_id].get();
     CancelBin& bin = bins.at(key).at(mat_id);
 
     // Determine number of new particles to add
-    uint32_t N = static_cast<uint32_t>(std::ceil(
+    std::uint32_t N = static_cast<std::uint32_t>(std::ceil(
         std::max(std::abs(bin.uniform_wgt), std::abs(bin.uniform_wgt2))));
 
     if (N > 0) {
@@ -873,10 +873,10 @@ std::shared_ptr<ExactMGCancelator> make_exact_mg_cancelator(
     fatal_error("No valid shape entry for basic exact MG cancelator.");
   }
 
-  uint64_t Nx = node["shape"][0].as<uint64_t>();
-  uint64_t Ny = node["shape"][1].as<uint64_t>();
-  uint64_t Nz = node["shape"][2].as<uint64_t>();
-  uint64_t Ne = 0;
+  std::uint64_t Nx = node["shape"][0].as<std::uint64_t>();
+  std::uint64_t Ny = node["shape"][1].as<std::uint64_t>();
+  std::uint64_t Nz = node["shape"][2].as<std::uint64_t>();
+  std::uint64_t Ne = 0;
 
   std::vector<std::vector<std::size_t>> group_bins;
   if (node["group-bins"] && node["group-bins"].IsSequence()) {
@@ -886,9 +886,9 @@ std::shared_ptr<ExactMGCancelator> make_exact_mg_cancelator(
         "No group-bins are provided to ExactMGCancelator, but fission spectra "
         "are provided with a matrix.\nCancellation cannot be exact.");
   }
-  Ne = static_cast<uint64_t>(group_bins.size());
+  Ne = static_cast<std::uint64_t>(group_bins.size());
 
-  std::array<std::size_t, 4> shape{Nx, Ny, Nz, Ne};
+  std::array<std::uint64_t, 4> shape{Nx, Ny, Nz, Ne};
 
   std::set<std::size_t> bined_groups;
   for (const auto& bin : group_bins) {
@@ -909,9 +909,9 @@ std::shared_ptr<ExactMGCancelator> make_exact_mg_cancelator(
     }
   }
 
-  uint32_t nsamples = 10;
+  std::uint32_t nsamples = 10;
   if (node["nsamples"] && node["nsamples"].IsScalar()) {
-    nsamples = node["nsamples"].as<uint32_t>();
+    nsamples = node["nsamples"].as<std::uint32_t>();
   } else if (node["nsamples"]) {
     fatal_error("Invalid nsamples entry for cancelator.");
   }

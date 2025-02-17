@@ -119,7 +119,7 @@ MGAngleDistribution LegendreDistribution::linearize() const {
     double p_real = pdf(mu_mid);
 
     // Check tolerance
-    double rel_diff = std::abs(p_interp - p_real) / p_real;
+    double rel_diff = std::abs((p_interp - p_real) / p_real);
     if (rel_diff > TOLERANCE) {
       // We need to add a new point
       auto ip =
