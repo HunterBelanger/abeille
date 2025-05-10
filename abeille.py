@@ -805,7 +805,7 @@ class EnergyFilter:
 
     def to_string(self) -> str:
         out =  '    - id: {}\n'.format(self.id)
-        out += '      energy-bounds: {}\n'.format(self.energy_bounds)
+        out += '      energy-bounds: {}\n'.format([float(x) for x in self.energy_bounds])
         return out
 
 
