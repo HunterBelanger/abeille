@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.11)
+cmake_minimum_required(VERSION 3.16...4.0)
 project(abeille CXX)
 
 # These two are for LTO enforcement when used
@@ -36,11 +36,11 @@ endif()
 include(FetchContent)
 
 #===============================================================================
-# Get YAML-CPP version 0.8.0
-message(STATUS "Downloading yaml-cpp 0.8.0")
+# Get YAML-CPP version 2f86d13 from May 2025
+message(STATUS "Downloading yaml-cpp 2f86d13")
 FetchContent_Declare(yaml-cpp
   GIT_REPOSITORY https://github.com/jbeder/yaml-cpp.git
-  GIT_TAG        0.8.0
+  GIT_TAG        2f86d13
   GIT_SHALLOW    TRUE
   EXCLUDE_FROM_ALL
 )
@@ -74,10 +74,7 @@ FetchContent_Declare(docopt.cpp
   GIT_SHALLOW    TRUE
   EXCLUDE_FROM_ALL
 )
-if(NOT docopt.cpp_POPULATED)
-  FetchContent_Populate(docopt.cpp)
-  add_subdirectory(${docopt.cpp_SOURCE_DIR} ${docopt.cpp_BINARY_DIR} EXCLUDE_FROM_ALL)
-endif()
+FetchContent_MakeAvailable(docopt.cpp)
 
 #===============================================================================
 # Get XTL
