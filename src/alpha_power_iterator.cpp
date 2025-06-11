@@ -172,7 +172,7 @@ void AlphaPowerIterator::load_source_from_file() {
   // Read in array
   xt::xtensor<double, 2> source;
   source.resize(dimensions);
-  source_ds.read<double>(source.data());
+  source_ds.read_raw<double>(source.data());
 
   // Get number of particles
   std::size_t Nprt = source.shape()[0];
