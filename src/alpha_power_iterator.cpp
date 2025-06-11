@@ -551,7 +551,7 @@ void AlphaPowerIterator::run() {
     // Write the final results of all estimators
     out.write("\n");
     std::stringstream output;
-    output << " Results using " << gen - nignored << " active generations:\n";
+    output << " Results using " << gen - nignored - 1 << " active generations:\n";
     output << " -----------------------------------\n";
     output << std::fixed << std::setprecision(6);
     output << " | alpha   = " << Tallies::instance().alpha_avg() << " +/- "
