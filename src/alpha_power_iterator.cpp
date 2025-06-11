@@ -290,7 +290,7 @@ void AlphaPowerIterator::print_header() {
 
   output << " " << std::setw(std::max(n_col_gen, 3)) << std::setfill(' ');
   output << std::right << "Gen"
-         << "      a      k      aavg +/- err        kavg +/- err    ";
+         << "      a      k            aavg +/- err          kavg +/- err    ";
 
   if (cancelator == nullptr && t_pre_entropy) {
     output << "    Entropy  ";
@@ -338,7 +338,7 @@ void AlphaPowerIterator::generation_output() {
   output << std::right << gen << "   " << std::fixed << std::setprecision(5);
   output << alpha_params.alpha << "   " << kstep;
   if (gen <= nignored + 1) {
-    output << "                            ";
+    output << "                                            ";
   } else {
     double alpha_avg = Tallies::instance().alpha_avg();
     double alpha_err = Tallies::instance().alpha_err();
