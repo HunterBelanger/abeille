@@ -32,8 +32,10 @@
 #include <cmath>
 
 ApproximateMeshCancelator::ApproximateMeshCancelator(Position low, Position hi,
-                                                     uint32_t Nx, uint32_t Ny,
-                                                     uint32_t Nz, bool loop)
+                                                     std::uint32_t Nx,
+                                                     std::uint32_t Ny,
+                                                     std::uint32_t Nz,
+                                                     bool loop)
     : bins(),
       energy_edges(),
       shape{Nx, Ny, Nz, 1},
@@ -66,8 +68,8 @@ ApproximateMeshCancelator::ApproximateMeshCancelator(Position low, Position hi,
 }
 
 ApproximateMeshCancelator::ApproximateMeshCancelator(
-    Position low, Position hi, uint32_t Nx, uint32_t Ny, uint32_t Nz,
-    std::vector<double> energy_bounds, bool loop)
+    Position low, Position hi, std::uint32_t Nx, std::uint32_t Ny,
+    std::uint32_t Nz, std::vector<double> energy_bounds, bool loop)
     : bins(),
       energy_edges(energy_bounds),
       shape{Nx, Ny, Nz, 1},
@@ -109,7 +111,7 @@ ApproximateMeshCancelator::ApproximateMeshCancelator(
         "ApproximateMeshCancelator.");
   }
 
-  shape[3] = static_cast<uint32_t>(energy_edges.size() - 1);
+  shape[3] = static_cast<std::uint32_t>(energy_edges.size() - 1);
 
   // Set strides
   Si = shape[1] * shape[2] * shape[3];
@@ -170,7 +172,7 @@ bool ApproximateMeshCancelator::add_particle(BankedParticle& p) {
                             (j + static_cast<int>(shape[1]) * i));
   };
 
-  uint32_t bin_key = static_cast<uint32_t>(key(i, j, k, l));
+  std::uint32_t bin_key = static_cast<std::uint32_t>(key(i, j, k, l));
 
   if (bins.find(bin_key) == bins.end()) {
     bins[bin_key] = std::vector<BankedParticle*>();
@@ -181,14 +183,14 @@ bool ApproximateMeshCancelator::add_particle(BankedParticle& p) {
   return true;
 }
 
-std::vector<uint32_t> ApproximateMeshCancelator::sync_keys() {
+std::vector<std::uint32_t> ApproximateMeshCancelator::sync_keys() {
   // Each node collects all keys
-  std::vector<uint32_t> keys;
+  std::vector<std::uint32_t> keys;
   keys.reserve(bins.size());
   for (auto& key_bin_pair : bins) {
     keys.push_back(key_bin_pair.first);
   }
-  std::set<uint32_t> key_set;
+  std::set<std::uint32_t> key_set;
 
   // Put master keys into the keyset
   if (mpi::rank == 0) {
@@ -201,14 +203,14 @@ std::vector<uint32_t> ApproximateMeshCancelator::sync_keys() {
     if (mpi::rank == i) {
       auto nkeys = keys.size();
       mpi::Send(nkeys, 0);
-      mpi::Send(std::span<uint32_t>(keys.begin(), keys.end()), 0);
+      mpi::Send(std::span<std::uint32_t>(keys.begin(), keys.end()), 0);
       keys.clear();
     } else if (mpi::rank == 0) {
       std::size_t nkeys = 0;
       mpi::Recv(nkeys, i);
       keys.resize(nkeys);
 
-      mpi::Recv(std::span<uint32_t>(keys.begin(), keys.end()), i);
+      mpi::Recv(std::span<std::uint32_t>(keys.begin(), keys.end()), i);
       std::copy(keys.begin(), keys.end(),
                 std::inserter(key_set, key_set.end()));
     }
@@ -229,7 +231,7 @@ std::vector<uint32_t> ApproximateMeshCancelator::sync_keys() {
 
 void ApproximateMeshCancelator::perform_cancellation_loop() {
   // Get keys of all non empty bins
-  std::vector<uint32_t> keys = sync_keys();
+  std::vector<std::uint32_t> keys = sync_keys();
 
   for (const auto key : keys) {
     std::uint64_t n_total = 0;
@@ -271,7 +273,7 @@ void ApproximateMeshCancelator::perform_cancellation_loop() {
 
 void ApproximateMeshCancelator::perform_cancellation_vector() {
   // Get keys of all non empty bins
-  std::vector<uint32_t> keys = sync_keys();
+  std::vector<std::uint32_t> keys = sync_keys();
 
   xt::xarray<double> wgts;
   if (this->cancel_dual_weights()) {
@@ -281,7 +283,7 @@ void ApproximateMeshCancelator::perform_cancellation_vector() {
   }
   wgts.fill(0.);
 
-  std::vector<uint16_t> n_totals(keys.size(), 0);
+  std::vector<std::uint32_t> n_totals(keys.size(), 0);
 
   for (std::size_t i = 0; i < keys.size(); i++) {
     const auto key = keys[i];
@@ -298,7 +300,7 @@ void ApproximateMeshCancelator::perform_cancellation_vector() {
     }
 
     // Push the counts to the vectors
-    n_totals[i] = static_cast<uint16_t>(n_total);
+    n_totals[i] = static_cast<std::uint32_t>(n_total);
     if (this->cancel_dual_weights()) {
       wgts(0, i) = sum_wgt;
       wgts(1, i) = sum_wgt2;
@@ -348,21 +350,21 @@ void ApproximateMeshCancelator::perform_cancellation_full_vector() {
   }
   wgts.fill(0.);
 
-  xt::xarray<uint16_t> n_totals;
+  xt::xarray<std::uint32_t> n_totals;
   n_totals.resize({shape[0], shape[1], shape[2], shape[3]});
   n_totals.fill(0);
 
   for (auto& key_bin_pair : bins) {
-    uint32_t indx = key_bin_pair.first;
+    std::uint32_t indx = key_bin_pair.first;
     const auto& bin = key_bin_pair.second;
 
     // Get ijkl from the indx using strides
-    uint32_t i = indx / Si;
-    uint32_t j = (indx - i * Si) / Sj;
-    uint32_t k = (indx - i * Si - j * Sj) / Sk;
-    uint32_t l = (indx - i * Si - j * Sj - k * Sk) / Sl;
+    std::uint32_t i = indx / Si;
+    std::uint32_t j = (indx - i * Si) / Sj;
+    std::uint32_t k = (indx - i * Si - j * Sj) / Sk;
+    std::uint32_t l = (indx - i * Si - j * Sj - k * Sk) / Sl;
 
-    std::uint16_t n_total = 0;
+    std::uint32_t n_total = 0;
     double sum_wgt = 0.;
     double sum_wgt2 = 0.;
 
@@ -389,20 +391,20 @@ void ApproximateMeshCancelator::perform_cancellation_full_vector() {
   std::span<double> wgts_vals(wgts.data(), wgts.size());
   mpi::Allreduce_sum(wgts_vals);
 
-  std::span<uint16_t> n_totals_vals(n_totals.data(), n_totals.size());
+  std::span<std::uint32_t> n_totals_vals(n_totals.data(), n_totals.size());
   mpi::Allreduce_sum(n_totals_vals);
 
   // all the vectors have size keys.size() so we use variable x to index them
   // since they should match to keys
   for (auto& key_bin_pair : bins) {
-    uint32_t indx = key_bin_pair.first;
+    std::uint32_t indx = key_bin_pair.first;
     auto& bin = key_bin_pair.second;
 
     // Get ijkl from the indx using strides
-    uint32_t i = indx / Si;
-    uint32_t j = (indx - i * Si) / Sj;
-    uint32_t k = (indx - i * Si - j * Sj) / Sk;
-    uint32_t l = (indx - i * Si - j * Sj - k * Sk) / Sl;
+    std::uint32_t i = indx / Si;
+    std::uint32_t j = (indx - i * Si) / Sj;
+    std::uint32_t k = (indx - i * Si - j * Sj) / Sk;
+    std::uint32_t l = (indx - i * Si - j * Sj - k * Sk) / Sl;
 
     // Set the avg weights
     const double inv_n = 1. / static_cast<double>(n_totals(i, j, k, l));
@@ -470,9 +472,9 @@ std::shared_ptr<ApproximateMeshCancelator> make_approximate_mesh_cancelator(
     fatal_error("No valid shape entry for approximate mesh cancelator.");
   }
 
-  uint32_t Nx = node["shape"][0].as<uint32_t>();
-  uint32_t Ny = node["shape"][1].as<uint32_t>();
-  uint32_t Nz = node["shape"][2].as<uint32_t>();
+  std::uint32_t Nx = node["shape"][0].as<std::uint32_t>();
+  std::uint32_t Ny = node["shape"][1].as<std::uint32_t>();
+  std::uint32_t Nz = node["shape"][2].as<std::uint32_t>();
 
   bool loop = false;
   if (node["loop"] && node["loop"].IsScalar()) {

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.11)
+cmake_minimum_required(VERSION 3.16...4.0)
 project(abeille CXX)
 
 # These two are for LTO enforcement when used
@@ -36,11 +36,13 @@ endif()
 include(FetchContent)
 
 #===============================================================================
-# Get YAML-CPP version 0.8.0
-message(STATUS "Downloading yaml-cpp 0.8.0")
+# Get YAML-CPP version 2f86d13 from May 2025
+message(STATUS "Downloading yaml-cpp 2f86d13")
 FetchContent_Declare(yaml-cpp
   GIT_REPOSITORY https://github.com/jbeder/yaml-cpp.git
-  GIT_TAG        0.8.0
+  GIT_TAG        2f86d13
+  GIT_SHALLOW    TRUE
+  EXCLUDE_FROM_ALL
 )
 set(YAML_CPP_BUILD_SHARED_LIBS OFF CACHE BOOL "Build yaml-cpp shared library")
 set(YAML_CPP_BUILD_TESTS OFF CACHE BOOL "Enable testing")
@@ -55,6 +57,8 @@ message(STATUS "Downloading PapillonNDL feature/sab branch")
 FetchContent_Declare(PapillonNDL
   GIT_REPOSITORY https://github.com/HunterBelanger/papillon-ndl.git
   GIT_TAG        feature/sab
+  GIT_SHALLOW    TRUE
+  EXCLUDE_FROM_ALL
 )
 set(PNDL_SHARED OFF CACHE BOOL "Build PapillonNDL as a shared library")
 set(PNDL_INSTALL OFF CACHE BOOL "Install the PapillonNDL library and header files")
@@ -67,11 +71,10 @@ message(STATUS "Downloading docopt.cpp v0.6.3")
 FetchContent_Declare(docopt.cpp
   GIT_REPOSITORY https://github.com/docopt/docopt.cpp.git
   GIT_TAG        v0.6.3
+  GIT_SHALLOW    TRUE
+  EXCLUDE_FROM_ALL
 )
-if(NOT docopt.cpp_POPULATED)
-  FetchContent_Populate(docopt.cpp)
-  add_subdirectory(${docopt.cpp_SOURCE_DIR} ${docopt.cpp_BINARY_DIR} EXCLUDE_FROM_ALL)
-endif()
+FetchContent_MakeAvailable(docopt.cpp)
 
 #===============================================================================
 # Get XTL
@@ -79,6 +82,8 @@ message(STATUS "Downloading xtl v0.7.7")
 FetchContent_Declare(xtl
   GIT_REPOSITORY https://github.com/xtensor-stack/xtl.git
   GIT_TAG        0.7.7
+  GIT_SHALLOW    TRUE
+  EXCLUDE_FROM_ALL
 )
 FetchContent_MakeAvailable(xtl)
 
@@ -88,6 +93,8 @@ message(STATUS "Downloading xsimd v12.1.1")
 FetchContent_Declare(xsimd
   GIT_REPOSITORY https://github.com/xtensor-stack/xsimd.git
   GIT_TAG        12.1.1
+  GIT_SHALLOW    TRUE
+  EXCLUDE_FROM_ALL
 )
 FetchContent_MakeAvailable(xsimd)
 
@@ -97,6 +104,8 @@ message(STATUS "Downloading xtensor v0.25.0")
 FetchContent_Declare(xtensor
   GIT_REPOSITORY https://github.com/xtensor-stack/xtensor.git
   GIT_TAG        0.25.0
+  GIT_SHALLOW    TRUE
+  EXCLUDE_FROM_ALL
 )
 set(XTENSOR_USE_XSIMD ON CACHE BOOL "Enable SIMD acceleration.")
 FetchContent_MakeAvailable(xtensor)
@@ -108,6 +117,8 @@ if(ABEILLE_GUI_PLOT)
   FetchContent_Declare(ImApp
     GIT_REPOSITORY https://github.com/HunterBelanger/ImApp.git
     GIT_TAG        master
+    GIT_SHALLOW    TRUE
+    EXCLUDE_FROM_ALL
   )
   FetchContent_MakeAvailable(ImApp)
 endif()
@@ -118,6 +129,8 @@ message(STATUS "Downloading PCG-C++")
 FetchContent_Declare(PCG_CXX
   GIT_REPOSITORY https://github.com/HunterBelanger/pcg-cpp.git
   GIT_TAG        feature/cmake
+  GIT_SHALLOW    TRUE
+  EXCLUDE_FROM_ALL
 )
 set(PCG_CPP_INSTALL OFF CACHE BOOL "Install PCG-CPP")
 FetchContent_MakeAvailable(PCG_CXX)
@@ -130,20 +143,44 @@ set(BOOST_ENABLE_CMAKE ON)
 FetchContent_Declare(Boost
   GIT_REPOSITORY https://github.com/boostorg/boost.git
   GIT_TAG        boost-1.81.0
+  GIT_SHALLOW    TRUE
+  EXCLUDE_FROM_ALL
 )
 FetchContent_MakeAvailable(Boost)
 
 #===============================================================================
+# Get HDF5
+message(STATUS "Downloading HDF5 v1.14.3")
+set(HDF5_ENABLE_Z_LIB_SUPPORT OFF)
+set(HDF5_EXTERNALLY_CONFIGURED  1)
+set(HDF5_ENABLE_SZIP_SUPPORT  OFF)
+set(HDF5_BUILD_EXAMPLES       OFF)
+set(HDF5_BUILD_TOOLS          OFF)
+set(HDF5_BUILD_UTILS          OFF)
+set(HDF5_BUILD_HL_LIB         OFF)
+set(BUILD_SHARED_LIBS         OFF)
+set(BUILD_TESTING             OFF)
+FetchContent_Declare(hdf5
+  GIT_REPOSITORY https://github.com/HDFGroup/hdf5.git
+  GIT_TAG        hdf5-1_14_3
+  GIT_SHALLOW    TRUE
+  EXCLUDE_FROM_ALL
+)
+FetchContent_MakeAvailable(hdf5)
+
+#===============================================================================
 # Get HighFive
-message(STATUS "Downloading HighFive v2.9.0")
-set(HIGHFIVE_USE_BOOST OFF)
+message(STATUS "Downloading HighFive v3.0.0-beta2")
+set(HIGHFIVE_UNIT_TESTS OFF)
+set(HIGHFIVE_TEST_SPAN OFF)
 set(HIGHFIVE_EXAMPLES OFF)
 set(HIGHFIVE_BUILD_DOCS OFF)
-set(HIGHFIVE_STATIC_HDF5 ON)
-set(HighFive_FIND_QUIETLY ON)
+set(HIGHFIVE_FIND_HDF5 OFF)
 FetchContent_Declare(HighFive
-  GIT_REPOSITORY https://github.com/BlueBrain/HighFive.git
-  GIT_TAG        v2.9.0 # There are some breaking changes after this version.
+  GIT_REPOSITORY https://github.com/highfive-devs/highfive.git
+  GIT_TAG        v3.0.0-beta2
+  GIT_SHALLOW    TRUE
+  EXCLUDE_FROM_ALL
 )
 FetchContent_MakeAvailable(HighFive)
 
@@ -164,7 +201,7 @@ execute_process(COMMAND git describe --dirty --always
 add_executable(abeille src/main.cpp ${ABEILLE_SOURCE_FILES})
 target_include_directories(abeille PRIVATE include)
 target_compile_features(abeille PRIVATE cxx_std_17)
-target_link_libraries(abeille PUBLIC docopt_s yaml-cpp xtl xtensor PapillonNDL::PapillonNDL PCG::PCG_CXX sobol Boost::unordered Boost::container HighFive)
+target_link_libraries(abeille PUBLIC docopt_s yaml-cpp xtl xtensor PapillonNDL::PapillonNDL PCG::PCG_CXX sobol Boost::unordered Boost::container HighFive hdf5-static)
 target_compile_definitions(abeille PUBLIC ABEILLE_GIT_HASH=\"${ABEILLE_GIT_HASH_RAW}\")
 target_compile_definitions(abeille PUBLIC ABEILLE_COMPILER_NAME=\"${CMAKE_CXX_COMPILER_ID}\")
 target_compile_definitions(abeille PUBLIC ABEILLE_COMPILER_VERSION=\"${CMAKE_CXX_COMPILER_VERSION}\")

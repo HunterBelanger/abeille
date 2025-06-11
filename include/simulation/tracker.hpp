@@ -46,7 +46,14 @@ class Tracker {
     tree.reserve(10);
 
     current_cell = geometry::get_cell(tree, r_, u_, surface_token_);
-    if (current_cell) current_mat = current_cell.cell->material();
+    if (current_cell) {
+      if (current_cell.cell->fill() == Cell::Fill::Universe) {
+        fatal_error("Did not find a cell with a material.");
+      }
+      current_mat = current_cell.cell->material();
+    } else {
+      current_mat = nullptr;
+    }
   };
 
   ~Tracker() = default;
@@ -92,136 +99,131 @@ class Tracker {
   uint32_t cell_instance() const { return current_cell.instance; }
 
   Boundary get_boundary_condition() const {
-    if (!this->is_lost()) {
-      double dist = INF;
-      BoundaryType btype = BoundaryType::Vacuum;
-      int surface_index = -1;
-      int32_t token = 0;
-
-      // Go up the entire tree
-      for (const auto& pad : tree) {
-        if (pad.type == GeoLilyPad::PadType::Cell) {
-          auto cell_id = cell_id_to_indx[pad.id];
-          Cell* cell = geometry::cells[cell_id].get();
-
-          // Only consider cells which have a boundary condition.
-          if (cell->vacuum_or_reflective() == false) continue;
-
-          auto d_t = cell->distance_to_boundary_condition(pad.r_local, u_,
-                                                          surface_token_);
-          if (d_t.first < dist && std::abs(d_t.first - dist) > BOUNDRY_TOL) {
-            double tmp_dist = d_t.first;
-            int32_t tmp_token = std::abs(d_t.second);
-
-            if (tmp_token) {
-              dist = tmp_dist;
-              token = tmp_token;
-              surface_index = token - 1;
-            } else {
-              // Not actually a surface, so we continue
-              continue;
-            }
-
-            btype = geometry::surfaces[static_cast<std::size_t>(surface_index)]
-                        ->boundary();
-
-            if (geometry::surfaces[static_cast<std::size_t>(surface_index)]
-                    ->sign(pad.r_local, u_) < 0)
-              token *= -1;
-          }
-        } else if (pad.type != GeoLilyPad::PadType::Cell) {
-          auto uni_indx = universe_id_to_indx[pad.id];
-          Universe* uni = geometry::universes[uni_indx].get();
-          if (uni->has_boundary_conditions()) {
-            Boundary uni_bound =
-                uni->get_boundary_condition(pad.r_local, u_, surface_token_);
-            if (uni_bound.distance < dist &&
-                std::abs(uni_bound.distance - dist) > BOUNDRY_TOL) {
-              dist = uni_bound.distance;
-              token = uni_bound.token;
-              surface_index = uni_bound.surface_index;
-              btype = uni_bound.boundary_type;
-            }
-          }
-        }
-      }
-
-      Boundary ret_bound(dist, surface_index, btype);
-      ret_bound.token = token;
-
-      // Distance to surface, and token, with sign indicating the positions
-      // current orientation to the surface.
-      return ret_bound;
-    } else {
-      // This else is mainly useful when plotting the geometry, and the window
-      // extends beyond the defined geometry.
+    if (this->is_lost()) {
+      // This condition is most useful when plotting the geometry, and the
+      // window extends beyond the defined geometry.
       return geometry::root_universe->get_boundary_condition(r_, u_,
                                                              surface_token_);
     }
-  }
 
-  Boundary get_nearest_boundary() const {
-    if (!this->is_lost()) {
-      // This must be first, so that we make sure that boundary condition
-      // surfaces are given the higher priority. That is, we need to really be
-      // closer to another surface, to ignore the boundary condition surface.
-      auto bound = this->get_boundary_condition();
+    double dist = INF;
+    BoundaryType btype = BoundaryType::Vacuum;
+    int surface_index = -1;
+    int32_t token = 0;
 
-      double dist = bound.distance;
-      BoundaryType btype = bound.boundary_type;
-      int surface_index = bound.surface_index;
-      int32_t token = bound.token;
+    // Go up the entire tree
+    for (const auto& pad : tree) {
+      if (pad.type == GeoLilyPad::PadType::Cell) {
+        auto cell_id = cell_id_to_indx[pad.id];
+        Cell* cell = geometry::cells[cell_id].get();
 
-      // Go up the entire tree
-      for (const auto& pad : tree) {
-        if (pad.type == GeoLilyPad::PadType::Lattice) {
-          const auto lat_indx = universe_id_to_indx[pad.id];
-          const auto& lat = geometry::universes[lat_indx];
-          double d = lat->distance_to_tile_boundary(pad.r_local, u_, pad.tile);
-          if (d < dist && std::abs(d - dist) > BOUNDRY_TOL) {
-            dist = d;
-            btype = BoundaryType::Normal;
-            surface_index = -1;
-            token = 0;
+        // Only consider cells which have a boundary condition.
+        if (cell->vacuum_or_reflective() == false) continue;
+
+        auto d_t = cell->distance_to_boundary_condition(pad.r_local, u_,
+                                                        surface_token_);
+        if (d_t.first < dist && std::abs(d_t.first - dist) > BOUNDRY_TOL) {
+          double tmp_dist = d_t.first;
+          int32_t tmp_token = std::abs(d_t.second);
+
+          if (tmp_token) {
+            dist = tmp_dist;
+            token = tmp_token;
+            surface_index = token - 1;
+          } else {
+            // Not actually a surface, so we continue
+            continue;
           }
-        } else if (pad.type == GeoLilyPad::PadType::Cell) {
-          auto cell_id = cell_id_to_indx[pad.id];
-          auto d_t = geometry::cells[cell_id]->distance_to_boundary(
-              pad.r_local, u_, surface_token_);
-          if (d_t.first < dist && std::abs(d_t.first - dist) > BOUNDRY_TOL) {
-            dist = d_t.first;
-            token = std::abs(d_t.second);
 
-            if (token) {
-              surface_index = token - 1;
-            } else {
-              surface_index = -1;
-            }
-
-            if (surface_index >= 0)
-              btype =
-                  geometry::surfaces[static_cast<std::size_t>(surface_index)]
+          btype = geometry::surfaces[static_cast<std::size_t>(surface_index)]
                       ->boundary();
-            else
-              btype = BoundaryType::Normal;
 
-            if (surface_index >= 0 &&
-                geometry::surfaces[static_cast<std::size_t>(surface_index)]
-                        ->sign(pad.r_local, u_) < 0)
-              token *= -1;
+          if (geometry::surfaces[static_cast<std::size_t>(surface_index)]->sign(
+                  pad.r_local, u_) < 0)
+            token = -token;
+        }
+      } else if (pad.type != GeoLilyPad::PadType::Cell) {
+        auto uni_indx = universe_id_to_indx[pad.id];
+        Universe* uni = geometry::universes[uni_indx].get();
+        if (uni->has_boundary_conditions()) {
+          Boundary uni_bound =
+              uni->get_boundary_condition(pad.r_local, u_, surface_token_);
+          if (uni_bound.distance < dist &&
+              std::abs(uni_bound.distance - dist) > BOUNDRY_TOL) {
+            dist = uni_bound.distance;
+            token = uni_bound.token;
+            surface_index = uni_bound.surface_index;
+            btype = uni_bound.boundary_type;
           }
         }
       }
-
-      Boundary ret_bound(dist, surface_index, btype);
-      ret_bound.token = token;
-
-      // Distance to surface, and token, with sign indicating the positions
-      // current orientation to the surface.
-      return ret_bound;
-    } else {
-      return geometry::root_universe->lost_get_boundary(r_, u_, surface_token_);
     }
+
+    Boundary ret_bound(dist, surface_index, btype);
+    ret_bound.token = token;
+
+    // Distance to surface, and token, with sign indicating the positions
+    // current orientation to the surface.
+    return ret_bound;
+  }
+
+  Boundary get_nearest_boundary() const {
+    // This must be first, so that we make sure that boundary condition
+    // surfaces are given the higher priority. That is, we need to really be
+    // closer to another surface, to ignore the boundary condition surface.
+    auto bound = this->get_boundary_condition();
+
+    double dist = bound.distance;
+    BoundaryType btype = bound.boundary_type;
+    int surface_index = bound.surface_index;
+    int32_t token = bound.token;
+
+    // Go up the entire tree
+    for (const auto& pad : tree) {
+      if (pad.type == GeoLilyPad::PadType::Lattice) {
+        const auto lat_indx = universe_id_to_indx[pad.id];
+        const auto& lat = geometry::universes[lat_indx];
+        double d = lat->distance_to_tile_boundary(pad.r_local, u_, pad.tile);
+        if (d < dist && std::abs(d - dist) > BOUNDRY_TOL) {
+          dist = d;
+          btype = BoundaryType::Normal;
+          surface_index = -1;
+          token = 0;
+        }
+      } else if (pad.type == GeoLilyPad::PadType::Cell) {
+        auto cell_id = cell_id_to_indx[pad.id];
+        auto d_t = geometry::cells[cell_id]->distance_to_boundary(
+            pad.r_local, u_, surface_token_);
+        if (d_t.first < dist && std::abs(d_t.first - dist) > BOUNDRY_TOL) {
+          dist = d_t.first;
+          token = std::abs(d_t.second);
+
+          if (token) {
+            surface_index = token - 1;
+          } else {
+            surface_index = -1;
+          }
+
+          if (surface_index >= 0)
+            btype = geometry::surfaces[static_cast<std::size_t>(surface_index)]
+                        ->boundary();
+          else
+            btype = BoundaryType::Normal;
+
+          if (surface_index >= 0 &&
+              geometry::surfaces[static_cast<std::size_t>(surface_index)]->sign(
+                  pad.r_local, u_) < 0)
+            token = -token;
+        }
+      }
+    }
+
+    Boundary ret_bound(dist, surface_index, btype);
+    ret_bound.token = token;
+
+    // Distance to surface, and token, with sign indicating the positions
+    // current orientation to the surface.
+    return ret_bound;
   }
 
   void cross_surface(Boundary d_t) {
@@ -233,10 +235,6 @@ class Tracker {
   bool is_lost() const { return !current_cell; }
 
   void get_current() {
-    // Iterator pointing to the highest leaf in the tree
-    // which is not true (either cell or lattice)
-    auto first_bad = tree.end();
-
     if (!check_tree()) {
       // Start from scratch
       restart_get_current();
@@ -247,7 +245,13 @@ class Tracker {
              << "\n rl = " << tree.front().r_local << "\n";
         fatal_error(mssg.str());
       }
+
+      return;
     }
+
+    // Iterator pointing to the highest leaf in the tree
+    // which is not true (either cell or lattice)
+    auto first_bad = tree.end();
 
     // Go back through tree, and see where we are no-longer inside
     for (auto it = tree.begin(); it != tree.end(); it++) {
@@ -271,37 +275,68 @@ class Tracker {
       }
     }
 
-    // Only need to research if last_bad != tree.rend(), otherwise the
+    // Only need to research if first_bad != tree.end(), otherwise the
     // cell and material have not changed.
-    if (first_bad != tree.end()) {
-      // Get rid of bad tree elements. Get index of last bad, which is
-      // the size of the number of good elements.
-      auto size =
-          static_cast<std::size_t>(std::distance(tree.begin(), first_bad));
-      if (size == 0) return this->restart_get_current();
-      tree.resize(size);
+    if (first_bad == tree.end()) return;
 
-      // Now start at the last element, and get the new position.
-      // We can get the info for the last universe, and then call get_cell from
-      // that Universe to descend the geometry tree.
+    // Get rid of bad tree elements. Get index of last bad, which is
+    // the size of the number of good elements.
+    auto size =
+        static_cast<std::size_t>(std::distance(tree.begin(), first_bad));
+    if (size == 0) return this->restart_get_current();
+    tree.resize(size);
+
+    // Now start at the last element, and get the new position.
+    // We can get the info for the last universe, and then call get_cell from
+    // that Universe to descend the geometry tree.
+    auto tree_last_pad_type = tree.back().type;
+    if (tree_last_pad_type == GeoLilyPad::PadType::Universe ||
+        tree_last_pad_type == GeoLilyPad::PadType::Lattice) {
       auto uni_indx = universe_id_to_indx[tree.back().id];
       const auto& uni = geometry::universes[uni_indx];
       Position r_local = tree.back().r_local;
       tree.pop_back();
       current_cell = uni->get_cell(tree, r_local, u_, surface_token_);
+    } else {
+      // tree_last_pad_type == GeoLilyPad::PadType::Cell
+      auto cell_indx = cell_id_to_indx[tree.back().id];
+      const auto& cell = geometry::cells[cell_indx];
 
-      // If we couldn't get a cell, we need to call in the big guns, and
-      // re-start from scratch.
-      if (!current_cell) restart_get_current();
-
-      // If we have a valid cell, we must now also fill the material.
-      if (current_cell) {
-        if (current_cell.cell->fill() == Cell::Fill::Universe) {
-          fatal_error("Did not find a cell with a material.");
-        }
-
-        current_mat = current_cell.cell->material();
+      if (cell->fill() == Cell::Fill::Material) {
+        fatal_error("This cell should not be filled with a material.");
       }
+
+      Position r_local = tree.back().r_local;
+      current_cell =
+          cell->universe()->get_cell(tree, r_local, u_, surface_token_);
+    }
+
+    // If we couldn't get a cell, we need to call in the big guns, and
+    // re-start from scratch.
+    if (!current_cell) {
+      restart_get_current();
+    }
+
+    // If we have a valid cell, we must now also fill the material.
+    if (current_cell) {
+      if (current_cell.cell->fill() == Cell::Fill::Universe) {
+        fatal_error("Did not find a cell with a material.");
+      }
+
+      current_mat = current_cell.cell->material();
+
+      // Now that we have the current cell, we need to get the instance
+      uint32_t instance = 0;
+      for (const auto& pad : tree) {
+        if (pad.type != GeoLilyPad::PadType::Cell) {
+          auto uni_indx = universe_id_to_indx[pad.id];
+          const auto& uni = geometry::universes[uni_indx];
+          instance += uni->offset_map()[pad.offset_index].at(current_cell.id);
+        }
+      }
+      current_cell.instance = instance;
+    } else {
+      current_mat = nullptr;
     }
   }
 

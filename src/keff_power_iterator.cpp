@@ -175,7 +175,7 @@ void KeffPowerIterator::load_source_from_file() {
   // Read in array
   xt::xtensor<double, 2> source;
   source.resize(dimensions);
-  source_ds.read<double>(source.data());
+  source_ds.read_raw<double>(source.data());
 
   // Get number of particles
   std::size_t Nprt = source.shape()[0];
@@ -544,7 +544,8 @@ void KeffPowerIterator::run() {
     // Write the final results of all estimators
     out.write("\n");
     std::stringstream output;
-    output << " Results using " << gen - nignored << " active generations:\n";
+    output << " Results using " << gen - nignored - 1
+           << " active generations:\n";
     output << " -----------------------------------\n";
     output << std::fixed << std::setprecision(6);
     output << " | kcol    = " << Tallies::instance().kcol_avg() << " +/- "

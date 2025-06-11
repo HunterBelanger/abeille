@@ -99,7 +99,7 @@ void DeltaTracker::transport(Particle& p, Tracker& trkr, MaterialHelper& mat,
       // We got lost. This means we probably flew through a boundary
       // condition. We now go back, and actually find the B.C.
       trkr.set_r(p.r());
-      trkr.get_current();
+      trkr.restart_get_current();
       bound = trkr.get_boundary_condition();
       crossed_boundary = true;
     }

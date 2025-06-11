@@ -38,7 +38,7 @@
 class ExactMGCancelator : public Cancelator {
  public:
   ExactMGCancelator(const Position& r_low, const Position& r_hi,
-                    const std::array<uint64_t, 4>& shape,
+                    const std::array<std::uint64_t, 4>& shape,
                     const std::vector<std::vector<std::size_t>>& group_bins,
                     bool chi_matrix, bool use_virtual_collisions,
                     uint32_t n_samples);
@@ -56,11 +56,11 @@ class ExactMGCancelator : public Cancelator {
   // given position and energy group.
   // Key is public for MPI use
   struct Key {
-    Key(uint64_t i, uint64_t j, uint64_t k, uint64_t e)
+    Key(std::uint64_t i, std::uint64_t j, std::uint64_t k, std::uint64_t e)
         : i(i), j(j), k(k), e(e) {}
 
     Key() : i(0), j(0), k(0), e(0) {}
-    uint64_t i, j, k, e;
+    std::uint64_t i, j, k, e;
 
     std::size_t hash_key() const {
       return e + shape[3] * (k + shape[2] * (j + shape[1] * i));
@@ -78,7 +78,7 @@ class ExactMGCancelator : public Cancelator {
     // shape[1] Number of regions in y
     // shape[2] Number of regions in z
     // shape[3] Number of regions in energy
-    static std::array<std::size_t, 4> shape;
+    static std::array<std::uint64_t, 4> shape;
 
     // The width of each region in x, y, and z
     static std::array<double, 3> pitch;
