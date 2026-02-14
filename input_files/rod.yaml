@@ -1,0 +1,62 @@
+materials:
+  - id: 1
+    name: EX1
+    color: [255,127,14]
+    total: [0.6]
+    scatter: [[0.2]]
+    absorption: [0.4]
+    fission: [0.3]
+    nu_prompt: [2.48375]
+    nu_delayed: [0.01625]
+    chi: [[1.]]
+    delayed_groups:
+      probabilities: [0.003, 0.0035]
+      constants: [0.2, 0.05]
+    group-speeds: [1.0]
+
+surfaces:
+  - {id: 1, type: xplane, x0: 0., boundary: vacuum}
+  - {id: 2, type: xplane, x0: 4.5, boundary: vacuum}
+
+cells:
+  - {id: 1, region: "+1 & -2", material: 1, name: rod}
+
+universes:
+  - {id: 1, cells: [1]}
+
+root-universe: 1
+
+settings:
+  energy-mode: multi-group
+  ngroups: 1
+  energy-bounds: [0., 1.]
+
+simulation:
+  mode: a-eigenvalue
+  nparticles: 100000
+  ngenerations: 1000
+  nignored: 100
+  alpha: 0.06
+  eta: 1
+  combing: true
+  sources:
+    - spatial:
+        type: point
+        position: [1., 0., 0.]
+      energy:
+        type: mono-energetic
+        energy: 0.5
+      direction:
+        type: mono-directional
+        direction: [1., 0., 0.]
+      weight: .5
+    - spatial:
+        type: point
+        position: [1., 0., 0.]
+      energy:
+        type: mono-energetic
+        energy: 0.5
+      direction:
+        type: mono-directional
+        direction: [-1., 0., 0.]
+      weight: .5

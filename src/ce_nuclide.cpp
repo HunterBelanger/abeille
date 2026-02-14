@@ -164,9 +164,16 @@ double CENuclide::min_energy() const {
 }
 
 double CENuclide::speed(double E, std::size_t /*i*/) const {
-  constexpr double inv_mass_t2 =
-      2. / (N_MASS_EV / (C_CM_S * C_CM_S));  // 2/Mass in [cm ^ 2 / (eV * s^2)]
-  return std::sqrt(E * inv_mass_t2);         // Speed in [cm / s]
+  const double E_eV = E * MEV_TO_EV;
+  if (E_eV < 1.E-9*N_MASS_EV) {
+    return C_CM_S * std::sqrt(2. * E_eV / N_MASS_EV); 
+  } else {
+    // Calculate inverse of Lorentz factor
+    const double inv_gamma = N_MASS_EV / (E_eV + N_MASS_EV);
+
+    // Calculate speed via v = c * sqrt(1 - γ^-2)
+    return C_CM_S * std::sqrt(1 - inv_gamma * inv_gamma);
+  }
 }
 
 uint32_t CENuclide::zaid() const { return cedata_->zaid().zaid(); }

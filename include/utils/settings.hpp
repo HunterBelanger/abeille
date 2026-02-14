@@ -40,7 +40,7 @@ namespace settings {
 
 // We at least need a global mode entry, so that we can ensure MG data is
 // complete for the simulation mode
-enum class SimMode { KEFF, FIXED_SOURCE, NOISE };
+enum class SimMode { KEFF, FIXED_SOURCE, NOISE, ALPHA };
 extern SimMode sim_mode;
 
 extern bool plotting_mode;

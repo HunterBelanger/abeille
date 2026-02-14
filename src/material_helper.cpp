@@ -26,8 +26,10 @@
 #include <materials/nuclide.hpp>
 
 MaterialHelper::MaterialHelper(Material* material, double E,
-                               std::optional<NoiseParameters> noise_params)
+                               std::optional<NoiseParameters> noise_params,
+                               std::optional<AlphaParameters> alpha_params)
     : noise_params_(noise_params),
+      alpha_params_(alpha_params),
       mat(material),
       E_(E),
       xs_(),

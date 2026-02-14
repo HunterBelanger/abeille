@@ -996,7 +996,8 @@ std::shared_ptr<MGNuclide> make_mg_nuclide(const YAML::Node& mat, uint32_t id) {
       fatal_error(mssg.str());
     }
     grp_speeds = mat["group-speeds"].as<std::vector<double>>();
-  } else if (settings::sim_mode == settings::SimMode::NOISE) {
+  } else if (settings::sim_mode == settings::SimMode::NOISE ||
+             settings::sim_mode == settings::SimMode::ALPHA) {
     std::stringstream mssg;
     mssg << "Missing group-speeds entry in material " << id << ".";
     fatal_error(mssg.str());
