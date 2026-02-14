@@ -57,8 +57,16 @@ double ITally::particle_base_score(double E, double wgt, double wgt2,
       collision_score *= wgt * mat->Ef(E);
       break;
 
+    case Quantity::Type::NuFission:
+      collision_score *= wgt * mat->vEf(E);
+      break;
+
     case Quantity::Type::Absorption:
       collision_score *= wgt * mat->Ea(E);
+      break;
+
+    case Quantity::Type::Scatter:
+      collision_score *= wgt * mat->Es(E);
       break;
 
     case Quantity::Type::Elastic:
@@ -166,8 +174,14 @@ std::string ITally::quantity_str() {
     case Quantity::Type::Fission:
       return "fission";
       break;
+    case Quantity::Type::NuFission:
+      return "nu-fission";
+      break;
     case Quantity::Type::Absorption:
       return "absorption";
+      break;
+    case Quantity::Type::Scatter:
+      return "scatter";
       break;
     case Quantity::Type::Elastic:
       return "elastic";
@@ -211,8 +225,12 @@ Quantity read_quantity(const YAML::Node& node, const std::string& name) {
     return {Quantity::Type::Flux, 0};
   } else if (quant_str == "fission") {
     return {Quantity::Type::Fission, 0};
+  } else if (quant_str == "nu-fission") {
+    return {Quantity::Type::NuFission, 0};
   } else if (quant_str == "absorption") {
     return {Quantity::Type::Absorption, 0};
+  } else if (quant_str == "scatter") {
+    return {Quantity::Type::Scatter, 0};
   } else if (quant_str == "elastic") {
     return {Quantity::Type::Elastic, 0};
   } else if (quant_str == "total") {

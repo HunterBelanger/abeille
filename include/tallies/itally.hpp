@@ -20,7 +20,9 @@ struct Quantity {
     // Reaction rates
     Total,
     Fission,
+    NuFission,
     Absorption,
+    Scatter,
     Elastic,
     MT,
     // Heating
