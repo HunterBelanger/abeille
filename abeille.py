@@ -843,12 +843,14 @@ class TallyQuantity(Enum):
     ImagFlux = 3
     Total = 4
     Fission = 5
-    Absorption = 6
-    Elastic = 7
-    MT = 8
-    Source = 9
-    RealSource = 10
-    ImagSource = 11
+    NuFission = 6
+    Absorption = 7
+    Scatter = 8
+    Elastic = 9
+    MT = 10
+    Source = 11
+    RealSource = 12
+    ImagSource = 13
 
     def __str__(self) -> str:
         if self.name == "Flux":
@@ -861,8 +863,12 @@ class TallyQuantity(Enum):
             return "total"
         elif self.name == "Fission":
             return "fission"
+        elif self.name == "NuFission":
+            return "nu-fission"
         elif self.name == "Absorption":
             return "absorption"
+        elif self.name == "Scatter":
+            return "scatter"
         elif self.name == "Elastic":
             return "elastic"
         elif self.name == "MT":

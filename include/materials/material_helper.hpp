@@ -130,16 +130,16 @@ class MaterialHelper {
   double Es(double E) {
     this->set_energy(E);
 
-    double Ea_ = 0.;
+    double Es_ = 0.;
 
     // Go through all components in the material
     for (const auto& comp : mat->components()) {
       const auto& micro_xs = this->get_micro_xs(comp.nuclide.get());
-      Ea_ +=
+      Es_ +=
           comp.atoms_bcm * std::max(micro_xs.total - micro_xs.absorption, 0.);
     }
 
-    return Ea_;
+    return Es_;
   }
 
   double Ef(double E) {
