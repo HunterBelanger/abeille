@@ -36,12 +36,10 @@ endif()
 include(FetchContent)
 
 #===============================================================================
-# Get YAML-CPP version 2f86d13 from May 2025
-message(STATUS "Downloading yaml-cpp 2f86d13")
+# Get YAML-CPP version v0.9.0
+message(STATUS "Downloading yaml-cpp v0.9.0")
 FetchContent_Declare(yaml-cpp
-  GIT_REPOSITORY https://github.com/jbeder/yaml-cpp.git
-  GIT_TAG        2f86d13
-  GIT_SHALLOW    TRUE
+  URL            https://github.com/jbeder/yaml-cpp/archive/refs/tags/yaml-cpp-0.9.0.tar.gz
   EXCLUDE_FROM_ALL
 )
 set(YAML_CPP_BUILD_SHARED_LIBS OFF CACHE BOOL "Build yaml-cpp shared library")
@@ -55,9 +53,7 @@ FetchContent_MakeAvailable(yaml-cpp)
 # Get PapillonNDL develop
 message(STATUS "Downloading PapillonNDL feature/sab branch")
 FetchContent_Declare(PapillonNDL
-  GIT_REPOSITORY https://github.com/HunterBelanger/papillon-ndl.git
-  GIT_TAG        feature/sab
-  GIT_SHALLOW    TRUE
+  URL      https://github.com/HunterBelanger/papillon-ndl/archive/f1e3416ccbb1b8afd436bf379e821fd7b44dd903.tar.gz
   EXCLUDE_FROM_ALL
 )
 set(PNDL_SHARED OFF CACHE BOOL "Build PapillonNDL as a shared library")
@@ -69,9 +65,7 @@ FetchContent_MakeAvailable(PapillonNDL)
 # Get docopt
 message(STATUS "Downloading docopt.cpp v0.6.3")
 FetchContent_Declare(docopt.cpp
-  GIT_REPOSITORY https://github.com/docopt/docopt.cpp.git
-  GIT_TAG        v0.6.3
-  GIT_SHALLOW    TRUE
+  URL            https://github.com/docopt/docopt.cpp/archive/refs/tags/v0.6.3.tar.gz
   EXCLUDE_FROM_ALL
 )
 FetchContent_MakeAvailable(docopt.cpp)
@@ -80,9 +74,7 @@ FetchContent_MakeAvailable(docopt.cpp)
 # Get XTL
 message(STATUS "Downloading xtl v0.7.7")
 FetchContent_Declare(xtl
-  GIT_REPOSITORY https://github.com/xtensor-stack/xtl.git
-  GIT_TAG        0.7.7
-  GIT_SHALLOW    TRUE
+  URL      https://github.com/xtensor-stack/xtl/archive/refs/tags/0.7.7.tar.gz
   EXCLUDE_FROM_ALL
 )
 FetchContent_MakeAvailable(xtl)
@@ -91,9 +83,7 @@ FetchContent_MakeAvailable(xtl)
 # Get XSIMD
 message(STATUS "Downloading xsimd v12.1.1")
 FetchContent_Declare(xsimd
-  GIT_REPOSITORY https://github.com/xtensor-stack/xsimd.git
-  GIT_TAG        12.1.1
-  GIT_SHALLOW    TRUE
+  URL      https://github.com/xtensor-stack/xsimd/archive/refs/tags/12.1.1.tar.gz
   EXCLUDE_FROM_ALL
 )
 FetchContent_MakeAvailable(xsimd)
@@ -102,9 +92,7 @@ FetchContent_MakeAvailable(xsimd)
 # Get XTENSOR
 message(STATUS "Downloading xtensor v0.25.0")
 FetchContent_Declare(xtensor
-  GIT_REPOSITORY https://github.com/xtensor-stack/xtensor.git
-  GIT_TAG        0.25.0
-  GIT_SHALLOW    TRUE
+  URL https://github.com/xtensor-stack/xtensor/archive/refs/tags/0.25.0.tar.gz
   EXCLUDE_FROM_ALL
 )
 set(XTENSOR_USE_XSIMD ON CACHE BOOL "Enable SIMD acceleration.")
@@ -115,9 +103,7 @@ FetchContent_MakeAvailable(xtensor)
 if(ABEILLE_GUI_PLOT)
   message(STATUS "Downloading ImApp")
   FetchContent_Declare(ImApp
-    GIT_REPOSITORY https://github.com/HunterBelanger/ImApp.git
-    GIT_TAG        master
-    GIT_SHALLOW    TRUE
+    URL      https://github.com/HunterBelanger/ImApp/archive/7bcee00689165944ca608266ce31ee9ea488ef3f.tar.gz
     EXCLUDE_FROM_ALL
   )
   FetchContent_MakeAvailable(ImApp)
@@ -127,9 +113,7 @@ endif()
 # Get PCG-C++
 message(STATUS "Downloading PCG-C++")
 FetchContent_Declare(PCG_CXX
-  GIT_REPOSITORY https://github.com/HunterBelanger/pcg-cpp.git
-  GIT_TAG        feature/cmake
-  GIT_SHALLOW    TRUE
+  URL            https://github.com/HunterBelanger/pcg-cpp/archive/eb816d2f01862399b67a5de68e3d423c9c73d2e2.tar.gz
   EXCLUDE_FROM_ALL
 )
 set(PCG_CPP_INSTALL OFF CACHE BOOL "Install PCG-CPP")
@@ -137,49 +121,44 @@ FetchContent_MakeAvailable(PCG_CXX)
 
 #===============================================================================
 # Get Boost
-message(STATUS "Downloading Boost 1.81.0")
+message(STATUS "Downloading Boost 1.90.0")
 set(BOOST_INCLUDE_LIBRARIES unordered container)
 set(BOOST_ENABLE_CMAKE ON)
 FetchContent_Declare(Boost
-  GIT_REPOSITORY https://github.com/boostorg/boost.git
-  GIT_TAG        boost-1.81.0
-  GIT_SHALLOW    TRUE
+  URL            https://github.com/boostorg/boost/releases/download/boost-1.90.0/boost-1.90.0-cmake.tar.gz
   EXCLUDE_FROM_ALL
 )
 FetchContent_MakeAvailable(Boost)
 
 #===============================================================================
 # Get HDF5
-message(STATUS "Downloading HDF5 v1.14.3")
-set(HDF5_ENABLE_Z_LIB_SUPPORT OFF)
+message(STATUS "Downloading HDF5 v2.0.0")
 set(HDF5_EXTERNALLY_CONFIGURED  1)
 set(HDF5_ENABLE_SZIP_SUPPORT  OFF)
+set(HDF5_ENABLE_ZLIB_SUPPORT OFF)
 set(HDF5_BUILD_EXAMPLES       OFF)
 set(HDF5_BUILD_TOOLS          OFF)
 set(HDF5_BUILD_UTILS          OFF)
 set(HDF5_BUILD_HL_LIB         OFF)
 set(BUILD_SHARED_LIBS         OFF)
-set(BUILD_TESTING             OFF)
 FetchContent_Declare(hdf5
-  GIT_REPOSITORY https://github.com/HDFGroup/hdf5.git
-  GIT_TAG        hdf5-1_14_3
-  GIT_SHALLOW    TRUE
+  URL      https://github.com/HDFGroup/hdf5/releases/download/2.0.0/hdf5-2.0.0.tar.gz
+  URL_HASH MD5=801597eccdf74d7304444fdc18652b75
   EXCLUDE_FROM_ALL
 )
 FetchContent_MakeAvailable(hdf5)
 
 #===============================================================================
 # Get HighFive
-message(STATUS "Downloading HighFive v3.0.0-beta2")
+message(STATUS "Downloading HighFive")
 set(HIGHFIVE_UNIT_TESTS OFF)
 set(HIGHFIVE_TEST_SPAN OFF)
 set(HIGHFIVE_EXAMPLES OFF)
 set(HIGHFIVE_BUILD_DOCS OFF)
 set(HIGHFIVE_FIND_HDF5 OFF)
 FetchContent_Declare(HighFive
-  GIT_REPOSITORY https://github.com/highfive-devs/highfive.git
-  GIT_TAG        v3.0.0-beta2
-  GIT_SHALLOW    TRUE
+  URL      https://github.com/highfive-devs/highfive/archive/6ea1c7b8b38db5a58acf33f011f442e0c28f0aa7.tar.gz # Dec. 16 2025
+  URL_HASH MD5=6fdc23148460812548f67b07019b209c
   EXCLUDE_FROM_ALL
 )
 FetchContent_MakeAvailable(HighFive)
